@@ -127,6 +127,7 @@ class PolicyDecision(StrEnum):
 class ExperimentType(StrEnum):
     backtest = "backtest"
     ga_run = "ga_run"
+    ga_evolution = "ga_evolution"
     training = "training"
     paper_trade = "paper_trade"
 
