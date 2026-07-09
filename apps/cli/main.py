@@ -56,6 +56,7 @@ def main() -> None:
         "--from", dest="from_", type=str, default=None, help="Start date (YYYY-MM-DD or YYYY)"
     )
     run_parser.add_argument("--fast", type=int, default=50, help="SMA fast period")
+    run_parser.add_argument("--to", dest="to_", type=str, default=None, help="End date (YYYY-MM-DD or YYYY)")
     run_parser.add_argument("--slow", type=int, default=200, help="SMA slow period")
 
     # backtest list
@@ -167,18 +168,19 @@ def _synthetic_ohlcv(
 
     import numpy as np
     import polars as pl
-
     if start_date is not None:
         from datetime import timedelta
 
+        # Accept "2015" or "2015-01-01"
+        if len(start_date) == 4 and start_date.isdigit():
+            start_date = f"{start_date}-01-01"
         dt = datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=UTC)
         end_dt = dt + timedelta(days=n_periods)
         dates = pl.datetime_range(
-            start=dt, end=end_dt, interval="1d", eager=True, closed="left", time_zone="UTC"
+            start=dt, end=end_dt, interval="1d", eager=True, closed="left"
         )
     else:
         dates = _n_dates(n_periods)
-
     sine = np.sin(np.linspace(0, 4 * np.pi, n_periods))
     price = start_price + sine * start_price * 0.15
     noise = np.random.default_rng(42).normal(0, start_price * 0.005, n_periods)
@@ -226,12 +228,12 @@ def _handle_backtest_run(args: argparse.Namespace) -> None:
     from analytics.backtest.orchestrator import BacktestOrchestrator
 
     start = _parse_date(args.from_)
-    end = _parse_date(args.to)
+    end = _parse_date(args.to_)
     instrument = args.instrument
 
     print(f"Running backtest: instrument={instrument} engine={args.engine}")
     print(f"  SMA crossover ({args.fast}/{args.slow})")
-    print(f"  Period: {args.from_ or 'earliest'} → {args.to or 'latest'}")
+    print(f"  Period: {args.from_ or 'earliest'} → {args.to_ or 'latest'}")
 
     # Generate synthetic data for the requested period
     n_periods = 1260
