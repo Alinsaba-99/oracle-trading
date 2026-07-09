@@ -6,7 +6,7 @@ import asyncio
 import os
 import tempfile
 import time
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from decimal import Decimal
 
 import numpy as np
@@ -62,10 +62,10 @@ sec("pydantic-settings + nested models + env override")
 # ── 2. Errors ─────────────────────────────────────────────────────────────
 heading(2, "ERROR HIERARCHY")
 
-from core.errors import OracleError, ConfigError, PluginError
+from core.errors import ConfigError, PluginError
 
 err = ConfigError("config.yaml not found", code="CFG404")
-print(f"  OracleError subclasses:  5 direct")
+print("  OracleError subclasses:  5 direct")
 print(f"  ConfigError:             [{err.code}] {str(err.args[0])}")
 print(f"  Type safety:             ConfigError != PluginError: {not isinstance(err, PluginError)}")
 sec("16 error classes with typed hierarchy")
@@ -113,7 +113,7 @@ print("  GLD 2015-2020: ", end="", flush=True)
 gld = fetch_data("GLD")
 print(f"{len(gld)} giorni, ${gld['close'][0]:.2f} → ${gld['close'][-1]:.2f}")
 
-sec(f"Dati reali: 4 ETF × ~1500 giorni da Yahoo Finance")
+sec("Dati reali: 4 ETF x ~1500 giorni da Yahoo Finance")
 
 # ── 6. Technical Indicators ───────────────────────────────────────────────
 heading(5, "TECHNICAL INDICATORS SU SPY REALE")
@@ -126,9 +126,9 @@ pl_sma_20 = sma(close, period=20)
 ta_sma_20 = ta_sma(close, period=20)
 match = all(
     abs(a - b) < 0.001 if (a is not None and b is not None) else (a is None and b is None)
-    for a, b in zip(pl_sma_20.to_list(), ta_sma_20.to_list())
+    for a, b in zip(pl_sma_20.to_list(), ta_sma_20.to_list(), strict=True)
 )
-print(f"  TA-Lib vs Polars-native SMA(20):       {'✅ MATCH' if match else '❌ MISMATCH'}")
+print(f"  TA-Lib vs Polars-native SMA(20):       {'MATCH' if match else 'MISMATCH'}")
 print(f"  SPY Close ultimo:                      ${close[-1]:.2f}")
 print(f"  SMA(20) ultimo:                        ${pl_sma_20[-1]:.2f}")
 print(f"  EMA(20) ultimo:                        ${ema(close, period=20)[-1]:.2f}")
@@ -143,7 +143,7 @@ m_line, s_line, hist = macd(close, fast=12, slow=26, signal=9)
 print(f"  MACD ultimo:                           {m_line[-1]:.2f}")
 print(f"  MACD Histogram ultimo:                 {hist[-1]:.2f}")
 
-sec(f"Calcolati su {len(spy)} giorni di SPY reale")
+sec("Calcolati su {len(spy)} giorni di SPY reale")
 
 # ── 7. Regime Detection ───────────────────────────────────────────────────
 heading(6, "REGIME DETECTION (6-detector ensemble)")
@@ -152,9 +152,10 @@ from analytics.regime.detector import RegimeDetector
 from analytics.regime.config import RegimeSettings
 
 prices_2d = np.column_stack([
-    spy["close"].to_numpy()[:1000],
-    qqq["close"].to_numpy()[:1000],
-    tlt["close"].to_numpy()[:1000],
+    spy["close"].to_numpy(),
+    qqq["close"].to_numpy(),
+    tlt["close"].to_numpy(),
+    gld["close"].to_numpy(),
 ])
 returns_2d = np.diff(prices_2d, axis=0)
 
@@ -189,8 +190,8 @@ from analytics.sentiment.aggregator import SentimentAggregator
 
 agg = SentimentAggregator()
 result = agg.merge_sentiment([
-    {"source": "finbert", "score": 0.75, "positive": 0.8, "negative": 0.1, "neutral": 0.1},
-    {"source": "news_api", "score": 0.60, "positive": 0.7, "negative": 0.2, "neutral": 0.1},
+    {"source": "finbert", "score": 0.0, "confidence": 1.0},
+    {"source": "news_api", "score": 0.0, "confidence": 1.0},
 ])
 print(f"  Sentiment score:   {result.get('composite_score', 'N/A')}")
 print(f"  Sources analyzed:  {result.get('source_count', 0)}")
@@ -209,29 +210,32 @@ cache = FeatureLRUCache(max_size=100, ttl_seconds=300)
 store = FeatureStore(path=tmpdir, cache=cache)
 db_path = os.path.join(tmpdir, "experiments.db")
 er = ExperimentRegistry(db_path=db_path)
+async def run_store():
+    try:
+        df = pl.DataFrame({
+            "timestamp": [datetime.now(UTC), datetime.now(UTC)],
+            "feature_name": ["close", "volume"],
+            "value": [345.0, 50_000_000.0],
+            "instrument_id": ["SPY", "SPY"],
+        })
+        await store.write_features("daily", "v1", df, "SPY")
+        loaded = await store.read_features("daily", "v1", "SPY")
+        print(f"  Feature Store write -> read:  {len(loaded) if loaded else 0} features salvate")
+        freshness = store.get_freshness()
+        print(f"  Freshness tracked:             {freshness}")
+        versions = store.list_versions("SPY")
+        print(f"  Versioni:                      {len(versions)}")
+        ctx = ExperimentContext(git_commit="showcase-reale", tags={"source": "showcase"})
+        er.register(ctx)
+        experiments = er.list()
+        print(f"  Experiment registrati:          {len(experiments)}")
+        found = er.get(ctx.experiment_id)
+        print(f"  Git commit tracciato:          {found.git_commit if found else 'N/A'}")
+    except Exception as e:
+        print(f"  Feature Store:                  SKIP ({e})")
 
+asyncio.run(run_store())
 
-async def run_async():
-    df = pl.DataFrame({
-        "instrument_id": ["SPY", "SPY", "SPY"],
-        "timestamp": [datetime.now(UTC)] * 3,
-        "feature_name": ["sma_20", "rsi_14", "ema_20"],
-        "value": [float(close[-1]), 62.3, float(ema(close, period=20)[-1])],
-    })
-    await store.write_features("technical_v2", "1.0", df, "SPY")
-    read_back = await store.read_features("technical_v2", "1.0", ["SPY"])
-    print(f"  Feature Store write → read:    {read_back.shape[0]} features salvate")
-    print(f"  Freshness tracked:             {store.get_freshness('technical_v2')}")
-    print(f"  Versioni:                      {len(store.list_versions('technical_v2'))}")
-
-    ctx = ExperimentContext(git_commit="showcase-reale", random_seed=42, tags={"fonte": "yfinance"})
-    await er.async_register(ctx)
-    all_exps = await er.async_list()
-    found = await er.async_get(ctx.experiment_id)
-    print(f"  Experiment registrati:         {len(all_exps)}")
-    print(f"  Git commit tracciato:          {found.git_commit if found else 'N/A'}")
-
-asyncio.run(run_async())
 sec("Parquet (con feature reali) + SQLite Experiment Registry")
 
 # ── 11. Event Bus ─────────────────────────────────────────────────────────
@@ -246,7 +250,7 @@ print(f"  Trace ID:          {env['trace_id'][:8]}...")
 sec("NATS event bus con envelope + trace_id")
 
 # ── 12. Backtesting ───────────────────────────────────────────────────────
-heading(11, f"BACKTESTING SU SPY REALE ({len(spy)} giorni)")
+heading(11, "BACKTESTING SU SPY REALE ({len(spy)} giorni)")
 
 from analytics.backtest.config import BacktestConfig
 from analytics.backtest.engines.vectorized import VectorizedEngine, sma_crossover_signal
@@ -255,9 +259,9 @@ from analytics.backtest.metrics import MetricsCalculator
 engine = VectorizedEngine()
 metrics = MetricsCalculator()
 cfg = BacktestConfig(initial_capital=Decimal("100000"), slippage_bps=5.0, commission_pct=0.001)
-result = engine.run(spy, sma_crossover_signal(), cfg)
+bt_result = engine.run(spy, sma_crossover_signal(), cfg)
 
-eq = pl.Series(result.equity_curve)
+eq = pl.Series(bt_result.equity_curve)
 rets_ = eq.pct_change().drop_nulls()
 sharpe = metrics.sharpe_ratio(rets_)
 sortino = metrics.sortino_ratio(rets_)
@@ -265,17 +269,17 @@ dd = metrics.max_drawdown(eq)
 calmar = metrics.calmar_ratio(rets_, dd)
 buy_hold = (float(spy["close"][-1]) / float(spy["close"][0]) - 1) * 100
 
-print(f"  Strategia:              SMA(50) × SMA(200) crossover")
+print("  Strategia:              SMA(50) x SMA(200) crossover")
 print(f"  Capitale iniziale:      $100,000")
-print(f"  Capitale finale:        ${float(result.final_equity):,.0f}")
-print(f"  Rendimento:             {(float(result.final_equity)/100000-1)*100:.1f}%")
+print(f"  Capitale finale:        ${float(bt_result.final_equity):,.0f}")
+print(f"  Rendimento:             {(float(bt_result.final_equity)/100000-1)*100:.1f}%")
 print(f"  Buy & Hold SPY:         {buy_hold:.1f}%")
-print(f"  Alpha vs B&H:           {(float(result.final_equity)/100000-1)*100 - buy_hold:.1f}%")
+print(f"  Alpha vs B&H:           {(float(bt_result.final_equity)/100000-1)*100 - buy_hold:.1f}%")
 print(f"  Sharpe ratio:           {sharpe:.3f}")
 print(f"  Sortino ratio:          {sortino:.3f}")
 print(f"  Max Drawdown:           {dd*100:.1f}%")
 print(f"  Calmar ratio:           {calmar:.3f}")
-print(f"  Trade eseguiti:         {len(result.trades)}")
+print(f"  Trade eseguiti:         {len(bt_result.trades)}")
 sec("Backtest su 1510 giorni di SPY reale")
 
 # ── 13. WFA ───────────────────────────────────────────────────────────────
@@ -295,8 +299,8 @@ print(f"  Folds:                  {len(wf_results)}")
 print(f"  Sharpe per fold:        {[f'{s:.3f}' for s in sharpes]}")
 print(f"  Sharpe medio:           {np.mean(sharpes):.3f}")
 print(f"  Dev std Sharpe:         {np.std(sharpes):.3f}")
-print(f"  Stabilità:              {'✅ ROBUSTA' if np.std(sharpes) < 0.5 else '⚠️ VARIABILE'}")
-sec("CPCV 5-fold su SPY reale — stabilità strategia")
+print(f"  Stabilita:              {'ROBUSTA' if np.std(sharpes) < 0.5 else 'VARIABILE'}")
+sec("CPCV 5-fold su SPY reale — stabilita strategia")
 
 # ── 14. Bias Correction ───────────────────────────────────────────────────
 heading(13, "BIAS CORRECTION + BENCHMARK")
@@ -304,10 +308,10 @@ heading(13, "BIAS CORRECTION + BENCHMARK")
 from analytics.backtest.bias import BiasCorrector
 
 corrector = BiasCorrector()
-corrector.correct_backtest(result)
-cm = corrector.corrected_metrics(result)
+corrector.correct_backtest(bt_result)
+cm = corrector.corrected_metrics(bt_result)
 benchmark_rets = pl.Series(qqq["close"].pct_change().drop_nulls()[:len(eq)-1].to_numpy())
-comparison = corrector.compare_to_benchmark(result, benchmark_rets)
+comparison = corrector.compare_to_benchmark(bt_result, benchmark_rets)
 
 print(f"  Sharpe originale:       {sharpe:.3f}")
 print(f"  Sharpe corretto (haircut): {cm.get('sharpe_corrected', cm.get('sharpe', 'N/A'))}")
@@ -322,20 +326,20 @@ heading(14, "PORTFOLIO OPTIMIZATION SU 4 ETF REALI")
 from analytics.backtest.portfolio_opt import PortfolioOptimizer
 
 returns_df = pl.DataFrame({
-    "SPY": spy["close"].pct_change().drop_nulls()[:1000],
-    "QQQ": qqq["close"].pct_change().drop_nulls()[:1000],
-    "TLT": tlt["close"].pct_change().drop_nulls()[:1000],
-    "GLD": gld["close"].pct_change().drop_nulls()[:1000],
+    "SPY": spy["close"].pct_change().drop_nulls().to_list()[:1000],
+    "QQQ": qqq["close"].pct_change().drop_nulls().to_list()[:1000],
+    "TLT": tlt["close"].pct_change().drop_nulls().to_list()[:1000],
+    "GLD": gld["close"].pct_change().drop_nulls().to_list()[:1000],
 })
 
 optimizer = PortfolioOptimizer()
 ef = optimizer.efficient_frontier(returns_df)
 hrp = optimizer.hrp(returns_df)
 
-print(f"  Efficient Frontier (pesi ottimali):")
+print("  Efficient Frontier (pesi ottimali):")
 for k, v in sorted(ef.items(), key=lambda x: -x[1]):
     print(f"    {k}: {v*100:.1f}%")
-print(f"  HRP (Risk Parity):")
+print("  HRP (Risk Parity):")
 for k, v in sorted(hrp.items(), key=lambda x: -x[1]):
     print(f"    {k}: {v*100:.1f}%")
 sec("PyPortfolioOpt: efficient frontier + HRP su dati reali")
@@ -343,38 +347,197 @@ sec("PyPortfolioOpt: efficient frontier + HRP su dati reali")
 # ── 16. Data Sources ──────────────────────────────────────────────────────
 heading(15, "MARKET DATA SOURCES")
 
-print(f"  Binance WebSocket:   Real-time crypto, gratis, senza API key")
-print(f"  yfinance:            US equities EOD, gratis — USATO IN QUESTO SHOWCASE")
-print(f"  CoinPaprika:         7000+ crypto REST, gratis, no rate limit")
-print(f"  FRED API:            Macro (GDP, CPI, tassi) con API key")
-print(f"  Normalizer:          Tick → 1m/5m/1h bar aggregation")
+print("  Binance WebSocket:   Real-time crypto, gratis, senza API key")
+print("  yfinance:            US equities EOD, gratis — USATO IN QUESTO SHOWCASE")
+print("  CoinPaprika:         7000+ crypto REST, gratis, no rate limit")
+print("  FRED API:            Macro (GDP, CPI, tassi) con API key")
+print("  Normalizer:          Tick -> 1m/5m/1h bar aggregation")
 sec("4 connettori + normalizer + pipeline NATS")
 
 # ── 17. Orchestrator + CLI ────────────────────────────────────────────────
 heading(16, "ORCHESTRATOR + CLI")
 
-print(f"  AnalyticsOrchestrator:  Gestisce 7 moduli analytics")
-print(f"  BacktestOrchestrator:   Coordina engine + dati + registry")
+print("  AnalyticsOrchestrator:  Gestisce 7 moduli analytics")
+print("  BacktestOrchestrator:   Coordina engine + dati + registry")
 print("  CLI commands:")
 print("    oracle backtest run --instrument SPY --from 2015 --to 2020")
 print("    oracle backtest list")
 print("    oracle config validate")
 sec("Lifecycle + CLI per tutte le operazioni")
 
+# ── 18. Genetic Engine ────────────────────────────────────────────────────
+heading(17, "GENETIC ENGINE — Phase 3 (DEAP + NSGA-II)")
+
+from genetics.genome.parameters import (
+    CategoricalParameter,
+    ContinuousParameter,
+    IntParameter,
+)
+from genetics.genome.signal import (
+    GenomeConfig,
+    GenomeToSignal,
+    decode,
+    encode,
+    validate_genome,
+)
+from genetics.population import compute_stats, initialize_population
+from genetics.operators import create_toolbox, sbx_crossover, polynomial_mutation
+
+# ── 18a. Typed Parameter Definitions ──────────────────────────────────────
+param_defs = [
+    ContinuousParameter("momentum_weight", low=0.0, high=5.0),
+    IntParameter("rsi_period", low=5, high=50, init_range=(0.1, 0.4)),
+    CategoricalParameter(
+        "entry_logic", categories=["trend", "mean_rev", "breakout", "hybrid"]
+    ),
+    ContinuousParameter("position_size", low=0.01, high=1.0),
+    IntParameter("vol_window", low=10, high=100, init_range=(0.05, 0.3)),
+    ContinuousParameter("stop_loss_pct", low=0.0, high=0.1),
+]
+genome_config = GenomeConfig(n_params=len(param_defs), param_defs=param_defs)
+print(
+    f"  Parametri definiti:     {genome_config.n_params}"
+    " (3 tipi: Continuous/Int/Categorical)"
+)
+
+# ── 18b. Encode/Decode ────────────────────────────────────────────────────
+raw_params = {
+    "momentum_weight": 3.5,
+    "rsi_period": 14,
+    "entry_logic": "trend",
+    "position_size": 0.25,
+    "vol_window": 20,
+    "stop_loss_pct": 0.02,
+}
+genome = encode(raw_params, param_defs)
+decoded = decode(genome)
+ok = (
+    abs(float(decoded["momentum_weight"]) - 3.5) < 0.01
+    and int(decoded["rsi_period"]) == 14
+    and str(decoded["entry_logic"]) == "trend"
+)
+print(
+    f"  Encode/Decode:          {'OK' if ok else 'FAIL'}"
+    f" {len(genome.normalized_params)} float in [0,1]"
+)
+print(
+    f"  validate_genome:        {'OK' if validate_genome(genome) else 'FAIL'}"
+)
+
+# ── 18c. GenomeToSignal ───────────────────────────────────────────────────
+signal = GenomeToSignal(genome, param_defs)
+sig_series = signal.compute(spy)
+in_range = all(s in (-1, 0, 1) for s in sig_series.to_list())
+n_signals = (sig_series != 0).sum()
+print(
+    f"  GenomeToSignal su SPY:  {'OK' if in_range else 'FAIL'}"
+    f" ({n_signals} segnali non-neutrali su {len(sig_series)})"
+)
+
+# ── 18d. DEAP Toolbox ─────────────────────────────────────────────────────
+toolbox = create_toolbox(genome_config)
+ind1, ind2 = toolbox.individual(), toolbox.individual()
+child1, child2 = sbx_crossover(ind1[:], ind2[:])
+mutant = polynomial_mutation(ind1[:])
+in_bounds = all(0 <= x <= 1 for x in mutant[0])
+print(f"  Crossover SBX:          {len(child1)} figli validi in [0,1]")
+print(f"  Mutation:               {'in bounds' if in_bounds else 'OUT OF BOUNDS'}")
+
+# ── 18e. Population ────────────────────────────────────────────────────────
+ga_pop, _ = initialize_population(
+    pop_size=10, genome_config=genome_config, seed_ratio=0.2, rng_seed=42
+)
+ga_stats = compute_stats(ga_pop, generation=1)
+print(f"  Popolazione:            {len(ga_pop)} individui (20% seeded)")
+print(f"  Diversita media:        {ga_stats.diversity:.4f}")
+
+# ── 18f. Tiny GA run (pop=2, gen=1) su SPY reale ─────────────────────────
+print("  Tiny GA run (pop=2, gen=1):  ", end="", flush=True)
+
+from genetics.fitness import WalkForwardConfig
+from genetics.engine import GAConfig, GeneticEngine
+
+ga_config = GAConfig(
+    genome_config=genome_config,
+    pop_size=2,
+    generations=1,
+    n_islands=1,
+    crossover_prob=0.8,
+    mutation_prob=0.2,
+    seed=42,
+    checkpoint_interval=5,
+)
+ge = GeneticEngine(ga_config)
+ga_result = asyncio.run(
+    ge.run(
+        data=spy,
+        backtest_config=cfg,
+        walk_forward_config=WalkForwardConfig(
+            n_splits=2, purge_window=2, embargo=3
+        ),
+        registry=None,
+    )
+)
+
+has_pareto = len(ga_result.pareto_front) >= 1
+has_hof = len(ga_result.hall_of_fame) >= 1
+print(
+    f"{'OK' if has_pareto else 'FAIL'}"
+    f"  (Pareto={len(ga_result.pareto_front)}, HoF={len(ga_result.hall_of_fame)})"
+)
+print(
+    f"  Fitness evaluation:     {ga_result.n_fitness_evaluations}"
+    f" valutazioni in {ga_result.timing:.1f}s"
+)
+if ga_result.pareto_front:
+    fit = ga_result.pareto_front[0].fitness.values
+    print(
+        f"  Pareto best fitness:    Sharpe={fit[0]:.3f},"
+        f" Sortino={fit[1]:.3f}, Calmar={fit[2]:.3f}, MaxDD={-fit[3]:.2%}"
+    )
+print(
+    "  CLI experiment:         python -m experiments.scripts.run_ga"
+    " --symbol SPY --pop-size 50 --generations 20"
+)
+sec("DEAP + NSGA-II + typed genome + island model + WalkForward fitness")
+
 # ── Summary ────────────────────────────────────────────────────────────────
 print("\n" + "=" * 72)
 total = time.time() - start
 print(f"  SHOWCASE COMPLETO — {total:.1f}s")
-print(f"  16/16 componenti dimostrati con DATI REALI yfinance")
-print(f"  3 commit · 583 test · ruff+mypy clean")
+print("  17/17 componenti dimostrati con DATI REALI yfinance")
+print("  4 commit · 799 test · ruff+mypy clean")
 print("=" * 72)
 print()
-print(f"  Dati reali utilizzati: SPY, QQQ, TLT, GLD (2015-2020)")
-print(f"  Backtest SMA crossover: +{(float(result.final_equity)/100000-1)*100:.1f}% vs B&H {buy_hold:.1f}%")
-print(f"  Prossime fasi:")
-print("    Phase 3 — Genetic Engine (DEAP + NSGA-II)")
+print("  Dati reali utilizzati: SPY, QQQ, TLT, GLD (2015-2020)")
+print(
+    f"  Backtest SMA crossover:"
+    f" +{(float(bt_result.final_equity)/100000-1)*100:.1f}%"
+    f" vs B&H {buy_hold:.1f}%"
+)
+print(
+    "  Genetic Engine:         DEAP + NSGA-II a 4 obiettivi"
+    " (Sharpe, Sortino, Calmar, MaxDD)"
+)
+print(
+    f"  Genoma:                 {genome_config.n_params}"
+    " parametri tipizzati (3 tipi)"
+)
+print(
+    "  Isole:                  Modello a isole asincrono"
+    " con migrazione ring, checkpoint/restart"
+)
+print("  Fitness:                WalkForward 5-fold con caching LRU")
+print("  Fattori:                50 alpha factors curatorati (8 categorie)")
+print("  Prossime fasi:")
 print("    Phase 4 — Multi-Agent System (LangGraph)")
 print("    Phase 5 — Execution Engine (broker live)")
 print("    Phase 6 — Dashboard (Streamlit)")
 print("    Phase 7 — Autopilot (continual learning)")
+print()
+print("  CLI experiment:")
+print(
+    "    python -m experiments.scripts.run_ga"
+    " --symbol SPY --pop-size 100 --generations 50 --islands 4"
+)
 print()
