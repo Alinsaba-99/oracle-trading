@@ -36,8 +36,19 @@ class PluginSettings(BaseModel):
     auto_discover: bool = True
 
 
+class AnalyticsSettings(BaseModel):
+    """Configuration for analytics subsystem."""
+
+    enabled: bool = True
+    feature_store_path: str = "data/features"
+    cache_size: int = Field(default=1000, ge=1)
+    cache_ttl_seconds: int = Field(default=300, ge=1)
+    backpressure_max_queue: int = Field(default=1000, ge=1)
+    backpressure_drop_policy: str = Field(default="oldest", pattern="^(oldest|newest|drop)$")
+
+
 class OracleSettings(BaseSettings):
-    """Root settings. Loaded from defaults → YAML → env vars."""
+    """Root settings. Loaded from defaults -> YAML -> env vars."""
 
     model_config = SettingsConfigDict(
         env_nested_delimiter="__",
@@ -56,3 +67,4 @@ class OracleSettings(BaseSettings):
     questdb: QuestDBSettings = QuestDBSettings()
     postgres: PostgresSettings = PostgresSettings()
     plugins: PluginSettings = PluginSettings()
+    analytics: AnalyticsSettings = AnalyticsSettings()

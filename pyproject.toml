@@ -44,6 +44,13 @@ analytics = [
     "scikit-learn>=1.4",
     "statsmodels>=0.14",
     "arch>=6.3",
+    "polars>=1.0",
+    "duckdb>=1.0",
+    "pyarrow>=17.0",
+    "hmmlearn>=0.3",
+    "ruptures>=1.1",
+    "httpx>=0.27",
+    "yfinance>=0.1",
 ]
 
 genetics = [

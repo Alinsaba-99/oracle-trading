@@ -3,6 +3,7 @@
 from core.config.loader import ConfigLoader
 from core.config.serializer import SettingsSerializer
 from core.config.settings import (
+    AnalyticsSettings,
     NATSSettings,
     OracleSettings,
     PluginSettings,
@@ -12,6 +13,7 @@ from core.config.settings import (
 )
 
 __all__ = [
+    "AnalyticsSettings",
     "ConfigLoader",
     "NATSSettings",
     "OracleSettings",
