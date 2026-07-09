@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
+
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -47,6 +49,16 @@ class AnalyticsSettings(BaseModel):
     backpressure_drop_policy: str = Field(default="oldest", pattern="^(oldest|newest|drop)$")
 
 
+class BacktestSettings(BaseModel):
+    """Configuration for backtesting engine."""
+
+    default_engine: str = "vectorized"
+    default_slippage_bps: float = 5.0
+    default_commission_pct: float = 0.001
+    default_initial_capital: Decimal = Decimal("100000")
+    feat_store_path: str = "data/features"
+
+
 class OracleSettings(BaseSettings):
     """Root settings. Loaded from defaults -> YAML -> env vars."""
 
@@ -68,3 +80,4 @@ class OracleSettings(BaseSettings):
     postgres: PostgresSettings = PostgresSettings()
     plugins: PluginSettings = PluginSettings()
     analytics: AnalyticsSettings = AnalyticsSettings()
+    backtest: BacktestSettings = BacktestSettings()

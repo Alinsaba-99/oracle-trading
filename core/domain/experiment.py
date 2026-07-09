@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC, datetime
-from pathlib import Path
-from threading import Lock
-from typing import Any
+from typing import Any, cast
 from uuid import uuid4
 
+import aiosqlite
 from pydantic import BaseModel, Field
 
 from core.domain.enums import ExperimentStatus, ExperimentType
@@ -16,6 +16,7 @@ from core.domain.enums import ExperimentStatus, ExperimentType
 class Experiment(BaseModel):
     experiment_id: str
     type: ExperimentType
+    parent_experiment_id: str | None = None
     timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     git_commit: str = ""
     status: ExperimentStatus = ExperimentStatus.running
@@ -36,6 +37,7 @@ class ExperimentContext(BaseModel):
     """
 
     experiment_id: str = Field(default_factory=lambda: str(uuid4()))
+    parent_experiment_id: str | None = None
     git_commit: str = ""
     timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     random_seed: int = 42
@@ -43,41 +45,95 @@ class ExperimentContext(BaseModel):
 
 
 class ExperimentRegistry:
-    """Thread-safe experiment registry backed by JSONL.
+    """Thread-safe experiment registry backed by SQLite.
 
-    Writes to experiments/_registry.jsonl. Each line is a JSON-serialized
-    ExperimentContext. Thread-safe via Lock.
-    Phase 1: migrate to PostgreSQL/QuestDB for production.
+    Stores experiments in a SQLite database via aiosqlite.
+    Each experiment is serialized as JSON and stored alongside its
+    parent_experiment_id for WFA (walk-forward analysis) tracking.
     """
 
-    def __init__(self, path: str | Path = "experiments/_registry.jsonl") -> None:
-        self._path = Path(path)
-        self._lock = Lock()
-        self._cache: list[ExperimentContext] = []
-        self._load_cache()
+    def __init__(self, db_path: str = "experiments/experiments.db") -> None:
+        self._db_path = db_path
+        self._init_lock = asyncio.Lock()
+        self._initialized = False
 
-    def _load_cache(self) -> None:
-        if self._path.exists():
-            with open(self._path) as f:
-                for line in f:
-                    line = line.strip()
-                    if line:
-                        self._cache.append(ExperimentContext.model_validate_json(line))
+    async def _ensure_table(self) -> None:
+        if self._initialized:
+            return
+        async with self._init_lock:
+            if self._initialized:
+                return
+            async with aiosqlite.connect(self._db_path) as db:
+                await db.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS experiments (
+                        id TEXT PRIMARY KEY,
+                        parent_id TEXT,
+                        data TEXT,
+                        created_at TEXT
+                    )
+                    """
+                )
+                await db.commit()
+            self._initialized = True
+
+    async def async_register(self, ctx: ExperimentContext) -> None:
+        """Register a new experiment context asynchronously."""
+        await self._ensure_table()
+        async with aiosqlite.connect(self._db_path) as db:
+            await db.execute(
+                "INSERT INTO experiments (id, parent_id, data, created_at) VALUES (?, ?, ?, ?)",
+                (
+                    ctx.experiment_id,
+                    ctx.parent_experiment_id,
+                    ctx.model_dump_json(),
+                    ctx.timestamp.isoformat(),
+                ),
+            )
+            await db.commit()
+
+    async def async_list(self) -> list[ExperimentContext]:
+        """List all registered experiments asynchronously."""
+        await self._ensure_table()
+        async with aiosqlite.connect(self._db_path) as db:
+            cursor = await db.execute("SELECT data FROM experiments ORDER BY created_at")
+            rows = await cursor.fetchall()
+            return [ExperimentContext.model_validate_json(row[0]) for row in rows]
+
+    async def async_get(self, experiment_id: str) -> ExperimentContext | None:
+        """Get an experiment by ID asynchronously."""
+        await self._ensure_table()
+        async with aiosqlite.connect(self._db_path) as db:
+            cursor = await db.execute("SELECT data FROM experiments WHERE id = ?", (experiment_id,))
+            row = await cursor.fetchone()
+            return ExperimentContext.model_validate_json(row[0]) if row else None
+
+    # ------------------------------------------------------------------
+    # Synchronous wrappers (backward compatible)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def __run(coro: Any) -> Any:
+        """Execute a coroutine synchronously."""
+        try:
+            loop = asyncio.get_running_loop()
+            if loop.is_running():
+                raise RuntimeError(
+                    "Cannot call sync wrapper from within an async context. "
+                    "Use async_register / async_list / async_get instead."
+                )
+            return loop.run_until_complete(coro)
+        except RuntimeError:
+            return asyncio.run(coro)
 
     def register(self, ctx: ExperimentContext) -> None:
-        with self._lock:
-            self._path.parent.mkdir(parents=True, exist_ok=True)
-            with open(self._path, "a") as f:
-                f.write(ctx.model_dump_json() + "\n")
-            self._cache.append(ctx)
+        """Register a new experiment context (sync wrapper)."""
+        self.__run(self.async_register(ctx))
 
     def list(self) -> list[ExperimentContext]:
-        with self._lock:
-            return list(self._cache)
+        """List all registered experiments (sync wrapper)."""
+        return cast(list[ExperimentContext], self.__run(self.async_list()))
 
     def get(self, experiment_id: str) -> ExperimentContext | None:
-        with self._lock:
-            for ctx in self._cache:
-                if ctx.experiment_id == experiment_id:
-                    return ctx
-        return None
+        """Get an experiment by ID (sync wrapper)."""
+        return cast(ExperimentContext | None, self.__run(self.async_get(experiment_id)))

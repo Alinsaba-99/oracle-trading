@@ -15,6 +15,7 @@ class Portfolio(BaseModel):
     portfolio_id: str = Field(default_factory=lambda: str(uuid4()))
     name: str = "Default"
     type: PortfolioType = PortfolioType.paper
+    initial_capital: Decimal = Decimal("100000")
     total_value: Decimal = Decimal("0")
     cash: Decimal = Decimal("0")
     exposure: float = 0.0

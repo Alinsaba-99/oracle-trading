@@ -7,10 +7,10 @@ authors = [{ name = "Oracle Team" }]
 license = { text = "MIT" }
 
 dependencies = [
-    "numpy>=1.26",
+    "numpy<2.5",
     "pandas>=2.2",
     "pydantic>=2.7",
-    "pydantic-settings>=2.2",
+    "aiosqlite>=0.20",
     "nats-py>=2.8",
     "redis>=5.0",
     "psycopg2-binary>=2.9",
@@ -51,6 +51,7 @@ analytics = [
     "ruptures>=1.1",
     "httpx>=0.27",
     "yfinance>=0.1",
+    "pyportfolioopt>=1.5",
 ]
 
 genetics = [
@@ -143,3 +144,20 @@ exclude = ["tests*"]
 [build-system]
 requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "duckdb>=1.5.4",
+    "hmmlearn>=0.3.3",
+    "httpx>=0.28.1",
+    "mypy>=2.2.0",
+    "polars>=1.42.1",
+    "pydantic-settings>=2.14.2",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.15.20",
+    "ruptures>=1.1.10",
+    "websockets>=15.0.1",
+    "yfinance>=1.5.1",
+]

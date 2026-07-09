@@ -9,9 +9,7 @@ from analytics.technical import atr, bbands, ema, macd, rsi, sma
 
 
 def compute_all(
-    close: pl.Series,
-    high: pl.Series | None = None,
-    low: pl.Series | None = None,
+    close: pl.Series, high: pl.Series | None = None, low: pl.Series | None = None
 ) -> dict[str, list[float | None]]:
     results = {}
     try:

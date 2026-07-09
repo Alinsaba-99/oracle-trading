@@ -5,6 +5,12 @@ from __future__ import annotations
 import argparse
 import sys
 from importlib.metadata import version
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from datetime import datetime
+
+    import polars as pl
 
 
 def main() -> None:
@@ -32,6 +38,35 @@ def main() -> None:
     nats_sub = nats_parser.add_subparsers(dest="nats_action")
     nats_sub.add_parser("ping", help="Test NATS connection")
 
+    # backtest run / list / compare
+    bt_parser = subparsers.add_parser("backtest", help="Backtesting operations")
+    bt_sub = bt_parser.add_subparsers(dest="backtest_action", help="Backtest command")
+
+    # backtest run
+    run_parser = bt_sub.add_parser("run", help="Run a single backtest")
+    run_parser.add_argument("--instrument", type=str, default="SPY", help="Instrument symbol")
+    run_parser.add_argument(
+        "--engine",
+        type=str,
+        default="vectorized",
+        choices=["vectorized", "nautilus"],
+        help="Backtest engine",
+    )
+    run_parser.add_argument(
+        "--from", dest="from_", type=str, default=None, help="Start date (YYYY-MM-DD or YYYY)"
+    )
+    run_parser.add_argument("--fast", type=int, default=50, help="SMA fast period")
+    run_parser.add_argument("--slow", type=int, default=200, help="SMA slow period")
+
+    # backtest list
+    list_parser = bt_sub.add_parser("list", help="List previous backtests")
+    list_parser.add_argument("--status", type=str, default=None, help="Filter by status")
+
+    # backtest compare
+    compare_parser = bt_sub.add_parser("compare", help="Compare two backtest results")
+    compare_parser.add_argument("id1", type=str, help="First result ID")
+    compare_parser.add_argument("id2", type=str, help="Second result ID")
+
     args = parser.parse_args()
 
     if args.version:
@@ -48,6 +83,8 @@ def main() -> None:
         _handle_plugins(args)
     elif args.command == "nats":
         _handle_nats(args)
+    elif args.command == "backtest":
+        _handle_backtest(args)
     else:
         parser.print_help()
 
@@ -107,6 +144,189 @@ def _handle_nats(_args: argparse.Namespace) -> None:
             sys.exit(1)
 
     asyncio.run(ping())
+
+
+def _handle_backtest(args: argparse.Namespace) -> None:
+    """Dispatch backtest subcommands."""
+    if args.backtest_action == "run":
+        _handle_backtest_run(args)
+    elif args.backtest_action == "list":
+        _handle_backtest_list(args)
+    elif args.backtest_action == "compare":
+        _handle_backtest_compare(args)
+    else:
+        print("Usage: oracle backtest run|list|compare")
+        sys.exit(1)
+
+
+def _synthetic_ohlcv(
+    n_periods: int = 1260, start_price: float = 100.0, start_date: str | None = None
+) -> pl.DataFrame:
+    """Generate synthetic OHLCV for demo / development backtests."""
+    from datetime import UTC, datetime
+
+    import numpy as np
+    import polars as pl
+
+    if start_date is not None:
+        from datetime import timedelta
+
+        dt = datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=UTC)
+        end_dt = dt + timedelta(days=n_periods)
+        dates = pl.datetime_range(
+            start=dt, end=end_dt, interval="1d", eager=True, closed="left", time_zone="UTC"
+        )
+    else:
+        dates = _n_dates(n_periods)
+
+    sine = np.sin(np.linspace(0, 4 * np.pi, n_periods))
+    price = start_price + sine * start_price * 0.15
+    noise = np.random.default_rng(42).normal(0, start_price * 0.005, n_periods)
+    close = price + noise
+    return pl.DataFrame(
+        {
+            "timestamp": dates,
+            "open": price,
+            "high": price * 1.02,
+            "low": price * 0.98,
+            "close": close,
+            "volume": np.full(n_periods, 1_000_000),
+        }
+    )
+
+
+def _n_dates(n: int) -> pl.Series:
+    """Return a Polars datetime series with *n* daily intervals (UTC)."""
+    from datetime import UTC, datetime, timedelta
+
+    import polars as pl
+
+    dt = datetime(2020, 1, 1, tzinfo=UTC)
+    end = dt + timedelta(days=n)
+    return pl.datetime_range(start=dt, end=end, interval="1d", eager=True, closed="left")
+
+
+def _parse_date(date_str: str | None) -> datetime | None:
+    """Parse a date string (YYYY or YYYY-MM-DD) into a UTC datetime."""
+    if date_str is None:
+        return None
+    from datetime import UTC, datetime
+
+    parts = date_str.split("-")
+    if len(parts) == 1:
+        return datetime(int(parts[0]), 1, 1, tzinfo=UTC)
+    if len(parts) == 3:
+        return datetime(int(parts[0]), int(parts[1]), int(parts[2]), tzinfo=UTC)
+    raise ValueError(f"Invalid date format: {date_str!r} (use YYYY or YYYY-MM-DD)")
+
+
+def _handle_backtest_run(args: argparse.Namespace) -> None:
+    """Run a single backtest (``oracle backtest run``)."""
+    from analytics.backtest.engines.vectorized import sma_crossover_signal
+    from analytics.backtest.orchestrator import BacktestOrchestrator
+
+    start = _parse_date(args.from_)
+    end = _parse_date(args.to)
+    instrument = args.instrument
+
+    print(f"Running backtest: instrument={instrument} engine={args.engine}")
+    print(f"  SMA crossover ({args.fast}/{args.slow})")
+    print(f"  Period: {args.from_ or 'earliest'} → {args.to or 'latest'}")
+
+    # Generate synthetic data for the requested period
+    n_periods = 1260
+    if start and end:
+        n_periods = max((end - start).days, 252)
+
+    data = _synthetic_ohlcv(n_periods=n_periods, start_date=args.from_ or "2015-01-01")
+
+    orchestrator = BacktestOrchestrator()
+    signal = sma_crossover_signal(fast=args.fast, slow=args.slow)
+    result = orchestrator.run(
+        signal=signal, engine=args.engine, instrument_id=instrument, data=data
+    )
+
+    print(f"\n── Results: {result.run_id[:8]} ──")
+    print(f"  Total Return:  {result.total_return:.2%}")
+    print(f"  Sharpe Ratio:  {result.sharpe_ratio:.4f}")
+    print(f"  Sortino Ratio: {result.sortino_ratio:.4f}")
+    print(f"  Calmar Ratio:  {result.calmar_ratio:.4f}")
+    print(f"  Max Drawdown:  {result.max_drawdown:.2%}")
+    print(f"  CAGR:          {result.cagr:.2%}")
+    print(f"  Volatility:    {result.volatility:.2%}")
+    print(f"  Total Trades:  {result.total_trades}")
+    print(f"  Win Rate:      {result.win_rate:.2%}")
+    print(f"  Profit Factor: {result.profit_factor:.4f}")
+    print(f"  Final Equity:  ${result.final_equity:,.2f}")
+    sys.exit(0)
+
+
+def _handle_backtest_list(args: argparse.Namespace) -> None:
+    """List previous backtest experiments (``oracle backtest list``)."""
+    from core.domain.experiment import ExperimentRegistry
+
+    registry = ExperimentRegistry()
+    try:
+        experiments = registry.list()
+    except Exception as exc:
+        print(f"Could not read experiment registry: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    if not experiments:
+        print("No backtests found in the experiment registry.")
+        sys.exit(0)
+
+    # Filter by status if requested
+    filtered = experiments
+    if args.status:
+        filtered = [e for e in experiments if e.tags.get("status") == args.status]
+
+    print(f"Backtest experiments ({len(filtered)}):")
+    print(f"  {'ID':<40} {'Date':<26} {'Instrument':<12} {'Sharpe':<10} {'Return':<10}")
+    print(f"  {'─' * 40} {'─' * 26} {'─' * 12} {'─' * 10} {'─' * 10}")
+    for exp in filtered:
+        eid = exp.experiment_id[:36]
+        ts = exp.timestamp.strftime("%Y-%m-%d %H:%M") if exp.timestamp else "?"
+        instr = exp.tags.get("instrument", "?")
+        sharpe = exp.tags.get("sharpe_ratio", "?")
+        ret = exp.tags.get("total_return", "?")
+        print(f"  {eid:<40} {ts:<26} {instr:<12} {sharpe:<10} {ret:<10}")
+    sys.exit(0)
+
+
+def _handle_backtest_compare(args: argparse.Namespace) -> None:
+    """Compare two backtest results (``oracle backtest compare``)."""
+    from core.domain.experiment import ExperimentRegistry
+
+    registry = ExperimentRegistry()
+
+    def _load(id_: str) -> dict[str, str] | None:
+        try:
+            exp = registry.get(id_)
+            if exp is None:
+                return None
+            return {"id": exp.experiment_id, **exp.tags}
+        except Exception:
+            return None
+
+    r1 = _load(args.id1)
+    r2 = _load(args.id2)
+
+    if r1 is None:
+        print(f"Experiment not found: {args.id1}", file=sys.stderr)
+        sys.exit(1)
+    if r2 is None:
+        print(f"Experiment not found: {args.id2}", file=sys.stderr)
+        sys.exit(1)
+
+    metrics = ["sharpe_ratio", "sortino_ratio", "total_return", "total_trades"]
+    print(f"Comparison: {args.id1[:8]} vs {args.id2[:8]}")
+    print(f"  {'Metric':<20} {'Result 1':<20} {'Result 2':<20}")
+    print(f"  {'─' * 20} {'─' * 20} {'─' * 20}")
+    for m in metrics:
+        v1 = r1.get(m, "?")
+        v2 = r2.get(m, "?")
+        print(f"  {m:<20} {v1!s:<20} {v2!s:<20}")
 
 
 if __name__ == "__main__":
