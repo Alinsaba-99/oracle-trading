@@ -1,0 +1,30 @@
+# Oracle Development Configuration
+environment: development
+log_level: DEBUG
+log_json: false
+
+nats:
+  url: nats://localhost:4222
+  timeout: 5.0
+  max_reconnect: 10
+
+redis:
+  url: redis://localhost:6379
+  timeout: 5.0
+  max_connections: 10
+
+questdb:
+  host: localhost
+  port: 9000
+  database: oracle
+
+postgres:
+  dsn: postgresql://oracle:oracle@localhost:5432/oracle
+  pool_size: 10
+  timeout: 5.0
+
+plugins:
+  enabled: true
+  paths:
+    - plugins
+  auto_discover: true

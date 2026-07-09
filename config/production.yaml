@@ -1,0 +1,30 @@
+# Oracle Production Configuration
+environment: production
+log_level: INFO
+log_json: true
+
+nats:
+  url: nats://nats:4222
+  timeout: 3.0
+  max_reconnect: 30
+
+redis:
+  url: redis://redis:6379
+  timeout: 3.0
+  max_connections: 50
+
+questdb:
+  host: questdb
+  port: 9000
+  database: oracle
+
+postgres:
+  dsn: postgresql://oracle:oracle@postgres:5432/oracle
+  pool_size: 20
+  timeout: 3.0
+
+plugins:
+  enabled: true
+  paths:
+    - plugins
+  auto_discover: true

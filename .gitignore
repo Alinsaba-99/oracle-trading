@@ -1,0 +1,74 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage/
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Docker
+docker/data/
+
+# Experiment artifacts
+experiments/*/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# ── GSD baseline (auto-generated) ──
+.gsd
+.gsd-worktrees/
+.gsd-backups/
+.gsd-id
+.mcp.json
+.bg-shell/
+nul
+nul.*
+con
+con.*
+prn
+prn.*
+aux
+aux.*
+com[1-9]
+com[1-9].*
+lpt[1-9]
+lpt[1-9].*
+*~
+*.code-workspace
+.env.*
+!.env.example
+node_modules/
+.next/
+*.pyc
+target/
+vendor/
+.cache/
+tmp/

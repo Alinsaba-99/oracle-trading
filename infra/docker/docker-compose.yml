@@ -1,0 +1,123 @@
+version: "3.8"
+
+x-oracle-common: &oracle-common
+  build:
+    context: ../..
+    dockerfile: infra/docker/Dockerfile
+  env_file:
+    - ../../.env
+  networks:
+    - oracle-net
+  depends_on:
+    nats:
+      condition: service_healthy
+    redis:
+      condition: service_started
+  restart: unless-stopped
+
+services:
+  # ── Event Bus ──
+  nats:
+    image: nats:2.10-alpine
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    command: ["-js", "-sd", "/data/nats"]
+    volumes:
+      - nats-data:/data/nats
+    healthcheck:
+      test: ["CMD", "nats", "server", "ping", "-s", "nats://localhost:4222"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+    networks:
+      - oracle-net
+
+  # ── Cache ──
+  redis:
+    image: redis:7.2-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - oracle-net
+
+  # ── Time-Series DB ──
+  questdb:
+    image: questdb/questdb:8.0
+    ports:
+      - "9000:9000"  # REST API + Web Console
+      - "9009:9009"  # Ingest TCP/UDP
+      - "8812:8812"  # PG Wire protocol
+    volumes:
+      - questdb-data:/var/lib/questdb
+    networks:
+      - oracle-net
+
+  # ── Metadata DB ──
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: oracle
+      POSTGRES_USER: oracle
+      POSTGRES_PASSWORD: oracle_dev
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ../../db/init:/docker-entrypoint-initdb.d
+    networks:
+      - oracle-net
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "oracle"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ── Logs ──
+  loki:
+    image: grafana/loki:3.0
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki-config.yaml:/etc/loki/local-config.yaml
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - oracle-net
+
+  # ── Metrics ──
+  prometheus:
+    image: prom/prometheus:v2.52
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    networks:
+      - oracle-net
+
+  # ── Vector DB ──
+  qdrant:
+    image: qdrant/qdrant:v1.9
+    ports:
+      - "6333:6333"  # REST API
+      - "6334:6334"  # gRPC
+    volumes:
+      - qdrant-data:/qdrant/storage
+    networks:
+      - oracle-net
+
+volumes:
+  nats-data:
+  redis-data:
+  questdb-data:
+  postgres-data:
+  loki-data:
+  prometheus-data:
+  qdrant-data:
+
+networks:
+  oracle-net:
+    driver: bridge
