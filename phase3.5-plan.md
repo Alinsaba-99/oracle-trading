@@ -183,3 +183,24 @@ Target: <100ms per call. Se >100ms → precomputare feature matrix con numpy.
 - **Hypervolume convergence**: per generazione, per isola
 - **Ablation table**: hybrid vs KNN-only vs alpha-only allo stesso seed
 - **Generations_log**: Sharpe max per generazione (bar chart convergenza)
+
+---
+
+## 8. The5ers Evaluation Targets (Prop Firm Barrier)
+
+The5ers Hyper Growth (1-step) è il benchmark per le nostre strategie:
+
+| Metrica | The5ers | Nostro Target |
+|---------|---------|---------------|
+| Profit target | 10% | ≥ 10% |
+| Max drawdown (stop out) | 6% | < 6% |
+| Daily loss limit | 3% | < 3% |
+| Minimo giorni profittevoli | 3 | ≥ 3 |
+| Tempo | Illimitato | N/A |
+| Profit Factor | > 1.67 | > 1.67 |
+
+Tradotto in metriche GA:
+- Sharpe > 0.8 · Sortino > 0.6 · Calmar > 0.3
+- Profit Factor > **1.67** (per passare la valutazione)
+- MaxDD < **6%** · Daily Loss < **3%** (limiti hard)
+- ≥ 3 giorni profittevoli su rolling 5gg (consistenza)
