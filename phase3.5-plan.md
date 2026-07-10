@@ -83,8 +83,8 @@ Risultato: segnali 96% → 44% attivi.
 **T3a: GA Evaluator Refactor — GIORNO 1 (BLOCKER)**
 | File | Cosa |
 |------|------|
-| `genetics/fitness/evaluator.py` | Aggiungere `signal_factory` parameter a FitnessEvaluator.__init__ |
-| `genetics/config.py` | Aggiornare GAConfig con signal_type field |
+| `genetics/genome/protocol.py` | **NUOVO**: `BacktestSignal(Protocol)` — interfaccia condivisa per KNNGenomeToSignal, AlphaGenomeToSignal, HybridGenomeToSignal |
+| `genetics/config.py` | GAConfig.signal_type + checkpoint serialization |
 | `tests/genetics/test_ga_integration.py` | Smoke test: pop=4, gen=2 con HybridGenomeToSignal |
 
 **T3b: HybridGenomeToSignal — GIORNO 2-3**
@@ -154,6 +154,7 @@ Target: <100ms per call. Se >100ms → precomputare feature matrix con numpy.
 - Se `hybrid_knn_w` → 0: KNN non contribuisce → problema feature Lorentziane
 - Se `hybrid_alpha_w` → 0: alpha factors non contribuiscono → problema segnale composito
 - Sharpe medio < 0.5 su 3 seed: 26 parametri troppi per 50 gen → ridurre o aumentare pop
+- **Pre-T3 validation**: testare KNN-only e Alpha-only su SPY PRIMA di costruire ibrido
 
 ## 5. Task Esecuzione (Giorno per Giorno)
 
@@ -173,7 +174,7 @@ Target: <100ms per call. Se >100ms → precomputare feature matrix con numpy.
 | 26 params in 50 gen non converge | Media | Se Sharpe < 0.5, ridurre a KNN-solo + alpha-solo | CEO/Des |
 | KNN performance 3x lenta | Alta | Benchmark Giorno 1; precompute feature matrix | Eng |
 | Regime filter assente → no regime adaptation | Media | Rimandato a Phase 6 — non blocca | CEO |
-| HA cambia statistica feature KNN | Bassa | Documentato: RSI/CCI/ADX su HA, non su raw | Des |
+| HA non cablato in KNN | Alta | **T3b**: `_extract_features()` deve usare `to_heikin_ashi()` | Arch |
 
 ## 7. Showcase Deliverables (T4b output)
 
@@ -236,9 +237,9 @@ di queste valutazioni per essere considerate "efficienti":
 
 ### Come li integriamo nel GA
 
-1. **Profit Factor** come 5° obiettivo NSGA-II (aggiunto ai 4 esistenti)
+1. **Profit Factor** come post-Pareto screen (non 5° obiettivo — NSGA-II >4 obiettivi degrada)
 2. **MaxDD < 6%** e **Daily Loss < 3%** come hard constraint:
-   - Se violati → fitness sentinel (penalizzato)
+   - Constrained dominance (Deb 2002): individui che violano i constraint sono dominati da chiunque li rispetti, indipendentemente dalla fitness
 3. **Giorni profittevoli ≥ 3** come consistency bonus:
-   - Se soddisfatto → moltiplicatore 1.2x sulla fitness
+   - Valutato qualitativamente sul Pareto front — non integrato nella dominance
 4. **Peso maggiorato su Sortino** (downside risk è critico per prop firm)
