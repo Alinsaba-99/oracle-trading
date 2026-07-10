@@ -1,7 +1,8 @@
 # Phase 4 — Multi-Agent System (LangGraph)
 
-> 6 settimane · 8 task · Orchestrazione multi-agente LLM con debate, risk management e portfolio decision
-> Base: Phase 3 Genetic Engine completato · Dipendenza: LangGraph (nuovo) + librerie LLM
+> 6 settimane · 9 task · Orchestrazione multi-agente LLM con debate, risk management e portfolio decision
+> Base: Phase 3 Genetic Engine completato · Dipendenza: LangGraph + litellm
+> Review: CEO (8.5KB) + Engineering (19.2KB) + Design (6.6KB) — 3 revisioni incorporate
 
 ---
 
@@ -12,29 +13,32 @@
 │   MARKET ORACLE (regime-aware)                                          │
 │   Determina: regime trend/vol/liquidità, fase mercato, risk-on/off      │
 ├─────────────────────────────────────────────────────────────────────────┤
-│                        ANALYST POOL (paralleli)                          │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐ │
-│  │  MACRO   │  │TECHNICAL │  │FUNDAMENT.│  │SENTIMENT │  │  ALPHA   │ │
-│  │ Analyst  │  │ Analyst  │  │ Analyst  │  │ Analyst  │  │Researcher│ │
-│  └──────────┘  └──────────┘  └──────────┘  └──────────┘  └──────────┘ │
-│  Ogni agente: analizza → produce voto + confidence + reasoning          │
+│                    ANALYST POOL × 3 (paralleli)                         │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐                  │
+│  │    MACRO     │  │  TECHNICAL   │  │  SENTIMENT   │                  │
+│  │   Analyst    │  │   Analyst    │  │   Analyst    │                  │
+│  └──────────────┘  └──────────────┘  └──────────────┘                  │
+│  Ogni agente: analizza → voto + confidence + reasoning + blind_spot    │
+│  Fundamental + Factor Analyst: DEFERRED a Phase 5                      │
 ├─────────────────────────────────────────────────────────────────────────┤
-│                        DEBATE TEAM                                     │
+│                        DEBATE TEAM (2 round)                           │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐             │
 │  │  BULL (pro)  │  │ BEAR (con)   │  │ DEVIL'S ADVOCATE │             │
 │  └──────────────┘  └──────────────┘  └──────────────────┘             │
-│  1 round: Bull presenta tesi, Bear contesta, DA trova terza via        │
+│   Round 1: Bull tesi → Bear contra → DA sintesi                        │
+│   Round 2: Rebuttal (opzionale se divergenza > 0.3)                    │
 ├─────────────────────────────────────────────────────────────────────────┤
-│                        DECISION LAYER                                   │
+│                        DECISION LAYER (deterministico)                  │
 │  ┌────────────────────┐  ┌────────────────────┐                         │
 │  │   RISK MANAGER     │  │ PORTFOLIO MANAGER  │                         │
-│  │  Position sizing   │  │  Decisione finale  │                         │
-│  │  VaR/CVaR limits   │  │  BUY/SELL/HOLD     │                         │
-│  │  Drawdown control  │  │  Allocazione       │                         │
+│  │  Kelly fraction    │  │  Weighted vote agg  │                         │
+│  │  VaR/CVaR limits   │  │  Sentenza finale   │                         │
+│  │  Drawdown control  │  │  BUY/SELL/HOLD      │                         │
+│  │  Corr check        │  │  0% LLM — solo deterministico               │
 │  └────────────────────┘  └────────────────────┘                         │
 ├─────────────────────────────────────────────────────────────────────────┤
 │   GENETIC STRATEGIST (ponte con Phase 3)                                │
-│   Legge Pareto front da GeneticEngine → suggerisce strategie candidate   │
+│   Legge Pareto front da GeneticEngine → suggerisce strategie candidate  │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -43,341 +47,307 @@
 | # | Principio | Conseguenza |
 |---|-----------|-------------|
 | 1 | **LLM = Consulente** | LLM analizza e dibatte — mai decide un trade |
-| 2 | **Separazione Det/LLM** | Calcoli numerici in codice deterministico, LLM per sintesi |
-| 3 | **Debate Strutturato** | Bull/Bear/DA prima di ogni decisione |
-| 4 | **Fail Closed** | Se un agente fallisce → NO TRADE, non default all'azione |
+| 2 | **Separazione Det/LLM** | RiskManager + PortfolioManager = 0% LLM |
+| 3 | **Debate Strutturato** | 2 round con rebuttal |
+| 4 | **Fail Closed** | Se un agente fallisce → NO TRADE |
 | 5 | **Riproducibilità** | Ogni run MAS loggata su Experiment Registry |
+| 6 | **Confidence Calibrated** | Voto LLM pesato per accuratezza storica |
 
 ---
 
-## 2. Task Breakdown
+## 2. Decisioni Architetturali (per Review)
 
-### Task 1: Foundation & Protocolli (`agents/` — Week 1)
+| Review | Issue | Decision |
+|--------|-------|----------|
+| CEO | 5 analyst = troppo per v1 | **3 analyst**: Macro, Technical, Sentiment. Fundamental + Factor Analyst deferred a Phase 5 |
+| CEO | Confidence calibration assente | **Task esplicito**: confidence tracker + historical accuracy weighting |
+| CEO | Timeline irrealistica | 6 settimane confermato ma solo 3 analyst + rebuttal ridotto |
+| Eng | `@dataclass` vs `BaseModel` | **pydantic.BaseModel** dappertutto — consistenza con codebase |
+| Eng | TypedDict MASState fragile | `MASState` come `BaseModel` frozen |
+| Eng | LLM accoppiato a langchain | **LLMClient protocol** + adapter |
+| Eng | Timeout / retry mancanti | Per-agent timeout + circuit breaker + retry policy |
+| Eng | LangGraph lock-in | **Adapter layer** attorno a LangGraph |
+| Eng | Cache LLM mancante | Response cache keyed su (prompt_hash + data_hash) |
+| Eng | EventBus gap | Market data entra via EventBusClient esistente |
+| Eng | AnalystInput indefinito | Protocollo `AnalystInput` con specifica esatta |
+| Design | PortfolioManager LLM? | **0% LLM** — determinismo puro |
+| Design | 1 round debate = teatro | **2 round** con rebuttal |
+| Design | Alpha Researcher vago | Deferito a Phase 5 come Factor Analyst |
+| Design | CLI output mancanti | Modalità `--json`, `--table`, `--verbose` |
+| Design | Modello fallback assente | Catena di fallback (GPT-4 → GPT-3.5 → locale) |
+| Design | Prompt versioning | Hash promemoria in metadata AnalystSignal |
+| Design | Cost tracking | Token/run su Experiment Registry |
+| Design | Output validator | Schema validator per risposte LLM |
 
-**Files:**
-| File | Scopo |
-|------|-------|
-| `agents/__init__.py` | Esporta: MASOrchestrator, AgentSignal, tutte le factory |
-| `agents/config.py` | `MASConfig` (Pydantic): model config, agent list, debate rounds |
-| `agents/protocol.py` | `AgentInput`, `AgentOutput`, `AgentVote`, `AnalystSignal` protocolli |
-| `agents/errors.py` | `AgentError`, `ModelCallError`, `DebateTimeoutError` |
+---
 
-**Protocolli chiave:**
+## 3. Protocolli (pydantic.BaseModel, non dataclass)
 
 ```python
-@dataclass
-class AgentVote:
+class AgentVote(BaseModel):
     direction: Literal["buy", "sell", "hold"]
     confidence: float           # 0.0-1.0
-    reasoning: str              # LLM output testuale
-    risk_score: float | None    # 0 (safe) - 1 (risky)
+    reasoning: str
+    risk_score: float | None = None  # 0 (safe) - 1 (risky)
 
-@dataclass
-class AnalystSignal:
-    source: str                  # "macro", "technical", "fundamental", "sentiment", "alpha"
-    vote: AgentVote
-    metadata: dict               # indicatori specifici dell'agente
-    model: str                   # modello LLM usato
-
-@dataclass
-class DebateResult:
-    bull_case: AnalystSignal
-    bear_case: AnalystSignal
-    da_analysis: str
-    consensus: AgentVote | None  # None = no consensus
-    disagreements: list[str]
-
-@dataclass
-class PortfolioDecision:
-    direction: Literal["buy", "sell", "hold"]
+class AnalystInput(BaseModel):
     instrument: str
-    position_size: float         # % of capital
+    ohlcv: Any  # pl.DataFrame — type: ignore[valid-type]
+    market_state: "MarketState"
+    agent_specific_data: dict[str, Any]  # indicatori pre-calcolati
+
+class AnalystSignal(BaseModel):
+    source: Literal["macro", "technical", "sentiment"]
+    vote: AgentVote
+    metadata: dict[str, Any]
+    blind_spot: str
+    prompt_hash: str = ""       # per tracciabilità versioni prompt
+    model: str = ""             # modello LLM usato
+    tokens_used: int = 0        # per cost tracking
+
+class DebateResult(BaseModel, frozen=True):
+    round_1: dict  # bull + bear + da
+    round_2: dict | None = None  # rebuttal se divergenza > 0.3
+    consensus: AgentVote | None = None
+    disagreements: list[str] = []
+    debate_quality: float = 0.0  # 0-1 da DebateScorer
+
+class MarketState(BaseModel, frozen=True):
+    regime: str                 # bull, bear, choppy
+    phase: str                  # accumulation, markup, distribution, markdown
+    volatility: str             # low, medium, high, panic
+    liquidity: str              # normal, tight, crisis
+    risk_appetite: str          # risk_on, risk_off
+    narrative: str = ""         # LLM narrative (solo testo)
+
+class RiskAssessment(BaseModel, frozen=True):
+    approved: bool
+    max_position_size: float
+    kelly_fraction: float
+    var_95: float
+    reasons: list[str]
+
+class PortfolioDecision(BaseModel, frozen=True):
+    direction: Literal["buy", "sell", "hold", "no_trade"]
+    instrument: str
+    position_size: float
     confidence: float
     reasoning: str
     agents_contributing: list[str]
     regime_at_decision: str
     risk_approved: bool
-```
+    escalated: bool = False
 
-**Dipendenza:** `pip install langgraph langchain-core langchain-openai` (o litellm)
-
----
-
-### Task 2: Market Oracle (`agents/oracle/` — Week 1)
-
-**Files:**
-| File | Scopo |
-|------|-------|
-| `agents/oracle/__init__.py` | Esporta: MarketOracle |
-| `agents/oracle/oracle.py` | `MarketOracle`: sintesi regime + fase + vol + liquidità |
-| `agents/oracle/synthesizer.py` | LLM synthesis: prende dati regime deterministici e produce narrative |
-| `agents/oracle/types.py` | `MarketState`: regime, fase, vol, liquidità, risk-on/off, confidence |
-
-**Pattern:**
-```python
-class MarketOracle:
-    """Sintetizza lo stato di mercato combinando regime detection deterministica + LLM narrative."""
-
-    def __init__(self, regime_detector, llm_client):
-        self._detector = regime_detector
-        self._llm = llm_client
-
-    async def analyze(self, market_data: pl.DataFrame) -> MarketState:
-        # 1. Regime detection deterministica (Phase 1) → regime, fase, vol, corr
-        regime = self._detector.detect(market_data)
-        # 2. LLM narrative context (solo testo, nessuna decisione)
-        narrative = await self._llm.synthesize(regime)
-        # 3. MarketState completo
-        return MarketState(
-            regime=regime.regime, phase=regime.phase,
-            volatility=regime.volatility, liquidity=regime.liquidity,
-            risk_appetite="risk_on" if regime.regime in ("bull",) else "risk_off",
-            narrative=narrative,
-        )
+class MASState(BaseModel, frozen=True):
+    market_data: Any | None = None        # pl.DataFrame
+    market_state: MarketState | None = None
+    analyst_signals: list[AnalystSignal] = []
+    debate: DebateResult | None = None
+    risk_assessment: RiskAssessment | None = None
+    decision: PortfolioDecision | None = None
+    errors: list[str] = []
+    run_id: str = ""
+    total_tokens: int = 0
+    timing: dict[str, float] = {}
 ```
 
 ---
 
-### Task 3: Analyst Agents (`agents/analysts/` — Week 2)
+## 4. LLMClient Protocol
 
-**5 agenti paralleli**, ognuno in un file separato. Ogni agente:
-1. Riceve input: DataFrame OHLCV + market state + indicatori specifici
-2. Chiama LLM con prompt strutturato
-3. Produce `AnalystSignal` con voto + confidence + reasoning
-
-| File | Agente | Input Unico |
-|------|--------|-------------|
-| `agents/analysts/macro.py` | Macro Analyst | GDP, CPI, rates, yield curve, PMI (from `analytics.macro`) |
-| `agents/analysts/technical.py` | Technical Analyst | RSI, MACD, BB, SMA, volume (from `analytics.technical`) |
-| `agents/analysts/fundamental.py` | Fundamental Analyst | P/E, ROE, D/E, DCF (from `analytics.fundamental`) |
-| `agents/analysts/sentiment.py` | Sentiment Analyst | Sentiment scores, news (from `analytics.sentiment`) |
-| `agents/analysts/alpha.py` | Alpha Researcher | Factor exposures, alpha signals (from `genetics.alpha`) |
-| `agents/analysts/factory.py` | Factory | `create_analyst(type, llm_client) → BaseAnalyst` |
-
-**Protocollo BaseAnalyst:**
 ```python
-class BaseAnalyst(ABC):
-    @abstractmethod
-    async def analyze(self, data: AnalystInput) -> AnalystSignal:
-        """Analizza i dati e produce un voto strutturato."""
-        ...
+class LLMClient(Protocol):
+    """Adapter protocol — isola il MAS da LangChain/litellm."""
+    async def structured_call(
+        self,
+        system_prompt: str,
+        user_prompt: str,
+        response_model: type[BaseModel],
+        temperature: float = 0.1,
+        timeout_s: float = 30.0,
+    ) -> BaseModel: ...
 
     @property
-    @abstractmethod
-    def blind_spot(self) -> str:
-        """Descrizione del blind spot — per il debate team."""
-        ...
+    def model_name(self) -> str: ...
+
+    async def count_tokens(self, text: str) -> int: ...
 ```
+
+Implementazione default: `LangChainLLMClient(langchain_openai.ChatOpenAI)`.
+Fallback chain: GPT-4 → GPT-3.5 → locale.
 
 ---
 
-### Task 4: Debate Team (`agents/debate/` — Week 3)
+## 5. Task Breakdown
 
-**Files:**
+### Week 1: Foundation + Oracle
+
+**T1: Foundation (`agents/`) — 2 giorni**
 | File | Scopo |
 |------|-------|
-| `agents/debate/__init__.py` | Esporta: DebateTeam, DebateResult |
-| `agents/debate/team.py` | `DebateTeam`: orchestrazione debate a 3 voci |
-| `agents/debate/prompts.py` | Prompt template per Bull/Bear/Devil's Advocate |
-| `agents/debate/scorer.py` | `DebateScorer`: scoring quantitativo della qualità del debate |
+| `agents/__init__.py` | MASOrchestrator, tutti i protocolli |
+| `agents/config.py` | `MASConfig` (pydantic): model config, agent list, debate rounds |
+| `agents/protocol.py` | Tutti i protocolli sopra (AgentVote, AnalystSignal, PortfolioDecision, ecc.) |
+| `agents/errors.py` | AgentError, ModelCallError, DebateTimeoutError, CircuitBreakerOpen |
+| `agents/llm.py` | `LLMClient` protocol + `LangChainLLMClient` + fallback chain |
+| `agents/cache.py` | `LLMResponseCache`: LRU keyed su (prompt_hash + data_hash) |
+| `agents/confidence.py` | `ConfidenceTracker`: accuracy storica per agente, calibration weights |
+| `tests/agents/test_protocol.py` | 8+ test: serializzazione, validazione, frozen |
 
-**Flusso Debate:**
-```
-1. BULL presenta: "Compra SPY perché momentum + macro"
-2. BEAR contesta: "RSI in overbought, vol in aumento"
-3. DEVIL'S ADVOCATE: "Entrambi ignorano il regime FOMC"
-4. Consensus? → se confidence medio > 0.7, produce voto unificato
-         no? → PortfolioManager decide con voto pesato
-```
-
----
-
-### Task 5: Decision Layer (`agents/decision/` — Week 3-4)
-
-**Files:**
+**T2: Market Oracle (`agents/oracle/`) — 3 giorni**
 | File | Scopo |
 |------|-------|
-| `agents/decision/__init__.py` | Esporta: RiskManager, PortfolioManager |
-| `agents/decision/risk.py` | `RiskManager`: position sizing, VaR/CVaR, drawdown, correlation check, Kelly |
-| `agents/decision/portfolio.py` | `PortfolioManager`: decisione finale, allocazione, rebalancing |
-| `agents/decision/policy.py` | Bridge a PolicyEngine (Phase 0): hard/soft limits |
-| `agents/decision/scoring.py` | `SignalScorer`: weighted vote aggregation |
+| `agents/oracle/__init__.py` | MarketOracle |
+| `agents/oracle/oracle.py` | `MarketOracle`: regime detection + LLM narrative |
+| `agents/oracle/synthesizer.py` | LLM synthesis: dati deterministici → contesto testuale |
+| `tests/agents/test_oracle.py` | 6+ test: mock regime detector |
 
-**RiskManager (deterministico puro, nessun LLM):**
-```python
-class RiskManager:
-    """Calcoli deterministici di rischio. MAI un LLM qua dentro."""
+### Week 2: Analyst Agents
 
-    def kelly_fraction(self, win_rate: float, avg_win: float, avg_loss: float) -> float: ...
-    def var(self, returns: pl.Series, alpha: float = 0.05) -> float: ...
-    def max_position_size(self, equity: float, volatility: float) -> float: ...
-    def correlation_check(self, instrument: str, portfolio: Portfolio) -> bool: ...
-    def approve(self, decision: PortfolioDecision) -> PortfolioDecision:
-        """Applica hard limits. Se violato → NO TRADE."""
-        ...
-```
+**T3: 3 Analyst Agents (`agents/analysts/`) — 4 giorni**
+| File | Agente | Input Unico |
+|------|--------|-------------|
+| `agents/analysts/macro.py` | Macro Analyst | GDP, CPI, rates, yield curve (from `analytics.macro`) |
+| `agents/analysts/technical.py` | Technical Analyst | RSI, MACD, BB, volume (from `analytics.technical`) |
+| `agents/analysts/sentiment.py` | Sentiment Analyst | Sentiment scores (from `analytics.sentiment`) |
+| `agents/analysts/factory.py` | Factory | `create_analyst(type, llm, config) → BaseAnalyst` |
+| `agents/analysts/__init__.py` | Re-export | BaseAnalyst, 3 factory functions |
 
----
+Ogni agente: 10+ test con mock LLM, prompt strutturato, output schema JSON.
 
-### Task 6: Genetic Strategist (`agents/genetic/` — Week 4)
+### Week 3: Debate + Decision Layer
 
-**Files:**
+**T4: Debate Team (`agents/debate/`) — 3 giorni**
 | File | Scopo |
 |------|-------|
-| `agents/genetic/__init__.py` | Esporta: GeneticStrategist |
-| `agents/genetic/strategist.py` | `GeneticStrategist`: bridge Phase 3 → Phase 4 |
-| `agents/genetic/adapter.py` | Adatta `GAResult` in formato interpretabile dagli agenti |
+| `agents/debate/__init__.py` | DebateTeam, DebateResult |
+| `agents/debate/team.py` | `DebateTeam`: 2-round orchestrazione |
+| `agents/debate/prompts.py` | Prompt template per Bull/Bear/DA + rebuttal |
+| `agents/debate/scorer.py` | `DebateScorer`: qualità argomenti, coerenza, copertura |
+| `tests/agents/test_debate.py` | 8+ test: debate flow, rebuttal, timeout |
 
-**Pattern:**
-```python
-class GeneticStrategist:
-    """Legge il Pareto front dal GeneticEngine e produce suggerimenti strategici."""
-
-    def __init__(self, engine: GeneticEngine, ga_config: GAConfig):
-        self._engine = engine
-        self._config = ga_config
-
-    async def suggest_strategies(self, market_state: MarketState) -> list[StrategySuggestion]:
-        """Carica il Pareto front corrente e filtra per regime di mercato."""
-        # 1. Recupera Pareto front
-        result = await self._engine.run(...)
-        # 2. Filtra per regime corrente (solo strategie appropriate al market state)
-        filtered = self._filter_by_regime(result.pareto_front, market_state)
-        # 3. Produce suggerimenti strutturati per gli agenti
-        return [self._to_suggestion(ind, i) for i, ind in enumerate(filtered[:5])]
-```
-
----
-
-### Task 7: MAS Orchestrator (`agents/orchestrator/` — Week 5)
-
-**Files:**
+**T5: Decision Layer (`agents/decision/`) — 3 giorni**
 | File | Scopo |
 |------|-------|
-| `agents/orchestrator/__init__.py` | Esporta: MASOrchestrator |
-| `agents/orchestrator/orchestrator.py` | `MASOrchestrator`: LangGraph workflow, ciclo di vita, signal handler |
-| `agents/orchestrator/graph.py` | LangGraph state graph: definisce nodi e archi |
-| `agents/orchestrator/state.py` | `MASState`: definizione dello stato condiviso del grafo |
-| `agents/orchestrator/runner.py` | `MASRunner`: CLI runner, flusso single-shot vs watch loop |
+| `agents/decision/__init__.py` | RiskManager, PortfolioManager |
+| `agents/decision/risk.py` | `RiskManager`: Kelly, VaR/CVaR, drawdown, correlation, max position |
+| `agents/decision/portfolio.py` | `PortfolioManager`: weighted vote, sentenza, escalate handler |
+| `agents/decision/scoring.py` | `SignalScorer`: weighted vote per confidence + accuracy storica |
+| `agents/decision/policy.py` | Bridge a PolicyEngine (Phase 0) |
+| `tests/agents/test_risk.py` | 10+ test: Kelly, VaR, edge cases |
+| `tests/agents/test_portfolio.py` | 6+ test: vote aggregation, escalate, no-trade |
 
-**LangGraph State:**
-```python
-class MASState(TypedDict):
-    market_data: pl.DataFrame           # OHLCV input
-    market_state: MarketState           # Dal Market Oracle
-    analyst_signals: list[AnalystSignal]  # Dai 5 analyst
-    debate: DebateResult | None          # Dal debate team
-    risk_assessment: RiskAssessment | None  # Dal Risk Manager
-    decision: PortfolioDecision | None    # Decisione finale
-    execution_result: dict | None         # Risultato (Phase 5)
-    errors: list[str]                     # Errori raccolti
-```
+### Week 4: Genetic Strategist
 
-**LangGraph workflow:**
-```python
-def build_graph() -> StateGraph:
-    """Costruisce il grafo del sistema multi-agente."""
-    graph = StateGraph(MASState)
-
-    # Nodi
-    graph.add_node("oracle", MarketOracleNode())
-    graph.add_node("analysts", AnalystPoolNode())      # parallelo
-    graph.add_node("debate", DebateTeamNode())
-    graph.add_node("risk", RiskManagerNode())
-    graph.add_node("portfolio", PortfolioManagerNode())
-
-    # Archi
-    graph.set_entry_point("oracle")
-    graph.add_edge("oracle", "analysts")
-    graph.add_edge("analysts", "debate")
-    graph.add_conditional_edges(
-        "debate",
-        router,  # se consensus → salta risk? No, risk sempre
-        {"risk": "risk", "escalate": "portfolio"},
-    )
-    graph.add_edge("risk", "portfolio")
-    graph.add_edge("portfolio", END)
-    return graph.compile()
-```
-
----
-
-### Task 8: CLI + Test + Commit (`apps/` + `tests/` — Week 6)
-
-**Files:**
+**T6: Genetic Strategist (`agents/genetic/`) — 4 giorni**
 | File | Scopo |
 |------|-------|
-| `apps/cli/main.py` | Aggiunge `oracle agent run`, `oracle agent debate`, `oracle agent status` |
-| `tests/agents/test_protocol.py` | 6+ test: serializzazione, validazione, edge cases |
-| `tests/agents/test_oracle.py` | 6+ test: MarketOracle con mock regime detector |
-| `tests/agents/test_analysts.py` | 10+ test: ogni agente con mock LLM |
-| `tests/agents/test_debate.py` | 6+ test: debate flow, consensus, timeout |
-| `tests/agents/test_risk.py` | 8+ test: Kelly, VaR, position sizing, correlation check |
-| `tests/agents/test_portfolio.py` | 6+ test: decision aggregation, rebalancing |
-| `tests/agents/test_genetic.py` | 4+ test: GeneticStrategist adapter |
-| `tests/agents/test_mas.py` | 4+ test: LangGraph end-to-end (mock LLM) |
+| `agents/genetic/__init__.py` | GeneticStrategist |
+| `agents/genetic/strategist.py` | `GeneticStrategist`: pareto front → suggestions |
+| `agents/genetic/adapter.py` | Adatta `GAResult` → agent-readable `StrategySuggestion` |
+| `agents/genetic/registry.py` | Legge experiment passati da Experiment Registry |
+| `tests/agents/test_genetic.py` | 6+ test: Pareto parsing, filtering, integration |
+
+### Week 5: MAS Orchestrator
+
+**T7: MAS Orchestrator (`agents/orchestrator/`) — 5 giorni**
+| File | Scopo |
+|------|-------|
+| `agents/orchestrator/__init__.py` | MASOrchestrator |
+| `agents/orchestrator/orchestrator.py` | `MASOrchestrator`: lifecycle, signal handler, run loop |
+| `agents/orchestrator/graph.py` | LangGraph state graph + adapter layer |
+| `agents/orchestrator/graph_adapter.py` | Isola LangGraph dietro `WorkflowEngine` protocol |
+| `agents/orchestrator/state.py` | `MASState` (da protocolli) |
+| `agents/orchestrator/runner.py` | `MASRunner`: CLI bridge, single-shot vs watch loop |
+| `tests/agents/test_mas.py` | 6+ test: end-to-end con mock LLM |
+
+### Week 6: CLI + Test + Commit
+
+**T8: CLI + Esperimenti — 3 giorni**
+| File | Scopo |
+|------|-------|
+| `apps/cli/main.py` | Aggiunge `oracle agent run` con `--json`, `--table`, `--verbose` |
+| `apps/cli/agent_commands.py` | Implementazione comandi agent |
+| `experiments/scripts/run_mas.py` | MAS experiment runner batch |
+| `experiments/scripts/analyze_mas.py` | Analisi decisioni passate, confidence calibration |
+
+**T9: Test finale + Commit — 2 giorni**
+- `ruff check agents/ apps/` clean
+- `mypy --strict agents/ apps/` clean
+- `pytest tests/agents/ -q` ≥ 60 test
+- `python showcase.py` → 18/18 componenti
+- Commit finale
 
 ---
 
-## 3. Test Plan
+## 6. Test Plan
 
 | Categoria | Tests | Copertura |
 |-----------|-------|-----------|
 | **Unit (deterministico)** | RiskManager, PortfolioManager, SignalScorer | 100% — niente LLM |
-| **Unit (mock LLM)** | Analyst agents, Debate team, Market Oracle | Tutti i percorsi logici |
-| **Integration** | LangGraph end-to-end (mock LLM), CLI commands | Flusso completo |
-| **Edge Cases** | Tutti gli agenti timeout, consensus failure, risk rejection, empty data | Fallimenti graceful |
+| **Unit (mock LLM)** | Analyst agents, Debate team, Market Oracle | Prompt flow, parsing, errori |
+| **Integration** | MAS end-to-end (mock LLM), CLI | Flusso completo |
+| **Confidence** | ConfidenceTracker, calibration weights | Accuratezza storica |
+| **Edge Cases** | Timeout, circuit breaker, consensus failure, risk rejection | Fallimenti graceful |
+| **LLM Fallback** | Catena GPT-4→3.5→locale su fallimento | Resilienza |
 
 ---
 
-## 4. Success Criteria
+## 7. Success Criteria
 
-1. `oracle agent run --instrument SPY` produce decisione BUY/SELL/HOLD in <30s
-2. 5 analyst agents producono voti indipendenti (non correlated)
-3. Debate team non raggiunge sempre consensus — disaccordo produttivo dimostrabile
-4. RiskManager blocca posizioni che violano hard limits (testato)
-5. GeneticStrategist produce suggerimenti da Pareto front reale
-6. `ruff check agents/` + `mypy --strict agents/` clean
-7. `pytest tests/agents/` ≥ 50 test
-8. LangGraph grafo visualizzabile (`graph.get_graph().draw_mermaid_png()`)
+1. `oracle agent run --instrument SPY` → PortfolioDecision in <30s
+2. `oracle agent run --instrument SPY --json` → JSON strutturato
+3. 3 analyst agents producono voti indipendenti (non sempre correlated)
+4. Debate team NON raggiunge sempre consensus (disaccordo = feature)
+5. RiskManager blocca posizioni che violano hard limits
+6. ConfidenceTracker calibra voti LLM per accuratezza storica
+7. Se un LLM fallisce, catena di fallback attiva
+8. `ruff check agents/` clean + `mypy --strict agents/` clean
+9. `pytest tests/agents/` ≥ 60 test
+10. LangGraph grafo visualizzabile
 
 ---
 
-## 5. Dipendenze Nuove
+## 8. Dipendenze Nuove
 
 ```toml
 agents = [
-    "langgraph>=0.3",
-    "langchain-core>=0.3",
-    "langchain-openai>=0.3",  # o litellm per multi-provider
+    "litellm>=1.60",        # multi-provider LLM (OpenAI, Anthropic, locale)
+    "langgraph>=0.3",        # orchestratore stato
 ]
 dev = [
     "pytest-asyncio>=0.24",
 ]
 ```
 
+LangChain rimosso dalle dipendenze — uso `litellm` direttamente via LLMClient protocol, riducendo dipendenze e complessità.
+
 ---
 
-## 6. Rischi e Mitigazioni
+## 9. Rischi e Mitigazioni
 
 | Rischio | Probabilità | Mitigazione |
 |---------|-------------|-------------|
-| **LLM token cost elevato** | Alta | Ogni agente chiama LLM una volta per run; debate 2-3 chiamate totali |
-| **LLM allucina analisi finanziaria** | Media | Prompt strutturati + schema di output JSON forzato |
-| **Debate non converge mai** | Media | PortfolioManager decide con weighted vote se timeout |
-| **LangGraph breaking changes** | Bassa | API stabile v0.3+; isolare in adapter se necessario |
-| **Genetic Strategist lento** | Media | GA run asincrona in background; cache Pareto front |
-| **Overconfidence LLM** | Alta | Confidence calibration: voto LLM pesato per accuratezza storica |
+| **LLM token cost elevato** | Alta | Cache LLMResponseCache riduce chiamate identiche; 3 agenti (non 5) = 40% meno token |
+| **LLM allucina analisi** | Media | Output JSON forzato + schema validator; confidence tracking storico |
+| **Debate non converge** | Media | PortfolioManager decide con weighted vote; 2-round garantisce profondità |
+| **LangGraph breaking changes** | Bassa | GraphAdapter isola LangGraph; se cambia, si riscrive solo l'adapter |
+| **Overconfidence LLM** | Alta | **ConfidenceTracker**: peso voto per accuratezza storica; calibration esplicita |
+| **Provider LLM down** | Media | Fallback chain: GPT-4 → GPT-3.5 → locale (Ollama) |
+| **Circuit breaker aperto** | Bassa | Retry con backoff esponenziale; dopo N fallimenti, skip agente + log |
 
 ---
 
-## 7. Esecuzione Consigliata (Team Mode)
+## 10. Esecuzione Consigliata (Team Mode)
 
 ```
-Week 1:  T1 (Foundation + protocolli) + T2 (Market Oracle) — paralleli
-Week 2:  T3 (5 Analyst Agents + factory) — parallelo interno
-Week 3:  T4 (Debate Team) + T5 (Decision Layer) — paralleli
+Week 1:  T1 (Foundation: protocolli BaseModel, LLMClient, cache, confidence)
+         T2 (Market Oracle: oracle + synthesizer)
+Week 2:  T3 (3 Analyst Agents: Macro, Technical, Sentiment + factory)
+Week 3:  T4 (Debate Team: 2-round + rebuttal + scoring)
+         T5 (Decision Layer: RiskManager + PortfolioManager — 0% LLM)
 Week 4:  T6 (Genetic Strategist bridge)
-Week 5:  T7 (MAS Orchestrator + LangGraph graph)
-Week 6:  T8 (CLI + test + commit)
+Week 5:  T7 (MAS Orchestrator: LangGraph + adapter + runner)
+Week 6:  T8 (CLI: --json/--table/--verbose)
+         T9 (test + ruff + mypy + commit)
 ```
