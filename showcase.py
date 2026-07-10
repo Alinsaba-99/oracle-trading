@@ -27,7 +27,7 @@ def heading(n: int, title: str) -> None:
     print(f"{'─' * 60}")
 
 
-def fetch_data(ticker: str, start_s: str = "2015-01-01", end_s: str = "2020-12-31") -> pl.DataFrame:
+def fetch_data(ticker: str, start_s: str = "2010-01-01", end_s: str = "2020-12-31") -> pl.DataFrame:
     """Scarica dati reali da Yahoo Finance e restituisce un Polars DataFrame."""
     t = yf.Ticker(ticker)
     hist = t.history(start=start_s, end=end_s)

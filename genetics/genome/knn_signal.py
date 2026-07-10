@@ -193,7 +193,7 @@ class KNNGenomeToSignal:
         class_weight = max(0.1, float(self._raw.get("class_weight", 0.7)))
 
         result = np.zeros(n, dtype=np.int8)
-        lookback = min(n // 2, 200)
+        lookback = min(n // 2, 100)
         min_bars = max(k + 1, lookback // 10)
         weights_row = weights[np.newaxis, :]  # pre-shaped for broadcasting
 
