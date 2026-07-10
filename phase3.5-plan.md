@@ -204,3 +204,41 @@ Tradotto in metriche GA:
 - Profit Factor > **1.67** (per passare la valutazione)
 - MaxDD < **6%** · Daily Loss < **3%** (limiti hard)
 - ≥ 3 giorni profittevoli su rolling 5gg (consistenza)
+
+---
+
+## 9. Benchmark: 3 Prop Firm Evaluation Rules
+
+Target consolidato per l'ottimizzazione GA — le strategie devono passare ALMENO una
+di queste valutazioni per essere considerate "efficienti":
+
+| Metrica | The5ers Hyper | Lucid Pro | Lucid Flex |
+|---------|---------------|-----------|------------|
+| Profit target | **10%** | **6%** ($3k/$50k) | **8%** |
+| Max drawdown | **6%** | **4%** ($2k/$50k) | **5%** |
+| Daily loss limit | **3%** | **2.4%** ($1.2k/$50k) | **3%** |
+| Min profitable days | 3 | Nessuno | 5 |
+| Consistenza | No | Sì (30% max giornaliero) | Sì (30% max) |
+| Profit Factor minimo | **> 1.67** | **> 1.50** | **> 1.60** |
+
+### Target GA Unificato (The5ers + Lucid)
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  PROFIT FACTOR > 1.67   (obiettivo primario — passare valutazione)  │
+│  MAX DRAWDOWN < 6%       (hard constraint — stop out)                │
+│  DAILY LOSS < 3%         (hard constraint — daily limit)             │
+│  GIORNI PROFITTEVOLI ≥ 3 (consistenza)                              │
+│  SHARPE > 0.8            (obiettivo secondario)                      │
+│  SORTINO > 0.6           (downside risk)                             │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Come li integriamo nel GA
+
+1. **Profit Factor** come 5° obiettivo NSGA-II (aggiunto ai 4 esistenti)
+2. **MaxDD < 6%** e **Daily Loss < 3%** come hard constraint:
+   - Se violati → fitness sentinel (penalizzato)
+3. **Giorni profittevoli ≥ 3** come consistency bonus:
+   - Se soddisfatto → moltiplicatore 1.2x sulla fitness
+4. **Peso maggiorato su Sortino** (downside risk è critico per prop firm)
