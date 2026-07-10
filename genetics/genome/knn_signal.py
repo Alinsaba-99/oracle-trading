@@ -5,7 +5,8 @@ into a GA-optimisable BacktestSignal for Oracle.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Sequence
+from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -102,7 +103,10 @@ def _compute_mom(close: np.ndarray, period: int = 12) -> np.ndarray:
 def _lorentzian_distance(
     a: np.ndarray, b: np.ndarray, weights: np.ndarray | None = None
 ) -> float:
-    """Lorentzian distance: sum(wn * ln(1 + |an - bn|))."""
+    """Lorentzian distance: sum(wn * ln(1 + |an - bn|)).
+
+    When *weights* is None, all features are equally weighted.
+    """
     diff = np.abs(a - b)
     if weights is not None:
         diff = diff * weights
@@ -110,7 +114,7 @@ def _lorentzian_distance(
 
 
 def _extract_features(
-    data: "pl.DataFrame",
+    data: pl.DataFrame,
     periods: dict[str, int] | None = None,
 ) -> np.ndarray:
     """Compute feature matrix [RSI, CCI, ADX, WaveTrend, Momentum] z-scored."""
@@ -144,13 +148,13 @@ class KNNGenomeToSignal:
     def __init__(
         self,
         genome: Genome,
-        param_defs: Sequence[GenomeParameter],
+        param_defs: Sequence[GenomeParameter],  # noqa: ARG002 — protocol compat
     ) -> None:
         from genetics.genome.signal import decode
 
         self._raw = decode(genome)
 
-    def compute(self, data: "pl.DataFrame") -> "pl.Series":
+    def compute(self, data: pl.DataFrame) -> pl.Series:
         import polars as pl
 
         n = len(data)
@@ -178,7 +182,6 @@ class KNNGenomeToSignal:
         ws = weights.sum()
         if ws > 0:
             weights = weights / ws
-
         features = _extract_features(data, periods)
         close = data["close"].to_numpy()
 
@@ -190,46 +193,42 @@ class KNNGenomeToSignal:
         class_weight = max(0.1, float(self._raw.get("class_weight", 0.7)))
 
         result = np.zeros(n, dtype=np.int8)
-        lookback = min(n // 2, 500)
+        lookback = min(n // 2, 200)
         min_bars = max(k + 1, lookback // 10)
+        weights_row = weights[np.newaxis, :]  # pre-shaped for broadcasting
 
         for i in range(min_bars, n):
             start = max(0, i - lookback)
             if i - start < k:
                 continue
 
-            dists = np.array([
-                _lorentzian_distance(features[i], features[j], weights)
-                for j in range(start, i)
-            ])
+            # Vectorized Lorentzian distance over the lookback window
+            fi = features[i]  # local ref to avoid repeated indexing
+            hist = features[start:i]
+            diff = np.abs(fi - hist)
+            dists = np.sum(np.log1p(diff * weights_row), axis=1)
 
-            # Distance-weighted: closer neighbours get more vote weight
-            nearest = np.argpartition(dists, k)[:k] if len(dists) > k else np.argsort(dists)[:k]
-            nearest_dists = dists[nearest] + 1e-10  # avoid div by zero
+            # Distance-weighted voting
+            nearest = np.argpartition(dists, k)[:k]
+            nearest_dists = dists[nearest] + 1e-10
             inv_dist = 1.0 / nearest_dists
-            inv_sum = inv_dist.sum()
-            if inv_sum == 0:
-                continue
-            vote_weights = inv_dist / inv_sum
+            vote_weights = inv_dist / inv_dist.sum()
 
-            nl = labels[start + np.array(nearest)]
-            # Weighted vote with class balancing
-            weighted_up = float(np.sum(vote_weights[(nl == 1)]))
-            weighted_down = float(np.sum(vote_weights[(nl == -1)]))
-            # Apply class weight: boost minority class
-            if (nl == 1).sum() > (nl == -1).sum():
-                weighted_down *= class_weight
-            elif (nl == -1).sum() > (nl == 1).sum():
-                weighted_up *= class_weight
-            total = weighted_up + weighted_down
-            if total > 0:
-                uf = weighted_up / total
-                df = weighted_down / total
-                # Adaptive threshold: use 0.5 if no convergence, else genome threshold
+            nl = labels[start + nearest]
+            w_up = float(vote_weights[nl == 1].sum())
+            w_dn = float(vote_weights[nl == -1].sum())
+            n_up = int((nl == 1).sum())
+            n_dn = int((nl == -1).sum())
+            if n_up > n_dn:
+                w_dn *= class_weight
+            elif n_dn > n_up:
+                w_up *= class_weight
+            total_w = w_up + w_dn
+            if total_w > 0:
                 effective_th = max(0.5, threshold)
-                if uf >= effective_th:
+                if w_up / total_w >= effective_th:
                     result[i] = 1
-                elif df >= effective_th:
+                elif w_dn / total_w >= effective_th:
                     result[i] = -1
 
         return pl.Series("signal", result, dtype=pl.Int8)
