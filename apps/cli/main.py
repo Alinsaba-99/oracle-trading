@@ -56,7 +56,8 @@ def main() -> None:
         "--from", dest="from_", type=str, default=None, help="Start date (YYYY-MM-DD or YYYY)"
     )
     run_parser.add_argument("--fast", type=int, default=50, help="SMA fast period")
-    run_parser.add_argument("--to", dest="to_", type=str, default=None, help="End date (YYYY-MM-DD or YYYY)")
+    run_parser.add_argument("--to", dest="to_", type=str, default=None,
+                            help="End date (YYYY-MM-DD or YYYY)")
     run_parser.add_argument("--slow", type=int, default=200, help="SMA slow period")
 
     # backtest list
@@ -67,6 +68,28 @@ def main() -> None:
     compare_parser = bt_sub.add_parser("compare", help="Compare two backtest results")
     compare_parser.add_argument("id1", type=str, help="First result ID")
     compare_parser.add_argument("id2", type=str, help="Second result ID")
+
+    # agent run / debate / status
+    agent_parser = subparsers.add_parser("agent", help="Multi-Agent System")
+    agent_sub = agent_parser.add_subparsers(dest="agent_action", help="MAS command")
+
+    # agent run
+    agent_run_parser = agent_sub.add_parser("run", help="Run full MAS analysis pipeline")
+    agent_run_parser.add_argument(
+        "--instrument", type=str, default="SPY", help="Instrument symbol"
+    )
+    agent_run_parser.add_argument("--json", action="store_true", help="JSON output")
+    agent_run_parser.add_argument("--table", action="store_true", help="Table output")
+    agent_run_parser.add_argument("--verbose", action="store_true", help="Verbose output")
+
+    # agent debate
+    agent_debate_parser = agent_sub.add_parser("debate", help="Run debate-only analysis")
+    agent_debate_parser.add_argument(
+        "--instrument", type=str, default="SPY", help="Instrument symbol"
+    )
+
+    # agent status
+    agent_sub.add_parser("status", help="Show configured agents and status")
 
     args = parser.parse_args()
 
@@ -86,6 +109,15 @@ def main() -> None:
         _handle_nats(args)
     elif args.command == "backtest":
         _handle_backtest(args)
+    elif args.command == "agent":
+        if args.agent_action == "run":
+            _handle_agent_run(args)
+        elif args.agent_action == "debate":
+            _handle_agent_debate(args)
+        elif args.agent_action == "status":
+            _handle_agent_status(args)
+        else:
+            agent_parser.print_help()
     else:
         parser.print_help()
 
@@ -329,6 +361,31 @@ def _handle_backtest_compare(args: argparse.Namespace) -> None:
         v1 = r1.get(m, "?")
         v2 = r2.get(m, "?")
         print(f"  {m:<20} {v1!s:<20} {v2!s:<20}")
+
+
+def _handle_agent_run(args: argparse.Namespace) -> None:
+    """Run full MAS analysis pipeline (``oracle agent run``)."""
+    import asyncio
+
+    from apps.cli.agent_commands import handle_agent_run
+
+    sys.exit(asyncio.run(handle_agent_run(args)))
+
+
+def _handle_agent_debate(args: argparse.Namespace) -> None:
+    """Run debate-only analysis (``oracle agent debate``)."""
+    import asyncio
+
+    from apps.cli.agent_commands import handle_agent_debate
+
+    sys.exit(asyncio.run(handle_agent_debate(args)))
+
+
+def _handle_agent_status(args: argparse.Namespace) -> None:
+    """Show configured agents (``oracle agent status``)."""
+    from apps.cli.agent_commands import handle_agent_status
+
+    sys.exit(handle_agent_status(args))
 
 
 if __name__ == "__main__":

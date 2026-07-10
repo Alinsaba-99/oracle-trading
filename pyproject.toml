@@ -21,6 +21,8 @@ dependencies = [
     "opentelemetry-api>=1.24",
     "opentelemetry-sdk>=1.24",
     "opentelemetry-exporter-otlp>=1.24",
+    "langgraph>=0.1",
+    "langchain-community>=0.2",
 ]
 
 [project.scripts]
@@ -63,6 +65,7 @@ agents = [
     "langchain>=0.2",
     "langchain-openai>=0.1",
     "langchain-anthropic>=0.1",
+    "litellm>=1.83",
 ]
 
 execution = [

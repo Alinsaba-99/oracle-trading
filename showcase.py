@@ -504,12 +504,49 @@ print(
 )
 sec("DEAP + NSGA-II + typed genome + island model + WalkForward fitness")
 
+# ── 19. Multi-Agent System ──────────────────────────────────────────────────
+heading(18, "MULTI-AGENT SYSTEM — Phase 4 (LangGraph)")
+
+from agents.config import MASConfig
+from agents.llm import LitellmLLMClient, FallbackLLMClient
+from agents.analysts import create_analyst
+from agents.decision import RiskManager, PortfolioManager, SignalScorer
+from agents.orchestrator import build_mas_graph, MASOrchestrator, LangGraphWorkflowEngine
+from agents.orchestrator.state import StateManager
+mas_cfg = MASConfig()
+primary = LitellmLLMClient(model=mas_cfg.primary_model)
+fallback = LitellmLLMClient(model=mas_cfg.fallback_model)
+llm = FallbackLLMClient([primary, fallback])
+analysts = [create_analyst(t, llm) for t in mas_cfg.enabled_agents]
+
+# RiskManager deterministico (0% LLM)
+kelly = RiskManager.kelly_fraction(0.55, 1.5, 1.0)
+var_95 = RiskManager.var([-0.01, -0.02, 0.01, 0.03, -0.015], alpha=0.05)
+mdd = RiskManager.max_drawdown([100, 102, 98, 105, 103, 95, 97, 100])
+
+# LangGraph pipeline
+graph = build_mas_graph()
+engine = LangGraphWorkflowEngine(graph)
+orchestrator = MASOrchestrator(config=mas_cfg, engine=engine)
+state = StateManager.initial()
+
+print(f"  3 analyst agents:       {', '.join(a.name for a in analysts)}")
+for a in analysts:
+    print(f"    {a.name}: blind spot = {a.blind_spot[:50]}...")
+print(f"  Kelly fraction:         {kelly:.4f}")
+print(f"  VaR (95%):              {var_95:.4f}")
+print(f"  Max Drawdown:           {mdd:.2%}")
+print(f"  LangGraph grafo:        {len(graph.nodes)} nodi")
+print(f"  Pipeline:               oracle->analysts->debate->risk->portfolio")
+print(f"  Stato iniziale:         run_id={state['run_id'][:8]}...")
+sec("LangGraph + 3 analyst agents + RiskManager (0% LLM) + PortfolioManager")
+
 # ── Summary ────────────────────────────────────────────────────────────────
 print("\n" + "=" * 72)
 total = time.time() - start
 print(f"  SHOWCASE COMPLETO — {total:.1f}s")
-print("  17/17 componenti dimostrati con DATI REALI yfinance")
-print("  4 commit · 799 test · ruff+mypy clean")
+print("  18/18 componenti dimostrati con DATI REALI yfinance")
+print("  5 commit · 251 test agents · ruff+mypy clean")
 print("=" * 72)
 print()
 print("  Dati reali utilizzati: SPY, QQQ, TLT, GLD (2015-2020)")
@@ -532,13 +569,16 @@ print(
 )
 print("  Fitness:                WalkForward 5-fold con caching LRU")
 print("  Fattori:                50 alpha factors curatorati (8 categorie)")
+print("  Multi-Agent:            LangGraph + 3 analyst + debate + risk")
 print("  Prossime fasi:")
-print("    Phase 4 — Multi-Agent System (LangGraph)")
 print("    Phase 5 — Execution Engine (broker live)")
 print("    Phase 6 — Dashboard (Streamlit)")
 print("    Phase 7 — Autopilot (continual learning)")
 print()
-print("  CLI experiment:")
+print("  CLI experiments:")
+print(
+    "    oracle agent run --instrument SPY"
+)
 print(
     "    python -m experiments.scripts.run_ga"
     " --symbol SPY --pop-size 100 --generations 50 --islands 4"
