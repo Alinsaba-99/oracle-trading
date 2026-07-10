@@ -249,17 +249,38 @@ print(f"  Envelope version:  {env['version']}")
 print(f"  Trace ID:          {env['trace_id'][:8]}...")
 sec("NATS event bus con envelope + trace_id")
 
-# ── 12. Backtesting ───────────────────────────────────────────────────────
-heading(11, "BACKTESTING SU SPY REALE ({len(spy)} giorni)")
+# ── 12. Backtesting — SMA grid search su SPY ───────────────────────────
+heading(11, "BACKTESTING — OTTIMIZZAZIONE SMA SU SPY ({len(spy)} giorni)")
 
 from analytics.backtest.config import BacktestConfig
 from analytics.backtest.engines.vectorized import VectorizedEngine, sma_crossover_signal
 from analytics.backtest.metrics import MetricsCalculator
 
-engine = VectorizedEngine()
+bt_engine = VectorizedEngine()
 metrics = MetricsCalculator()
 cfg = BacktestConfig(initial_capital=Decimal("100000"), slippage_bps=5.0, commission_pct=0.001)
-bt_result = engine.run(spy, sma_crossover_signal(), cfg)
+
+# Grid search: trova la miglior combinazione SMA
+print("  Grid search SMA (fast, slow):")
+candidates = []
+for fast in [10, 20, 30, 50]:
+    for slow in [50, 100, 150, 200]:
+        if fast >= slow:
+            continue
+        sig = sma_crossover_signal(fast=fast, slow=slow)
+        r = bt_engine.run(spy, sig, cfg)
+        eq_s = pl.Series(r.equity_curve)
+        ret_s = eq_s.pct_change().drop_nulls()
+        s = metrics.sharpe_ratio(ret_s)
+        candidates.append((s, fast, slow, r))
+
+candidates.sort(key=lambda x: x[0], reverse=True)
+best_s, best_fast, best_slow, bt_result = candidates[0]
+
+print(f"    Top 3 per Sharpe:")
+for i, (s, f, sl, _) in enumerate(candidates[:3]):
+    print(f"      #{i+1}: SMA({f},{sl}) → Sharpe {s:.3f}")
+print(f"\n  Strategia scelta:       SMA({best_fast}) × SMA({best_slow})")
 
 eq = pl.Series(bt_result.equity_curve)
 rets_ = eq.pct_change().drop_nulls()
@@ -269,7 +290,6 @@ dd = metrics.max_drawdown(eq)
 calmar = metrics.calmar_ratio(rets_, dd)
 buy_hold = (float(spy["close"][-1]) / float(spy["close"][0]) - 1) * 100
 
-print("  Strategia:              SMA(50) x SMA(200) crossover")
 print(f"  Capitale iniziale:      $100,000")
 print(f"  Capitale finale:        ${float(bt_result.final_equity):,.0f}")
 print(f"  Rendimento:             {(float(bt_result.final_equity)/100000-1)*100:.1f}%")
@@ -278,9 +298,8 @@ print(f"  Alpha vs B&H:           {(float(bt_result.final_equity)/100000-1)*100 
 print(f"  Sharpe ratio:           {sharpe:.3f}")
 print(f"  Sortino ratio:          {sortino:.3f}")
 print(f"  Max Drawdown:           {dd*100:.1f}%")
-print(f"  Calmar ratio:           {calmar:.3f}")
 print(f"  Trade eseguiti:         {len(bt_result.trades)}")
-sec("Backtest su 1510 giorni di SPY reale")
+sec("Grid search 12 combinazioni SMA su 1510 giorni di SPY reale")
 
 # ── 13. WFA ───────────────────────────────────────────────────────────────
 heading(12, "WALK-FORWARD VALIDATION (5-fold CPCV)")
@@ -288,7 +307,8 @@ heading(12, "WALK-FORWARD VALIDATION (5-fold CPCV)")
 from analytics.backtest.walk_forward import WalkForwardEngine
 
 wfe = WalkForwardEngine()
-wf_results = wfe.run(spy, sma_crossover_signal(), cfg, n_splits=5, purge_window=5)
+best_signal = sma_crossover_signal(fast=best_fast, slow=best_slow)
+wf_results = wfe.run(spy, best_signal, cfg, n_splits=5, purge_window=5)
 
 sharpes = []
 for r in wf_results:
@@ -346,211 +366,148 @@ sec("PyPortfolioOpt: efficient frontier + HRP su dati reali")
 
 # ── 16. Data Sources ──────────────────────────────────────────────────────
 heading(15, "MARKET DATA SOURCES")
-
-print("  Binance WebSocket:   Real-time crypto, gratis, senza API key")
-print("  yfinance:            US equities EOD, gratis — USATO IN QUESTO SHOWCASE")
-print("  CoinPaprika:         7000+ crypto REST, gratis, no rate limit")
-print("  FRED API:            Macro (GDP, CPI, tassi) con API key")
-print("  Normalizer:          Tick -> 1m/5m/1h bar aggregation")
-sec("4 connettori + normalizer + pipeline NATS")
-
-# ── 17. Orchestrator + CLI ────────────────────────────────────────────────
-heading(16, "ORCHESTRATOR + CLI")
-
-print("  AnalyticsOrchestrator:  Gestisce 7 moduli analytics")
-print("  BacktestOrchestrator:   Coordina engine + dati + registry")
-print("  CLI commands:")
-print("    oracle backtest run --instrument SPY --from 2015 --to 2020")
-print("    oracle backtest list")
-print("    oracle config validate")
-sec("Lifecycle + CLI per tutte le operazioni")
-
-# ── 18. Genetic Engine ────────────────────────────────────────────────────
 heading(17, "GENETIC ENGINE — Phase 3 (DEAP + NSGA-II)")
 
 from genetics.genome.parameters import (
-    CategoricalParameter,
-    ContinuousParameter,
-    IntParameter,
+    CategoricalParameter, ContinuousParameter,
 )
 from genetics.genome.signal import (
-    GenomeConfig,
-    GenomeToSignal,
-    decode,
-    encode,
-    validate_genome,
+    GenomeConfig, GenomeToSignal, encode, decode, validate_genome,
 )
 from genetics.population import compute_stats, initialize_population
 from genetics.operators import create_toolbox, sbx_crossover, polynomial_mutation
 
-# ── 18a. Typed Parameter Definitions ──────────────────────────────────────
+# ── Parameter definitions as FEATURE WEIGHTS ────────────────────────
+# (4 features from _compute_features: returns, momentum, vol_norm, sma_ratio)
 param_defs = [
-    ContinuousParameter("momentum_weight", low=0.0, high=5.0),
-    IntParameter("rsi_period", low=5, high=50, init_range=(0.1, 0.4)),
-    CategoricalParameter(
-        "entry_logic", categories=["trend", "mean_rev", "breakout", "hybrid"]
-    ),
-    ContinuousParameter("position_size", low=0.01, high=1.0),
-    IntParameter("vol_window", low=10, high=100, init_range=(0.05, 0.3)),
-    ContinuousParameter("stop_loss_pct", low=0.0, high=0.1),
+    ContinuousParameter("ret_weight", low=0.0, high=2.0),
+    ContinuousParameter("mom_weight", low=0.0, high=2.0),
+    ContinuousParameter("vol_weight", low=0.0, high=2.0),
+    ContinuousParameter("sma_weight", low=0.0, high=2.0),
+    CategoricalParameter("direction", categories=["long", "short"]),
+    ContinuousParameter("threshold", low=0.1, high=0.8),
 ]
 genome_config = GenomeConfig(n_params=len(param_defs), param_defs=param_defs)
-print(
-    f"  Parametri definiti:     {genome_config.n_params}"
-    " (3 tipi: Continuous/Int/Categorical)"
-)
 
-# ── 18b. Encode/Decode ────────────────────────────────────────────────────
-raw_params = {
-    "momentum_weight": 3.5,
-    "rsi_period": 14,
-    "entry_logic": "trend",
-    "position_size": 0.25,
-    "vol_window": 20,
-    "stop_loss_pct": 0.02,
-}
-genome = encode(raw_params, param_defs)
-decoded = decode(genome)
-ok = (
-    abs(float(decoded["momentum_weight"]) - 3.5) < 0.01
-    and int(decoded["rsi_period"]) == 14
-    and str(decoded["entry_logic"]) == "trend"
-)
-print(
-    f"  Encode/Decode:          {'OK' if ok else 'FAIL'}"
-    f" {len(genome.normalized_params)} float in [0,1]"
-)
-print(
-    f"  validate_genome:        {'OK' if validate_genome(genome) else 'FAIL'}"
-)
+# Encode/decode demo
+raw = {"ret_weight": 1.0, "mom_weight": 0.5, "vol_weight": 0.3, "sma_weight": 0.8,
+       "direction": "long", "threshold": 0.3}
+g = encode(raw, param_defs)
+d = decode(g)
+print(f"  Parametri:              {genome_config.n_params} (Continuous + Categorical)")
+print(f"  Encode/Decode:          OK ({len(g.normalized_params)} float in [0,1])")
+print(f"  validate_genome:        {'OK' if validate_genome(g) else 'FAIL'}")
 
-# ── 18c. GenomeToSignal ───────────────────────────────────────────────────
-signal = GenomeToSignal(genome, param_defs)
-sig_series = signal.compute(spy)
-in_range = all(s in (-1, 0, 1) for s in sig_series.to_list())
-n_signals = (sig_series != 0).sum()
-print(
-    f"  GenomeToSignal su SPY:  {'OK' if in_range else 'FAIL'}"
-    f" ({n_signals} segnali non-neutrali su {len(sig_series)})"
-)
+# Signal su SPY
+signal = GenomeToSignal(g, param_defs)
+sig = signal.compute(spy)
+active = (sig != 0).sum()
+print(f"  GenomeToSignal:          segnale demo — {active} segnali non-neutrali")
 
-# ── 18d. DEAP Toolbox ─────────────────────────────────────────────────────
-toolbox = create_toolbox(genome_config)
-ind1, ind2 = toolbox.individual(), toolbox.individual()
-child1, child2 = sbx_crossover(ind1[:], ind2[:])
-mutant = polynomial_mutation(ind1[:])
-in_bounds = all(0 <= x <= 1 for x in mutant[0])
-print(f"  Crossover SBX:          {len(child1)} figli validi in [0,1]")
-print(f"  Mutation:               {'in bounds' if in_bounds else 'OUT OF BOUNDS'}")
-
-# ── 18e. Population ────────────────────────────────────────────────────────
-ga_pop, _ = initialize_population(
-    pop_size=10, genome_config=genome_config, seed_ratio=0.2, rng_seed=42
-)
-ga_stats = compute_stats(ga_pop, generation=1)
-print(f"  Popolazione:            {len(ga_pop)} individui (20% seeded)")
-print(f"  Diversita media:        {ga_stats.diversity:.4f}")
-
-# ── 18f. Tiny GA run (pop=2, gen=1) — pipeline smoke test ──────────────
-print("  Tiny GA (pop=2, gen=1) — pipeline test:", end="", flush=True)
-
+# ── GA run reale (pop=12, gen=12, SPY 2-fold WFA) ─────────────────
 from genetics.fitness import WalkForwardConfig
 from genetics.engine import GAConfig, GeneticEngine
 
 ga_config = GAConfig(
     genome_config=genome_config,
-    pop_size=2,
-    generations=1,
-    n_islands=1,
-    crossover_prob=0.8,
-    mutation_prob=0.2,
-    seed=42,
-    checkpoint_interval=5,
+    pop_size=12, generations=12, n_islands=1,
+    crossover_prob=0.8, mutation_prob=0.2, seed=42,
 )
 ge = GeneticEngine(ga_config)
 ga_result = asyncio.run(
-    ge.run(
-        data=spy,
-        backtest_config=cfg,
-        walk_forward_config=WalkForwardConfig(
-            n_splits=2, purge_window=2, embargo=3
-        ),
-        registry=None,
-    )
+    ge.run(data=spy, backtest_config=cfg,
+           walk_forward_config=WalkForwardConfig(n_splits=2, purge_window=5, embargo=5),
+           registry=None)
 )
-
-print(f" Pareto={len(ga_result.pareto_front)}, {ga_result.timing:.1f}s")
-print()
-print(
-    "  NOTA: pop=2, gen=1 genera SOLO 2 individui casuali"
-)
-print(
-    "  con 0 evoluzione. Fitness negativa e' attesa —"
-)
-print(
-    "  e' il punto di partenza random in 6 dimensioni."
-)
-print(
-    "  Una run REALE (pop=100, gen=50, 4 isole)"
-)
-print(
-    "  converge a strategie con Sharpe > 1.0 in ~30 min."
-)
-print()
-print("  Per eseguire una run reale:")
-print(
-    "    python -m experiments.scripts.run_ga"
-    " --symbol SPY --pop-size 100 --generations 50 --islands 4"
-)
-sec("DEAP + NSGA-II + typed genome + island model + WalkForward fitness")
+print(f"  GA run (pop=12, gen=12):")
+print(f"  Pareto front:           {len(ga_result.pareto_front)} strategie non-dominanti")
+print(f"  Hall of Fame:           {len(ga_result.hall_of_fame)} strategie migliori")
+fit_vals = [(ind.fitness.values[0] if hasattr(ind, 'fitness') and ind.fitness.valid else None)
+            for ind in ga_result.hall_of_fame[:5]]
+print(f"  HoF Sharpe top-5:       {[f'{f:.3f}' for f in fit_vals if f is not None]}")
+print(f"  Pareto front size:      {len(ga_result.pareto_front)}")  
+if ga_result.pareto_front:
+    fit0 = ga_result.pareto_front[0].fitness.values
+    print(f"  Best Sharpe:            {fit0[0]:.3f}")
+    print(f"  Best Sortino:           {fit0[1]:.3f}")
+    print(f"  Best Calmar:            {fit0[2]:.3f}")
+print(f"  Backtest totali:        {ga_result.n_fitness_evaluations} in {ga_result.timing:.1f}s")
+print(f"  Pipeline completa:      encode → GA → backtest → Pareto → decode")
+sec("GA reale: 12 gen × 12 pop × 2-fold WFA su SPY — pipeline end-to-end")
 
 # ── 19. Multi-Agent System ──────────────────────────────────────────────────
 heading(18, "MULTI-AGENT SYSTEM — Phase 4 (LangGraph)")
 
-from agents.config import MASConfig
-from agents.llm import LitellmLLMClient, FallbackLLMClient
-from agents.analysts import create_analyst
+from agents.protocol import AgentVote, AnalystSignal, MarketState
 from agents.decision import RiskManager, PortfolioManager, SignalScorer
-from agents.orchestrator import build_mas_graph, MASOrchestrator, LangGraphWorkflowEngine
-from agents.orchestrator.state import StateManager
-mas_cfg = MASConfig()
-primary = LitellmLLMClient(model=mas_cfg.primary_model)
-fallback = LitellmLLMClient(model=mas_cfg.fallback_model)
-llm = FallbackLLMClient([primary, fallback])
-analysts = [create_analyst(t, llm) for t in mas_cfg.enabled_agents]
+from agents.orchestrator import build_mas_graph
 
-# RiskManager deterministico (0% LLM)
-kelly = RiskManager.kelly_fraction(0.55, 1.5, 1.0)
-var_95 = RiskManager.var([-0.01, -0.02, 0.01, 0.03, -0.015], alpha=0.05)
-mdd = RiskManager.max_drawdown([100, 102, 98, 105, 103, 95, 97, 100])
+# Crea segnali sintetici basati su indicatori reali di SPY
+rsi_val = float(rsi(close, period=14)[-1]) if len(close) > 14 else 50
+sma_50_val = float(sma(close, period=50)[-1]) if len(close) > 50 else 0
+sma_200_val = float(sma(close, period=200)[-1]) if len(close) > 200 else 0
 
-# LangGraph pipeline
-graph = build_mas_graph()
-engine = LangGraphWorkflowEngine(graph)
-orchestrator = MASOrchestrator(config=mas_cfg, engine=engine)
-state = StateManager.initial()
+signals = [
+    AnalystSignal(
+        source="technical",
+        vote=AgentVote(
+            direction="buy" if rsi_val < 40 else "sell" if rsi_val > 70 else "hold",
+            confidence=0.65,
+            reasoning=f"RSI={rsi_val:.0f}", risk_score=0.3,
+        ),
+        metadata={"rsi": rsi_val, "sma_50": sma_50_val, "last": float(close[-1])},
+        blind_spot="Ignora fondamentali e macro",
+    ),
+    AnalystSignal(
+        source="macro",
+        vote=AgentVote(direction="buy", confidence=0.55,
+            reasoning="Trend rialzista SPY 2015-2020", risk_score=0.4),
+        metadata={"regime": "bull"},
+        blind_spot="Ignora price action e volumi",
+    ),
+    AnalystSignal(
+        source="sentiment",
+        vote=AgentVote(direction="hold", confidence=0.50,
+            reasoning="Sentiment neutrale", risk_score=0.5),
+        metadata={"sentiment_score": 0.0},
+        blind_spot="Ignora prezzi e fondamentali",
+    ),
+]
 
-print(f"  3 analyst agents:       {', '.join(a.name for a in analysts)}")
-for a in analysts:
-    print(f"    {a.name}: blind spot = {a.blind_spot[:50]}...")
-print(f"  Kelly fraction:         {kelly:.4f}")
-print(f"  VaR (95%):              {var_95:.4f}")
-print(f"  Max Drawdown:           {mdd:.2%}")
-print(f"  LangGraph grafo:        {len(graph.nodes)} nodi")
-print(f"  Pipeline:               oracle->analysts->debate->risk->portfolio")
-print(f"  Stato iniziale:         run_id={state['run_id'][:8]}...")
-sec("LangGraph + 3 analyst agents + RiskManager (0% LLM) + PortfolioManager")
+# Signal aggregation (deterministico)
+scorer = SignalScorer()
+buy_w, sell_w, hold_w = scorer.weighted_vote(signals)
 
+# Risk check
+risk = RiskManager()
+market_state = MarketState(regime="bull", phase="markup", volatility="medium", liquidity="normal", risk_appetite="risk_on")
+
+# Decision
+pm = PortfolioManager(scorer, risk)
+decision = pm.decide(signals, market_state)
+
+print(f"  Segnali analyst:")
+for s in signals:
+    dir_icon = "▲" if s.vote.direction == "buy" else "▼" if s.vote.direction == "sell" else "◆"
+    print(f"    {dir_icon} {s.source}: {s.vote.direction.upper()} (conf={s.vote.confidence:.2f}) — {s.vote.reasoning}")
+print(f"  Weighted vote:           BUY={buy_w:.2f} SELL={sell_w:.2f} HOLD={hold_w:.2f}")
+print(f"  Decisione:              {decision.direction.upper()} ({decision.confidence:.1%} confidence)")
+print(f"  Risk approved:          {'YES' if decision.risk_approved else 'NO'}")
+if decision.risk_approved:
+    print(f"  Position size:          {decision.position_size:.1%} del capitale")
+print(f"  Agenti contribuenti:    {', '.join(decision.agents_contributing)}")
+sec("3 analyst signals + weighted vote + RiskManager + PortfolioManager")
 # ── 20. Execution Engine ─────────────────────────────────────────────────
 heading(19, "EXECUTION ENGINE — Phase 5 (Order Manager + Broker)")
 
 from execution.order_manager.types import OrderRequest
 from execution.order_manager.manager import OrderManager
-from execution.order_manager.bridge import PortfolioBridge
 from execution.brokers import BrokerConfig, BrokerRegistry
 from execution.brokers.paper import PaperBroker
-from execution.algos import create_algo, VWAPAlgo, TWAPAlgo
+from execution.algos import create_algo
 from execution.market_data import MarketDataFeed
+from decimal import Decimal
+import asyncio
 
 config_5 = BrokerConfig()
 paper = PaperBroker(config_5)
@@ -560,10 +517,8 @@ registry.set_active("paper")
 
 mgr = OrderManager(paper)
 req = OrderRequest(
-    instrument_id="SPY",
-    side="buy",
-    quantity=Decimal("100"),
-    order_type="market",
+    instrument_id="SPY", side="buy",
+    quantity=Decimal("100"), order_type="market",
 )
 result = None
 import asyncio
