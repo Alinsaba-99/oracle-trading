@@ -1,81 +1,80 @@
 # Phase 3.5.1 — GA Convergence Fix
 
-> Fix: NSGA-II "no-trade" local optimum · PF come obiettivo esplicito
-> Dati: SPY Daily yfinance (1510 bar, 2015-2020)
+> Fix: NSGA-II "no-trade" local optimum · CAGR + PF come vincoli su obiettivi esistenti
+> Review: CEO (Revise) · Eng (Moderate Risk) · Design (Conditional Approve)
 
 ---
 
-## 1. Dati Utilizzati
+## 1. Problema
 
-| Proprietà | Valore |
-|-----------|--------|
-| **Fonte** | Yahoo Finance (`yfinance`) |
-| **Simbolo** | SPY (SPDR S&P 500 ETF Trust) |
-| **Timeframe** | **Daily (1D)** — 1 barra = 1 giorno di trading |
-| **Periodo** | 2015-01-01 → 2020-12-31 (6 anni) |
-| **Barre totali** | **1.510** (~252/anno) |
-| **Range prezzo** | $170.47 → $345.41 (+103% B&H) |
-| **Informazioni** | `pip install yfinance` — dati EOD gratuiti |
+NSGA-II converge a "no trade" perché 4 obiettivi (Sharpe, Sortino, Calmar, MaxDD) sono tutti ratio/rischi — nessuno premia il rendimento assoluto. Strategia no-trade ha MaxDD=0 → Pareto-ottimale.
 
-**Nota:** Daily data è il punto di partenza standard per strategie sistematiche. Per eseguire strategie a più alta frequenza (intraday) servirebbero dati tick/minute, che hanno costi. Il nostro obiettivo attuale è provare il concetto su daily — se funziona, possiamo scalare a frequenze più alte.
+**Review: CAGR assente è la causa radice** (CEO/Design). Aggiungere CAGR come vincolo risolve con 1 modifica.
 
----
+## 2. Decisioni Post-Review
 
-## 2. Problema
+| Review | Issue | Decisione |
+|--------|-------|-----------|
+| **CEO** | Fix 2: penalty simmetrica | **RIMOSSA** — CAGR come moltiplicatore, non penalty |
+| **CEO** | Penalty-stacking senza priorità | **Singolo moltiplicatore** combinato (CAGR + PF), non 3 indipendenti |
+| **Design** | 5 obiettivi rompe FitnessValue | **4 obiettivi mantenuti**. CAGR/PF come modifiche a Sharpe/Sortino/Calmar |
+| **Design** | Sortino ridondante con Sharpe | **MANTENUTO** (non rompe, ottimizzazione futura) |
+| **Eng** | `fitness *= 0.5` crasha (tuple) | **Tuple comprehension**: moltiplicare solo obiettivi positive-direction |
+| **Eng** | Cache consistency | **Constraint params nel cache key** |
+| **Eng** | CAGR/PF default 0.0 rompe test | **Solo quando key esiste E non-None** |
 
-Il GA (NSGA-II) converge a "no trade" come soluzione Pareto-ottimale perché:
+## 3. Implementazione (3 modifiche, 2 file)
+
+### genetics/fitness/evaluator.py
+
+```python
+# A — Aggiungere a __init__
+self._min_trades: int = 10
+
+# B — Dopo _extract_fitness, PRIMA di cache write
+constraints = self._apply_constraints(fitness_tuple, combined)
+if constraints is None:
+    return _EMPTY_FITNESS  # ← sentinel per low trades
+return constraints
+
+# C — Nuovo metodo
+def _apply_constraints(self, fitness: tuple, combined: dict) -> tuple | None:
+    # Fix 1: Min trade sentinel
+    total_trades = sum(r.total_trades for r in self._fold_results)
+    if total_trades < self._min_trades:
+        return None  # caller returns _EMPTY_FITNESS
+
+    # Fix 2: CAGR multiplier (solo se key esiste)
+    cagr = combined.get("cagr_mean")
+    cagr_mult = 1.0
+    if cagr is not None and cagr < 0.05:
+        cagr_mult = cagr / 0.05  # penalità lineare sotto 5%
+
+    # Fix 3: PF multiplier (solo se key esiste)
+    pf = combined.get("profit_factor_mean")
+    pf_mult = 1.0
+    if pf is not None and pf < 1.0:
+        pf_mult = max(pf, 0.01)  # penalità lineare sotto 1.0
+
+    # Applica moltiplicatori solo a obiettivi positive-direction (0,1,2)
+    mult = min(cagr_mult, pf_mult)  # il più restrittivo
+    if mult < 1.0:
+        sharpe, sortino, calmar, maxdd = fitness
+        return (sharpe * mult, sortino * mult, calmar * mult, maxdd)
+    return fitness
+```
+
+### genetics/engine.py + genetics/config.py
+
+- GAConfig: `min_trades: int = 10`
+- GeneticEngine.run: pass `min_trades` a FitnessEvaluator
+- Cache key: include min_trades parameter
+
+## 4. Esecuzione
 
 ```
-Strategia A (no trade):   Sharpe = 0, MaxDD = 0%,   Calmar = 0
-Strategia B (trade):       Sharpe = X, MaxDD = Y%,   Calmar = Z
+Ora:   Applicare 3 fix (evaluator.py + engine.py + config.py)
+       pytest tests/ -q (verificare 1200+ test)
+       GA run pop=12, gen=20, hybrid signal, min_trades=10
+Attesa: ~2 min per fix, ~3 min per GA run
 ```
-
-NSGA-II trova A Pareto-ottimale perché ha MaxDD=0 e Calmar=0 — nessuna strategia con drawdown > 0 la domina sul fronte rischio.
-
-**Causa radice:** la fitness function a 4 obiettivi (Sharpe, Sortino, Calmar, MaxDD) non include il **Profit Factor** o il **rendimento assoluto**. Una strategia che non trade ha drawdown zero e viene preferita.
-
----
-
-## 3. Soluzione
-
-### Fix 1: Minimo trade constraint
-
-Aggiungere un constraint nella fitness function: **se total_trades < 10 → fitness sentinel** (penalizzata). Questo elimina la strategia "no trade" dal Pareto front.
-
-### Fix 2: Profit Factor come obiettivo (o vincolo soft)
-
-Aggiungere Profit Factor come 5° obiettivo, OPPURE aggiungere una penalità lineare:
-- `fitness_penalty = -abs(n_trades - target_trades) * 0.01`
-- Se PF < 1.0 → fitness ulteriormente penalizzata
-
-### Fix 3: Rendimento minimo
-
-Penalizzare strategie con rendimento annuo < 5%:
-- `if cagr < 0.05: fitness *= 0.5`
-
-### Implementazione
-
-| File | Modifica |
-|------|----------|
-| `genetics/fitness/evaluator.py` | Aggiungere `min_trades` parameter, PF check, CAGR check |
-| `genetics/engine.py` | Passare `min_trades` da GAConfig |
-| `genetics/config.py` | Aggiungere `min_trades: int = 10` a GAConfig |
-
----
-
-## 4. Dati Alternativi (futuro)
-
-Se vogliamo frequenze più alte o più simboli:
-
-| Fonte | Timeframe | Costo | Volume dati |
-|-------|-----------|-------|-------------|
-| yfinance | Daily, 1h | Gratis | Illimitato |
-| Polygon.io | Minute, tick | $29/mese | 5 anni storici |
-| Alpha Vantage | Daily, intraday | Gratis (5 req/min) | 100k chiamate/giorno |
-| QuestDB (locale) | Tick | Infrastruttura | Nostro storage |
-
----
-
-## 5. Prossimo Passo
-
-Applicare i 3 fix e rilanciare GA (pop=12, gen=20) per verificare che il Pareto front contenga strategie con PF > 1.67 E MaxDD < 6%.
