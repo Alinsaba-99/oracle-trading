@@ -425,6 +425,7 @@ class IslandManager:
         self.migration_policy = migration_policy or MigrationPolicy()
         self.checkpoint_dir = checkpoint_dir
         self.islands: list[Island] = []
+        self._signal_type: str = "genome"
 
         self._init_populations()
 
@@ -604,6 +605,7 @@ class IslandManager:
                 "replacement": self.migration_policy.replacement,
             },
             "config": config_to_dict(self.genome_config),
+            "signal_type": getattr(self, "_signal_type", "genome"),
         }
 
     @staticmethod
