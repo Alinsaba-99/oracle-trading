@@ -71,6 +71,7 @@ class GAConfig:
     n_jobs: int | None = None
     signal_type: str = "genome"
     checkpoint_dir: str = "checkpoints/"
+    min_trades: int = 0
 
 
 # ---------------------------------------------------------------------------
@@ -204,6 +205,7 @@ class GeneticEngine:
                 walk_forward_config=walk_forward_config,
                 registry=registry,
                 signal_factory=signal_factory,
+                min_trades=self.config.min_trades,
             )
 
             # ── Process pool for parallel island execution ────────────

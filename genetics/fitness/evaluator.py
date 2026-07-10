@@ -63,12 +63,14 @@ class FitnessEvaluator:
         registry: ExperimentRegistry | None = None,
         cache: FitnessCache | None = None,
         signal_factory: Callable[..., Any] | None = None,
+        min_trades: int = 0,
     ) -> None:
         self._backtest_cfg = backtest_config
         self._wf_cfg = walk_forward_config or WalkForwardConfig()
         self._registry = registry
         self._cache = cache
         self._signal_factory = signal_factory
+        self._min_trades = min_trades
 
     # ------------------------------------------------------------------
     # Public API
@@ -139,13 +141,19 @@ class FitnessEvaluator:
 
             if not fold_results:
                 return _EMPTY_FITNESS
-
-            # Detect empty returns (no trades across any fold).
             if all(r.total_trades == 0 for r in fold_results):
                 return _EMPTY_FITNESS
 
             combined = wf.combined_metrics()
             fitness = _extract_fitness(combined)
+
+            # ── apply constraints (min_trades, CAGR, PF) ─────────
+            total_trades = sum(r.total_trades for r in fold_results)
+            constrained = _apply_constraints(
+                fitness, combined, total_trades, self._min_trades
+            )
+            if constrained != fitness:
+                fitness = constrained
 
         except Exception:
             return _FAILED_FITNESS
@@ -154,31 +162,7 @@ class FitnessEvaluator:
         if self._cache is not None:
             self._cache.put(g_hash, fc_hash, d_hash, fitness)
 
-        # ── register outcome ─────────────────────────────────────
-        if self._registry is not None:
-            outcome = ExperimentContext(
-                experiment_id=str(uuid4()),
-                parent_experiment_id=experiment_id,
-                random_seed=42,
-                tags={
-                    "type": "fitness_result",
-                    "sharpe": str(fitness[0]),
-                    "sortino": str(fitness[1]),
-                    "calmar": str(fitness[2]),
-                    "drawdown": str(fitness[3]),
-                    "n_folds": str(
-                        combined.get("n_folds", 0) if fold_results else 0
-                    ),
-                },
-            )
-            self._registry.register(outcome)
-
         return fitness
-
-
-# ------------------------------------------------------------------
-# Internal helpers
-# ------------------------------------------------------------------
 
 
 def _data_fingerprint(data: pl.DataFrame, n_head: int = 10) -> str:
@@ -222,3 +206,38 @@ def _extract_fitness(combined: dict[str, Any]) -> FitnessValue:
     drawdown = max(drawdown, 0.0)
 
     return (sharpe, sortino, calmar, drawdown)
+
+
+def _apply_constraints(
+    fitness: FitnessValue,
+    combined: dict[str, Any],
+    total_trades: int,
+    min_trades: int,
+) -> FitnessValue:
+    """Apply constraints to a fitness tuple: min trades, CAGR, PF.
+
+    Returns modified fitness if constraints are violated, original otherwise.
+    """
+    # Fix 1: Min trade sentinel
+    if total_trades < min_trades:
+        return _EMPTY_FITNESS
+
+    sharpe, sortino, calmar, maxdd = fitness
+
+    # Fix 2: CAGR multiplier (only when key exists)
+    cagr = combined.get("cagr_mean")
+    cagr_mult = 1.0
+    if cagr is not None and cagr < 0.05:
+        cagr_mult = cagr / 0.05  # linear penalty below 5% CAGR
+
+    # Fix 3: PF multiplier (only when key exists)
+    pf = combined.get("profit_factor_mean")
+    pf_mult = 1.0
+    if pf is not None and pf < 1.0:
+        pf_mult = max(pf, 0.01)  # linear penalty below 1.0 PF, floor at 0.01
+
+    mult = min(cagr_mult, pf_mult)  # most restrictive multiplier
+    if mult < 1.0:
+        return (sharpe * mult, sortino * mult, calmar * mult, maxdd)
+
+    return fitness
