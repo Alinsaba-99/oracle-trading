@@ -186,6 +186,9 @@ class KNNGenomeToSignal:
         labels = np.full(n, 0, dtype=np.int8)
         labels[:-train_len] = np.where(future[:-train_len] > close[:-train_len], 1, -1)
 
+        # Class balance weight: higher = more minority-boost
+        class_weight = max(0.1, float(self._raw.get("class_weight", 0.7)))
+
         result = np.zeros(n, dtype=np.int8)
         lookback = min(n // 2, 500)
         min_bars = max(k + 1, lookback // 10)
@@ -200,18 +203,33 @@ class KNNGenomeToSignal:
                 for j in range(start, i)
             ])
 
+            # Distance-weighted: closer neighbours get more vote weight
             nearest = np.argpartition(dists, k)[:k] if len(dists) > k else np.argsort(dists)[:k]
-            nl = labels[start + np.array(nearest)]
-            n_up = int((nl == 1).sum())
-            n_down = int((nl == -1).sum())
-            n_t = n_up + n_down
+            nearest_dists = dists[nearest] + 1e-10  # avoid div by zero
+            inv_dist = 1.0 / nearest_dists
+            inv_sum = inv_dist.sum()
+            if inv_sum == 0:
+                continue
+            vote_weights = inv_dist / inv_sum
 
-            if n_t > 0:
-                uf = n_up / n_t
-                df = n_down / n_t
-                if uf >= threshold:
+            nl = labels[start + np.array(nearest)]
+            # Weighted vote with class balancing
+            weighted_up = float(np.sum(vote_weights[(nl == 1)]))
+            weighted_down = float(np.sum(vote_weights[(nl == -1)]))
+            # Apply class weight: boost minority class
+            if (nl == 1).sum() > (nl == -1).sum():
+                weighted_down *= class_weight
+            elif (nl == -1).sum() > (nl == 1).sum():
+                weighted_up *= class_weight
+            total = weighted_up + weighted_down
+            if total > 0:
+                uf = weighted_up / total
+                df = weighted_down / total
+                # Adaptive threshold: use 0.5 if no convergence, else genome threshold
+                effective_th = max(0.5, threshold)
+                if uf >= effective_th:
                     result[i] = 1
-                elif df >= threshold:
+                elif df >= effective_th:
                     result[i] = -1
 
         return pl.Series("signal", result, dtype=pl.Int8)

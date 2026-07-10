@@ -375,7 +375,8 @@ from genetics.genome.knn_signal import KNNGenomeToSignal
 param_defs = [
     IntParameter("k_neighbors", low=3, high=20),
     IntParameter("train_length", low=2, high=10),
-    ContinuousParameter("threshold", low=0.3, high=0.7),
+    ContinuousParameter("threshold", low=0.3, high=0.9),
+    ContinuousParameter("class_weight", low=0.3, high=3.0),
     IntParameter("rsi_period", low=7, high=21),
     ContinuousParameter("w_rsi", low=0.0, high=2.0),
     ContinuousParameter("w_cci", low=0.0, high=2.0),
@@ -385,12 +386,12 @@ param_defs = [
 ]
 genome_config = GenomeConfig(n_params=len(param_defs), param_defs=param_defs)
 
-raw = {"k_neighbors": 8, "train_length": 4, "threshold": 0.5,
+raw = {"k_neighbors": 12, "train_length": 4, "threshold": 0.6, "class_weight": 1.5,
        "rsi_period": 14, "w_rsi": 1.0, "w_cci": 0.8, "w_adx": 0.6,
        "w_wt": 1.0, "w_mom": 0.5}
 g = encode(raw, param_defs)
 d = decode(g)
-print(f"  Parametri GA:           9 (KNN: RSI/CCI/ADX/WaveTrend/Momentum)")
+print(f"  Parametri GA:           10 (KNN + class_weight + HA)")
 print(f"  Encode/Decode:          OK ({len(g.normalized_params)} float)")
 print(f"  validate_genome:        {'OK' if validate_genome(g) else 'FAIL'}")
 
