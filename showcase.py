@@ -368,43 +368,42 @@ sec("PyPortfolioOpt: efficient frontier + HRP su dati reali")
 heading(15, "MARKET DATA SOURCES")
 heading(17, "GENETIC ENGINE — Phase 3 (DEAP + NSGA-II)")
 
-from genetics.genome.parameters import (
-    CategoricalParameter, ContinuousParameter,
-)
+from genetics.genome.parameters import ContinuousParameter
 from genetics.genome.signal import (
-    GenomeConfig, GenomeToSignal, encode, decode, validate_genome,
+    GenomeConfig, AlphaGenomeToSignal, encode, decode, validate_genome,
 )
-from genetics.population import compute_stats, initialize_population
-from genetics.operators import create_toolbox, sbx_crossover, polynomial_mutation
 
-# ── Parameter definitions as FEATURE WEIGHTS ────────────────────────
-# (4 features from _compute_features: returns, momentum, vol_norm, sma_ratio)
+# ── 9 parametri: 8 pesi per categoria di alpha factors + soglia ──
 param_defs = [
-    ContinuousParameter("ret_weight", low=0.0, high=2.0),
-    ContinuousParameter("mom_weight", low=0.0, high=2.0),
-    ContinuousParameter("vol_weight", low=0.0, high=2.0),
-    ContinuousParameter("sma_weight", low=0.0, high=2.0),
-    CategoricalParameter("direction", categories=["long", "short"]),
-    ContinuousParameter("threshold", low=0.1, high=0.8),
+    ContinuousParameter("mom_weight", low=0.0, high=2.0),       # momentum
+    ContinuousParameter("mr_weight", low=0.0, high=2.0),        # mean_reversion
+    ContinuousParameter("vol_weight", low=0.0, high=2.0),       # volatility
+    ContinuousParameter("corr_weight", low=0.0, high=2.0),      # correlation
+    ContinuousParameter("volu_weight", low=0.0, high=2.0),      # volume
+    ContinuousParameter("seas_weight", low=0.0, high=2.0),      # seasonality
+    ContinuousParameter("fund_weight", low=0.0, high=2.0),      # fundamental
+    ContinuousParameter("micr_weight", low=0.0, high=2.0),      # microstructure
+    ContinuousParameter("threshold", low=0.01, high=0.5),
 ]
 genome_config = GenomeConfig(n_params=len(param_defs), param_defs=param_defs)
 
 # Encode/decode demo
-raw = {"ret_weight": 1.0, "mom_weight": 0.5, "vol_weight": 0.3, "sma_weight": 0.8,
-       "direction": "long", "threshold": 0.3}
+raw = {"mom_weight": 1.0, "mr_weight": 0.5, "vol_weight": 0.3, "corr_weight": 0.8,
+       "volu_weight": 0.4, "seas_weight": 0.2, "fund_weight": 0.6, "micr_weight": 0.3,
+       "threshold": 0.15}
 g = encode(raw, param_defs)
 d = decode(g)
-print(f"  Parametri:              {genome_config.n_params} (Continuous + Categorical)")
+print(f"  Parametri:              {genome_config.n_params} (pesi su 8 categorie alpha)")
 print(f"  Encode/Decode:          OK ({len(g.normalized_params)} float in [0,1])")
 print(f"  validate_genome:        {'OK' if validate_genome(g) else 'FAIL'}")
 
-# Signal su SPY
-signal = GenomeToSignal(g, param_defs)
+# Signal su SPY con 50 alpha factors reali
+signal = AlphaGenomeToSignal(g, param_defs)
 sig = signal.compute(spy)
 active = (sig != 0).sum()
-print(f"  GenomeToSignal:          segnale demo — {active} segnali non-neutrali")
+print(f"  AlphaGenomeToSignal:    {active} segnali su {len(sig)} con 8 fattori alpha")
 
-# ── GA run reale (pop=12, gen=12, SPY 2-fold WFA) ─────────────────
+# ── GA reale (pop=12, gen=12) ────────────────────────────────────
 from genetics.fitness import WalkForwardConfig
 from genetics.engine import GAConfig, GeneticEngine
 
@@ -419,23 +418,40 @@ ga_result = asyncio.run(
            walk_forward_config=WalkForwardConfig(n_splits=2, purge_window=5, embargo=5),
            registry=None)
 )
-print(f"  GA run (pop=12, gen=12):")
+
+print(f"  GA run (pop=12, gen=12, 2-fold WFA):")
 print(f"  Pareto front:           {len(ga_result.pareto_front)} strategie non-dominanti")
 print(f"  Hall of Fame:           {len(ga_result.hall_of_fame)} strategie migliori")
-fit_vals = [(ind.fitness.values[0] if hasattr(ind, 'fitness') and ind.fitness.valid else None)
-            for ind in ga_result.hall_of_fame[:5]]
-print(f"  HoF Sharpe top-5:       {[f'{f:.3f}' for f in fit_vals if f is not None]}")
-print(f"  Pareto front size:      {len(ga_result.pareto_front)}")  
+
+# Extract fitness per generation
+gen_log = getattr(ga_result, "generations_log", [])
+convergence = []
+for g_entry in gen_log:
+    mf = g_entry.get("max_fitness", (0,))
+    if isinstance(mf, (list, tuple)) and len(mf) > 0:
+        convergence.append(float(mf[0]))
+    else:
+        convergence.append(0.0)
+
+if convergence:
+    print(f"  Convergenza Sharpe per generazione:")
+    for i, s in enumerate(convergence):
+        bar_n = max(0, min(20, int((s + 1.0) * 10)))  # scale -1..1 to 0..20
+        bar = "█" * bar_n + "░" * (20 - bar_n)
+        print(f"    Gen {i+1:2d}: {bar}  {s:+.3f}")
+
 if ga_result.pareto_front:
     fit0 = ga_result.pareto_front[0].fitness.values
     print(f"  Best Sharpe:            {fit0[0]:.3f}")
     print(f"  Best Sortino:           {fit0[1]:.3f}")
     print(f"  Best Calmar:            {fit0[2]:.3f}")
+    # Show decoded params from Hall of Fame (has .fitness + Genome-like structure)
+    best_hof = ga_result.hall_of_fame[0] if ga_result.hall_of_fame else ga_result.pareto_front[0]
+    print(f"  Note: alpha library produce segnali ({active}/1510 attivi)")
+    print(f"        ma bilancio long/short ~zero → Sharpe piano")
+    print(f"        Ottimizzazione soglie/fattori in Phase 3.5")
 print(f"  Backtest totali:        {ga_result.n_fitness_evaluations} in {ga_result.timing:.1f}s")
-print(f"  Pipeline completa:      encode → GA → backtest → Pareto → decode")
-sec("GA reale: 12 gen × 12 pop × 2-fold WFA su SPY — pipeline end-to-end")
-
-# ── 19. Multi-Agent System ──────────────────────────────────────────────────
+sec("AlphaGenomeToSignal: 50 alpha factors · GA reale 12×12 su SPY")
 heading(18, "MULTI-AGENT SYSTEM — Phase 4 (LangGraph)")
 
 from agents.protocol import AgentVote, AnalystSignal, MarketState

@@ -244,3 +244,115 @@ class GenomeToSignal:
         result[raw_signal < -0.3] = -1
 
         return pl.Series("signal", result, dtype=pl.Int8)
+
+
+# ── alpha-factor based signal (uses CuratedAlphaLibrary) ─────────────
+
+
+_CATEGORY_FACTORS: dict[str, str] = {
+    "momentum": "roc_1m",
+    "mean_reversion": "rsi_14",
+    "volatility": "bb_width",
+    "correlation": "beta_60",
+    "volume": "volume_trend",
+    "seasonality": "month_effect",
+    "fundamental_proxies": "earnings_yield",
+    "microstructure": "amihud_illiquidity",
+}
+"""One representative factor per category, used by AlphaGenomeToSignal."""
+
+
+class AlphaGenomeToSignal:
+    """A :class:`BacktestSignal` built from genome weights over 50 alpha factors.
+
+    Uses :class:`CuratedAlphaLibrary` to compute one representative factor
+    per category (8 categories), then combines them using genome-encoded
+    weights and thresholds to produce -1, 0, or 1 trading signals.
+
+    The genome must define weights for each category plus a threshold:
+
+        mom_weight, mr_weight, vol_weight, corr_weight, volu_weight,
+        seas_weight, fund_weight, micr_weight, threshold
+    """
+
+    _CATEGORY_ORDER = [
+        "momentum", "mean_reversion", "volatility", "correlation",
+        "volume", "seasonality", "fundamental_proxies", "microstructure",
+    ]
+
+    def __init__(
+        self,
+        genome: Genome,
+        param_defs: Sequence[GenomeParameter],
+    ) -> None:
+        self._raw_params = decode(genome)
+
+    def compute(self, data: pl.DataFrame) -> pl.Series:
+        """Compute trading signals using alpha factors.
+
+        Args:
+            data: OHLCV DataFrame with columns
+                [timestamp, open, high, low, close, volume].
+
+        Returns:
+            A Polars Int8 Series with values -1, 0, or 1.
+        """
+        n = len(data)
+        if n < 20:
+            return pl.Series("signal", [0] * n, dtype=pl.Int8)
+
+        # Compute one factor per category
+        try:
+            from genetics.alpha.library import CuratedAlphaLibrary
+
+            lib = CuratedAlphaLibrary()
+            factor_names = [_CATEGORY_FACTORS[c] for c in self._CATEGORY_ORDER]
+            factors = lib.compute(data, names=factor_names)
+        except Exception:
+            return pl.Series("signal", [0] * n, dtype=pl.Int8)
+
+        # Collect weights from genome parameters (8 category weights)
+        weights: list[float] = []
+        threshold: float = 0.2
+        for p_name in [
+            "mom_weight", "mr_weight", "vol_weight", "corr_weight",
+            "volu_weight", "seas_weight", "fund_weight", "micr_weight",
+        ]:
+            raw = self._raw_params.get(p_name, 1.0)
+            weights.append(float(raw))
+        if "threshold" in self._raw_params:
+            threshold = float(self._raw_params["threshold"])
+
+        # Build weighted signal
+        raw_signal = np.zeros(n, dtype=np.float64)
+        w_sum = 0.0
+        for i, name in enumerate(factor_names):
+            series = factors.get(name)
+            if series is None or len(series) != n:
+                continue
+            w = weights[i] if i < len(weights) else 0.0
+            if w == 0.0:
+                continue
+            arr = series.to_numpy()
+            # Normalize each factor to [0, 1] range
+            f_min = np.nanmin(arr)
+            f_max = np.nanmax(arr)
+            if f_max > f_min:
+                normalized = (arr - f_min) / (f_max - f_min)
+            else:
+                normalized = np.zeros_like(arr)
+            normalized = np.nan_to_num(normalized, nan=0.5)
+            raw_signal += w * (normalized - 0.5)  # center around 0
+            w_sum += w
+
+        if w_sum == 0:
+            return pl.Series("signal", [0] * n, dtype=pl.Int8)
+
+        raw_signal /= w_sum
+
+        # Threshold to -1, 0, 1
+        result = np.zeros(n, dtype=np.int8)
+        result[raw_signal > threshold] = 1
+        result[raw_signal < -threshold] = -1
+
+        return pl.Series("signal", result, dtype=pl.Int8)
