@@ -119,60 +119,79 @@ risk_params: RiskParams            # Max DD, posizione max
 
 ---
 
-## Tech Stack
+## Tech Stack (Attuale)
 
 | Layer | Tecnologia |
 |-------|-----------|
-| **Core Language** | Python 3.12+ (Rust per hot path) |
-| **Agent Framework** | LangGraph + Custom orchestration |
-| **Backtesting** | nautilus_trader + vectorbt |
-| **Genetic Algorithm** | DEAP + PyGAD |
-| **Time-Series DB** | QuestDB / ClickHouse |
-| **Cache/Stream** | Redis + NATS |
-| **Workflow** | Temporal / Prefect |
-| **Broker API** | IBKR + Binance (nautilus_trader), CCXT |
-| **Dashboard** | Streamlit / Dash |
+| **Core Language** | Python 3.12+ |
+| **Agent Framework** | LangGraph 1.2.9 |
+| **Backtesting** | vectorbt + nautilus_trader (event-driven) |
+| **Genetic Algorithm** | DEAP 1.4 (NSGA-II, island model) |
+| **Experiment Registry** | SQLite (aiosqlite, pydantic) |
+| **Cache** | LRU in-memory + Redis (previsto) |
+| **Message Bus** | NATS (core.events) |
+| **Broker API** | ib_insync (IBKR), CCXT (100+ crypto) |
+| **LLM** | litellm (multi-provider: GPT-4, Claude, locale) |
+| **DataFrames** | Polars + NumPy |
+| **Indicatori** | TA-Lib + Polars-native |
+| **Dashboard** | Streamlit / Dash (Phase 6) |
 
-### Data Sources
-| Tipo | Fonti |
-|------|-------|
-| **Prezzi US** | Yahoo Finance, Alpha Vantage, Polygon.io |
-| **Crypto** | Binance WS, Coinbase WS, Kraken |
-| **Macro** | FRED, World Bank, TradingEconomics |
-| **News** | NewsAPI, StockTwits, Reddit, X API |
-| **Fundamentals** | Financial Modeling Prep, SEC EDGAR |
-| **On-Chain** | Glassnode, Dune Analytics |
+### Data Sources (Integrati)
+| Fonte | Dati | API Key |
+|-------|------|---------|
+| **Yahoo Finance** | OHLCV US equities/ETF | No |
+| **CoinPaprika** | Crypto 7000+ | No |
+| **FRED** | Macro (GDP, CPI, rates) | Sì |
+| **Binance WS** | Crypto real-time | No |
 
 ---
 
-## Fasi Implementazione (26 settimane)
+## Roadmap — Stato Attuale
 
-### Phase 0: Foundation (wk 1-2)
-Scaffold, data pipeline, QuestDB, domain models, configurazione
+```
+Phase 0: Foundation          ✅  2c2b254   Config, errors, logging, plugins, CLI
+Phase 1: Analytics Engine    ✅  7b4e23c   Indicatori, regime, sentiment, feature store
+Phase 2: Backtesting         ✅  fc853e3   vectorbt, WFA, bias correction, portfolio opt
+Phase 3: Genetic Engine      ✅  aca4c75   DEAP, NSGA-II, island model, 50 alpha factors
+Phase 3.5: Signal Opt        🔧  IN CORSO  Heikin Ashi, KNN, class balancing, alpha hybrid
+Phase 4: Multi-Agent System  ✅  8ed640d   LangGraph, 3 analyst, debate, risk/portfolio mgr
+Phase 5: Execution Engine    ✅  f6f8e88   OrderManager, IBKR, CCXT, 3 algos, CLI
+Phase 6: UI & Dashboard      ⬜  PROSSIMO  Streamlit, P&L analytics, risk monitor
+Phase 7: Autopilot            ⬜           Continual learning, meta-strategy, adaptive risk
+```
 
-### Phase 1: Analytics Engine (wk 3-4)
-Technical indicators, fundamental module, sentiment NLP, macro connector, feature pipeline
+**9 commit · 21 file doc · 19/19 showcase · ruff+mypy clean**
 
-### Phase 2: Backtesting (wk 5-6)
-nautilus_trader integration, metriche, walk-forward, bias correction, benchmark
+### Phase 3.5: Signal Optimization (in corso)
 
-### Phase 3: Genetic Engine (wk 7-10)
-DEAP GA, genome encoding, operatori, NSGA-II, island model, population management
+Obiettivo: risolvere la convergenza piatta del GA producendo segnali con edge reale.
 
-### Phase 4: Multi-Agent System (wk 11-16)
-LangGraph, 5 analyst agents, debate team, risk manager, portfolio manager, market oracle, genetic strategist
+| Task | Stato | Cosa |
+|------|-------|------|
+| T1: Heikin Ashi | ✅ | Conversione OHLCV → HA per segnali smooth |
+| T2: KNN balancing | ✅ | Class weighting + distance-weighted vote |
+| T3: Hybrid signal | ⬜ | KNN + 50 alpha factors combinati |
+| T4: GA ottimizzata | ⬜ | pop=20, gen=20, 4 isole, 5-fold WFA |
 
-### Phase 5: Execution (wk 17-18)
-Order manager, broker connectors, paper trading, algo execution, position tracking
+### Phase 6: UI & Dashboard (planning)
 
-### Phase 6: UI & Monitoring (wk 19-20)
-Dashboard, P&L analytics, risk monitor, agent logs, alerts (Telegram/webhook)
+Streamlit dashboard con:
+- P&L analytics, equity curve, drawdown
+- Risk monitor (VaR/CVaR, exposure)
+- Agent logs e decisioni MAS
+- Alert Telegram/webhook
 
-### Phase 7: Autopilot (wk 21-26)
-Continual learning, meta-strategy ensemble, adaptive risk, anomaly detection, explainable AI
+### Phase 7: Autopilot (future)
+
+- Continual learning su nuovi dati
+- Meta-strategy ensemble (top-N Pareto strategies)
+- Adaptive risk (regime-aware position sizing)
+- Anomaly detection su execution
+- Explainable AI per decisioni agenti
 
 ---
 
 ## Prossimo Passo
 
-Conferma della visione e delle scelte tecnologiche, poi partiamo con **Phase 0**.
+Completare **Phase 3.5** per sbloccare Sharpe > 0.8 in backtest,
+poi **Phase 6** (Dashboard Streamlit) per visualizzare risultati in tempo reale.
