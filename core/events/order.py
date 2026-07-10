@@ -31,3 +31,45 @@ class OrderFilledEvent(Event):
     filled_at: datetime
     broker: str = ""
     venue: str = ""
+
+
+class OrderCancelledEvent(Event):
+    order_id: str
+    instrument_id: str
+    side: str
+    quantity: Decimal
+    cancelled_quantity: Decimal
+    broker: str = ""
+    reason: str = ""
+
+
+class OrderRejectedEvent(Event):
+    order_id: str
+    instrument_id: str
+    side: str
+    quantity: Decimal
+    reason: str
+    broker: str = ""
+    error_code: str = ""
+
+
+class OrderPartiallyFilledEvent(Event):
+    order_id: str
+    instrument_id: str
+    side: str
+    fill_quantity: Decimal
+    fill_price: Decimal
+    remaining_quantity: Decimal
+    commission: Decimal = Decimal("0")
+    filled_at: datetime
+    broker: str = ""
+
+
+class OrderAmendedEvent(Event):
+    order_id: str
+    instrument_id: str
+    previous_price: Decimal | None = None
+    new_price: Decimal | None = None
+    previous_quantity: Decimal | None = None
+    new_quantity: Decimal | None = None
+    broker: str = ""

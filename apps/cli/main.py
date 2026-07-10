@@ -91,6 +91,63 @@ def main() -> None:
     # agent status
     agent_sub.add_parser("status", help="Show configured agents and status")
 
+    # trade submit / list / cancel / status / kill
+    trade_parser = subparsers.add_parser("trade", help="Trade execution")
+    trade_sub = trade_parser.add_subparsers(dest="trade_action", help="Trade command")
+
+    # trade submit
+    trade_submit_parser = trade_sub.add_parser("submit", help="Submit an order")
+    trade_submit_parser.add_argument(
+        "--instrument", type=str, required=True, help="Instrument symbol"
+    )
+    trade_submit_parser.add_argument(
+        "--side", type=str, required=True, choices=["buy", "sell"], help="Order side"
+    )
+    trade_submit_parser.add_argument("--qty", type=float, required=True, help="Order quantity")
+    trade_submit_parser.add_argument(
+        "--algo", type=str, default=None, help="Execution algo (vwap, twap, iceberg)"
+    )
+    trade_submit_parser.add_argument("--price", type=float, default=None, help="Limit price")
+    trade_submit_parser.add_argument(
+        "--order-type",
+        type=str,
+        default="market",
+        choices=["market", "limit", "stop"],
+        help="Order type",
+    )
+    trade_submit_parser.add_argument(
+        "--time-in-force",
+        type=str,
+        default="day",
+        choices=["day", "gtc", "ioc", "fok"],
+        help="Time in force",
+    )
+    trade_submit_parser.add_argument(
+        "--broker",
+        type=str,
+        default="paper",
+        choices=["paper", "ibkr", "ccxt"],
+        help="Broker to use",
+    )
+    trade_submit_parser.add_argument(
+        "--dry-run", action="store_true", help="Print order without submitting"
+    )
+    trade_submit_parser.add_argument(
+        "--algo-config", type=str, default=None, help="JSON algo config (EXPERIMENTAL)"
+    )
+    trade_sub.add_parser("list", help="List open orders")
+
+    # trade cancel
+    trade_cancel_parser = trade_sub.add_parser("cancel", help="Cancel an order")
+    trade_cancel_parser.add_argument("order_id", type=str, help="Internal order ID")
+
+    # trade status
+    trade_status_parser = trade_sub.add_parser("status", help="Check order status")
+    trade_status_parser.add_argument("order_id", type=str, help="Internal order ID")
+
+    # trade kill
+    trade_sub.add_parser("kill", help="Cancel ALL open orders")
+
     args = parser.parse_args()
 
     if args.version:
@@ -118,6 +175,19 @@ def main() -> None:
             _handle_agent_status(args)
         else:
             agent_parser.print_help()
+    elif args.command == "trade":
+        if args.trade_action == "submit":
+            _handle_trade_submit(args)
+        elif args.trade_action == "list":
+            _handle_trade_list(args)
+        elif args.trade_action == "cancel":
+            _handle_trade_cancel(args)
+        elif args.trade_action == "status":
+            _handle_trade_status(args)
+        elif args.trade_action == "kill":
+            _handle_trade_kill(args)
+        else:
+            trade_parser.print_help()
     else:
         parser.print_help()
 
@@ -387,6 +457,51 @@ def _handle_agent_status(args: argparse.Namespace) -> None:
 
     sys.exit(handle_agent_status(args))
 
+
+
+def _handle_trade_submit(args: argparse.Namespace) -> None:
+    """Submit a trade order."""
+    import asyncio
+
+    from apps.cli.trade_commands import handle_trade_submit
+
+    sys.exit(asyncio.run(handle_trade_submit(args)))
+
+
+def _handle_trade_list(args: argparse.Namespace) -> None:
+    """List open orders."""
+    import asyncio
+
+    from apps.cli.trade_commands import handle_trade_list
+
+    sys.exit(asyncio.run(handle_trade_list(args)))
+
+
+def _handle_trade_cancel(args: argparse.Namespace) -> None:
+    """Cancel an order."""
+    import asyncio
+
+    from apps.cli.trade_commands import handle_trade_cancel
+
+    sys.exit(asyncio.run(handle_trade_cancel(args)))
+
+
+def _handle_trade_status(args: argparse.Namespace) -> None:
+    """Check order status."""
+    import asyncio
+
+    from apps.cli.trade_commands import handle_trade_status
+
+    sys.exit(asyncio.run(handle_trade_status(args)))
+
+
+def _handle_trade_kill(args: argparse.Namespace) -> None:
+    """Cancel all open orders."""
+    import asyncio
+
+    from apps.cli.trade_commands import handle_trade_kill
+
+    sys.exit(asyncio.run(handle_trade_kill(args)))
 
 if __name__ == "__main__":
     main()
