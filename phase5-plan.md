@@ -1,37 +1,29 @@
-# Phase 5 — Execution Engine
+# Phase 5 — Execution Engine (v2)
 
-> 4 settimane · 6 task · Broker connectors, Order Manager, Execution Algos
+> 5 settimane · 8 task · Broker connectors, Order Manager, Execution Algos, Market Data
 > Base: Phase 4 MAS completa · Scaffold `execution/` già esistente (vuoto)
-> Dipendenze nuove: `ib_insync`, `ccxt`
+> Review: CEO (5.9KB) + Engineering (4.3KB) + Design (7.0KB) — 3 revisioni incorporate
 
 ---
 
-## 1. Stato Attuale
+## 1. Decisioni dalla Review
 
-L'execution layer è già **scaffoldato ma vuoto** (stub Phase 0):
-
-```
-execution/                  # Package vuoto
-├── __init__.py             # Vuoto
-├── algos/__init__.py       # Vuoto
-├── brokers/__init__.py     # Vuoto
-└── order_manager/__init__.py  # Vuoto
-```
-
-**Già esistente (Phase 0-2, FROZEN):**
-- `core/domain/order.py` — `Order` model con validazione (pydantic)
-- `core/domain/enums.py` — `OrderSide`, `OrderType`, `OrderStatus`, `TimeInForce`
-- `core/events/order.py` — `OrderSubmittedEvent`, `OrderFilledEvent`
-- `core/events/trade.py` — trade events
-- `core/events/portfolio.py` — portfolio events
-
-**Da Phase 4:**
-- `agents/decision/portfolio.py` — `PortfolioManager` produce `PortfolioDecision`
-- `agents/decision/risk.py` — `RiskManager` approva/rifiuta
+| # | Review | Issue | Decisione |
+|---|--------|-------|-----------|
+| 1 | **CEO/Eng/Design** | RiskManager dopo OrderManager = invertito | **RiskManager gate PRIMA** della creazione Order. Due gates distinte: (a) pre-decisione Kelly/VaR in Phase 4, (b) pre-submission position/concentration check in Execution |
+| 2 | **CEO/Eng** | IBKR 3gg = irrealistico | **Wrap nautilus_trader** (già installato) dietro BrokerProtocol. Risparmia ~2 settimane di debugging API |
+| 3 | **Design** | BrokerProtocol no streaming | Aggiungere `stream_orders()`, `stream_positions()`, `amend_order()` al protocollo |
+| 4 | **CEO/Design** | CLI troppo minimale | 9 flag: `--algo`, `--price`, `--order-type`, `--time-in-force`, `--broker`, `--dry-run`, `--algo-config`. 5 verbi: `submit`, `list`, `cancel`, `status`, `kill` |
+| 5 | **Design** | Algos senza market data = showstopper | Aggiungere `MarketDataFeed` per volume profile (VWAP) e prezzi real-time |
+| 6 | **Eng** | float→Decimal nel bridge | `Decimal(str(position_size)).quantize(...)` al confine PortfolioBridge |
+| 7 | **Eng** | Eventi lifecycle mancanti | Aggiungere `OrderCancelledEvent`, `OrderRejectedEvent`, `OrderPartiallyFilledEvent`, `OrderAmendedEvent` |
+| 8 | **CEO/Eng** | No reconnection strategy | `is_connected()`, `health()`, exponential backoff reconnect in BrokerProtocol |
+| 9 | **Eng/Design** | MarketOrderAlgo = no-op | Rimosso. Sostituito da path diretto in OrderManager |
+| 10 | **Eng** | Config duplicati | Collassare `ibkr_config.py` + `ccxt_config.py` in singolo `BrokerConfig` |
 
 ---
 
-## 2. Architettura
+## 2. Architettura (Revisionata)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -41,154 +33,147 @@ execution/                  # Package vuoto
                                      │ PortfolioDecision
                                      ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                         ORDER MANAGER                                    │
-│  - Riceve PortfolioDecision → converte in Order                          │
-│  - Valida contro RiskManager (sanity check)                             │
-│  - Sceglie execution algo (market/VWAP/TWAP/iceberg)                   │
-│  - Invia a broker connector                                             │
-│  - Aggiorna Order lifecycle: pending → submitted → filled/cancelled     │
-│  - Emette eventi NATS per ogni transizione di stato                     │
+│                      PORTFOLIO BRIDGE (T2)                               │
+│  - Converte PortfolioDecision → OrderRequest                            │
+│  - float → Decimal con quantize(0.0001)                                 │
+│  - Mappa confidence → execution algo (high=market, low=VWAP)           │
+└────────────────────────────────────┬────────────────────────────────────┘
+                                     │ OrderRequest
+                                     ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         ORDER MANAGER (T1)                               │
+│  - Riceve OrderRequest                                                  │
+│  ▶ RISK GATE #2: position/concentration check contro posizioni aperte   │
+│  - Seleziona ExecutionAlgo                                              │
+│  - Crea Order → lifecycle: pending → submitted                          │
+│  - Emette OrderSubmittedEvent su NATS                                   │
 └─────────────────────────────┬───────────────────────────────────────────┘
-                              │ Order (via broker connector)
+                              │ Order → ExecutionAlgo
                               ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
+│                     EXECUTION ALGOS (T6)                                 │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐               │
+│  │  VWAP    │  │  TWAP    │  │ Iceberg  │  │  Market  │               │
+│  │(vol.prof)│  │(time sch)│  │(hidden)  │  │(direct)  │               │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘               │
+│  ↑ bisogno di MarketDataFeed per prezzi e volumi                        │
+└─────────────┬─────────────────────────────────────┬─────────────────────┘
+              │ Order slice                         │ FillReport
+              ▼                                     ▼
+┌─────────────────────────────────────────────────────────────────────────┐
 │                         BROKER CONNECTORS                                │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐                   │
-│  │  IBKR (live) │  │ CCXT (crypto)│  │  PAPER (sim) │                   │
-│  │ ib_insync    │  │ 100+ exchange│  │  mock fills  │                   │
-│  └──────────────┘  └──────────────┘  └──────────────┘                   │
+│  ┌──────────────────────┐  ┌──────────────────┐  ┌──────────────┐      │
+│  │ nautilus_trader IBKR │  │ nautilus_trader  │  │ PAPER (sim)  │      │
+│  │ (wrap → BrokerProto) │  │ CCXT (wrap)      │  │ mock fills   │      │
+│  └──────────────────────┘  └──────────────────┘  └──────────────┘      │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Principi
+### Principi (v2)
 
 | # | Principio | Conseguenza |
 |---|-----------|-------------|
-| 1 | **Fail Closed** | Se broker non raggiungibile → NO TRADE, non riprovare all'infinito |
-| 2 | **Event-Driven** | Ogni stato order emette evento NATS (Phase 0) |
-| 3 | **Paper First** | Tutti i test su paper broker; IBKR/CCXT solo dopo validazione |
-| 4 | **Idempotenza** | Ogni ordine ha `order_id` univoco; duplicati = reject silenzioso |
-| 5 | **Audit Trail** | Tutti gli ordini su Experiment Registry |
-| 6 | **No LLM** | Execution layer = 0% AI. Solo codice deterministico |
+| 1 | **Risk gate PRIMA** | RiskManager chiamato prima di creare qualsiasi Order. Mai "sanity check" dopo |
+| 2 | **nautilus_trader first** | Broker connector wrappa nautilus_trader (già installato), non codice custom |
+| 3 | **Streaming nativo** | BrokerProtocol ha stream_orders/stream_positions per fills real-time |
+| 4 | **Kill switch** | `oracle trade kill` cancella tutti gli ordini aperti su tutti i broker |
+| 5 | **Market Data** | ExecutionAlgos ricevono MarketDataFeed per prezzi e volumi real-time |
+| 6 | **Fail Closed** | Se broker non raggiungibile → NO TRADE, con riconnessione esponenziale |
+| 7 | **Audit Trail** | Ogni order lifecycle event → Experiment Registry |
 
 ---
 
-## 3. Broker APIs (dalla ricerca)
+## 3. Task Breakdown (v2)
 
-| Broker | Libreria | Asset | Stato |
-|--------|----------|-------|-------|
-| **Interactive Brokers** | `ib_insync` (Python sync/async) | Stocks, Options, Futures, FX | Pianificato |
-| **Binance / 100+ crypto** | `ccxt` (Python/JS) | Crypto spot + futures | Pianificato |
-| **Paper Trading** | Broker interno (mock fills) | Tutti | **Primo** |
-
-**Perché queste scelte:**
-- `ib_insync` → 25.4K★, gold standard per IBKR, API matura (1995+)
-- `ccxt` → 34K★, 100+ exchange, unificato, mantenuto attivamente
-- `nautilus_trader` → già in `pyproject.toml` come dipendenza (Phase 2), ha broker connector IBKR. Potenzialmente riutilizzabile in Phase 5.5
-
----
-
-## 4. Task Breakdown
-
-### Week 1: Order Manager (`execution/order_manager/`)
+### Week 1: Order Manager + Bridge
 
 **T1: Order Manager Core — 3 giorni**
 
 | File | Subtask | Agente |
 |------|---------|--------|
-| `execution/order_manager/manager.py` | `OrderManager`: riceve PortfolioDecision, crea Order, lifecycle management, event emission | E |
-| `execution/order_manager/types.py` | `OrderRequest`, `OrderResult`, `FillReport` (pydantic) | T |
-| `execution/order_manager/inventory.py` | `InventoryTracker`: posizioni aperte, P&L non realizzato | E |
-| `tests/execution/test_order_manager.py` | 8+ test: create order, lifecycle transitions, duplicate reject | T |
+| `execution/order_manager/manager.py` | `OrderManager`: OrderRequest → lifecycle → algo dispatch → broker | E |
+| `execution/order_manager/types.py` | `OrderRequest`, `OrderResult`, `FillReport` (pydantic, Decimal) | T |
+| `execution/order_manager/inventory.py` | `InventoryTracker`: posizioni aperte, P&L non realizzato, daily loss limit | E |
+| `execution/order_manager/errors.py` | `OrderRejectedError`, `BrokerTimeoutError`, `OrderNotFoundError` | T |
+| `tests/execution/test_order_manager.py` | 10+ test: create, lifecycle, risk gate, reject, timeout | T |
 
 **T2: Portfolio Bridge — 2 giorni**
 
 | File | Subtask | Agente |
 |------|---------|--------|
-| `execution/order_manager/bridge.py` | `PortfolioBridge`: adatta PortfolioDecision (Phase 4) → OrderRequest | E |
-| `tests/execution/test_bridge.py` | 6+ test: decision mapping, edge cases | T |
+| `execution/order_manager/bridge.py` | `PortfolioBridge`: PortfolioDecision→OrderRequest, float→Decimal, algo mapping, RiskManager pre-gate | E |
+| `tests/execution/test_bridge.py` | 8+ test: decision mapping, Decimal conversion, risk reject | T |
 
----
+### Week 2: Broker Protocol + Paper + Eventi
 
-### Week 2: Paper Broker (`execution/brokers/`)
-
-**T3: Paper Broker + Protocol — 3 giorni**
+**T3: Broker Protocol + Paper — 3 giorni**
 
 | File | Subtask | Agente |
 |------|---------|--------|
-| `execution/brokers/protocol.py` | `BrokerProtocol`: submit, cancel, status, connect, disconnect | T |
-| `execution/brokers/paper.py` | `PaperBroker`: simulate fills con spread, slippage model, partial fills | E |
-| `execution/brokers/types.py` | `BrokerOrder`, `BrokerFill`, `BrokerPosition` | T |
-| `tests/execution/test_paper_broker.py` | 10+ test: market fill, partial fill, slippage, reject | T |
+| `execution/brokers/protocol.py` | `BrokerProtocol`: submit, cancel, amend, status, connect, disconnect, is_connected, health, stream_orders, stream_positions | T |
+| `execution/brokers/types.py` | `BrokerOrder`, `BrokerFill`, `BrokerPosition` + `namespaced_id` (broker:local_id) | T |
+| `execution/brokers/config.py` | `BrokerConfig` unico (ibkr_host, ibkr_port, ccxt_exchange, api_key, sandbox_mode) | T |
+| `execution/brokers/base.py` | `BaseBroker`: reconnect con backoff esponenziale, health check, heartbeats | E |
+| `execution/brokers/paper.py` | `PaperBroker`: simulate fills, spread 1%, slippage 0.5%, partial fills 50% prob | E |
+| `tests/execution/test_paper_broker.py` | 10+ test: fill, slippage, partial, reject, reconnect | T |
 
-**T4: IBKR Connector — 3 giorni**
+**T4: Lifecycle Events — 1 giorno**
 
-| File | Subtask | Agente |
-|------|---------|--------|
-| `execution/brokers/ibkr.py` | `IBKRBroker`: ib_insync wrapper, connect, submit, cancel, position sync | E |
-| `execution/brokers/ibkr_config.py` | `IBKRConfig`: host, port, client_id, account | T |
-| `tests/execution/test_ibkr.py` | 4+ test con mock ib_insync | T |
+| File | Subtask |
+|------|---------|
+| `core/events/order.py` | Aggiungere: `OrderCancelledEvent`, `OrderRejectedEvent`, `OrderPartiallyFilledEvent`, `OrderAmendedEvent` |
 
----
+### Week 3: Broker Connectors (nautilus_trader wrap)
 
-### Week 3: CCXT + Execution Algos
-
-**T5: CCXT Connector — 2 giorni**
+**T5: IBKR + CCXT via nautilus_trader — 4 giorni**
 
 | File | Subtask | Agente |
 |------|---------|--------|
-| `execution/brokers/ccxt_broker.py` | `CCXTBroker`: ccxt wrapper, exchange abstraction | E |
-| `execution/brokers/ccxt_config.py` | `CCXTConfig`: exchange, api_key, secret, sandbox | T |
-| `tests/execution/test_ccxt.py` | 4+ test con ccxt mocked exchange | T |
+| `execution/brokers/nautilus_ibkr.py` | `NautilusIBKRBroker`: wrappa nautilus_trader IBKR adapter dietro BrokerProtocol | E |
+| `execution/brokers/nautilus_ccxt.py` | `NautilusCCXTBroker`: wrappa nautilus_trader CCXT adapter dietro BrokerProtocol | E |
+| `execution/brokers/registry.py` | `BrokerRegistry`: get/set active broker, health report | T |
+| `tests/execution/test_nautilus.py` | 6+ test con nautilus mocked | T |
 
-**T6: Execution Algos (`execution/algos/`) — 3 giorni**
+### Week 4: Execution Algos + Market Data
+
+**T6: Execution Algos + MarketDataFeed — 4 giorni**
 
 | File | Subtask | Agente |
 |------|---------|--------|
-| `execution/algos/protocol.py` | `ExecutionAlgo` protocol: execute(order, market_data) → list[FillReport] | T |
-| `execution/algos/market.py` | `MarketOrderAlgo`: submit immediately at market | T |
-| `execution/algos/vwap.py` | `VWAPAlgo`: slice order across N intervals aligned to volume profile | E |
-| `execution/algos/twap.py` | `TWAPAlgo`: slice order across N equal time intervals | E |
-| `execution/algos/iceberg.py` | `IcebergAlgo`: hidden quantity, show small portion at a time | E |
+| `execution/algos/protocol.py` | `ExecutionAlgo` protocol: execute(order, market_data) → AsyncGenerator[FillReport] | T |
+| `execution/algos/scheduler.py` | `AlgoScheduler`: shared interval/volume calculation per TWAP/VWAP | E |
+| `execution/algos/vwap.py` | `VWAPAlgo`: slice per volume profile (richiede MarketDataFeed) | E |
+| `execution/algos/twap.py` | `TWAPAlgo`: slice per intervalli temporali uguali | E |
+| `execution/algos/iceberg.py` | `IcebergAlgo`: hidden quantity, display_size, refresh_interval | E |
 | `execution/algos/factory.py` | `create_algo(name, config) → ExecutionAlgo` | T |
-| `tests/execution/test_algos.py` | 10+ test: market fill, VWAP schedule, TWAP timing, iceberg display | T |
+| `execution/market_data.py` | `MarketDataFeed`: prezzo real-time, volume profile, spread | E |
+| `tests/execution/test_algos.py` | 12+ test: VWAP schedule, TWAP timing, Iceberg display_qty, factory | T |
 
----
+### Week 5: CLI + Integrazione + Final
 
-### Week 4: CLI + Integrazione + Test
-
-**T7: Broker Registry + CLI — 3 giorni**
+**T7: CLI estesa — 3 giorni**
 
 | File | Subtask | Agente |
 |------|---------|--------|
-| `execution/brokers/__init__.py` | `BrokerRegistry`: get/set active broker | T |
-| `execution/__init__.py` | Re-export: OrderManager, disponi broker factory | T |
-| `apps/cli/main.py` | `oracle trade submit --instrument SPY --side buy --qty 100` | E |
-| `apps/cli/trade_commands.py` | Trade CLI handlers | E |
-| `tests/execution/test_cli.py` | 6+ test: CLI trade commands | T |
+| `apps/cli/trade_commands.py` | Handler: submit (--algo, --price, --order-type, --time-in-force, --broker, --dry-run, --algo-config), list, cancel <id>, status <id>, kill | E |
+| `apps/cli/main.py` | Estensione subparser trade con 5 verbi | E |
+| `tests/execution/test_cli.py` | 10+ test: tutti i comandi, flag parsing, --dry-run | T |
 
-**T8: Integrazione con Phase 4 — 2 giorni**
+**T8: Integrazione Phase 4 + Final — 3 giorni**
 
 | Task | Cosa |
 |------|------|
-| Bridge | PortfolioDecision → OrderManager: collegamento diretto |
-| Orchestrator update | `MASOrchestrator.run()` esegue trade se decision=BUY/SELL |
-| Safety check | RiskManager chiamato DOPO OrderManager come sanity |
-| Fire Drill | Paper broker con dati sintetici: MAS decide → ordine eseguito → evento emesso |
-
-**T9: Final — 2 giorni**
-
-| Subtask | Target |
-|---------|--------|
-| ruff check execution/ | Clean |
-| mypy --strict execution/ | Clean |
-| pytest tests/execution/ -q | ≥ 50 test |
-| Showcase update | 19/19 componenti |
+| Bridge vivo | `MASOrchestrator.run()` → se decision=BUY/SELL → `OrderManager.submit()` |
+| Risk chain completa | Phase 4 Kelly/VaR (gate #1) + Execution position/concentration (gate #2) |
+| Fire Drill | Paper broker: MAS decide → ordine eseguito → fill event → NATS emesso |
+| Kill switch test | `oracle trade kill` cancella tutti gli ordini |
+| Showcase | 19/19 componenti |
+| ruff + mypy + pytest | ≥ 60 test, clean |
 | Commit | `feat: Phase 5 Execution Engine` |
 
 ---
 
-## 5. Dipendenze Nuove
+## 4. Dipendenze
 
 ```toml
 execution = [
@@ -197,33 +182,55 @@ execution = [
 ]
 ```
 
+nautilus_trader è **già installato** (Phase 2 dipendenza).
+
 ---
 
-## 6. BrokerProtocol (Interfaccia)
+## 5. BrokerProtocol (v2 — con streaming)
 
 ```python
 class BrokerProtocol(Protocol):
-    """Connector astratto per qualsiasi broker."""
+    """Connector astratto per qualsiasi broker, con streaming."""
 
     async def connect(self) -> None: ...
     async def disconnect(self) -> None: ...
+    async def is_connected(self) -> bool: ...
+    async def health(self) -> dict[str, Any]: ...
 
-    async def submit_order(self, order: Order) -> str:
-        """Submit order → broker_order_id."""
-        ...
-
+    async def submit_order(self, order: Order) -> str: ...
     async def cancel_order(self, broker_order_id: str) -> bool: ...
+    async def amend_order(self, broker_order_id: str, **changes) -> bool: ...
     async def order_status(self, broker_order_id: str) -> OrderStatus: ...
+
+    async def stream_orders(self) -> AsyncGenerator[BrokerOrder, None]: ...
+    async def stream_positions(self) -> AsyncGenerator[BrokerPosition, None]: ...
     async def positions(self) -> list[BrokerPosition]: ...
 ```
 
 ---
 
-## 7. Esecuzione Consigliata (Team Mode)
+## 6. CLI Completa
+
+```bash
+# Verbi
+oracle trade submit --instrument SPY --side buy --qty 100              # Market default
+oracle trade submit --instrument SPY --side buy --qty 100 --algo vwap  # VWAP algo
+oracle trade submit --instrument SPY --side buy --qty 100 --price 450 --order-type limit --time-in-force day --broker paper
+oracle trade submit --instrument SPY --side buy --qty 100 --dry-run    # Valida senza inviare
+oracle trade list                           # Ordini aperti
+oracle trade cancel <order_id>             # Cancella ordine
+oracle trade status <order_id>             # Stato dettagliato
+oracle trade kill                          # EMERGENZA: cancella tutti gli ordini
+```
+
+---
+
+## 7. Esecuzione (Team Mode)
 
 ```
 Week 1: T1 (OrderManager) + T2 (PortfolioBridge) — parallelo
-Week 2: T3 (PaperBroker) + T4 (IBKR) — paralleli (paper broker mocka ibkr)
-Week 3: T5 (CCXT) + T6 (Algos) — paralleli
-Week 4: T7 (CLI+Registry) + T8 (Phase 4 Integrazione) + T9 (Final) — in serie
+Week 2: T3 (BrokerProtocol+Paper+Base+Config) + T4 (Eventi mancanti) — parallelo
+Week 3: T5 (nautilus IBKR + CCXT) — 1 agente (4gg)
+Week 4: T6 (Algos + MarketDataFeed) — 2 agenti paralleli (algos, market_data)
+Week 5: T7 (CLI estesa) + T8 (Integrazione + Final) — in serie
 ```
