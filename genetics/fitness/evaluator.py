@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 from uuid import uuid4
@@ -61,11 +62,13 @@ class FitnessEvaluator:
         walk_forward_config: WalkForwardConfig | None = None,
         registry: ExperimentRegistry | None = None,
         cache: FitnessCache | None = None,
+        signal_factory: Callable[..., Any] | None = None,
     ) -> None:
         self._backtest_cfg = backtest_config
         self._wf_cfg = walk_forward_config or WalkForwardConfig()
         self._registry = registry
         self._cache = cache
+        self._signal_factory = signal_factory
 
     # ------------------------------------------------------------------
     # Public API
@@ -118,7 +121,10 @@ class FitnessEvaluator:
 
         # ── build signal and run walk-forward ────────────────────
         try:
-            signal = GenomeToSignal(genome, genome.param_defs)
+            if self._signal_factory is not None:
+                signal = self._signal_factory(genome, genome.param_defs)
+            else:
+                signal = GenomeToSignal(genome, genome.param_defs)
             wf = WalkForwardEngine(
                 registry=self._registry,
                 parent_experiment_id=experiment_id,

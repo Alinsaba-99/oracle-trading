@@ -12,6 +12,7 @@ import multiprocessing
 import os
 import signal
 import time
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
@@ -53,6 +54,8 @@ class GAConfig:
         checkpoint_interval: Save checkpoint every *N* generations.
         resume_from: Path to a checkpoint file to resume from.
         n_jobs: Number of parallel worker processes (``None`` → CPU count).
+        signal_type: Which signal implementation to use (``"genome"``,
+            ``"alpha"``, or ``"knn"``).
         checkpoint_dir: Directory for checkpoint files.
     """
 
@@ -66,6 +69,7 @@ class GAConfig:
     checkpoint_interval: int = 5
     resume_from: str | None = None
     n_jobs: int | None = None
+    signal_type: str = "genome"
     checkpoint_dir: str = "checkpoints/"
 
 
@@ -172,14 +176,34 @@ class GeneticEngine:
                 )
                 self._start_generation = 0
 
+            # Tag checkpoint data with signal_type for restore
+            self._island_manager._signal_type = self.config.signal_type
+
             # ── Create evaluator ──────────────────────────────────────
             from genetics.fitness.evaluator import FitnessEvaluator
 
             bt_config = backtest_config or BacktestConfig()
+
+            # Map signal_type to factory callable
+            signal_factory: Callable[..., Any] | None = None
+            if self.config.signal_type == "alpha":
+                from genetics.genome.signal import AlphaGenomeToSignal
+                signal_factory = AlphaGenomeToSignal
+            elif self.config.signal_type == "knn":
+                from genetics.genome.knn_signal import KNNGenomeToSignal
+                signal_factory = KNNGenomeToSignal
+            elif self.config.signal_type == "hybrid":
+                from genetics.genome.hybrid_signal import HybridGenomeToSignal
+                signal_factory = HybridGenomeToSignal
+            elif self.config.signal_type != "genome":
+                msg = f"Unknown signal_type: {self.config.signal_type!r}"
+                raise ValueError(msg)
+
             evaluator = FitnessEvaluator(
                 backtest_config=bt_config,
                 walk_forward_config=walk_forward_config,
                 registry=registry,
+                signal_factory=signal_factory,
             )
 
             # ── Process pool for parallel island execution ────────────
@@ -314,6 +338,7 @@ class GeneticEngine:
             pop_size=pop_size,
             n_islands=data.get("n_islands", 4),
             seed=data.get("seed", 42),
+            signal_type=data.get("signal_type", "genome"),
             resume_from=checkpoint_path,
         )
 

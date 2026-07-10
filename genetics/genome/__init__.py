@@ -6,6 +6,8 @@ from genetics.genome.parameters import (
     GenomeParameter,
     IntParameter,
 )
+from genetics.genome.hybrid_signal import HybridGenomeToSignal
+from genetics.genome.protocol import BacktestSignal
 from genetics.genome.signal import (
     Genome,
     GenomeConfig,
@@ -16,12 +18,14 @@ from genetics.genome.signal import (
 )
 
 __all__ = [
+    "BacktestSignal",
     "CategoricalParameter",
     "ContinuousParameter",
     "Genome",
     "GenomeConfig",
     "GenomeParameter",
     "GenomeToSignal",
+    "HybridGenomeToSignal",
     "IntParameter",
     "decode",
     "encode",
