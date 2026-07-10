@@ -72,6 +72,7 @@ class GAConfig:
     signal_type: str = "genome"
     checkpoint_dir: str = "checkpoints/"
     min_trades: int = 0
+    seed_genomes: list[dict[str, float | int | str]] | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -168,12 +169,24 @@ class GeneticEngine:
                 self._start_generation = self._island_manager.generation
             else:
                 pop_per_island = self.config.pop_size // self.config.n_islands
+                # Encode seed genomes from GAConfig into normalized float vectors
+                encoded_seeds: list[list[float]] | None = None
+                if self.config.seed_genomes:
+                    from genetics.genome.signal import encode
+                    encoded_seeds = []
+                    for raw in self.config.seed_genomes:
+                        try:
+                            g = encode(raw, self.config.genome_config.param_defs)
+                            encoded_seeds.append(list(g.normalized_params))
+                        except Exception:
+                            continue
                 self._island_manager = IslandManager(
                     genome_config=self.config.genome_config,
                     n_islands=self.config.n_islands,
                     pop_size_per_island=pop_per_island,
                     seed=self.config.seed,
                     checkpoint_dir=self.config.checkpoint_dir,
+                    seed_genomes=encoded_seeds,
                 )
                 self._start_generation = 0
 

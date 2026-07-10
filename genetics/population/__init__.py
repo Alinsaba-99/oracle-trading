@@ -59,11 +59,16 @@ def initialize_population(
     genome_config: GenomeConfig,
     seed_ratio: float = 0.2,
     rng_seed: int = 42,
+    seed_genomes: list[list[float]] | None = None,
 ) -> tuple[list[Any], base.Toolbox]:
     """Create an initial GA population with a mix of seeded and random individuals.
 
     ``seed_ratio * pop_size`` individuals are created via biased seeding
     (known strategy templates), and the rest are uniformly random.
+
+    If *seed_genomes* is provided, these pre-encoded genomes are injected
+    into the population first (replacing random individuals), ensuring the
+    GA starts from known-good parameter combinations.
 
     Args:
         pop_size: Total population size.
@@ -71,6 +76,8 @@ def initialize_population(
         seed_ratio: Fraction of the population to seed with strategy templates
             (default 0.2 = 20%).
         rng_seed: Seed for reproducible random generation.
+        seed_genomes: Optional list of pre-encoded normalized parameter vectors
+            (each a list of floats in [0,1]) to inject into the population.
 
     Returns:
         A tuple of ``(population, toolbox)`` where *population* is a list of
@@ -99,21 +106,32 @@ def initialize_population(
     # Build population
     population: list[Any] = []
 
-    # Seeded individuals
-    if n_seeded > 0:
+    # Pre-encoded seed genomes (injected first, highest priority)
+    n_seed_inject = len(seed_genomes) if seed_genomes else 0
+    if n_seed_inject > 0:
+        for vec in seed_genomes:
+            if len(vec) != n:
+                continue  # skip mismatched vectors
+            ind = creator.Individual(vec)
+            population.append(ind)
+
+    # Seeded individuals (strategy templates)
+    remaining = pop_size - len(population)
+    n_seeded_actual = max(0, min(remaining, n_seeded))
+    if n_seeded_actual > 0:
         seeded_vecs = seeded_individuals(
             genome_config.param_defs,
             n_params=n,
             rng=rng,
         )
-        # seeded_individuals returns exactly 10; cycle if needed
-        for i in range(n_seeded):
+        for i in range(n_seeded_actual):
             vec = seeded_vecs[i % len(seeded_vecs)]
             ind = creator.Individual(vec)
             population.append(ind)
 
-    # Random individuals
-    for _ in range(n_random):
+    # Random individuals (fill remaining)
+    remaining = pop_size - len(population)
+    for _ in range(remaining):
         vec = random_individual(n, rng=rng)
         ind = creator.Individual(vec)
         population.append(ind)

@@ -417,11 +417,13 @@ class IslandManager:
         seed: int = 42,
         migration_policy: MigrationPolicy | None = None,
         checkpoint_dir: str = "checkpoints/",
+        seed_genomes: list[list[float]] | None = None,
     ) -> None:
         self.genome_config = genome_config
         self.n_islands = n_islands
         self.pop_size_per_island = pop_size_per_island
         self.seed = seed
+        self.seed_genomes = seed_genomes
         self.migration_policy = migration_policy or MigrationPolicy()
         self.checkpoint_dir = checkpoint_dir
         self.islands: list[Island] = []
@@ -435,15 +437,22 @@ class IslandManager:
         for i in range(self.n_islands):
             island_seed = self.seed + i * 1000
             toolbox = create_toolbox(self.genome_config)
-            # Seed per-island RNG for deterministic population
             _random.seed(island_seed)
 
-            # Create population
-            pop = [toolbox.individual() for _ in range(self.pop_size_per_island)]
-
-            # Assign fitness attribute to each individual (DEAP requires this)
-            for ind in pop:
+            # Create population with seed genomes injected first
+            pop: list[Any] = []
+            if self.seed_genomes:
+                for vec in self.seed_genomes:
+                    if len(vec) >= self.genome_config.n_params:
+                        ind = creator.Individual(vec[:self.genome_config.n_params])
+                        ind.fitness = creator.FitnessMulti()
+                        pop.append(ind)
+            # Fill remaining with random individuals
+            remaining = max(0, self.pop_size_per_island - len(pop))
+            for _ in range(remaining):
+                ind = toolbox.individual()
                 ind.fitness = creator.FitnessMulti()
+                pop.append(ind)
 
             island = Island(
                 id=i,
