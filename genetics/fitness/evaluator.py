@@ -189,10 +189,13 @@ class FitnessEvaluator:
 
         pb = PyBrokerBacktest()
         sig_callable = lambda d: sig_obj.compute(d) if hasattr(sig_obj, 'compute') else sig_obj
+        btc = self._backtest_cfg
         metrics = pb.run(
             data, sig_callable,
             n_windows=self._wf_cfg.n_splits,
             train_size=0.6,
+            slippage_bps=btc.slippage_bps,
+            commission_pct=btc.commission_pct,
         )
 
         sharpe = metrics.get("sharpe", 0.0)

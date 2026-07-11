@@ -165,14 +165,17 @@ def _compute_features(data: pl.DataFrame) -> list[pl.Series]:
     momentum = close / close.shift(10).fill_null(close) - 1.0
     momentum = momentum.fill_nan(0.0)
 
-    # 3. Low-volatility indicator
+    # 3. Low-volatility indicator (expanding max, not global)
     vol_series = returns.rolling_std(20).fill_nan(0.0)
-    vol_max_val = vol_series.max()
-    vol_max = float(vol_max_val) if vol_max_val is not None else 0.0  # type: ignore[arg-type]
-    if vol_max > 0:
-        vol_norm = 1.0 - (vol_series / vol_max)
-    else:
-        vol_norm = pl.Series("vol_norm", [0.0] * len(data), dtype=pl.Float64)
+    vol_arr = vol_series.to_numpy()
+    vol_norm_arr = np.zeros_like(vol_arr)
+    for j in range(len(vol_arr)):
+        vol_max_j = np.nanmax(vol_arr[: j + 1])
+        if vol_max_j > 0 and not np.isnan(vol_max_j):
+            vol_norm_arr[j] = 1.0 - (vol_arr[j] / vol_max_j)
+        else:
+            vol_norm_arr[j] = 0.0
+    vol_norm = pl.Series("vol_norm", vol_norm_arr, dtype=pl.Float64)
 
     # 4. SMA-ratio (vs 20-period)
     sma_20_arr = close.rolling_mean(20).to_numpy()
@@ -334,15 +337,20 @@ class AlphaGenomeToSignal:
             if w == 0.0:
                 continue
             arr = series.to_numpy()
-            # Normalize each factor to [0, 1] range
-            f_min = np.nanmin(arr)
-            f_max = np.nanmax(arr)
-            if f_max > f_min:
-                normalized = (arr - f_min) / (f_max - f_min)
-            else:
-                normalized = np.zeros_like(arr)
+            # Normalize each factor using expanding (prefix) min/max
+            # to avoid look-ahead: historical values don't shift when
+            # future data is added.
+            n_arr = len(arr)
+            normalized = np.zeros(n_arr, dtype=np.float64)
+            for j in range(n_arr):
+                prefix = arr[: j + 1]
+                lo = np.nanmin(prefix)
+                hi = np.nanmax(prefix)
+                if hi > lo:
+                    normalized[j] = (arr[j] - lo) / (hi - lo)
+                else:
+                    normalized[j] = 0.5
             normalized = np.nan_to_num(normalized, nan=0.5)
-            raw_signal += w * (normalized - 0.5)  # center around 0
             w_sum += w
 
         if w_sum == 0:

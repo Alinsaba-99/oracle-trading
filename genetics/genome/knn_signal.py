@@ -117,24 +117,37 @@ def _extract_features(
     data: pl.DataFrame,
     periods: dict[str, int] | None = None,
 ) -> np.ndarray:
-    """Compute feature matrix [RSI, CCI, ADX, WaveTrend, Momentum] z-scored."""
+    """Compute feature matrix [RSI, CCI, ADX, WaveTrend, Momentum] z-scored.
+
+    Uses expanding (prefix) normalisation — each bar is centred and scaled
+    using only data up to that bar.  This avoids look-ahead: adding future
+    bars never changes the normalised values of earlier bars.
+    """
     p = periods or {}
     close = data["close"].to_numpy()
     high = data["high"].to_numpy()
     low = data["low"].to_numpy()
     hlc3 = (high + low + close) / 3.0
-    features = np.column_stack([
+    raw = np.column_stack([
         _compute_rsi(close, p.get("rsi_period", 14)),
         _compute_cci(high, low, close, p.get("cci_period", 20)),
         _compute_adx(high, low, close, p.get("adx_period", 14)),
         _compute_wavetrend(hlc3, p.get("wt_channel", 10), p.get("wt_avg", 11)),
         _compute_mom(close, p.get("mom_period", 12)),
     ])
-    means = np.nanmean(features, axis=0)
-    stds = np.nanstd(features, axis=0)
-    stds = np.where(stds < 1e-10, 1.0, stds)
-    features = (features - means) / stds
-    return np.nan_to_num(features, nan=0.0)
+
+    # Expanding (prefix) z-score: each bar i is normalised by data [:i+1]
+    n = raw.shape[0]
+    n_cols = raw.shape[1]
+    normalised = np.zeros_like(raw)
+    for i in range(n):
+        prefix = raw[: i + 1]
+        means = np.nanmean(prefix, axis=0)
+        stds = np.nanstd(prefix, axis=0)
+        stds = np.where(stds < 1e-10, 1.0, stds)
+        normalised[i] = (raw[i] - means) / stds
+
+    return np.nan_to_num(normalised, nan=0.0)
 
 
 class KNNGenomeToSignal:
@@ -199,22 +212,29 @@ class KNNGenomeToSignal:
 
         for i in range(min_bars, n):
             start = max(0, i - lookback)
-            if i - start < k:
+            # ── causal guard: only consider candidates whose label has matured ──
+            # Label at position j uses close[j + train_len]; it is known only
+            # when j + train_len ≤ i  →  j ≤ i - train_len.
+            valid_end = i - train_len
+            if valid_end <= start:
                 continue
 
-            # Vectorized Lorentzian distance over the lookback window
-            fi = features[i]  # local ref to avoid repeated indexing
-            hist = features[start:i]
+            # Vectorized Lorentzian distance over the causally-valid window
+            fi = features[i]
+            hist = features[start:valid_end]
+            n_hist = valid_end - start
+            if n_hist < k:
+                continue
+
             diff = np.abs(fi - hist)
             dists = np.sum(np.log1p(diff * weights_row), axis=1)
 
-            # Distance-weighted voting
-            nearest = np.argpartition(dists, k)[:k]
+            nearest = np.argpartition(dists, min(k, n_hist - 1))[:k]
             nearest_dists = dists[nearest] + 1e-10
             inv_dist = 1.0 / nearest_dists
             vote_weights = inv_dist / inv_dist.sum()
 
-            nl = labels[start + nearest]
+            nl = labels[start + nearest]  # all positions ≤ valid_end → label known
             w_up = float(vote_weights[nl == 1].sum())
             w_dn = float(vote_weights[nl == -1].sum())
             n_up = int((nl == 1).sum())
@@ -230,5 +250,4 @@ class KNNGenomeToSignal:
                     result[i] = 1
                 elif w_dn / total_w >= effective_th:
                     result[i] = -1
-
         return pl.Series("signal", result, dtype=pl.Int8)

@@ -24,6 +24,8 @@ class PyBrokerBacktest:
         signal_fn: Callable[[pl.DataFrame], pl.Series],
         n_windows: int = 5,
         train_size: float = 0.6,
+        slippage_bps: float = 5.0,
+        commission_pct: float = 0.001,
     ) -> dict[str, float]:
         """Run walkforward backtest using PyBroker.
 
@@ -35,6 +37,8 @@ class PyBrokerBacktest:
             signal_fn: Function that computes trading signals from OHLCV.
             n_windows: Number of walkforward windows.
             train_size: Fraction for training each window.
+            slippage_bps: Slippage in basis points.
+            commission_pct: Commission as fraction of trade value.
 
         Returns:
             Dict of metrics.
@@ -67,8 +71,6 @@ class PyBrokerBacktest:
                 result = df[mask].copy()
                 return result
 
-        # Compute signal from the BarData's close prices using pre-computed array
-        # We use a closure to capture signal_arr and align by date
         def _signal_indicator(bar_data):
             """Return the pre-computed signal aligned by date."""
             dates = pd.DatetimeIndex(bar_data.date)
@@ -82,6 +84,10 @@ class PyBrokerBacktest:
         sig_ind = indicator("knn_signal", _signal_indicator)
 
         def exec_fn(ctx):
+            # Pass real-world costs to PyBroker
+            ctx.slippage = slippage_bps / 10_000.0
+            ctx.fees = commission_pct
+
             sig = ctx.indicator("knn_signal")
             if sig is None or len(sig) == 0:
                 return
@@ -95,6 +101,7 @@ class PyBrokerBacktest:
                     ctx.sell_all_shares()
                 elif ctx.short_pos():
                     ctx.buy_shares = 100
+
         source = SignalDataSource()
         strategy = Strategy(
             source,

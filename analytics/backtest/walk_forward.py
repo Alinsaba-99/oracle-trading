@@ -107,9 +107,12 @@ class WalkForwardEngine:
         strategy_name = getattr(signal, "__class__", signal.__class__).__name__
 
         for fold_idx, (train_idx, test_idx) in enumerate(splits):
-            # Compute signal ONCE on all data, then extract test portion.
-            # This ensures KNN has the full history of patterns.
-            full_signal = signal.compute(data)
+            # Compute signal causally on data up to the end of THIS test fold.
+            # Using the full dataset would let later folds influence the
+            # training features / normalisation of this fold (look-ahead).
+            fold_end = test_idx[-1] if len(test_idx) > 0 else len(data)
+            fold_data = data[: fold_end + 1]
+            full_signal = signal.compute(fold_data)
             test_signal = full_signal[test_idx]
             test_data = data[test_idx]
 
@@ -139,30 +142,25 @@ class WalkForwardEngine:
         return self._fold_results
 
     def combined_metrics(self) -> dict[str, Any]:
-        """Aggregate metrics across folds (mean and standard deviation).
+        """Aggregate metrics across folds (mean and std) + OOS concatenated equity.
 
         Returns
         -------
         dict
-            Keys like ``total_return_mean``, ``total_return_std``,
-            ``sharpe_ratio_mean``, ``sharpe_ratio_std``, etc.
-
-        Notes
-        -----
-        When ``BacktestResult`` has zero-valued ratio/risk metrics but a
-        populated equity curve, this method recomputes them using
-        :class:`MetricsCalculator` (Polars-native).  This corrects for
-        engines (e.g. ``VectorizedEngine`` via vectorbt) that fail to
-        annualise Sharpe / Sortino / Calmar when the input frequency
-        cannot be inferred.
+            Per-metric ``*_mean`` and ``*_std`` keys (backward compat),
+            plus ``oos_*`` keys computed from the concatenated out-of-sample
+            equity curve — the gold standard for walkforward validation.
         """
         if not self._fold_results:
             return {}
 
-        # ── fix: compute missing ratio metrics from equity curve ─────
+        import math
+
         from analytics.backtest.metrics import MetricsCalculator
 
         _mc = MetricsCalculator()
+
+        # ── fix: compute missing ratio metrics from equity curve ─────
         for r in self._fold_results:
             if not r.equity_curve or len(r.equity_curve) < 10:
                 continue
@@ -179,13 +177,9 @@ class WalkForwardEngine:
             if r.calmar_ratio == 0.0 and r.max_drawdown > 0:
                 r.calmar_ratio = _mc.calmar_ratio(returns, r.max_drawdown)
 
-        # ── aggregate across folds ───────────────────────────────────
-        import math
-
+        # ── per-fold aggregation (backward compat) ───────────────────
         combined: dict[str, Any] = {}
         for metric in _AGGREGATED_METRICS:
-            # Drop non-finite values (inf/NaN) that vectorbt can produce
-            # for degenerate folds (e.g. profit_factor = inf for 100% wins).
             raw = [getattr(r, metric, 0.0) for r in self._fold_results]
             values = [v for v in raw if isinstance(v, (int, float)) and math.isfinite(v)]
             if not values:
@@ -194,6 +188,31 @@ class WalkForwardEngine:
             combined[f"{metric}_std"] = statistics.stdev(values) if len(values) > 1 else 0.0
 
         combined["n_folds"] = len(self._fold_results)
+
+        # ── OOS concatenated equity ──────────────────────────────────
+        # Build a single equity curve by concatenating each fold's
+        # out-of-sample period.  Metrics on the combined series are
+        # more robust than averaging per-fold ratios.
+        try:
+            oos_equity_parts: list[float] = []
+            for r in self._fold_results:
+                if r.equity_curve and len(r.equity_curve) > 1:
+                    oos_equity_parts.extend(r.equity_curve)
+            if len(oos_equity_parts) > 10:
+                oos_eq = pl.Series(oos_equity_parts, dtype=pl.Float64)
+                oos_rets = oos_eq.pct_change().drop_nulls()
+                if len(oos_rets) >= 2:
+                    combined["oos_sharpe_ratio"] = _mc.sharpe_ratio(oos_rets)
+                    combined["oos_sortino_ratio"] = _mc.sortino_ratio(oos_rets)
+                    oos_dd = _mc.max_drawdown(oos_eq)
+                    combined["oos_max_drawdown"] = oos_dd
+                    combined["oos_calmar_ratio"] = _mc.calmar_ratio(oos_rets, oos_dd)
+                    combined["oos_total_return"] = float(
+                        (oos_eq[-1] / oos_eq[0] - 1) if oos_eq[0] > 0 else 0.0
+                    )
+        except Exception:
+            pass  # OOS metrics are best-effort
+
         return combined
 
     def fold_results(self) -> list[BacktestResult]:

@@ -178,6 +178,12 @@ class VectorizedEngine:
         signal_series = signal.compute(data)
         raw = np.asarray(signal_series, dtype=np.int64)
 
+        # ── execution delay: shift signal by 1 bar ────────────────
+        # Signal at bar i uses close[i]; execution can only happen at
+        # bar i+1 at the earliest.  Shifting prevents look-ahead.
+        raw = np.roll(raw, 1)
+        raw[0] = 0  # first bar: no signal (no prior close)
+
         # ── build entry / exit arrays ───────────────────────────────
         # signal:  1 = long, -1 = short, 0 = flat
         entries = raw == 1
