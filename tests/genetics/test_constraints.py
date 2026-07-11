@@ -163,3 +163,57 @@ class TestApplyConstraints:
             min_trades=10,
         )
         assert result == (1.0, 2.0, 3.0, 0.1)
+
+
+class TestMaxDDConstraint:
+    """MaxDD > 25 % → _EMPTY_FITNESS (hard cap)."""
+
+    def test_maxdd_above_cap_rejected(self) -> None:
+        """MaxDD 42 % → rejected."""
+        result = _apply_constraints(
+            fitness=(1.0, 2.0, 3.0, 0.42),
+            combined={"cagr_mean": 0.10, "profit_factor_mean": 1.5},
+            total_trades=15,
+            min_trades=10,
+        )
+        assert result == _EMPTY_FITNESS
+
+    def test_maxdd_at_cap_accepted(self) -> None:
+        """MaxDD exactly 25 % → accepted (boundary)."""
+        result = _apply_constraints(
+            fitness=(1.0, 2.0, 3.0, 0.25),
+            combined={"cagr_mean": 0.10, "profit_factor_mean": 1.5},
+            total_trades=15,
+            min_trades=10,
+        )
+        assert result == (1.0, 2.0, 3.0, 0.25)
+
+    def test_maxdd_below_cap_accepted(self) -> None:
+        """MaxDD 10 % → accepted (normal case)."""
+        result = _apply_constraints(
+            fitness=(1.0, 2.0, 3.0, 0.10),
+            combined={"cagr_mean": 0.10, "profit_factor_mean": 1.5},
+            total_trades=15,
+            min_trades=10,
+        )
+        assert result == (1.0, 2.0, 3.0, 0.10)
+
+    def test_negative_cagr_rejected(self) -> None:
+        """Negative CAGR → rejected regardless of Sharpe."""
+        result = _apply_constraints(
+            fitness=(5.0, 5.0, 5.0, 0.10),
+            combined={"cagr_mean": -0.02, "profit_factor_mean": 1.5},
+            total_trades=15,
+            min_trades=10,
+        )
+        assert result == _EMPTY_FITNESS
+
+    def test_zero_cagr_rejected(self) -> None:
+        """CAGR exactly 0 % → rejected."""
+        result = _apply_constraints(
+            fitness=(5.0, 5.0, 5.0, 0.10),
+            combined={"cagr_mean": 0.0, "profit_factor_mean": 1.5},
+            total_trades=15,
+            min_trades=10,
+        )
+        assert result == _EMPTY_FITNESS

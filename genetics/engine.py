@@ -71,8 +71,8 @@ class GAConfig:
     n_jobs: int | None = None
     signal_type: str = "genome"
     checkpoint_dir: str = "checkpoints/"
-    min_trades: int = 0
-    use_pybroker: bool = False
+    min_trades: int = 10
+    use_pybroker: bool = True
     seed_genomes: list[dict[str, float | int | str]] | None = None
 
 

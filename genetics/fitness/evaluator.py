@@ -202,13 +202,21 @@ class FitnessEvaluator:
 
         fitness = (sharpe, sortino, calmar, max_dd)
 
-        # Apply constraints
+        # Apply constraints (include MaxDD from PyBroker for hard cap)
         total_trades = metrics.get("trade_count", 0)
         pf = metrics.get("profit_factor", 0.0)
+        cagr = metrics.get("cagr", 0.0)
+        max_dd_pct = abs(metrics.get("max_drawdown_pct", 100.0))
         constrained = _apply_constraints(
-            fitness, {"profit_factor_mean": pf}, total_trades, self._min_trades
+            fitness,
+            {
+                "profit_factor_mean": pf,
+                "cagr_mean": cagr / 100.0,
+                "max_drawdown_mean": max_dd_pct / 100.0,
+            },
+            total_trades,
+            self._min_trades,
         )
-        return constrained if constrained != fitness else fitness
 
 
 
@@ -261,29 +269,41 @@ def _apply_constraints(
     total_trades: int,
     min_trades: int,
 ) -> FitnessValue:
-    """Apply constraints to a fitness tuple: min trades, CAGR, PF.
+    """Apply constraints to a fitness tuple: min trades, CAGR, PF, MaxDD.
 
-    Returns modified fitness if constraints are violated, original otherwise.
+    Returns modified fitness if soft constraints are violated, or
+    ``_EMPTY_FITNESS`` for hard constraint violations.
     """
-    # Fix 1: Min trade sentinel
+    # ── Hard: min trades sentinel ──────────────────────────────────
     if total_trades < min_trades:
         return _EMPTY_FITNESS
 
     sharpe, sortino, calmar, maxdd = fitness
 
-    # Fix 2: CAGR multiplier (only when key exists)
+    # ── Hard: MaxDD cap ────────────────────────────────────────────
+    # Drawdown > 25 % → degenerate strategy; reject outright.
+    # This prevents GA from finding high-risk strategies that
+    # achieve extreme Sharpe on short walkforward folds.
+    if maxdd > 0.25:
+        return _EMPTY_FITNESS
+
+    # ── Hard: negative CAGR → degenerate ───────────────────────────
     cagr = combined.get("cagr_mean")
+    if cagr is not None and cagr <= 0.0:
+        return _EMPTY_FITNESS
+
+    # ── Soft: CAGR multiplier (linear penalty below 5 %) ───────────
     cagr_mult = 1.0
     if cagr is not None and cagr < 0.05:
-        cagr_mult = cagr / 0.05  # linear penalty below 5% CAGR
+        cagr_mult = cagr / 0.05
 
-    # Fix 3: PF multiplier (only when key exists)
+    # ── Soft: PF multiplier (linear penalty below 1.0) ─────────────
     pf = combined.get("profit_factor_mean")
     pf_mult = 1.0
     if pf is not None and pf < 1.0:
-        pf_mult = max(pf, 0.01)  # linear penalty below 1.0 PF, floor at 0.01
+        pf_mult = max(pf, 0.01)
 
-    mult = min(cagr_mult, pf_mult)  # most restrictive multiplier
+    mult = min(cagr_mult, pf_mult)
     if mult < 1.0:
         return (sharpe * mult, sortino * mult, calmar * mult, maxdd)
 
