@@ -205,13 +205,13 @@ class FitnessEvaluator:
         # Apply constraints (include MaxDD from PyBroker for hard cap)
         total_trades = metrics.get("trade_count", 0)
         pf = metrics.get("profit_factor", 0.0)
-        cagr = metrics.get("cagr", 0.0)
+        cagr = metrics.get("cagr")  # None se non fornito da PyBroker
         max_dd_pct = abs(metrics.get("max_drawdown_pct", 100.0))
         constrained = _apply_constraints(
             fitness,
             {
                 "profit_factor_mean": pf,
-                "cagr_mean": cagr / 100.0,
+                "cagr_mean": cagr / 100.0 if cagr is not None else None,
                 "max_drawdown_mean": max_dd_pct / 100.0,
             },
             total_trades,
