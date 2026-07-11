@@ -109,6 +109,8 @@ class FitnessEvaluator:
                 self._wf_cfg.n_splits,
                 self._wf_cfg.purge_window,
                 self._wf_cfg.embargo,
+                self._min_trades,
+                self._use_pybroker,
             )
             d_hash = _data_fingerprint(data)
             cached = self._cache.get(g_hash, fc_hash, d_hash)

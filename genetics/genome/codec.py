@@ -7,12 +7,8 @@ parameters, and index-based encoding for categorical parameters.
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING
 
 import numpy as np
-
-if TYPE_CHECKING:
-    from numpy.typing import NDArray
 
 from genetics.genome.parameters import (
     CategoricalParameter,
@@ -215,22 +211,4 @@ def round_int(value: float) -> int:
     return round(value)
 
 
-def normalize_array(
-    values: NDArray[np.float64],
-    param: ContinuousParameter | IntParameter,
-) -> NDArray[np.float64]:
-    """Vectorised normalise for an array of values (linear scale only).
 
-    Args:
-        values: 1-D array of raw values.
-        param: Parameter definition.
-
-    Returns:
-        Array of normalised values in [0, 1].
-    """
-    if param.scaling == "log":
-        log_arr = np.log(values.clip(min=param.low))
-        log_low = math.log(param.low)
-        log_high = math.log(param.high)
-        return (log_arr - log_low) / (log_high - log_low)  # type: ignore[no-any-return]
-    return (values - param.low) / (param.high - param.low)

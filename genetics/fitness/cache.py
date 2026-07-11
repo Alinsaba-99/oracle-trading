@@ -23,9 +23,19 @@ def genome_hash(genome: Genome) -> str:
     ).hexdigest()
 
 
-def fold_config_hash(n_splits: int, purge_window: int, embargo: int) -> str:
-    """SHA-256 of the walk-forward fold configuration."""
-    raw = f"{n_splits}:{purge_window}:{embargo}"
+def fold_config_hash(
+    n_splits: int,
+    purge_window: int,
+    embargo: int,
+    min_trades: int = 0,
+    use_pybroker: bool = False,
+) -> str:
+    """SHA-256 of the walk-forward fold configuration.
+
+    Includes constraint parameters so that changing ``min_trades`` or
+    the evaluation backend invalidates stale cache entries.
+    """
+    raw = f"{n_splits}:{purge_window}:{embargo}:{min_trades}:{use_pybroker}"
     return hashlib.sha256(raw.encode()).hexdigest()
 
 

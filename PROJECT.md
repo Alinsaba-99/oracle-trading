@@ -145,6 +145,55 @@ risk_params: RiskParams            # Max DD, posizione max
 | **Binance WS** | Crypto real-time | No |
 
 ---
+## Sistema Multi-Agente: Design
+
+### Agenti di Analisi (paralleli, non vedono output altrui)
+
+| Agente | Input | Output | Blind Spot |
+|--------|-------|--------|------------|
+| **Macro Analyst** | GDP, CPI, rates, yield curve, PMI | Regime macro, asset rotation | Ignora micro e price action |
+| **Technical Analyst** | OHLCV, order book, volume | Trend, S/R, momentum, vol regime | Ignora perché un asset vale X |
+| **Fundamental Analyst** | Bilanci, ratios, DCF, insider | Intrinsic value, margin of safety | Ignora timing di mercato |
+| **Sentiment Analyst** | News, social, earnings calls | Market mood, contrarian signals | Non distingue saggezza da panico |
+| **Alpha Researcher** | Tutti i dati, cross-asset, fattori | Statistical arb, pair trades | Overfitting |
+
+### Agenti di Controllo (in serie, vedono tutto)
+
+| Agente | Funzione |
+|--------|----------|
+| **Risk Manager** | Position sizing (Kelly), VaR/CVaR, drawdown limits, correlation check |
+| **Portfolio Manager** | Decisione finale BUY/SELL/HOLD, allocazione, rebalancing |
+| **Market Oracle** | Regime detection (HMM), volatilità, fase mercato, liquidità |
+| **Genetic Strategist** | Evolve nuove strategie via GA, backtest, walk-forward |
+
+---
+
+## Tech Stack (Attuale)
+
+| Layer | Tecnologia |
+|-------|-----------|
+| **Core Language** | Python 3.12+ |
+| **Agent Framework** | LangGraph 1.2.9 |
+| **Backtesting** | vectorbt + PyBroker (time-based WFA) |
+| **Genetic Algorithm** | DEAP 1.4 (NSGA-II, island model) |
+| **Experiment Registry** | SQLite (aiosqlite, pydantic) |
+| **Cache** | LRU in-memory (FitnessCache) |
+| **Message Bus** | NATS (core.events) |
+| **Broker API** | ib_insync (IBKR), CCXT (100+ crypto) |
+| **LLM** | litellm (multi-provider: GPT-4, Claude, locale) |
+| **DataFrames** | Polars + NumPy |
+| **Indicatori** | TA-Lib + Polars-native + Numpy-native (KNN) |
+| **Dashboard** | Streamlit (Phase 6) |
+
+### Data Sources (Integrati)
+| Fonte | Dati | API Key |
+|-------|------|---------|
+| **Yahoo Finance** | OHLCV US equities/ETF | No |
+| **CoinPaprika** | Crypto 7000+ | No |
+| **FRED** | Macro (GDP, CPI, rates) | Sì |
+| **Binance WS** | Crypto real-time | No |
+
+---
 
 ## Roadmap — Stato Attuale
 
@@ -153,25 +202,45 @@ Phase 0: Foundation          ✅  2c2b254   Config, errors, logging, plugins, CL
 Phase 1: Analytics Engine    ✅  7b4e23c   Indicatori, regime, sentiment, feature store
 Phase 2: Backtesting         ✅  fc853e3   vectorbt, WFA, bias correction, portfolio opt
 Phase 3: Genetic Engine      ✅  aca4c75   DEAP, NSGA-II, island model, 50 alpha factors
-Phase 3.5: Signal Opt        🔧  IN CORSO  Heikin Ashi, KNN, class balancing, alpha hybrid
+Phase 3.5: Signal Opt        🔧  IN CORSO  Heikin Ashi, KNN, alpha hybrid, PyBroker
 Phase 4: Multi-Agent System  ✅  8ed640d   LangGraph, 3 analyst, debate, risk/portfolio mgr
 Phase 5: Execution Engine    ✅  f6f8e88   OrderManager, IBKR, CCXT, 3 algos, CLI
 Phase 6: UI & Dashboard      ⬜  PROSSIMO  Streamlit, P&L analytics, risk monitor
 Phase 7: Autopilot            ⬜           Continual learning, meta-strategy, adaptive risk
 ```
 
-**9 commit · 21 file doc · 19/19 showcase · ruff+mypy clean**
+**88 commit · 21 file doc · 19/19 showcase · ruff+mypy clean**
 
 ### Phase 3.5: Signal Optimization (in corso)
 
-Obiettivo: risolvere la convergenza piatta del GA producendo segnali con edge reale.
+Obiettivo: produrre strategie che passano The5ers benchmark (PF > 1.67).
 
 | Task | Stato | Cosa |
 |------|-------|------|
 | T1: Heikin Ashi | ✅ | Conversione OHLCV → HA per segnali smooth |
 | T2: KNN balancing | ✅ | Class weighting + distance-weighted vote |
-| T3: Hybrid signal | ⬜ | KNN + 50 alpha factors combinati |
-| T4: GA ottimizzata | ⬜ | pop=20, gen=20, 4 isole, 5-fold WFA |
+| T3: Hybrid signal | ✅ | KNN + 50 alpha factors combinati (26 params) |
+| T4: GA ottimizzata | ✅ | PyBroker integrato, combined_metrics fixato |
+| T5: GA run produzione | 🔧 | pop=20, gen=50, 4 isole, 3 seed (in esecuzione) |
+
+**Metriche attuali (dopo fix combined_metrics):**
+| Metrica | Seed KNN WFA 5-fold | Target The5ers |
+|---------|-------------------|----------------|
+| Sharpe | **1.08** | > 0.8 ✅ |
+| Sortino | **1.55** | > 0.6 ✅ |
+| Calmar | **1.49** | > 0.3 ✅ |
+| MaxDD | **10.7%** | < 6% ⚠️ |
+| Profit Factor | **1.50** | > 1.67 🔴 |
+| CAGR | **14.9%** | > 10% ✅ |
+| PF miglior fold | **1.80** | > 1.67 ✅ |
+
+### GA Demo (pop=8, gen=8, 1 isola, 3-fold WFA)
+| Metrica | Pareto Front Best |
+|---------|------------------|
+| Sharpe | **2.317** |
+| Sortino | **3.515** |
+| Calmar | **3.977** |
+| MaxDD | **2.5-9.6%** |
 
 ### Phase 6: UI & Dashboard (planning)
 
@@ -193,5 +262,6 @@ Streamlit dashboard con:
 
 ## Prossimo Passo
 
-Completare **Phase 3.5** per sbloccare Sharpe > 0.8 in backtest,
-poi **Phase 6** (Dashboard Streamlit) per visualizzare risultati in tempo reale.
+Completare GA run produzione (pop=20, gen=50, 4 isole, 3 seed) per validare
+PF > 1.67 in walkforward. Poi **Phase 6** (Dashboard Streamlit) per
+visualizzare risultati in tempo reale.

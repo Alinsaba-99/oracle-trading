@@ -6,11 +6,12 @@ a callable that takes market data and returns a -1 / 0 / 1 signal Series.
 
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 import polars as pl
 
 
+@runtime_checkable
 class BacktestSignal(Protocol):
     """Protocol that all trading signal classes must implement.
 

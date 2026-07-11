@@ -29,7 +29,7 @@ dependencies = [
 oracle = "apps.cli.main:main"
 
 [project.optional-dependencies]
-dev = [
+dev = []
 
 pybroker = [
     "pytest>=8.1",
@@ -155,8 +155,6 @@ build-backend = "setuptools.build_meta"
 
 [dependency-groups]
 dev = [
-
-]
     "duckdb>=1.5.4",
     "hmmlearn>=0.3.3",
     "httpx>=0.28.1",
@@ -169,8 +167,8 @@ dev = [
     "ruff>=0.15.20",
     "ruptures>=1.1.10",
     "websockets>=15.0.1",
-    "yfinance>=1.5.1",
+    "yfinance>=1.5.1"
 ]
 genetics = [
-    "deap>=1.4.4",
+    "deap>=1.4.4"
 ]

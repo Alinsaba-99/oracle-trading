@@ -130,7 +130,7 @@ class MetricsCalculator:
 
 
 class WalkForwardEngine:
-    """Walk-forward validation engine using Combinatorial Purged CV."""
+    """Walk-forward validation engine."""
 
     def __init__(
         self,
@@ -145,8 +145,9 @@ class WalkForwardEngine:
         signal: BacktestSignal,
         settings: BacktestConfig | None = None,
         n_splits: int = 5,
-        n_test_splits: int = 1,
         purge_window: int = 5,
+        embargo: int = 5,
+        split_method: str = "time",
     ) -> list[BacktestResult]:
         """Return one BacktestResult per fold (out-of-sample test set)."""
         ...
@@ -154,7 +155,6 @@ class WalkForwardEngine:
     def combined_metrics(self) -> dict[str, Any]:
         """Aggregate metrics across folds as ``{metric_mean, metric_std, n_folds}``."""
         ...
-
 
 # ---------------------------------------------------------------------------
 # VectorizedEngine — single-fold backtest engine

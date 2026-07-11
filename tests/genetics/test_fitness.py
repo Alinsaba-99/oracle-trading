@@ -98,6 +98,7 @@ class _MockWFEngine:
         n_splits: int = 5,
         n_test_splits: int = 1,
         purge_window: int = 5,
+        split_method: str = "time",
     ) -> list[BacktestResult]:
         self.captured_n_splits = n_splits
         self.captured_purge_window = purge_window
@@ -236,9 +237,10 @@ class TestCaching:
                 n_splits: int = 5,
                 n_test_splits: int = 1,
                 purge_window: int = 5,
+                split_method: str = "time",
             ) -> list[BacktestResult]:
                 call_count[0] += 1
-                return super().run(data, signal, settings, n_splits, n_test_splits, purge_window)
+                return super().run(data, signal, settings, n_splits, n_test_splits, purge_window, split_method)
 
         mock = _CountingMock()
         mock._fold_results = _make_results(3)
@@ -285,9 +287,10 @@ class TestCaching:
                 n_splits: int = 5,
                 n_test_splits: int = 1,
                 purge_window: int = 5,
+                split_method: str = "time",
             ) -> list[BacktestResult]:
                 call_count[0] += 1
-                return super().run(data, signal, settings, n_splits, n_test_splits, purge_window)
+                return super().run(data, signal, settings, n_splits, n_test_splits, purge_window, split_method)
 
         mock = _CountingMock()
         mock._fold_results = _make_results(3)
@@ -464,9 +467,10 @@ class TestNoCachePath:
                 n_splits: int = 5,
                 n_test_splits: int = 1,
                 purge_window: int = 5,
+                split_method: str = "time",
             ) -> list[BacktestResult]:
                 call_count[0] += 1
-                return super().run(data, signal, settings, n_splits, n_test_splits, purge_window)
+                return super().run(data, signal, settings, n_splits, n_test_splits, purge_window, split_method)
         mock = _CountingMock()
         mock._fold_results = _make_results(3)
         mock._combined = {

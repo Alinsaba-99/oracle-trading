@@ -224,7 +224,7 @@ class TestWalkForwardEngine:
         engine = WalkForwardEngine()
         data = _sine_wave_data(252)
         sig = sma_crossover_signal(fast=10, slow=30)
-        results = engine.run(data, sig, n_splits=4, n_test_splits=1)
+        results = engine.run(data, sig, n_splits=4, n_test_splits=1, split_method="cpcv")
         assert len(results) > 0
         assert all(isinstance(r, BacktestResult) for r in results)
 
@@ -238,7 +238,7 @@ class TestWalkForwardEngine:
 
         n_splits = 5
         n_test_splits = 2
-        results = engine.run(data, sig, n_splits=n_splits, n_test_splits=n_test_splits)
+        results = engine.run(data, sig, n_splits=n_splits, n_test_splits=n_test_splits, split_method="cpcv")
         assert len(results) == comb(n_splits, n_test_splits)
 
     def test_each_fold_has_result(self) -> None:
@@ -246,7 +246,7 @@ class TestWalkForwardEngine:
         engine = WalkForwardEngine()
         data = _sine_wave_data(252)
         sig = sma_crossover_signal(fast=10, slow=30)
-        results = engine.run(data, sig, n_splits=4, n_test_splits=1)
+        results = engine.run(data, sig, n_splits=4, n_test_splits=1, split_method="cpcv")
         for r in results:
             assert isinstance(r, BacktestResult)
             assert r.final_equity > 0
@@ -257,7 +257,7 @@ class TestWalkForwardEngine:
         engine = WalkForwardEngine()
         data = _sine_wave_data(252)
         sig = sma_crossover_signal(fast=10, slow=30)
-        engine.run(data, sig, n_splits=4, n_test_splits=1)
+        engine.run(data, sig, n_splits=4, n_test_splits=1, split_method="cpcv")
 
         combined = engine.combined_metrics()
         assert "total_return_mean" in combined
@@ -277,7 +277,7 @@ class TestWalkForwardEngine:
         engine = WalkForwardEngine()
         data = _sine_wave_data(252)
         sig = sma_crossover_signal(fast=10, slow=30)
-        results = engine.run(data, sig, n_splits=4, n_test_splits=1)
+        results = engine.run(data, sig, n_splits=4, n_test_splits=1, split_method="cpcv")
         assert engine.fold_results() == results
 
     def test_empty_before_run(self) -> None:
@@ -290,8 +290,8 @@ class TestWalkForwardEngine:
         engine = WalkForwardEngine()
         data = _sine_wave_data(252)
         sig = sma_crossover_signal(fast=10, slow=30)
-        results1 = engine.run(data, sig, n_splits=3, n_test_splits=1)
-        results2 = engine.run(data, sig, n_splits=4, n_test_splits=1)
+        results1 = engine.run(data, sig, n_splits=3, n_test_splits=1, split_method="cpcv")
+        results2 = engine.run(data, sig, n_splits=4, n_test_splits=1, split_method="cpcv")
         assert len(engine.fold_results()) == len(results2)
         assert engine.fold_results() != results1
 
@@ -299,7 +299,7 @@ class TestWalkForwardEngine:
         """Always-long on uptrend is profitable on every fold."""
         engine = WalkForwardEngine()
         data = _constant_up_trend(200)
-        results = engine.run(data, AlwaysLong(), n_splits=4, n_test_splits=1)
+        results = engine.run(data, AlwaysLong(), n_splits=4, n_test_splits=1, split_method="cpcv")
         for r in results:
             assert r.total_return > 0, f"Fold lost money: {r.total_return}"
 
@@ -311,7 +311,7 @@ class TestWalkForwardEngine:
         from decimal import Decimal
 
         cfg = BacktestConfig(initial_capital=Decimal("50000"))
-        results = engine.run(data, sig, settings=cfg, n_splits=4, n_test_splits=1)
+        results = engine.run(data, sig, settings=cfg, n_splits=4, n_test_splits=1, split_method="cpcv")
         for r in results:
             assert r.initial_capital == Decimal("50000")
 
@@ -320,7 +320,7 @@ class TestWalkForwardEngine:
         engine = WalkForwardEngine()
         data = _sine_wave_data(252)
         sig = sma_crossover_signal(fast=10, slow=30)
-        results = engine.run(data, sig, n_splits=4, n_test_splits=1)
+        results = engine.run(data, sig, n_splits=4, n_test_splits=1, split_method="cpcv")
         for r in results:
             assert r.strategy_name == "_SmaCrossoverSignal"
 
@@ -330,7 +330,7 @@ class TestWalkForwardEngine:
         data = _constant_up_trend(10)
         sig = sma_crossover_signal(fast=5, slow=20)
         with pytest.raises(ValueError, match="too few"):
-            engine.run(data, sig, n_splits=5, n_test_splits=1)
+            engine.run(data, sig, n_splits=5, n_test_splits=1, split_method="cpcv")
 
 
 # ── Sub-experiment tracking ─────────────────────────────────────────────────
@@ -348,7 +348,7 @@ class TestSubExperimentTracking:
         engine = WalkForwardEngine(registry=registry)
         data = _sine_wave_data(252)
         sig = sma_crossover_signal(fast=10, slow=30)
-        results = engine.run(data, sig, n_splits=4, n_test_splits=1)
+        results = engine.run(data, sig, n_splits=4, n_test_splits=1, split_method="cpcv")
 
         experiments = registry.list()
         assert len(experiments) == len(results)
@@ -362,7 +362,7 @@ class TestSubExperimentTracking:
         engine = WalkForwardEngine(registry=registry, parent_experiment_id=parent_ctx.experiment_id)
         data = _sine_wave_data(252)
         sig = sma_crossover_signal(fast=10, slow=30)
-        engine.run(data, sig, n_splits=4, n_test_splits=1)
+        engine.run(data, sig, n_splits=4, n_test_splits=1, split_method="cpcv")
 
         experiments = registry.list()
         child_experiments = [e for e in experiments if e.experiment_id != parent_ctx.experiment_id]
@@ -375,7 +375,7 @@ class TestSubExperimentTracking:
         engine = WalkForwardEngine(registry=registry)
         data = _sine_wave_data(252)
         sig = sma_crossover_signal(fast=10, slow=30)
-        engine.run(data, sig, n_splits=4, n_test_splits=1, purge_window=3)
+        engine.run(data, sig, n_splits=4, n_test_splits=1, purge_window=3, split_method="cpcv")
 
         experiments = registry.list()
         for exp in experiments:
