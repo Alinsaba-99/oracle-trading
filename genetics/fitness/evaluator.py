@@ -217,6 +217,7 @@ class FitnessEvaluator:
             total_trades,
             self._min_trades,
         )
+        return constrained if constrained != fitness else fitness
 
 
 

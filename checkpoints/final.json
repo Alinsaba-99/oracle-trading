@@ -12,14 +12,15 @@
         {
           "values": [
             0.6394267984578837,
-            0.025010755222666936
+            0.025010755222666936,
+            0.27502931836911926
           ],
           "fitness": {
             "values": [
-              0.5,
-              0.3,
-              0.4,
-              -0.1
+              -1.0,
+              -1.0,
+              -1.0,
+              1.0
             ],
             "weights": [
               1.0,
@@ -32,14 +33,15 @@
         {
           "values": [
             0.6394267984578837,
-            0.025010755222666936
+            0.025010755222666936,
+            0.2321493981086632
           ],
           "fitness": {
             "values": [
-              0.5,
-              0.3,
-              0.4,
-              -0.1
+              -1.0,
+              -1.0,
+              -1.0,
+              1.0
             ],
             "weights": [
               1.0,
@@ -58,22 +60,31 @@
     "replacement": true
   },
   "config": {
-    "n_params": 2,
+    "n_params": 3,
     "param_defs": [
       {
-        "type": "ContinuousParameter",
-        "name": "alpha",
-        "low": "0.0",
-        "high": "1.0",
-        "init_range": "(0.0, 1.0)",
+        "type": "IntParameter",
+        "name": "k_neighbors",
+        "low": "3",
+        "high": "20",
+        "init_range": "(0, 1)",
+        "scaling": "linear",
+        "mutation_step_size": "None"
+      },
+      {
+        "type": "IntParameter",
+        "name": "train_length",
+        "low": "2",
+        "high": "10",
+        "init_range": "(0, 1)",
         "scaling": "linear",
         "mutation_step_size": "None"
       },
       {
         "type": "ContinuousParameter",
-        "name": "beta",
-        "low": "-1.0",
-        "high": "1.0",
+        "name": "threshold",
+        "low": "0.3",
+        "high": "0.9",
         "init_range": "(0.0, 1.0)",
         "scaling": "linear",
         "mutation_step_size": "None"
