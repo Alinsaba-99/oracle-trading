@@ -125,6 +125,8 @@ class WalkForwardEngine:
                 tags={
                     "fold": str(fold_idx),
                     "n_splits": str(n_splits),
+                    "n_test_splits": str(n_test_splits),
+                    "purge_window": str(purge_window),
                     "split_method": split_method,
                     "engine": "walk_forward",
                     "total_return": str(fold_result.total_return),
@@ -144,13 +146,50 @@ class WalkForwardEngine:
         dict
             Keys like ``total_return_mean``, ``total_return_std``,
             ``sharpe_ratio_mean``, ``sharpe_ratio_std``, etc.
+
+        Notes
+        -----
+        When ``BacktestResult`` has zero-valued ratio/risk metrics but a
+        populated equity curve, this method recomputes them using
+        :class:`MetricsCalculator` (Polars-native).  This corrects for
+        engines (e.g. ``VectorizedEngine`` via vectorbt) that fail to
+        annualise Sharpe / Sortino / Calmar when the input frequency
+        cannot be inferred.
         """
         if not self._fold_results:
             return {}
 
+        # ── fix: compute missing ratio metrics from equity curve ─────
+        from analytics.backtest.metrics import MetricsCalculator
+
+        _mc = MetricsCalculator()
+        for r in self._fold_results:
+            if not r.equity_curve or len(r.equity_curve) < 10:
+                continue
+            equity = pl.Series(r.equity_curve, dtype=pl.Float64)
+            returns = equity.pct_change().drop_nulls()
+            if len(returns) < 2:
+                continue
+            if r.sharpe_ratio == 0.0:
+                r.sharpe_ratio = _mc.sharpe_ratio(returns)
+            if r.sortino_ratio == 0.0:
+                r.sortino_ratio = _mc.sortino_ratio(returns)
+            if r.max_drawdown == 0.0:
+                r.max_drawdown = _mc.max_drawdown(equity)
+            if r.calmar_ratio == 0.0 and r.max_drawdown > 0:
+                r.calmar_ratio = _mc.calmar_ratio(returns, r.max_drawdown)
+
+        # ── aggregate across folds ───────────────────────────────────
+        import math
+
         combined: dict[str, Any] = {}
         for metric in _AGGREGATED_METRICS:
-            values = [getattr(r, metric, 0.0) for r in self._fold_results]
+            # Drop non-finite values (inf/NaN) that vectorbt can produce
+            # for degenerate folds (e.g. profit_factor = inf for 100% wins).
+            raw = [getattr(r, metric, 0.0) for r in self._fold_results]
+            values = [v for v in raw if isinstance(v, (int, float)) and math.isfinite(v)]
+            if not values:
+                values = [0.0]
             combined[f"{metric}_mean"] = statistics.mean(values)
             combined[f"{metric}_std"] = statistics.stdev(values) if len(values) > 1 else 0.0
 
