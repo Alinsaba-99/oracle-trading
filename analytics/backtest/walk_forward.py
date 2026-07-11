@@ -64,82 +64,74 @@ class WalkForwardEngine:
         n_splits: int = 5,
         n_test_splits: int = 1,
         purge_window: int = 5,
+        split_method: str = "time",
     ) -> list[BacktestResult]:
         """Run walk-forward validation.
 
-        Parameters
-        ----------
-        data:
-            OHLCV data as a Polars DataFrame.
-        signal:
-            A :class:`BacktestSignal` implementation.
-        settings:
-            Backtest configuration.  Defaults to ``BacktestConfig()``.
-        n_splits:
-            Number of chronological groups to divide data into (default 5).
-        n_test_splits:
-            Number of groups per test fold (default 1).
-        purge_window:
-            Samples to exclude from training on each side of test-group
-            boundaries (default 5).
+        ``split_method="time"`` uses expanding window (preserves temporal
+        order — recommended for KNN/ML strategies).
 
-        Returns
-        -------
-        list[BacktestResult]
-            One :class:`BacktestResult` per fold, representing the
-            out-of-sample performance on that fold's test set.
+        ``split_method="cpcv"`` uses Combinatorial Purged CV (interleaved
+        folds — original behaviour, kept for backward compatibility).
+
+        Args:
+            data: OHLCV data.
+            signal: BacktestSignal instance.
+            settings: Backtest configuration.
+            n_splits: Number of folds.
+            n_test_splits: Test groups per fold (CPCV only).
+            purge_window: Gap between train and test.
+            split_method: ``"time"`` (default) or ``"cpcv"``.
+
+        Returns:
+            List of BacktestResult, one per fold.
         """
+        from analytics.backtest.splitters import cpcv_split, time_series_split
+
         cfg = settings or BacktestConfig()
         n = len(data)
-
-        if n < n_splits * 3:
-            raise ValueError(
-                f"Data has {n} rows, which is too few for {n_splits} splits "
-                f"with {n_test_splits} test groups each."
-            )
-
-        splits = cpcv_split(n, n_splits, n_test_splits, purge_window)
-
         self._fold_results = []
-        strategy_name: str = getattr(signal, "__class__", signal.__class__).__name__
+
+        if split_method == "time":
+            splits = time_series_split(data["timestamp"], n_splits, purge_window)
+        elif split_method == "cpcv":
+            if n < n_splits * 3:
+                raise ValueError(
+                    f"Data has {n} rows, too few for {n_splits} CPCV splits."
+                )
+            splits = cpcv_split(n, n_splits, n_test_splits, purge_window)
+        else:
+            msg = f"Unknown split_method={split_method!r}"
+            raise ValueError(msg)
+
+        strategy_name = getattr(signal, "__class__", signal.__class__).__name__
 
         for fold_idx, (train_idx, test_idx) in enumerate(splits):
-            # Compute signal on the full data, then extract test portion.
-            # This gives us the "in-sample signal" evaluated on test data,
-            # consistent with walk-forward methodology where the signal
-            # function is pre-trained / pre-defined on available history.
+            # Compute signal ONCE on all data, then extract test portion.
+            # This ensures KNN has the full history of patterns.
             full_signal = signal.compute(data)
             test_signal = full_signal[test_idx]
             test_data = data[test_idx]
 
-            # Build a signal wrapper that returns only the test portion.
-            fold_signal = _SubsetSignal(test_signal)
-
-            # Run backtest on the fold's test set
-            fold_result = self._engine.run(test_data, fold_signal, cfg)
-
-            # Tag result
+            fold_result = self._engine.run(
+                test_data, _SubsetSignal(test_signal), cfg
+            )
             fold_result.run_id = str(uuid4())
             fold_result.strategy_name = strategy_name
             fold_result.engine = "walk_forward"
 
-            # Register sub-experiment
             ctx = ExperimentContext(
                 parent_experiment_id=self._parent_experiment_id,
                 tags={
                     "fold": str(fold_idx),
                     "n_splits": str(n_splits),
-                    "n_test_splits": str(n_test_splits),
-                    "purge_window": str(purge_window),
+                    "split_method": split_method,
                     "engine": "walk_forward",
                     "total_return": str(fold_result.total_return),
                     "sharpe_ratio": str(fold_result.sharpe_ratio),
-                    "n_train": str(len(train_idx)),
-                    "n_test": str(len(test_idx)),
                 },
             )
             self._registry.register(ctx)
-
             self._fold_results.append(fold_result)
 
         return self._fold_results

@@ -30,18 +30,20 @@ class WalkForwardConfig:
 
     Attributes
     ----------
-from genetics.fitness.cache import FitnessCache, FitnessValue, fold_config_hash, genome_hash
+    n_splits:
+        Number of walk-forward folds.
     purge_window:
         Samples to exclude on each side of train/test boundaries.
     embargo:
-        Number of samples to exclude after each test fold (reserved for
-        future use; included in the cache key for forward compatibility).
+        Number of samples to exclude after each test fold.
+    split_method:
+        ``"time"`` (expanding window) or ``"cpcv"`` (combinatorial purged).
     """
 
     n_splits: int = 5
     purge_window: int = 5
     embargo: int = 10
-
+    split_method: str = "time"
 
 # Sentinel values for degenerate / failed evaluations.
 _EMPTY_FITNESS: FitnessValue = (-1.0, -1.0, -1.0, 1.0)
@@ -137,6 +139,7 @@ class FitnessEvaluator:
                 settings=self._backtest_cfg,
                 n_splits=self._wf_cfg.n_splits,
                 purge_window=self._wf_cfg.purge_window,
+                split_method=self._wf_cfg.split_method,
             )
 
             if not fold_results:
