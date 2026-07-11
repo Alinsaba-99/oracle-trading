@@ -66,6 +66,7 @@ class FitnessEvaluator:
         cache: FitnessCache | None = None,
         signal_factory: Callable[..., Any] | None = None,
         min_trades: int = 0,
+        use_pybroker: bool = False,
     ) -> None:
         self._backtest_cfg = backtest_config
         self._wf_cfg = walk_forward_config or WalkForwardConfig()
@@ -73,6 +74,7 @@ class FitnessEvaluator:
         self._cache = cache
         self._signal_factory = signal_factory
         self._min_trades = min_trades
+        self._use_pybroker = use_pybroker
 
     # ------------------------------------------------------------------
     # Public API
@@ -123,8 +125,10 @@ class FitnessEvaluator:
             )
             self._registry.register(ctx)
 
-        # ── build signal and run walk-forward ────────────────────
         try:
+            if self._use_pybroker:
+                return self._eval_pybroker(genome, data)
+            
             if self._signal_factory is not None:
                 signal = self._signal_factory(genome, genome.param_defs)
             else:
@@ -166,6 +170,44 @@ class FitnessEvaluator:
             self._cache.put(g_hash, fc_hash, d_hash, fitness)
 
         return fitness
+
+
+    def _eval_pybroker(self, genome: Genome, data: pl.DataFrame) -> FitnessValue:
+        """Evaluate using PyBroker time-based walkforward.
+
+        Returns 4-objective fitness tuple.
+        """
+        from analytics.backtest.pybroker_integration import PyBrokerBacktest
+
+        if self._signal_factory is not None:
+            sig_obj = self._signal_factory(genome, genome.param_defs)
+        else:
+            from genetics.genome.signal import GenomeToSignal
+            sig_obj = GenomeToSignal(genome, genome.param_defs)
+
+        pb = PyBrokerBacktest()
+        sig_callable = lambda d: sig_obj.compute(d) if hasattr(sig_obj, 'compute') else sig_obj
+        metrics = pb.run(
+            data, sig_callable,
+            n_windows=self._wf_cfg.n_splits,
+            train_size=0.6,
+        )
+
+        sharpe = metrics.get("sharpe", 0.0)
+        sortino = metrics.get("sortino", 0.0)
+        calmar = metrics.get("calmar", 0.0)
+        max_dd = abs(metrics.get("max_drawdown_pct", 100.0)) / 100.0
+
+        fitness = (sharpe, sortino, calmar, max_dd)
+
+        # Apply constraints
+        total_trades = metrics.get("trade_count", 0)
+        pf = metrics.get("profit_factor", 0.0)
+        constrained = _apply_constraints(
+            fitness, {"profit_factor_mean": pf}, total_trades, self._min_trades
+        )
+        return constrained if constrained != fitness else fitness
+
 
 
 def _data_fingerprint(data: pl.DataFrame, n_head: int = 10) -> str:

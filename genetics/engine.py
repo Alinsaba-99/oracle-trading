@@ -72,6 +72,7 @@ class GAConfig:
     signal_type: str = "genome"
     checkpoint_dir: str = "checkpoints/"
     min_trades: int = 0
+    use_pybroker: bool = False
     seed_genomes: list[dict[str, float | int | str]] | None = None
 
 
@@ -219,6 +220,7 @@ class GeneticEngine:
                 registry=registry,
                 signal_factory=signal_factory,
                 min_trades=self.config.min_trades,
+                use_pybroker=self.config.use_pybroker,
             )
 
             # ── Process pool for parallel island execution ────────────
