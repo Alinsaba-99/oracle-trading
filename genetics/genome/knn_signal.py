@@ -119,9 +119,9 @@ def _extract_features(
 ) -> np.ndarray:
     """Compute feature matrix [RSI, CCI, ADX, WaveTrend, Momentum] z-scored.
 
-    Uses expanding (prefix) normalisation — each bar is centred and scaled
-    using only data up to that bar.  This avoids look-ahead: adding future
-    bars never changes the normalised values of earlier bars.
+    Uses incremental expanding normalisation (Welford's online algorithm)
+    so that each bar is centred and scaled using only data up to that bar.
+    O(n) time and O(1) memory per column.
     """
     p = periods or {}
     close = data["close"].to_numpy()
@@ -136,16 +136,22 @@ def _extract_features(
         _compute_mom(close, p.get("mom_period", 12)),
     ])
 
-    # Expanding (prefix) z-score: each bar i is normalised by data [:i+1]
-    n = raw.shape[0]
-    n_cols = raw.shape[1]
+    # Incremental expanding z-score (Welford)
+    n, m = raw.shape
     normalised = np.zeros_like(raw)
+    count = np.zeros(m, dtype=np.float64)
+    mean = np.zeros(m, dtype=np.float64)
+    m2 = np.zeros(m, dtype=np.float64)  # sum of squared differences
+
     for i in range(n):
-        prefix = raw[: i + 1]
-        means = np.nanmean(prefix, axis=0)
-        stds = np.nanstd(prefix, axis=0)
-        stds = np.where(stds < 1e-10, 1.0, stds)
-        normalised[i] = (raw[i] - means) / stds
+        count += 1.0
+        delta = raw[i] - mean
+        mean += delta / count
+        delta2 = raw[i] - mean
+        m2 += delta * delta2
+
+        variance = np.divide(m2, count - 1, where=count >= 2, out=np.ones_like(m2))
+        std = np.sqrt(np.maximum(variance, 0.0))
 
     return np.nan_to_num(normalised, nan=0.0)
 
