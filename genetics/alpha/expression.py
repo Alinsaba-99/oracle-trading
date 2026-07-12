@@ -81,7 +81,7 @@ class ParseError(ValueError):
     """Expression parse error."""
 
 
-_LEAF_NAMES = {
+_LEAF_NAMES: set[str] = {
     "open", "high", "low", "close", "volume", "returns", "vwap",
 }
 
@@ -125,7 +125,9 @@ class _Parser:
         self._pos = 0
 
     def _peek(self) -> tuple[str, str] | None:
-        return self._tokens[self._pos] if self._pos < len(self._tokens) else None
+        if self._pos < len(self._tokens):
+            return self._tokens[self._pos]
+        return None
 
     def _advance(self) -> tuple[str, str]:
         tok = self._tokens[self._pos]
@@ -143,12 +145,17 @@ class _Parser:
     def parse(self) -> ExprNode:
         node = self._expr()
         if self._peek() is not None:
-            raise ParseError(f"Unexpected token {self._peek()!r} after expression")
+            tok = self._peek()
+            assert tok is not None  # type narrowing
+            raise ParseError(f"Unexpected token {tok!r} after expression")
         return node
 
     def _expr(self) -> ExprNode:
         left = self._term()
-        while self._peek() and self._peek()[0] == "OP" and self._peek()[1] in "+-":
+        while True:
+            tok = self._peek()
+            if tok is None or tok[0] != "OP" or tok[1] not in "+-":
+                break
             op = self._advance()[1]
             right = self._term()
             left = OpNode(op, [left, right])
@@ -156,7 +163,10 @@ class _Parser:
 
     def _term(self) -> ExprNode:
         left = self._factor()
-        while self._peek() and self._peek()[0] == "OP" and self._peek()[1] in "*/":
+        while True:
+            tok = self._peek()
+            if tok is None or tok[0] != "OP" or tok[1] not in "*/":
+                break
             op = self._advance()[1]
             right = self._factor()
             left = OpNode(op, [left, right])
@@ -180,14 +190,19 @@ class _Parser:
         if tok[0] == "NAME":
             name = tok[1]
             self._advance()
-            if self._peek() and self._peek()[1] == "(":
+            next_tok = self._peek()
+            if next_tok is not None and next_tok[1] == "(":
                 self._advance()
                 args: list[ExprNode] = []
-                if self._peek() and self._peek()[1] != ")":
+                while True:
+                    nt = self._peek()
+                    if nt is None or nt[1] == ")":
+                        break
                     args.append(self._expr())
-                    while self._peek() and self._peek()[1] == ",":
-                        self._advance()
-                        args.append(self._expr())
+                    peek_comma = self._peek()
+                    if peek_comma is None or peek_comma[1] != ",":
+                        break
+                    self._advance()
                 self._expect("DELIM", ")")
                 return OpNode(name, args)
             return LeafNode(name)
@@ -213,6 +228,7 @@ def _to_scalar(a: np.ndarray) -> float | int | np.ndarray:
         return int(val) if val == int(val) else val
     return a
 
+
 def _get_leaf_data(name: str, data: pl.DataFrame) -> np.ndarray:
     """Extract a column from the DataFrame as numpy array."""
     col = name.lower()
@@ -221,8 +237,10 @@ def _get_leaf_data(name: str, data: pl.DataFrame) -> np.ndarray:
         ret = np.diff(close, prepend=close[0]) / (close + 1e-10)
         return ret
     if col == "vwap":
-        h, l, c = data["high"].to_numpy(), data["low"].to_numpy(), data["close"].to_numpy()
-        return (h + l + c) / 3.0
+        high_arr = data["high"].to_numpy()
+        low_arr = data["low"].to_numpy()
+        close_arr = data["close"].to_numpy()
+        return (high_arr + low_arr + close_arr) / 3.0
     if col in data.columns:
         return data[col].to_numpy()
     raise ValueError(f"Unknown leaf: {name!r}. Available columns: {list(data.columns)}")
@@ -256,17 +274,17 @@ def evaluate(
         if node.op == "neg":
             return -arg_arrays[0]
         if node.op == "+":
-            return _to_scalar(arg_arrays[0]) + _to_scalar(arg_arrays[1])
+            return _to_scalar(arg_arrays[0]) + _to_scalar(arg_arrays[1])  # type: ignore[return-value]
         if node.op == "-":
-            return _to_scalar(arg_arrays[0]) - _to_scalar(arg_arrays[1])
+            return _to_scalar(arg_arrays[0]) - _to_scalar(arg_arrays[1])  # type: ignore[return-value]
         if node.op == "*":
-            return _to_scalar(arg_arrays[0]) * _to_scalar(arg_arrays[1])
+            return _to_scalar(arg_arrays[0]) * _to_scalar(arg_arrays[1])  # type: ignore[return-value]
         if node.op == "/":
             a = _to_scalar(arg_arrays[0])
             b = _to_scalar(arg_arrays[1])
             if isinstance(b, float):
-                return a / (abs(b) + 1e-10)
-            return a / (np.abs(b) + 1e-10)
+                return a / (abs(b) + 1e-10)  # type: ignore[return-value]
+            return a / (np.abs(b) + 1e-10)  # type: ignore[return-value]
 
         # Named function: convert singleton constant arrays to scalars
         cleaned = [_to_scalar(a) for a in arg_arrays]
@@ -287,3 +305,8 @@ def expression_depth(node: ExprNode) -> int:
     if isinstance(node, OpNode):
         return 1 + max((expression_depth(a) for a in node.args), default=0)
     return 1
+
+
+def expression_to_string(node: ExprNode) -> str:
+    """Render an expression tree back to its string representation."""
+    return str(node)

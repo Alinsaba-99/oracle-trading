@@ -1,33 +1,16 @@
-"""Genome module — typed parameters, codec, and signal adapter for genetic optimisation."""
-
-from genetics.genome.parameters import (
-    CategoricalParameter,
-    ContinuousParameter,
-    GenomeParameter,
-    IntParameter,
-)
-from genetics.genome.hybrid_signal import HybridGenomeToSignal
-from genetics.genome.protocol import BacktestSignal
-from genetics.genome.signal import (
-    Genome,
-    GenomeConfig,
-    GenomeToSignal,
-    decode,
-    encode,
-    validate_genome,
+"""Genome module — GP expression encoding and DEAP bridge."""
+from genetics.genome.expression_codec import (
+    create_primitive_set,
+    expr_to_gp_tree,
+    gp_tree_to_expr,
+    random_expression,
+    tree_to_string,
 )
 
 __all__ = [
-    "BacktestSignal",
-    "CategoricalParameter",
-    "ContinuousParameter",
-    "Genome",
-    "GenomeConfig",
-    "GenomeParameter",
-    "GenomeToSignal",
-    "HybridGenomeToSignal",
-    "IntParameter",
-    "decode",
-    "encode",
-    "validate_genome",
+    "create_primitive_set",
+    "expr_to_gp_tree",
+    "gp_tree_to_expr",
+    "random_expression",
+    "tree_to_string",
 ]

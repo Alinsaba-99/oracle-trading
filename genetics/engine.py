@@ -210,6 +210,12 @@ class GeneticEngine:
             elif self.config.signal_type == "hybrid":
                 from genetics.genome.hybrid_signal import HybridGenomeToSignal
                 signal_factory = HybridGenomeToSignal
+            elif self.config.signal_type == "pair":
+                from genetics.genome.pair_signal import PairTradingSignal
+                signal_factory = PairTradingSignal
+            elif self.config.signal_type == "expression":
+                from genetics.genome.expression_signal import ExpressionGenomeToSignal
+                signal_factory = ExpressionGenomeToSignal
             elif self.config.signal_type != "genome":
                 msg = f"Unknown signal_type: {self.config.signal_type!r}"
                 raise ValueError(msg)

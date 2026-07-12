@@ -152,6 +152,8 @@ def _extract_features(
 
         variance = np.divide(m2, count - 1, where=count >= 2, out=np.ones_like(m2))
         std = np.sqrt(np.maximum(variance, 0.0))
+        std = np.where(std < 1e-10, 1.0, std)
+        normalised[i] = (raw[i] - mean) / std
 
     return np.nan_to_num(normalised, nan=0.0)
 
