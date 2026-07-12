@@ -6,6 +6,7 @@ from collections.abc import Sequence
 
 import numpy as np
 import polars as pl
+
 from analytics.technical.pair_trading import compute_cointegration
 from genetics.genome.parameters import GenomeParameter
 from genetics.genome.signal import Genome

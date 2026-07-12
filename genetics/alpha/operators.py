@@ -14,6 +14,7 @@ import polars as pl
 # Helper
 # ---------------------------------------------------------------------------
 
+
 def _clean(x: np.ndarray) -> np.ndarray:
     """NaN → 0.0 su ogni output."""
     return np.nan_to_num(x, nan=0.0)
@@ -22,6 +23,7 @@ def _clean(x: np.ndarray) -> np.ndarray:
 # ---------------------------------------------------------------------------
 # Time-series (window-based)
 # ---------------------------------------------------------------------------
+
 
 def ts_mean(x: np.ndarray, d: int) -> np.ndarray:
     """Rolling mean di finestra ``d``.
@@ -164,6 +166,7 @@ def ts_argmin(x: np.ndarray, d: int) -> np.ndarray:
 # Cross-sectional (single value at each time)
 # ---------------------------------------------------------------------------
 
+
 def rank(x: np.ndarray) -> np.ndarray:
     """Rank normalizzato tra 0 e 1."""
     xc = np.nan_to_num(x, nan=0.0)
@@ -197,6 +200,7 @@ def zscore(x: np.ndarray) -> np.ndarray:
 # ---------------------------------------------------------------------------
 # Math operations  (element-wise, broadcasting)
 # ---------------------------------------------------------------------------
+
 
 def neg(x: np.ndarray) -> np.ndarray:
     return _clean(-x)
@@ -238,6 +242,7 @@ def sqrt_(x: np.ndarray) -> np.ndarray:
 # ---------------------------------------------------------------------------
 # Financial
 # ---------------------------------------------------------------------------
+
 
 def correlation(x: np.ndarray, y: np.ndarray, d: int) -> np.ndarray:
     """Rolling Pearson correlation tra ``x`` e ``y`` su finestra ``d``.
@@ -309,6 +314,7 @@ def ema(x: np.ndarray, d: int) -> np.ndarray:
 # Leaf nodes  (data sources)
 # ---------------------------------------------------------------------------
 
+
 def leaf_close(data: pl.DataFrame) -> np.ndarray:
     """Estrae la colonna 'close' da un ``pl.DataFrame``."""
     return _clean(data["close"].to_numpy())
@@ -347,8 +353,8 @@ def leaf_vwap(data: pl.DataFrame) -> np.ndarray:
     """Volume-weighted average price (semplice): ``(close + high + low) / 3``."""
     c = data["close"].to_numpy()
     h = data["high"].to_numpy()
-    l = data["low"].to_numpy()
-    return _clean((c + h + l) / 3.0)
+    low_val = data["low"].to_numpy()
+    return _clean((c + h + low_val) / 3.0)
 
 
 # ---------------------------------------------------------------------------

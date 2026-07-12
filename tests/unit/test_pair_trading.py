@@ -1,4 +1,5 @@
 """Tests for pair trading — cointegration test + spread signal."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -107,13 +108,11 @@ def test_build_pair_df_aligns_data() -> None:
 
 def test_build_pair_df_partial_overlap() -> None:
     """Solo timestamp in comune vengono mantenuti."""
-    data_a = pl.DataFrame({
-        "timestamp": [1, 2, 3, 4, 5],
-        "close": [100.0, 101.0, 102.0, 103.0, 104.0],
-    })
-    data_b = pl.DataFrame({
-        "timestamp": [3, 4, 5, 6, 7],
-        "close": [200.0, 202.0, 204.0, 206.0, 208.0],
-    })
+    data_a = pl.DataFrame(
+        {"timestamp": [1, 2, 3, 4, 5], "close": [100.0, 101.0, 102.0, 103.0, 104.0]}
+    )
+    data_b = pl.DataFrame(
+        {"timestamp": [3, 4, 5, 6, 7], "close": [200.0, 202.0, 204.0, 206.0, 208.0]}
+    )
     result = build_pair_df(data_a, data_b)
     assert len(result) == 3  # solo 3, 4, 5

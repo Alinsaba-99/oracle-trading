@@ -15,12 +15,7 @@ from core.logging import get_logger
 
 logger = get_logger("oracle.agents")
 
-__all__ = [
-    "FallbackLLMClient",
-    "LLMClient",
-    "LitellmLLMClient",
-    "ModelCallError",
-]
+__all__ = ["FallbackLLMClient", "LLMClient", "LitellmLLMClient", "ModelCallError"]
 
 
 class ModelCallError(OracleError):
@@ -64,10 +59,7 @@ class LitellmLLMClient:
     """
 
     def __init__(
-        self,
-        model: str = "gpt-4",
-        temperature: float = 0.1,
-        timeout_s: float = 30.0,
+        self, model: str = "gpt-4", temperature: float = 0.1, timeout_s: float = 30.0
     ) -> None:
         self._model = model
         self._default_temperature = temperature

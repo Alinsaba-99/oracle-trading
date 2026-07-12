@@ -7,18 +7,13 @@ from typing import Any
 import pytest
 from deap import base, creator
 
-from genetics.population.migration import (
-    replace_worst,
-    ring_migration,
-    select_best_individuals,
-)
+from genetics.population.migration import replace_worst, ring_migration, select_best_individuals
 
 # ── helpers ──────────────────────────────────────────────────────────
 
 
 def _make_individual(
-    values: list[float],
-    fitness_vals: tuple[float, float, float, float] | None = None,
+    values: list[float], fitness_vals: tuple[float, float, float, float] | None = None
 ) -> Any:
     """Create a DEAP individual with optional fitness."""
     if not hasattr(creator, "FitnessMulti"):
@@ -50,12 +45,7 @@ def three_islands() -> list[list[Any]]:
         for rank in range(5):
             # Higher rank = better fitness (rank 4 is best)
             v = float(rank)
-            pop.append(
-                _make_individual(
-                    [0.1 * island_idx + 0.01 * rank] * 3,
-                    _fitness_tuple(v),
-                )
-            )
+            pop.append(_make_individual([0.1 * island_idx + 0.01 * rank] * 3, _fitness_tuple(v)))
         islands.append(pop)
     return islands
 
@@ -177,10 +167,7 @@ class TestRingMigration:
         """Migration introduces new genomes, shifting diversity."""
         islands = []
         for i in range(3):
-            pop = [
-                _make_individual([float(i)] * 4, _fitness_tuple(float(i + j)))
-                for j in range(5)
-            ]
+            pop = [_make_individual([float(i)] * 4, _fitness_tuple(float(i + j))) for j in range(5)]
             islands.append(pop)
 
         # The best individual from each island should propagate
@@ -196,8 +183,7 @@ class TestRingMigration:
         islands = []
         for i in range(3):
             pop = [
-                _make_individual([float(i) + 0.1 * j], _fitness_tuple(float(j)))
-                for j in range(5)
+                _make_individual([float(i) + 0.1 * j], _fitness_tuple(float(j))) for j in range(5)
             ]
             islands.append(pop)
 

@@ -14,5 +14,6 @@ class ModelCallError(AgentError):
 class DebateTimeoutError(AgentError):
     """Raised when a debate round exceeds the timeout."""
 
+
 class CircuitBreakerOpenError(AgentError):
     """Raised when the circuit breaker is open and calls are blocked."""

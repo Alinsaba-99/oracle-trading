@@ -18,11 +18,7 @@ def _setup_mas(_args: argparse.Namespace | None = None) -> dict[str, Any]:
     from agents.decision import PortfolioManager, RiskManager, SignalScorer
     from agents.llm import FallbackLLMClient, LitellmLLMClient
     from agents.oracle.oracle import MarketOracle
-    from agents.orchestrator import (
-        LangGraphWorkflowEngine,
-        MASOrchestrator,
-        build_mas_graph,
-    )
+    from agents.orchestrator import LangGraphWorkflowEngine, MASOrchestrator, build_mas_graph
 
     config = MASConfig()
 
@@ -54,12 +50,7 @@ def _setup_mas(_args: argparse.Namespace | None = None) -> dict[str, Any]:
     }
 
 
-def _format_output(
-    result: Any,
-    instrument: str,
-    fmt: str,
-    verbose: bool = False,
-) -> str:
+def _format_output(result: Any, instrument: str, fmt: str, verbose: bool = False) -> str:
     """Format a MAS result for display (json / table / standard)."""
     import json
 
@@ -129,10 +120,7 @@ async def handle_agent_run(args: argparse.Namespace) -> int:
     config = mas["config"]
     analysts = mas["analysts"]
 
-    print(
-        f"MAS ready: {len(analysts)} analysts, "
-        f"debate={config.debate_rounds} rounds"
-    )
+    print(f"MAS ready: {len(analysts)} analysts, debate={config.debate_rounds} rounds")
     print("  oracle+analysts+debate+risk+portfolio pipeline")
     print(f"  Instrument: {instrument}")
     print(f"  Output mode: {fmt}")
@@ -181,11 +169,7 @@ async def handle_agent_debate(args: argparse.Namespace) -> int:
     dummy_state: dict[str, str] = {"regime": "unknown"}
     signals_raw: list[Any] = []
     for analyst in analysts:
-        inp = AnalystInput(
-            instrument=instrument,
-            market_state=dummy_state,
-            agent_specific_data={},
-        )
+        inp = AnalystInput(instrument=instrument, market_state=dummy_state, agent_specific_data={})
         signal = await analyst.analyze(inp)
         signals_raw.append(signal)
         print(f"  [{analyst.name}] {signal.vote.direction} ({signal.vote.confidence:.2f})")

@@ -40,9 +40,7 @@ def _populate_registry() -> None:
 
 
 def create_analyst(
-    analyst_type: str,
-    llm_client: LLMClient,
-    config: MASConfig | None = None,
+    analyst_type: str, llm_client: LLMClient, config: MASConfig | None = None
 ) -> BaseAnalyst:
     """Create an analyst instance by type name.
 

@@ -232,9 +232,7 @@ class TestRiskAssessment:
 class TestAnalystInput:
     def test_minimal(self) -> None:
         inp = AnalystInput(
-            instrument="BTC/USD",
-            market_state={"regime": "bull"},
-            agent_specific_data={},
+            instrument="BTC/USD", market_state={"regime": "bull"}, agent_specific_data={}
         )
         assert inp.instrument == "BTC/USD"
         assert inp.agent_specific_data == {}

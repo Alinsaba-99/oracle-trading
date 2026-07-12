@@ -18,13 +18,9 @@ from deap import creator
 
 from genetics.genome.signal import Genome, GenomeConfig
 from genetics.operators import create_toolbox
-from genetics.serialize import (
-    population_from_dict,
-    population_to_dict,
-)
+from genetics.serialize import population_from_dict, population_to_dict
 
 if TYPE_CHECKING:
-
     import polars as pl
     from deap import tools
 
@@ -65,9 +61,7 @@ class MigrationPolicy:
 
 
 def ring_migration(
-    islands: list[Island],
-    _migration_size: int = 3,
-    _rng: _random.Random | None = None,
+    islands: list[Island], _migration_size: int = 3, _rng: _random.Random | None = None
 ) -> list[list[int]]:
     """Ring-migration plan: each island sends *migration_size* individuals to the next.
 
@@ -129,17 +123,11 @@ def compute_stats(population: list[Any], generation: int) -> PopulationStats:
         return PopulationStats(generation=generation)
 
     # Collect valid fitness vectors
-    all_fitness = [
-        ind.fitness.values
-        for ind in population
-        if ind.fitness.valid
-    ]
+    all_fitness = [ind.fitness.values for ind in population if ind.fitness.valid]
 
     if not all_fitness:
         return PopulationStats(
-            generation=generation,
-            pop_size=n,
-            diversity=compute_diversity(population),
+            generation=generation, pop_size=n, diversity=compute_diversity(population)
         )
 
     n_obj = len(all_fitness[0])
@@ -168,10 +156,7 @@ def compute_stats(population: list[Any], generation: int) -> PopulationStats:
                 best[i] = min(best[i], fv[i])
 
     # Mean fitness
-    mean = tuple(
-        sum(f[i] for f in all_fitness) / len(all_fitness)
-        for i in range(n_obj)
-    )
+    mean = tuple(sum(f[i] for f in all_fitness) / len(all_fitness) for i in range(n_obj))
 
     # Diversity
     diversity = compute_diversity(population)
@@ -388,11 +373,7 @@ class Island:
         )
 
 
-def _eval_one(
-    genome: Genome,
-    data: Any,
-    evaluator: FitnessEvaluator,
-) -> tuple[float, ...]:
+def _eval_one(genome: Genome, data: Any, evaluator: FitnessEvaluator) -> tuple[float, ...]:
     """Picklable wrapper for :meth:`FitnessEvaluator.evaluate`."""
     return evaluator.evaluate(genome, data)
 
@@ -444,7 +425,7 @@ class IslandManager:
             if self.seed_genomes:
                 for vec in self.seed_genomes:
                     if len(vec) >= self.genome_config.n_params:
-                        ind = creator.Individual(vec[:self.genome_config.n_params])
+                        ind = creator.Individual(vec[: self.genome_config.n_params])
                         ind.fitness = creator.FitnessMulti()
                         pop.append(ind)
             # Fill remaining with random individuals
@@ -488,12 +469,7 @@ class IslandManager:
 
         async def _run_island(island: Island) -> PopulationStats:
             return await asyncio.to_thread(
-                island.evaluate_next_gen,
-                evaluator,
-                data,
-                cxpb,
-                mutpb,
-                executor,
+                island.evaluate_next_gen, evaluator, data, cxpb, mutpb, executor
             )
 
         tasks = [_run_island(isl) for isl in self.islands]
@@ -527,9 +503,7 @@ class IslandManager:
                 # Sort dst by fitness (worst first) and replace
                 sorted_dst = sorted(
                     dst.population,
-                    key=lambda ind: (
-                        ind.fitness.wvalues[0] if ind.fitness.valid else float("-inf")
-                    ),
+                    key=lambda ind: ind.fitness.wvalues[0] if ind.fitness.valid else float("-inf"),
                 )
                 for i, emigrant in enumerate(emigrants):
                     if i < len(sorted_dst):
@@ -562,18 +536,13 @@ class IslandManager:
 
         # Union of all individuals with valid fitness
         all_individuals = [
-            ind
-            for is_ in self.islands
-            for ind in is_.population
-            if ind.fitness.valid
+            ind for is_ in self.islands for ind in is_.population if ind.fitness.valid
         ]
         if not all_individuals:
             return []
 
         front = deap_tools.sortNondominated(
-            all_individuals,
-            len(all_individuals),
-            first_front_only=True,
+            all_individuals, len(all_individuals), first_front_only=True
         )[0]
         return list(front)
 
@@ -618,10 +587,7 @@ class IslandManager:
         }
 
     @staticmethod
-    def load_checkpoint(
-        path: str,
-        genome_config: GenomeConfig,
-    ) -> IslandManager:
+    def load_checkpoint(path: str, genome_config: GenomeConfig) -> IslandManager:
         """Load an :class:`IslandManager` from a JSON checkpoint file.
 
         Args:
@@ -657,10 +623,7 @@ class IslandManager:
             if island_id < len(manager.islands):
                 island = manager.islands[island_id]
                 island.generation = island_data["generation"]
-                island.population = population_from_dict(
-                    island_data["population"],
-                    island.toolbox,
-                )
+                island.population = population_from_dict(island_data["population"], island.toolbox)
 
         # Restore migration policy if present
         if "migration_policy" in data:

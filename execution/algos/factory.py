@@ -8,11 +8,7 @@ from execution.algos.iceberg import IcebergAlgo
 from execution.algos.twap import TWAPAlgo
 from execution.algos.vwap import VWAPAlgo
 
-ALGO_REGISTRY: dict[str, type[Any]] = {
-    "vwap": VWAPAlgo,
-    "twap": TWAPAlgo,
-    "iceberg": IcebergAlgo,
-}
+ALGO_REGISTRY: dict[str, type[Any]] = {"vwap": VWAPAlgo, "twap": TWAPAlgo, "iceberg": IcebergAlgo}
 
 
 def create_algo(name: str, config: dict[str, Any] | None = None) -> Any:

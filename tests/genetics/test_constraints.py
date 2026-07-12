@@ -1,13 +1,10 @@
 """Tests for GA constraint functions — _apply_constraints, _extract_fitness."""
+
 from __future__ import annotations
 
 import pytest
 
-from genetics.fitness.evaluator import (
-    _EMPTY_FITNESS,
-    _apply_constraints,
-    _extract_fitness,
-)
+from genetics.fitness.evaluator import _EMPTY_FITNESS, _apply_constraints, _extract_fitness
 
 
 class TestExtractFitness:
@@ -59,10 +56,7 @@ class TestApplyConstraints:
     def test_min_trades_sentinel(self) -> None:
         """Below min_trades → _EMPTY_FITNESS."""
         result = _apply_constraints(
-            fitness=(1.0, 2.0, 3.0, 0.1),
-            combined={},
-            total_trades=5,
-            min_trades=10,
+            fitness=(1.0, 2.0, 3.0, 0.1), combined={}, total_trades=5, min_trades=10
         )
         assert result == _EMPTY_FITNESS
 
@@ -147,10 +141,7 @@ class TestApplyConstraints:
     def test_both_keys_missing_no_penalty(self) -> None:
         """No CAGR or PF keys → no penalty."""
         result = _apply_constraints(
-            fitness=(1.0, 2.0, 3.0, 0.1),
-            combined={},
-            total_trades=15,
-            min_trades=10,
+            fitness=(1.0, 2.0, 3.0, 0.1), combined={}, total_trades=15, min_trades=10
         )
         assert result == (1.0, 2.0, 3.0, 0.1)
 
@@ -199,7 +190,7 @@ class TestMaxDDConstraint:
         assert result == (1.0, 2.0, 3.0, 0.10)
 
     def test_negative_cagr_penalty(self) -> None:
-        """Negative CAGR → soft penalty (×0.01), not fatal."""
+        """Negative CAGR → soft penalty (x0.01), not fatal."""
         result = _apply_constraints(
             fitness=(5.0, 5.0, 5.0, 0.10),
             combined={"cagr_mean": -0.02, "profit_factor_mean": 1.5},
@@ -209,7 +200,7 @@ class TestMaxDDConstraint:
         assert result == (0.05, 0.05, 0.05, 0.10)
 
     def test_zero_cagr_penalty(self) -> None:
-        """CAGR exactly 0 % → soft penalty (×0.01)."""
+        """CAGR exactly 0 % → soft penalty (x0.01)."""
         result = _apply_constraints(
             fitness=(5.0, 5.0, 5.0, 0.10),
             combined={"cagr_mean": 0.0, "profit_factor_mean": 1.5},

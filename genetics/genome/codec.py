@@ -10,20 +10,9 @@ import math
 
 import numpy as np
 
-from genetics.genome.parameters import (
-    CategoricalParameter,
-    ContinuousParameter,
-    IntParameter,
-)
+from genetics.genome.parameters import CategoricalParameter, ContinuousParameter, IntParameter
 
-__all__ = [
-    "clamp",
-    "denormalize",
-    "normalize",
-    "random_value",
-    "round_int",
-    "validate",
-]
+__all__ = ["clamp", "denormalize", "normalize", "random_value", "round_int", "validate"]
 
 
 # ── normalisation ───────────────────────────────────────────────────
@@ -68,17 +57,13 @@ def normalize(value: float, param: ContinuousParameter | IntParameter) -> float:
 # ── denormalisation ─────────────────────────────────────────────────
 
 
-def _denormalize_linear(
-    normalized: float, low: float, high: float,
-) -> float:
+def _denormalize_linear(normalized: float, low: float, high: float) -> float:
     """Map a value from [0, 1] back to [low, high] linearly."""
     span = high - low
     return low + normalized * span
 
 
-def _denormalize_log(
-    normalized: float, low: float, high: float,
-) -> float:
+def _denormalize_log(normalized: float, low: float, high: float) -> float:
     """Map a value from [0, 1] back to [low, high] logarithmically."""
     log_low = math.log(low)
     log_high = math.log(high)
@@ -87,8 +72,7 @@ def _denormalize_log(
 
 
 def denormalize(
-    normalized: float,
-    param: ContinuousParameter | IntParameter | CategoricalParameter,
+    normalized: float, param: ContinuousParameter | IntParameter | CategoricalParameter
 ) -> float | int | str:
     """Reverse a normalised [0, 1] value back to a raw parameter value.
 
@@ -121,8 +105,7 @@ def denormalize(
 
 
 def validate(
-    value: object,
-    param: ContinuousParameter | IntParameter | CategoricalParameter,
+    value: object, param: ContinuousParameter | IntParameter | CategoricalParameter
 ) -> bool:
     """Check whether a raw value is valid for the given parameter.
 
@@ -152,8 +135,7 @@ def validate(
 
 
 def clamp(
-    value: float | str,
-    param: ContinuousParameter | IntParameter | CategoricalParameter,
+    value: float | str, param: ContinuousParameter | IntParameter | CategoricalParameter
 ) -> float | int | str:
     """Clamp a value to the valid range for the parameter.
 
@@ -179,8 +161,7 @@ def clamp(
 
 
 def random_value(
-    param: ContinuousParameter | IntParameter | CategoricalParameter,
-    rng: np.random.Generator,
+    param: ContinuousParameter | IntParameter | CategoricalParameter, rng: np.random.Generator
 ) -> float | int | str:
     """Generate a random valid value for the given parameter.
 
@@ -209,6 +190,3 @@ def round_int(value: float) -> int:
     built-in ``round()``, returning an int.
     """
     return round(value)
-
-
-

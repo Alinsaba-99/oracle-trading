@@ -30,19 +30,18 @@ from genetics.genome.signal import Genome
 def ohlcv() -> pl.DataFrame:
     """200 trading days of synthetic OHLCV trending upward."""
     n = 200
-    return pl.DataFrame({
-        "timestamp": pl.date_range(
-            datetime(2020, 1, 1),
-            datetime(2020, 10, 17),
-            interval="1d",
-            eager=True,
-        )[:n],
-        "open": [100.0 + i * 0.1 for i in range(n)],
-        "high": [100.0 + i * 0.1 + 0.5 for i in range(n)],
-        "low": [100.0 + i * 0.1 - 0.5 for i in range(n)],
-        "close": [100.0 + i * 0.1 for i in range(n)],
-        "volume": [1_000_000 for _ in range(n)],
-    })
+    return pl.DataFrame(
+        {
+            "timestamp": pl.date_range(
+                datetime(2020, 1, 1), datetime(2020, 10, 17), interval="1d", eager=True
+            )[:n],
+            "open": [100.0 + i * 0.1 for i in range(n)],
+            "high": [100.0 + i * 0.1 + 0.5 for i in range(n)],
+            "low": [100.0 + i * 0.1 - 0.5 for i in range(n)],
+            "close": [100.0 + i * 0.1 for i in range(n)],
+            "volume": [1_000_000 for _ in range(n)],
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -60,8 +59,7 @@ def test_genome() -> Genome:
         ContinuousParameter(name="p4", low=0.01, high=1.0),
     ]
     return Genome(
-        normalized_params=np.array([0.5, 0.3, 0.7, 0.2], dtype=np.float64),
-        param_defs=params,
+        normalized_params=np.array([0.5, 0.3, 0.7, 0.2], dtype=np.float64), param_defs=params
     )
 
 
@@ -115,15 +113,17 @@ class _MockWFEngine:
         return list(self._fold_results)
 
 
-
 class _MockWFFactory:
     """Callable that returns the same mock instance regardless of constructor args."""
 
     def __init__(self, mock_instance: _MockWFEngine) -> None:
         self._mock = mock_instance
 
-    def __call__(self, registry: Any = None, parent_experiment_id: str | None = None) -> _MockWFEngine:
+    def __call__(
+        self, registry: Any = None, parent_experiment_id: str | None = None
+    ) -> _MockWFEngine:
         return self._mock
+
 
 def _make_results(
     n_folds: int,
@@ -135,14 +135,16 @@ def _make_results(
 ) -> list[BacktestResult]:
     results: list[BacktestResult] = []
     for _ in range(n_folds):
-        results.append(BacktestResult(
-            sharpe_ratio=sharpe,
-            sortino_ratio=sortino,
-            calmar_ratio=calmar,
-            max_drawdown=drawdown,
-            total_trades=total_trades,
-            equity_curve=list(range(100)),
-        ))
+        results.append(
+            BacktestResult(
+                sharpe_ratio=sharpe,
+                sortino_ratio=sortino,
+                calmar_ratio=calmar,
+                max_drawdown=drawdown,
+                total_trades=total_trades,
+                equity_curve=list(range(100)),
+            )
+        )
     return results
 
 
@@ -240,7 +242,9 @@ class TestCaching:
                 split_method: str = "time",
             ) -> list[BacktestResult]:
                 call_count[0] += 1
-                return super().run(data, signal, settings, n_splits, n_test_splits, purge_window, split_method)
+                return super().run(
+                    data, signal, settings, n_splits, n_test_splits, purge_window, split_method
+                )
 
         mock = _CountingMock()
         mock._fold_results = _make_results(3)
@@ -290,7 +294,9 @@ class TestCaching:
                 split_method: str = "time",
             ) -> list[BacktestResult]:
                 call_count[0] += 1
-                return super().run(data, signal, settings, n_splits, n_test_splits, purge_window, split_method)
+                return super().run(
+                    data, signal, settings, n_splits, n_test_splits, purge_window, split_method
+                )
 
         mock = _CountingMock()
         mock._fold_results = _make_results(3)
@@ -470,7 +476,10 @@ class TestNoCachePath:
                 split_method: str = "time",
             ) -> list[BacktestResult]:
                 call_count[0] += 1
-                return super().run(data, signal, settings, n_splits, n_test_splits, purge_window, split_method)
+                return super().run(
+                    data, signal, settings, n_splits, n_test_splits, purge_window, split_method
+                )
+
         mock = _CountingMock()
         mock._fold_results = _make_results(3)
         mock._combined = {

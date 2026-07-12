@@ -56,8 +56,9 @@ def main() -> None:
         "--from", dest="from_", type=str, default=None, help="Start date (YYYY-MM-DD or YYYY)"
     )
     run_parser.add_argument("--fast", type=int, default=50, help="SMA fast period")
-    run_parser.add_argument("--to", dest="to_", type=str, default=None,
-                            help="End date (YYYY-MM-DD or YYYY)")
+    run_parser.add_argument(
+        "--to", dest="to_", type=str, default=None, help="End date (YYYY-MM-DD or YYYY)"
+    )
     run_parser.add_argument("--slow", type=int, default=200, help="SMA slow period")
 
     # backtest list
@@ -75,9 +76,7 @@ def main() -> None:
 
     # agent run
     agent_run_parser = agent_sub.add_parser("run", help="Run full MAS analysis pipeline")
-    agent_run_parser.add_argument(
-        "--instrument", type=str, default="SPY", help="Instrument symbol"
-    )
+    agent_run_parser.add_argument("--instrument", type=str, default="SPY", help="Instrument symbol")
     agent_run_parser.add_argument("--json", action="store_true", help="JSON output")
     agent_run_parser.add_argument("--table", action="store_true", help="Table output")
     agent_run_parser.add_argument("--verbose", action="store_true", help="Verbose output")
@@ -270,6 +269,7 @@ def _synthetic_ohlcv(
 
     import numpy as np
     import polars as pl
+
     if start_date is not None:
         from datetime import timedelta
 
@@ -278,9 +278,7 @@ def _synthetic_ohlcv(
             start_date = f"{start_date}-01-01"
         dt = datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=UTC)
         end_dt = dt + timedelta(days=n_periods)
-        dates = pl.datetime_range(
-            start=dt, end=end_dt, interval="1d", eager=True, closed="left"
-        )
+        dates = pl.datetime_range(start=dt, end=end_dt, interval="1d", eager=True, closed="left")
     else:
         dates = _n_dates(n_periods)
     sine = np.sin(np.linspace(0, 4 * np.pi, n_periods))
@@ -458,7 +456,6 @@ def _handle_agent_status(args: argparse.Namespace) -> None:
     sys.exit(handle_agent_status(args))
 
 
-
 def _handle_trade_submit(args: argparse.Namespace) -> None:
     """Submit a trade order."""
     import asyncio
@@ -502,6 +499,7 @@ def _handle_trade_kill(args: argparse.Namespace) -> None:
     from apps.cli.trade_commands import handle_trade_kill
 
     sys.exit(asyncio.run(handle_trade_kill(args)))
+
 
 if __name__ == "__main__":
     main()

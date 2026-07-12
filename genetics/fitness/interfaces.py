@@ -30,8 +30,7 @@ class BacktestConfig(BaseModel):
     commission_pct: float = Field(default=0.001, ge=0, le=1)
     initial_capital: Decimal = Decimal("100000")
 
-    def to_settings(self) -> dict[str, float | str | int]:
-        ...
+    def to_settings(self) -> dict[str, float | str | int]: ...
 
 
 # ---------------------------------------------------------------------------
@@ -59,8 +58,7 @@ class BacktestResult(BaseModel):
     equity_curve: list[float] = Field(default_factory=list)
     trades: list[Trade] = Field(default_factory=list)
 
-    def to_dict(self) -> dict[str, Any]:
-        ...
+    def to_dict(self) -> dict[str, Any]: ...
 
     @staticmethod
     def from_metrics(
@@ -85,8 +83,7 @@ class BacktestResult(BaseModel):
         final_equity: float = 0.0,
         equity_curve: list[float] | None = None,
         trades: list[Trade] | None = None,
-    ) -> BacktestResult:
-        ...
+    ) -> BacktestResult: ...
 
 
 # ---------------------------------------------------------------------------
@@ -132,12 +129,7 @@ class MetricsCalculator:
 class WalkForwardEngine:
     """Walk-forward validation engine."""
 
-    def __init__(
-        self,
-        registry: Any = None,
-        parent_experiment_id: str | None = None,
-    ) -> None:
-        ...
+    def __init__(self, registry: Any = None, parent_experiment_id: str | None = None) -> None: ...
 
     def run(
         self,
@@ -156,6 +148,7 @@ class WalkForwardEngine:
         """Aggregate metrics across folds as ``{metric_mean, metric_std, n_folds}``."""
         ...
 
+
 # ---------------------------------------------------------------------------
 # VectorizedEngine — single-fold backtest engine
 # ---------------------------------------------------------------------------
@@ -164,13 +157,8 @@ class WalkForwardEngine:
 class VectorizedEngine:
     """Single-fold vectorized backtest engine wrapping vectorbt."""
 
-    def __init__(self) -> None:
-        ...
+    def __init__(self) -> None: ...
 
     def run(
-        self,
-        data: pl.DataFrame,
-        signal: BacktestSignal,
-        settings: BacktestConfig | None = None,
-    ) -> BacktestResult:
-        ...
+        self, data: pl.DataFrame, signal: BacktestSignal, settings: BacktestConfig | None = None
+    ) -> BacktestResult: ...

@@ -15,10 +15,7 @@ from genetics.genome.parameters import GenomeParameter
 __all__ = ["random_individual", "seeded_individuals"]
 
 
-def random_individual(
-    n_params: int,
-    rng: np.random.Generator,
-) -> list[float]:
+def random_individual(n_params: int, rng: np.random.Generator) -> list[float]:
     """Generate a single random normalised genome vector in [0, 1]^n."""
     return [float(v) for v in rng.uniform(0.0, 1.0, size=n_params)]
 
@@ -82,9 +79,7 @@ def _make_bias_vector(
 
 
 def seeded_individuals(
-    param_defs: Sequence[GenomeParameter],
-    n_params: int,
-    rng: np.random.Generator,
+    param_defs: Sequence[GenomeParameter], n_params: int, rng: np.random.Generator
 ) -> list[list[float]]:
     """Create 10 seeded strategy templates encoded as normalised vectors.
 

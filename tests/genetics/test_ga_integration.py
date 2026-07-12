@@ -17,7 +17,6 @@ from genetics.genome.parameters import ContinuousParameter
 from genetics.genome.signal import GenomeConfig
 
 if TYPE_CHECKING:
-
     from genetics.genome.parameters import GenomeParameter
 
 
@@ -72,9 +71,7 @@ class TestSignalFactoryWiring:
     """signal_factory flows from GAConfig through to FitnessEvaluator."""
 
     def test_genome_signal_passes_none_factory(
-        self,
-        genome_config: GenomeConfig,
-        small_data: pl.DataFrame,
+        self, genome_config: GenomeConfig, small_data: pl.DataFrame
     ) -> None:
         """signal_type='genome' should pass signal_factory=None to evaluator."""
         config = GAConfig(
@@ -101,17 +98,11 @@ class TestSignalFactoryWiring:
         assert isinstance(result, GAResult)
 
     def test_knn_signal_passes_knn_factory(
-        self,
-        genome_config: GenomeConfig,
-        small_data: pl.DataFrame,
+        self, genome_config: GenomeConfig, small_data: pl.DataFrame
     ) -> None:
         """signal_type='knn' should pass KNNGenomeToSignal as factory."""
         config = GAConfig(
-            genome_config=genome_config,
-            pop_size=2,
-            generations=1,
-            n_islands=1,
-            signal_type="knn",
+            genome_config=genome_config, pop_size=2, generations=1, n_islands=1, signal_type="knn"
         )
         engine = GeneticEngine(config)
 
@@ -141,9 +132,7 @@ class TestEvaluatorSignalFactory:
         from genetics.fitness.evaluator import FitnessEvaluator
 
         # Evaluator can be constructed without signal_factory
-        ev = FitnessEvaluator(
-            backtest_config=MagicMock(),
-        )
+        ev = FitnessEvaluator(backtest_config=MagicMock())
         assert ev._signal_factory is None
 
     def test_evaluator_with_factory(self) -> None:
@@ -151,8 +140,5 @@ class TestEvaluatorSignalFactory:
         from genetics.fitness.evaluator import FitnessEvaluator
         from genetics.genome.signal import GenomeToSignal
 
-        ev = FitnessEvaluator(
-            backtest_config=MagicMock(),
-            signal_factory=GenomeToSignal,
-        )
+        ev = FitnessEvaluator(backtest_config=MagicMock(), signal_factory=GenomeToSignal)
         assert ev._signal_factory is GenomeToSignal

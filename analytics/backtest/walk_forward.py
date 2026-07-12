@@ -86,7 +86,7 @@ class WalkForwardEngine:
         Returns:
             List of BacktestResult, one per fold.
         """
-        from analytics.backtest.splitters import cpcv_split, time_series_split
+        from analytics.backtest.splitters import time_series_split
 
         cfg = settings or BacktestConfig()
         n = len(data)
@@ -96,9 +96,7 @@ class WalkForwardEngine:
             splits = time_series_split(data["timestamp"], n_splits, purge_window)
         elif split_method == "cpcv":
             if n < n_splits * 3:
-                raise ValueError(
-                    f"Data has {n} rows, too few for {n_splits} CPCV splits."
-                )
+                raise ValueError(f"Data has {n} rows, too few for {n_splits} CPCV splits.")
             splits = cpcv_split(n, n_splits, n_test_splits, purge_window)
         else:
             msg = f"Unknown split_method={split_method!r}"
@@ -106,7 +104,7 @@ class WalkForwardEngine:
 
         strategy_name = getattr(signal, "__class__", signal.__class__).__name__
 
-        for fold_idx, (train_idx, test_idx) in enumerate(splits):
+        for fold_idx, (_train_idx, test_idx) in enumerate(splits):
             # Compute signal causally on data up to the end of THIS test fold.
             # Using the full dataset would let later folds influence the
             # training features / normalisation of this fold (look-ahead).
@@ -116,9 +114,7 @@ class WalkForwardEngine:
             test_signal = full_signal[test_idx]
             test_data = data[test_idx]
 
-            fold_result = self._engine.run(
-                test_data, _SubsetSignal(test_signal), cfg
-            )
+            fold_result = self._engine.run(test_data, _SubsetSignal(test_signal), cfg)
             fold_result.run_id = str(uuid4())
             fold_result.strategy_name = strategy_name
             fold_result.engine = "walk_forward"

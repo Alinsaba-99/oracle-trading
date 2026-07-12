@@ -29,8 +29,7 @@ if TYPE_CHECKING:
 
 
 def _make_individual(
-    values: list[float],
-    fitness_vals: tuple[float, float, float, float] | None = None,
+    values: list[float], fitness_vals: tuple[float, float, float, float] | None = None
 ) -> Any:
     """Create a DEAP individual with optional fitness."""
     if not hasattr(creator, "FitnessMulti"):
@@ -195,8 +194,7 @@ class TestHallOfFameWrapper:
         hof = HallOfFameWrapper(maxsize=3)
         # Create many individuals with varying fitness
         individuals = [
-            _make_individual([float(i)], (float(10 - i), 0.0, 0.0, -float(i)))
-            for i in range(10)
+            _make_individual([float(i)], (float(10 - i), 0.0, 0.0, -float(i))) for i in range(10)
         ]
         hof.update(individuals)
         assert len(hof) <= 3

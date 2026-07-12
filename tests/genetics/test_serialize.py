@@ -20,7 +20,6 @@ from genetics.serialize import (
 )
 
 if TYPE_CHECKING:
-
     from genetics.genome.parameters import GenomeParameter
 
 
@@ -44,8 +43,7 @@ def genome_config(simple_defs: list[GenomeParameter]) -> GenomeConfig:
 @pytest.fixture
 def genome(simple_defs: list[GenomeParameter]) -> Genome:
     return Genome(
-        normalized_params=np.array([0.5, 0.3, 0.9], dtype=np.float64),
-        param_defs=simple_defs,
+        normalized_params=np.array([0.5, 0.3, 0.9], dtype=np.float64), param_defs=simple_defs
     )
 
 
@@ -94,8 +92,7 @@ class TestPopulationSerialization:
         toolbox = base.Toolbox()
         toolbox.register("attr_float", np.random.random)
         toolbox.register(
-            "individual",
-            lambda: creator.Individual([toolbox.attr_float() for _ in range(3)]),
+            "individual", lambda: creator.Individual([toolbox.attr_float() for _ in range(3)])
         )
         toolbox.register("population", lambda n: [toolbox.individual() for _ in range(n)])
 
@@ -127,8 +124,7 @@ class TestPopulationSerialization:
         toolbox = base.Toolbox()
         toolbox.register("attr_float", np.random.random)
         toolbox.register(
-            "individual",
-            lambda: creator.Individual([toolbox.attr_float() for _ in range(3)]),
+            "individual", lambda: creator.Individual([toolbox.attr_float() for _ in range(3)])
         )
 
         pop = [toolbox.individual() for _ in range(3)]
@@ -147,17 +143,11 @@ class TestPopulationSerialization:
         toolbox = base.Toolbox()
         toolbox.register("attr_float", lambda: 0.5)
         toolbox.register(
-            "individual",
-            lambda: creator.Individual([toolbox.attr_float() for _ in range(3)]),
+            "individual", lambda: creator.Individual([toolbox.attr_float() for _ in range(3)])
         )
         pop = [toolbox.individual() for _ in range(2)]
 
-        snapshot = pop_snapshot(
-            population=pop,
-            generation=5,
-            pareto_indices=[0],
-            diversity=0.75,
-        )
+        snapshot = pop_snapshot(population=pop, generation=5, pareto_indices=[0], diversity=0.75)
         assert snapshot["generation"] == 5
         assert snapshot["population_size"] == 2
         assert snapshot["pareto_indices"] == [0]
@@ -242,10 +232,7 @@ class TestResultToDict:
             config=config,
             pareto_front=[],
             hall_of_fame=hof,
-            generations_log=[
-                {"generation": 0, "n_pareto": 3},
-                {"generation": 1, "n_pareto": 4},
-            ],
+            generations_log=[{"generation": 0, "n_pareto": 3}, {"generation": 1, "n_pareto": 4}],
             timing=12.3456,
             checkpoint_paths=["ckpt1.json"],
             n_fitness_evaluations=100,

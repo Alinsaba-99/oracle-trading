@@ -29,14 +29,16 @@ def _make_ohlcv(n: int = 150, seed: int = 42) -> pl.DataFrame:
     volume = rng.integers(1_000_000, 10_000_000, n)
     high = np.maximum(high, np.maximum(open_p, close))
     low = np.minimum(low, np.minimum(open_p, close))
-    return pl.DataFrame({
-        "timestamp": _timerange(n),
-        "open": pl.Series("open", open_p.tolist()),
-        "high": pl.Series("high", high.tolist()),
-        "low": pl.Series("low", low.tolist()),
-        "close": pl.Series("close", close.tolist()),
-        "volume": pl.Series("volume", volume.tolist()),
-    })
+    return pl.DataFrame(
+        {
+            "timestamp": _timerange(n),
+            "open": pl.Series("open", open_p.tolist()),
+            "high": pl.Series("high", high.tolist()),
+            "low": pl.Series("low", low.tolist()),
+            "close": pl.Series("close", close.tolist()),
+            "volume": pl.Series("volume", volume.tolist()),
+        }
+    )
 
 
 @pytest.fixture
@@ -90,9 +92,7 @@ class TestFactorPrecomputer:
             key = next(iter(results1))
             orig = results1[key].to_list()
             results2[key] = pl.Series(key, [0.0] * len(results2[key]))
-            assert results1[key].to_list() == orig, (
-                "Cache hit returned a shared reference"
-            )
+            assert results1[key].to_list() == orig, "Cache hit returned a shared reference"
 
     def test_cache_miss_on_new_data(self, precomputer: FactorPrecomputer) -> None:
         """Different data (different seed) triggers a cache miss."""
@@ -121,23 +121,27 @@ class TestFactorPrecomputer:
         open_p = close * 1.005
         volume = [1000000] * n
 
-        base_data = pl.DataFrame({
-            "timestamp": _timerange(n, "2020-01-01"),
-            "open": open_p,
-            "high": high,
-            "low": low,
-            "close": close,
-            "volume": volume,
-        })
+        base_data = pl.DataFrame(
+            {
+                "timestamp": _timerange(n, "2020-01-01"),
+                "open": open_p,
+                "high": high,
+                "low": low,
+                "close": close,
+                "volume": volume,
+            }
+        )
 
-        later_data = pl.DataFrame({
-            "timestamp": _timerange(n, "2021-01-01"),
-            "open": open_p,
-            "high": high,
-            "low": low,
-            "close": close,
-            "volume": volume,
-        })
+        later_data = pl.DataFrame(
+            {
+                "timestamp": _timerange(n, "2021-01-01"),
+                "open": open_p,
+                "high": high,
+                "low": low,
+                "close": close,
+                "volume": volume,
+            }
+        )
 
         _ = precomputer.precompute(base_data)
         assert precomputer.stats()["misses"] == 1
@@ -197,7 +201,12 @@ class TestFactorPrecomputer:
         """Precomputing same data twice: first call miss, second call hit."""
         data = _make_ohlcv()
         _ = precomputer.precompute(data)
-        assert precomputer.stats() == {"hits": 0, "misses": 1, "cache_size": 1, "max_cache_size": 10}
+        assert precomputer.stats() == {
+            "hits": 0,
+            "misses": 1,
+            "cache_size": 1,
+            "max_cache_size": 10,
+        }
 
         _ = precomputer.precompute(data)
         assert precomputer.stats()["hits"] == 1

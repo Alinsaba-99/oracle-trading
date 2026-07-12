@@ -6,8 +6,4 @@ from agents.debate.scorer import DebateScorer
 from agents.debate.team import DebateTeam
 from agents.protocol import DebateResult
 
-__all__ = [
-    "DebateResult",
-    "DebateScorer",
-    "DebateTeam",
-]
+__all__ = ["DebateResult", "DebateScorer", "DebateTeam"]

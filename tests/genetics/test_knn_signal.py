@@ -1,4 +1,5 @@
 """Tests for KNNGenomeToSignal — Lorentzian distance KNN signal."""
+
 from __future__ import annotations
 
 import polars as pl
@@ -17,13 +18,15 @@ def small_data() -> pl.DataFrame:
     n = 60
     rng = np.random.default_rng(42)
     close = 100.0 + np.arange(n) * 0.1 + rng.normal(0, 0.3, n)
-    return pl.DataFrame({
-        "open": close - 0.1,
-        "high": close + 0.3,
-        "low": close - 0.3,
-        "close": close,
-        "volume": [1_000_000] * n,
-    })
+    return pl.DataFrame(
+        {
+            "open": close - 0.1,
+            "high": close + 0.3,
+            "low": close - 0.3,
+            "close": close,
+            "volume": [1_000_000] * n,
+        }
+    )
 
 
 @pytest.fixture
@@ -47,12 +50,23 @@ def default_genome() -> tuple:
         ContinuousParameter("w_mom", low=0.0, high=2.0),
     ]
     raw = {
-        "k_neighbors": 8, "train_length": 4, "threshold": 0.5, "class_weight": 0.5,
-        "rsi_period": 14, "cci_period": 20, "adx_period": 14,
-        "wt_channel": 10, "wt_avg": 11, "mom_period": 12,
-        "w_rsi": 1.5, "w_cci": 1.0, "w_adx": 1.0, "w_wt": 1.5, "w_mom": 2.0,
+        "k_neighbors": 8,
+        "train_length": 4,
+        "threshold": 0.5,
+        "class_weight": 0.5,
+        "rsi_period": 14,
+        "cci_period": 20,
+        "adx_period": 14,
+        "wt_channel": 10,
+        "wt_avg": 11,
+        "mom_period": 12,
+        "w_rsi": 1.5,
+        "w_cci": 1.0,
+        "w_adx": 1.0,
+        "w_wt": 1.5,
+        "w_mom": 2.0,
     }
-    gc = GenomeConfig(n_params=len(param_defs), param_defs=param_defs)
+    GenomeConfig(n_params=len(param_defs), param_defs=param_defs)
     genome = encode(raw, param_defs)
     return genome, param_defs
 
@@ -99,7 +113,7 @@ def test_knn_different_params(small_data: pl.DataFrame) -> None:
         IntParameter("k_neighbors", low=3, high=20),
         ContinuousParameter("threshold", low=0.3, high=0.9),
     ]
-    gc = GenomeConfig(n_params=len(param_defs), param_defs=param_defs)
+    GenomeConfig(n_params=len(param_defs), param_defs=param_defs)
 
     # Parameter set A: aggressive
     raw_a = {"k_neighbors": 3, "threshold": 0.3}
@@ -124,7 +138,7 @@ def test_knn_class_weight_effect(small_data: pl.DataFrame) -> None:
         IntParameter("k_neighbors", low=3, high=20),
         ContinuousParameter("class_weight", low=0.3, high=3.0),
     ]
-    gc = GenomeConfig(n_params=len(param_defs), param_defs=param_defs)
+    GenomeConfig(n_params=len(param_defs), param_defs=param_defs)
 
     raw_low = {"k_neighbors": 8, "class_weight": 0.3}
     raw_high = {"k_neighbors": 8, "class_weight": 3.0}

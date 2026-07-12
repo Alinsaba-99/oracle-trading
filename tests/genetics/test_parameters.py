@@ -7,19 +7,8 @@ import math
 import numpy as np
 import pytest
 
-from genetics.genome.codec import (
-    clamp,
-    denormalize,
-    normalize,
-    random_value,
-    round_int,
-    validate,
-)
-from genetics.genome.parameters import (
-    CategoricalParameter,
-    ContinuousParameter,
-    IntParameter,
-)
+from genetics.genome.codec import clamp, denormalize, normalize, random_value, round_int, validate
+from genetics.genome.parameters import CategoricalParameter, ContinuousParameter, IntParameter
 
 # ── fixtures ────────────────────────────────────────────────────────
 

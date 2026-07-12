@@ -5,10 +5,10 @@ from __future__ import annotations
 import numpy as np
 import polars as pl
 import pytest
-from genetics.genome.parameters import ContinuousParameter
-from genetics.genome.signal import GenomeConfig, encode
 
 from genetics.genome.pair_signal import PairTradingSignal
+from genetics.genome.parameters import ContinuousParameter
+from genetics.genome.signal import GenomeConfig, encode
 
 
 @pytest.fixture

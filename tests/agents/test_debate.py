@@ -10,12 +10,7 @@ from pydantic import BaseModel
 
 from agents.debate.prompts import BEAR_SYSTEM, BULL_SYSTEM, DEVIL_SYSTEM
 from agents.debate.scorer import DebateScorer
-from agents.debate.team import (
-    DebateTeam,
-    _BearResponse,
-    _BullResponse,
-    _DAResponse,
-)
+from agents.debate.team import DebateTeam, _BearResponse, _BullResponse, _DAResponse
 from agents.protocol import AgentVote, AnalystSignal, DebateResult
 
 # ── Fixtures ─────────────────────────────────────────────────────────────────
@@ -28,10 +23,7 @@ def all_bull_signals() -> list[AnalystSignal]:
         AnalystSignal(
             source="macro",
             vote=AgentVote(
-                direction="buy",
-                confidence=0.7,
-                reasoning="GDP growth above trend.",
-                risk_score=0.2,
+                direction="buy", confidence=0.7, reasoning="GDP growth above trend.", risk_score=0.2
             ),
             blind_spot="CPI data is lagging.",
             metadata={"gdp": 2.4},
@@ -57,10 +49,7 @@ def mixed_signals() -> list[AnalystSignal]:
         AnalystSignal(
             source="macro",
             vote=AgentVote(
-                direction="buy",
-                confidence=0.7,
-                reasoning="GDP growth above trend.",
-                risk_score=0.2,
+                direction="buy", confidence=0.7, reasoning="GDP growth above trend.", risk_score=0.2
             ),
             blind_spot="CPI data is lagging.",
             metadata={"gdp": 2.4},
@@ -147,9 +136,7 @@ def rebuttal_responses() -> list[BaseModel]:
 
 
 @pytest.fixture
-def llm_client_round1_only(
-    round_1_responses: list[BaseModel],
-) -> AsyncMock:
+def llm_client_round1_only(round_1_responses: list[BaseModel]) -> AsyncMock:
     """Mock LLM client that returns round 1 responses (no round 2)."""
     client = AsyncMock()
     client.structured_call = AsyncMock(side_effect=round_1_responses)
@@ -159,14 +146,11 @@ def llm_client_round1_only(
 
 @pytest.fixture
 def llm_client_with_rebuttal(
-    round_1_responses: list[BaseModel],
-    rebuttal_responses: list[BaseModel],
+    round_1_responses: list[BaseModel], rebuttal_responses: list[BaseModel]
 ) -> AsyncMock:
     """Mock LLM client that returns both round 1 and rebuttal responses."""
     client = AsyncMock()
-    client.structured_call = AsyncMock(
-        side_effect=[*round_1_responses, *rebuttal_responses]
-    )
+    client.structured_call = AsyncMock(side_effect=[*round_1_responses, *rebuttal_responses])
     type(client).model_name = PropertyMock(return_value="mock-debate/v1")
     return client
 
@@ -189,9 +173,7 @@ class TestDebateRound1:
 
     @pytest.mark.asyncio
     async def test_round_1_contains_all_roles(
-        self,
-        team_round1_only: DebateTeam,
-        mixed_signals: list[AnalystSignal],
+        self, team_round1_only: DebateTeam, mixed_signals: list[AnalystSignal]
     ) -> None:
         result = await team_round1_only.debate(mixed_signals)
         assert isinstance(result, DebateResult)
@@ -201,9 +183,7 @@ class TestDebateRound1:
 
     @pytest.mark.asyncio
     async def test_round_1_bull_fields(
-        self,
-        team_round1_only: DebateTeam,
-        mixed_signals: list[AnalystSignal],
+        self, team_round1_only: DebateTeam, mixed_signals: list[AnalystSignal]
     ) -> None:
         result = await team_round1_only.debate(mixed_signals)
         assert result.round_1["bull_thesis"] == "Economic expansion supports higher equity prices."
@@ -212,9 +192,7 @@ class TestDebateRound1:
 
     @pytest.mark.asyncio
     async def test_round_1_bear_fields(
-        self,
-        team_round1_only: DebateTeam,
-        mixed_signals: list[AnalystSignal],
+        self, team_round1_only: DebateTeam, mixed_signals: list[AnalystSignal]
     ) -> None:
         result = await team_round1_only.debate(mixed_signals)
         assert "stretched" in result.round_1["bear_critique"]
@@ -223,9 +201,7 @@ class TestDebateRound1:
 
     @pytest.mark.asyncio
     async def test_round_1_da_fields(
-        self,
-        team_round1_only: DebateTeam,
-        mixed_signals: list[AnalystSignal],
+        self, team_round1_only: DebateTeam, mixed_signals: list[AnalystSignal]
     ) -> None:
         result = await team_round1_only.debate(mixed_signals)
         assert len(result.round_1["da_blind_spots"]) == 3
@@ -233,9 +209,7 @@ class TestDebateRound1:
 
     @pytest.mark.asyncio
     async def test_debate_result_type(
-        self,
-        team_round1_only: DebateTeam,
-        mixed_signals: list[AnalystSignal],
+        self, team_round1_only: DebateTeam, mixed_signals: list[AnalystSignal]
     ) -> None:
         result = await team_round1_only.debate(mixed_signals)
         assert isinstance(result, DebateResult)
@@ -252,9 +226,7 @@ class TestDebateRound2:
 
     @pytest.mark.asyncio
     async def test_round_2_triggers_when_divergence_high(
-        self,
-        team_with_rebuttal: DebateTeam,
-        mixed_signals: list[AnalystSignal],
+        self, team_with_rebuttal: DebateTeam, mixed_signals: list[AnalystSignal]
     ) -> None:
         """Mixed buy/sell signals produce divergence > 0.3, triggering round 2."""
         result = await team_with_rebuttal.debate(mixed_signals, divergence_threshold=0.3)
@@ -264,9 +236,7 @@ class TestDebateRound2:
 
     @pytest.mark.asyncio
     async def test_round_2_skipped_when_divergence_low(
-        self,
-        team_round1_only: DebateTeam,
-        all_bull_signals: list[AnalystSignal],
+        self, team_round1_only: DebateTeam, all_bull_signals: list[AnalystSignal]
     ) -> None:
         """All-buy signals produce divergence 0.0, skipping round 2."""
         result = await team_round1_only.debate(all_bull_signals, divergence_threshold=0.3)
@@ -274,9 +244,7 @@ class TestDebateRound2:
 
     @pytest.mark.asyncio
     async def test_round_2_not_triggered_with_low_threshold(
-        self,
-        team_round1_only: DebateTeam,
-        all_bull_signals: list[AnalystSignal],
+        self, team_round1_only: DebateTeam, all_bull_signals: list[AnalystSignal]
     ) -> None:
         """Even with threshold 0.0, zero divergence skips round 2."""
         result = await team_round1_only.debate(all_bull_signals, divergence_threshold=0.0)
@@ -284,9 +252,7 @@ class TestDebateRound2:
 
     @pytest.mark.asyncio
     async def test_round_2_rebuttal_has_bull_and_bear(
-        self,
-        team_with_rebuttal: DebateTeam,
-        mixed_signals: list[AnalystSignal],
+        self, team_with_rebuttal: DebateTeam, mixed_signals: list[AnalystSignal]
     ) -> None:
         result = await team_with_rebuttal.debate(mixed_signals)
         assert result.round_2 is not None
@@ -303,22 +269,23 @@ class TestConsensus:
 
     @pytest.mark.asyncio
     async def test_consensus_built_when_bull_and_bear_agree(
-        self,
-        llm_client_round1_only: AsyncMock,
-        all_bull_signals: list[AnalystSignal],
+        self, llm_client_round1_only: AsyncMock, all_bull_signals: list[AnalystSignal]
     ) -> None:
         """Both agree on 'buy' with high confidence → consensus built."""
         llm_client_round1_only.structured_call = AsyncMock(
             side_effect=[
                 _BullResponse(
-                    thesis="Strong economy.", key_indicators=["GDP"],
-                    confidence=0.9, direction="buy",
+                    thesis="Strong economy.",
+                    key_indicators=["GDP"],
+                    confidence=0.9,
+                    direction="buy",
                 ),
                 _BearResponse(
                     counter_thesis="Risks exist but manageable.",
                     weaknesses_found=["Inflation watch"],
                     counter_indicators=["CPI"],
-                    confidence=0.7, direction="buy",
+                    confidence=0.7,
+                    direction="buy",
                 ),
                 _DAResponse(
                     blind_spots=["Geopolitical risk"],
@@ -337,9 +304,7 @@ class TestConsensus:
 
     @pytest.mark.asyncio
     async def test_no_consensus_when_directions_differ(
-        self,
-        team_round1_only: DebateTeam,
-        mixed_signals: list[AnalystSignal],
+        self, team_round1_only: DebateTeam, mixed_signals: list[AnalystSignal]
     ) -> None:
         """Bull says buy, Bear says sell → no consensus."""
         result = await team_round1_only.debate(mixed_signals)
@@ -347,27 +312,23 @@ class TestConsensus:
 
     @pytest.mark.asyncio
     async def test_no_consensus_when_confidence_low(
-        self,
-        llm_client_round1_only: AsyncMock,
-        all_bull_signals: list[AnalystSignal],
+        self, llm_client_round1_only: AsyncMock, all_bull_signals: list[AnalystSignal]
     ) -> None:
         """Same direction but low confidence → no consensus."""
         llm_client_round1_only.structured_call = AsyncMock(
             side_effect=[
                 _BullResponse(
-                    thesis="Weak signal.", key_indicators=["GDP"],
-                    confidence=0.3, direction="buy",
+                    thesis="Weak signal.", key_indicators=["GDP"], confidence=0.3, direction="buy"
                 ),
                 _BearResponse(
                     counter_thesis="Also weak signal.",
                     weaknesses_found=["Uncertainty"],
                     counter_indicators=["Vix"],
-                    confidence=0.2, direction="buy",
+                    confidence=0.2,
+                    direction="buy",
                 ),
                 _DAResponse(
-                    blind_spots=["Everything unclear"],
-                    third_way="Wait",
-                    synthesis="Too uncertain.",
+                    blind_spots=["Everything unclear"], third_way="Wait", synthesis="Too uncertain."
                 ),
             ]
         )
@@ -469,7 +430,7 @@ class TestSignalExtraction:
                 vote=AgentVote(direction="sell", confidence=0.8, reasoning=""),
                 blind_spot="",
                 metadata={},
-            ),
+            )
         ]
         result = DebateTeam._extract_bull_signals(signals)
         assert "Nessun segnale rialzista" in result
@@ -501,7 +462,7 @@ class TestSignalExtraction:
                 vote=AgentVote(direction="buy", confidence=0.8, reasoning=""),
                 blind_spot="",
                 metadata={},
-            ),
+            )
         ]
         result = DebateTeam._extract_bear_signals(signals)
         assert "Nessun segnale ribassista" in result
@@ -516,46 +477,46 @@ class TestDivergence:
     def test_all_same_direction_zero_divergence(self) -> None:
         signals = [
             AnalystSignal(
-                        source="macro",
-                        vote=AgentVote(direction="buy", confidence=0.5, reasoning=""),
-                        blind_spot="",
-                        metadata={},
-                    ),
+                source="macro",
+                vote=AgentVote(direction="buy", confidence=0.5, reasoning=""),
+                blind_spot="",
+                metadata={},
+            ),
             AnalystSignal(
-                        source="technical",
-                        vote=AgentVote(direction="buy", confidence=0.5, reasoning=""),
-                        blind_spot="",
-                        metadata={},
-                    ),
+                source="technical",
+                vote=AgentVote(direction="buy", confidence=0.5, reasoning=""),
+                blind_spot="",
+                metadata={},
+            ),
             AnalystSignal(
-                        source="sentiment",
-                        vote=AgentVote(direction="buy", confidence=0.5, reasoning=""),
-                        blind_spot="",
-                        metadata={},
-                    ),
+                source="sentiment",
+                vote=AgentVote(direction="buy", confidence=0.5, reasoning=""),
+                blind_spot="",
+                metadata={},
+            ),
         ]
         assert DebateTeam._compute_divergence(signals) == 0.0
 
     def test_two_against_one(self) -> None:
         signals = [
             AnalystSignal(
-                        source="macro",
-                        vote=AgentVote(direction="buy", confidence=0.5, reasoning=""),
-                        blind_spot="",
-                        metadata={},
-                    ),
+                source="macro",
+                vote=AgentVote(direction="buy", confidence=0.5, reasoning=""),
+                blind_spot="",
+                metadata={},
+            ),
             AnalystSignal(
-                        source="technical",
-                        vote=AgentVote(direction="sell", confidence=0.5, reasoning=""),
-                        blind_spot="",
-                        metadata={},
-                    ),
+                source="technical",
+                vote=AgentVote(direction="sell", confidence=0.5, reasoning=""),
+                blind_spot="",
+                metadata={},
+            ),
             AnalystSignal(
-                        source="sentiment",
-                        vote=AgentVote(direction="sell", confidence=0.5, reasoning=""),
-                        blind_spot="",
-                        metadata={},
-                    ),
+                source="sentiment",
+                vote=AgentVote(direction="sell", confidence=0.5, reasoning=""),
+                blind_spot="",
+                metadata={},
+            ),
         ]
         # max_count = 2, n = 3 → divergence = 1 - 2/3 ≈ 0.333
         assert DebateTeam._compute_divergence(signals) == pytest.approx(1.0 - 2.0 / 3.0)
@@ -563,23 +524,23 @@ class TestDivergence:
     def test_even_split(self) -> None:
         signals = [
             AnalystSignal(
-                        source="macro",
-                        vote=AgentVote(direction="buy", confidence=0.5, reasoning=""),
-                        blind_spot="",
-                        metadata={},
-                    ),
+                source="macro",
+                vote=AgentVote(direction="buy", confidence=0.5, reasoning=""),
+                blind_spot="",
+                metadata={},
+            ),
             AnalystSignal(
-                        source="technical",
-                        vote=AgentVote(direction="sell", confidence=0.5, reasoning=""),
-                        blind_spot="",
-                        metadata={},
-                    ),
+                source="technical",
+                vote=AgentVote(direction="sell", confidence=0.5, reasoning=""),
+                blind_spot="",
+                metadata={},
+            ),
             AnalystSignal(
-                        source="sentiment",
-                        vote=AgentVote(direction="hold", confidence=0.5, reasoning=""),
-                        blind_spot="",
-                        metadata={},
-                    ),
+                source="sentiment",
+                vote=AgentVote(direction="hold", confidence=0.5, reasoning=""),
+                blind_spot="",
+                metadata={},
+            ),
         ]
         # max_count = 1, n = 3 → divergence = 1 - 1/3 = 0.667
         assert DebateTeam._compute_divergence(signals) == pytest.approx(2.0 / 3.0)
@@ -597,11 +558,11 @@ class TestDebateScorer:
     def test_score_components_averaged(self) -> None:
         signals = [
             AnalystSignal(
-                        source="macro",
-                        vote=AgentVote(direction="buy", confidence=0.5, reasoning=""),
-                        blind_spot="",
-                        metadata={},
-                    ),
+                source="macro",
+                vote=AgentVote(direction="buy", confidence=0.5, reasoning=""),
+                blind_spot="",
+                metadata={},
+            )
         ]
         round_1 = {
             "bull_thesis": "Markets up",
@@ -613,7 +574,7 @@ class TestDebateScorer:
             "bear_weaknesses": ["W1"],
         }
         consensus = AgentVote(
-            direction="hold", confidence=0.6, reasoning="Uncertain", risk_score=0.4,
+            direction="hold", confidence=0.6, reasoning="Uncertain", risk_score=0.4
         )
         scorer = DebateScorer()
         score = scorer.score(signals=signals, round_1=round_1, consensus=consensus)
@@ -632,11 +593,11 @@ class TestDebateScorer:
     def test_score_perfect_debate(self) -> None:
         signals = [
             AnalystSignal(
-                        source="macro",
-                        vote=AgentVote(direction="buy", confidence=0.5, reasoning=""),
-                        blind_spot="",
-                        metadata={},
-                    ),
+                source="macro",
+                vote=AgentVote(direction="buy", confidence=0.5, reasoning=""),
+                blind_spot="",
+                metadata={},
+            )
         ]
         round_1 = {
             "bull_thesis": "x",
@@ -647,9 +608,7 @@ class TestDebateScorer:
             "bear_indicators": ["G"],
             "bear_weaknesses": ["W1", "W2", "W3"],
         }
-        consensus = AgentVote(
-            direction="buy", confidence=0.9, reasoning="Strong", risk_score=0.1,
-        )
+        consensus = AgentVote(direction="buy", confidence=0.9, reasoning="Strong", risk_score=0.1)
         scorer = DebateScorer()
         score = scorer.score(signals=signals, round_1=round_1, consensus=consensus)
         # 1 signal, unique direction = 1, consensus reached → consensus_distance = 1.0

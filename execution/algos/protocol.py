@@ -13,7 +13,5 @@ class ExecutionAlgo(Protocol):
     """Protocol for execution algorithms (VWAP, TWAP, Iceberg, etc.)."""
 
     async def execute(
-        self,
-        order: Any,
-        market_data: MarketDataSnapshot,
+        self, order: Any, market_data: MarketDataSnapshot
     ) -> AsyncGenerator[FillReport, None]: ...

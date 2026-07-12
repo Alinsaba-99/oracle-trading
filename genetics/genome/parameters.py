@@ -7,12 +7,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-__all__ = [
-    "CategoricalParameter",
-    "ContinuousParameter",
-    "GenomeParameter",
-    "IntParameter",
-]
+__all__ = ["CategoricalParameter", "ContinuousParameter", "GenomeParameter", "IntParameter"]
 
 type GenomeParameter = ContinuousParameter | IntParameter | CategoricalParameter
 
@@ -111,10 +106,7 @@ class CategoricalParameter:
     """
 
     def __init__(
-        self,
-        name: str,
-        categories: list[str],
-        weights: list[float] | None = None,
+        self, name: str, categories: list[str], weights: list[float] | None = None
     ) -> None:
         if not categories:
             msg = f"Categories must be non-empty for {name!r}"

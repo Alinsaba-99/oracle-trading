@@ -31,13 +31,7 @@ class ConfidenceTracker:
     def __init__(self) -> None:
         self._history: dict[str, list[_PredictionRecord]] = {}
 
-    def record(
-        self,
-        agent: str,
-        predicted: str,
-        actual: str,
-        confidence: float,
-    ) -> None:
+    def record(self, agent: str, predicted: str, actual: str, confidence: float) -> None:
         """Record a single prediction-observation pair for an agent."""
         if agent not in self._history:
             self._history[agent] = []
@@ -90,8 +84,5 @@ class ConfidenceTracker:
         """Return per-agent statistics: sample count and accuracy."""
         result: dict[str, dict[str, int | float]] = {}
         for agent, records in self._history.items():
-            result[agent] = {
-                "samples": len(records),
-                "accuracy": self.accuracy(agent),
-            }
+            result[agent] = {"samples": len(records), "accuracy": self.accuracy(agent)}
         return result

@@ -3,6 +3,7 @@
 Translates the TradingView "Lorentzian Classification" strategy by @jdehorty
 into a GA-optimisable BacktestSignal for Oracle.
 """
+
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -100,9 +101,7 @@ def _compute_mom(close: np.ndarray, period: int = 12) -> np.ndarray:
     return np.nan_to_num(mom, nan=0.0)
 
 
-def _lorentzian_distance(
-    a: np.ndarray, b: np.ndarray, weights: np.ndarray | None = None
-) -> float:
+def _lorentzian_distance(a: np.ndarray, b: np.ndarray, weights: np.ndarray | None = None) -> float:
     """Lorentzian distance: sum(wn * ln(1 + |an - bn|)).
 
     When *weights* is None, all features are equally weighted.
@@ -113,10 +112,7 @@ def _lorentzian_distance(
     return float(np.sum(np.log(1.0 + diff)))
 
 
-def _extract_features(
-    data: pl.DataFrame,
-    periods: dict[str, int] | None = None,
-) -> np.ndarray:
+def _extract_features(data: pl.DataFrame, periods: dict[str, int] | None = None) -> np.ndarray:
     """Compute feature matrix [RSI, CCI, ADX, WaveTrend, Momentum] z-scored.
 
     Uses incremental expanding normalisation (Welford's online algorithm)
@@ -128,13 +124,15 @@ def _extract_features(
     high = data["high"].to_numpy()
     low = data["low"].to_numpy()
     hlc3 = (high + low + close) / 3.0
-    raw = np.column_stack([
-        _compute_rsi(close, p.get("rsi_period", 14)),
-        _compute_cci(high, low, close, p.get("cci_period", 20)),
-        _compute_adx(high, low, close, p.get("adx_period", 14)),
-        _compute_wavetrend(hlc3, p.get("wt_channel", 10), p.get("wt_avg", 11)),
-        _compute_mom(close, p.get("mom_period", 12)),
-    ])
+    raw = np.column_stack(
+        [
+            _compute_rsi(close, p.get("rsi_period", 14)),
+            _compute_cci(high, low, close, p.get("cci_period", 20)),
+            _compute_adx(high, low, close, p.get("adx_period", 14)),
+            _compute_wavetrend(hlc3, p.get("wt_channel", 10), p.get("wt_avg", 11)),
+            _compute_mom(close, p.get("mom_period", 12)),
+        ]
+    )
 
     # Incremental expanding z-score (Welford)
     n, m = raw.shape
@@ -166,11 +164,7 @@ class KNNGenomeToSignal:
         w_rsi, w_cci, w_adx, w_wt, w_mom
     """
 
-    def __init__(
-        self,
-        genome: Genome,
-        param_defs: Sequence[GenomeParameter],  # noqa: ARG002 — protocol compat
-    ) -> None:
+    def __init__(self, genome: Genome, param_defs: Sequence[GenomeParameter]) -> None:
         from genetics.genome.signal import decode
 
         self._raw = decode(genome)

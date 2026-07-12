@@ -45,6 +45,7 @@ class WalkForwardConfig:
     embargo: int = 10
     split_method: str = "time"
 
+
 # Sentinel values for degenerate / failed evaluations.
 _EMPTY_FITNESS: FitnessValue = (-1.0, -1.0, -1.0, 1.0)
 _FAILED_FITNESS: FitnessValue = (-1e6, -1e6, -1e6, 1e6)
@@ -80,11 +81,7 @@ class FitnessEvaluator:
     # Public API
     # ------------------------------------------------------------------
 
-    def evaluate(
-        self,
-        genome: Genome,
-        data: pl.DataFrame,
-    ) -> FitnessValue:
+    def evaluate(self, genome: Genome, data: pl.DataFrame) -> FitnessValue:
         """Evaluate a genome on the given market data.
 
         Parameters
@@ -121,24 +118,19 @@ class FitnessEvaluator:
         experiment_id = str(uuid4())
         if self._registry is not None:
             ctx = ExperimentContext(
-                experiment_id=experiment_id,
-                random_seed=42,
-                tags={"type": "fitness_eval"},
+                experiment_id=experiment_id, random_seed=42, tags={"type": "fitness_eval"}
             )
             self._registry.register(ctx)
 
         try:
             if self._use_pybroker:
                 return self._eval_pybroker(genome, data)
-            
+
             if self._signal_factory is not None:
                 signal = self._signal_factory(genome, genome.param_defs)
             else:
                 signal = GenomeToSignal(genome, genome.param_defs)
-            wf = WalkForwardEngine(
-                registry=self._registry,
-                parent_experiment_id=experiment_id,
-            )
+            wf = WalkForwardEngine(registry=self._registry, parent_experiment_id=experiment_id)
             fold_results = wf.run(
                 data,
                 signal,
@@ -158,14 +150,13 @@ class FitnessEvaluator:
 
             # ── apply constraints (min_trades, CAGR, PF) ─────────
             total_trades = sum(r.total_trades for r in fold_results)
-            constrained = _apply_constraints(
-                fitness, combined, total_trades, self._min_trades
-            )
+            constrained = _apply_constraints(fitness, combined, total_trades, self._min_trades)
             if constrained != fitness:
                 fitness = constrained
 
-        except Exception as e:
+        except Exception:
             import traceback
+
             traceback.print_exc()
             return _FAILED_FITNESS
 
@@ -174,7 +165,6 @@ class FitnessEvaluator:
             self._cache.put(g_hash, fc_hash, d_hash, fitness)
 
         return fitness
-
 
     def _eval_pybroker(self, genome: Genome, data: pl.DataFrame) -> FitnessValue:
         """Evaluate using PyBroker time-based walkforward.
@@ -187,13 +177,18 @@ class FitnessEvaluator:
             sig_obj = self._signal_factory(genome, genome.param_defs)
         else:
             from genetics.genome.signal import GenomeToSignal
+
             sig_obj = GenomeToSignal(genome, genome.param_defs)
 
         pb = PyBrokerBacktest()
-        sig_callable = lambda d: sig_obj.compute(d) if hasattr(sig_obj, 'compute') else sig_obj
+
+        def sig_callable(d):
+            return sig_obj.compute(d) if hasattr(sig_obj, "compute") else sig_obj
+
         btc = self._backtest_cfg
         metrics = pb.run(
-            data, sig_callable,
+            data,
+            sig_callable,
             n_windows=self._wf_cfg.n_splits,
             train_size=0.6,
             slippage_bps=btc.slippage_bps,
@@ -223,7 +218,6 @@ class FitnessEvaluator:
             self._min_trades,
         )
         return constrained if constrained != fitness else fitness
-
 
 
 def _data_fingerprint(data: pl.DataFrame, n_head: int = 10) -> str:
@@ -270,10 +264,7 @@ def _extract_fitness(combined: dict[str, Any]) -> FitnessValue:
 
 
 def _apply_constraints(
-    fitness: FitnessValue,
-    combined: dict[str, Any],
-    total_trades: int,
-    min_trades: int,
+    fitness: FitnessValue, combined: dict[str, Any], total_trades: int, min_trades: int
 ) -> FitnessValue:
     """Apply constraints: min trades, CAGR (soft), MaxDD (hard), PF (soft).
 
@@ -294,7 +285,7 @@ def _apply_constraints(
     cagr_mult = 1.0
     if cagr is not None:
         if cagr <= 0.0:
-            cagr_mult = 0.01  # severe penalty (×0.01) but not fatal
+            cagr_mult = 0.01  # severe penalty (x0.01) but not fatal
         elif cagr < 0.05:
             cagr_mult = cagr / 0.05  # linear penalty below 5% CAGR
 

@@ -18,17 +18,11 @@ FitnessValue = tuple[float, float, float, float]
 
 def genome_hash(genome: Genome) -> str:
     """SHA-256 of a genome's normalised parameter vector."""
-    return hashlib.sha256(
-        np.ascontiguousarray(genome.normalized_params).tobytes(),
-    ).hexdigest()
+    return hashlib.sha256(np.ascontiguousarray(genome.normalized_params).tobytes()).hexdigest()
 
 
 def fold_config_hash(
-    n_splits: int,
-    purge_window: int,
-    embargo: int,
-    min_trades: int = 0,
-    use_pybroker: bool = False,
+    n_splits: int, purge_window: int, embargo: int, min_trades: int = 0, use_pybroker: bool = False
 ) -> str:
     """SHA-256 of the walk-forward fold configuration.
 
@@ -56,12 +50,7 @@ class FitnessCache:
     # Public API
     # ------------------------------------------------------------------
 
-    def get(
-        self,
-        genome_hash: str,
-        fold_config_hash: str,
-        data_hash: str,
-    ) -> FitnessValue | None:
+    def get(self, genome_hash: str, fold_config_hash: str, data_hash: str) -> FitnessValue | None:
         """Look up a cached fitness value.
 
         Returns ``None`` on cache miss.
@@ -76,11 +65,7 @@ class FitnessCache:
             return None
 
     def put(
-        self,
-        genome_hash: str,
-        fold_config_hash: str,
-        data_hash: str,
-        fitness: FitnessValue,
+        self, genome_hash: str, fold_config_hash: str, data_hash: str, fitness: FitnessValue
     ) -> None:
         """Insert a fitness value, evicting LRU entries if at capacity."""
         key = self._make_key(genome_hash, fold_config_hash, data_hash)
@@ -125,9 +110,5 @@ class FitnessCache:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _make_key(
-        genome_hash: str,
-        fold_config_hash: str,
-        data_hash: str,
-    ) -> str:
+    def _make_key(genome_hash: str, fold_config_hash: str, data_hash: str) -> str:
         return f"{genome_hash}:{fold_config_hash}:{data_hash}"

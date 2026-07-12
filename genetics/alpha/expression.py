@@ -9,13 +9,13 @@ Allows expressing alpha factors as trees of operators:
 The GA can evolve these expressions using DEAP's GP module,
 or they can be hand-crafted and optimised via parameter search.
 """
+
 from __future__ import annotations
 
 from typing import Any
 
 import numpy as np
 import polars as pl
-
 
 # ---------------------------------------------------------------------------
 # Expression Tree Nodes
@@ -32,7 +32,7 @@ class ExprNode:
 class OpNode(ExprNode):
     """Node representing an operator applied to arguments."""
 
-    __slots__ = ("op", "args")
+    __slots__ = ("args", "op")
 
     def __init__(self, op: str, args: list[ExprNode]) -> None:
         self.op = op
@@ -81,9 +81,7 @@ class ParseError(ValueError):
     """Expression parse error."""
 
 
-_LEAF_NAMES: set[str] = {
-    "open", "high", "low", "close", "volume", "returns", "vwap",
-}
+_LEAF_NAMES: set[str] = {"open", "high", "low", "close", "volume", "returns", "vwap"}
 
 
 def _tokenize(s: str) -> list[tuple[str, str]]:
@@ -246,11 +244,7 @@ def _get_leaf_data(name: str, data: pl.DataFrame) -> np.ndarray:
     raise ValueError(f"Unknown leaf: {name!r}. Available columns: {list(data.columns)}")
 
 
-def evaluate(
-    node: ExprNode,
-    data: pl.DataFrame,
-    op_map: dict[str, Any],
-) -> np.ndarray:
+def evaluate(node: ExprNode, data: pl.DataFrame, op_map: dict[str, Any]) -> np.ndarray:
     """Evaluate an expression tree on market data.
 
     Args:

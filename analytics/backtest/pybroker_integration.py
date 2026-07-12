@@ -4,12 +4,14 @@ Wraps Oracle's genetic engine signals into PyBroker's backtesting
 pipeline for time-based walkforward validation with proper temporal
 ordering (no CPCV interleaving).
 """
+
 from __future__ import annotations
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
-import polars as pl
 import numpy as np
+import polars as pl
 
 
 class PyBrokerBacktest:
@@ -44,7 +46,6 @@ class PyBrokerBacktest:
             Dict of metrics.
         """
         import pandas as pd
-
         from pybroker import Strategy, indicator
         from pybroker.ext.data import DataSource
 
@@ -64,9 +65,7 @@ class PyBrokerBacktest:
         df["_signal"] = signal_arr
 
         class SignalDataSource(DataSource):
-            def _fetch_data(
-                self, symbols, start_date, end_date, timeframe=None, adjust=None
-            ):
+            def _fetch_data(self, symbols, start_date, end_date, timeframe=None, adjust=None):
                 mask = (df["date"] >= start_date) & (df["date"] <= end_date)
                 result = df[mask].copy()
                 return result
@@ -109,9 +108,7 @@ class PyBrokerBacktest:
             end_date=str(df["date"].iloc[-1].date()),
         )
         strategy.add_execution(exec_fn, ["SYMBOL"], indicators=sig_ind)
-        result = strategy.walkforward(
-            timeframe="1d", windows=n_windows, train_size=train_size
-        )
+        result = strategy.walkforward(timeframe="1d", windows=n_windows, train_size=train_size)
 
         self._last_result = result
         m = result.metrics

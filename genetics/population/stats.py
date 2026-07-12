@@ -89,10 +89,7 @@ def _aggregate_fitness(
     return mean, max_v, min_v
 
 
-def compute_stats(
-    population: list[Any],
-    generation: int,
-) -> PopulationStats:
+def compute_stats(population: list[Any], generation: int) -> PopulationStats:
     """Compute aggregate statistics for a population.
 
     Args:

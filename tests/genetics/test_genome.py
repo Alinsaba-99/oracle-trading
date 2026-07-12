@@ -150,12 +150,9 @@ class TestGenomeToSignal:
 
         # Create test market data
         n = 50
-        data = pl.DataFrame({
-            "close": pl.Series(
-                np.sin(np.linspace(0, 4 * np.pi, n)) + 100.0,
-                dtype=pl.Float64,
-            ),
-        })
+        data = pl.DataFrame(
+            {"close": pl.Series(np.sin(np.linspace(0, 4 * np.pi, n)) + 100.0, dtype=pl.Float64)}
+        )
         signal = adapter.compute(data)
         assert isinstance(signal, pl.Series)
         assert signal.dtype == pl.Int8
@@ -166,9 +163,7 @@ class TestGenomeToSignal:
 
     def test_categorical_only_signal(self) -> None:
         """With no numeric weights, signal should be all zeros."""
-        param_defs = [
-            CategoricalParameter("mode", categories=["a", "b"]),
-        ]
+        param_defs = [CategoricalParameter("mode", categories=["a", "b"])]
         raw = {"mode": "a"}
         genome = encode(raw, param_defs)
         adapter = GenomeToSignal(genome, param_defs)
@@ -179,18 +174,17 @@ class TestGenomeToSignal:
 
     def test_single_parameter_signal(self) -> None:
         """Single continuous parameter should still produce valid signal."""
-        param_defs = [
-            ContinuousParameter("weight", low=-1.0, high=1.0),
-        ]
+        param_defs = [ContinuousParameter("weight", low=-1.0, high=1.0)]
         raw = {"weight": 0.8}
         genome = encode(raw, param_defs)
         adapter = GenomeToSignal(genome, param_defs)
 
-        data = pl.DataFrame({
-            "close": pl.Series([100.0, 101.0, 102.0, 101.0, 100.0], dtype=pl.Float64),
-        })
+        data = pl.DataFrame(
+            {"close": pl.Series([100.0, 101.0, 102.0, 101.0, 100.0], dtype=pl.Float64)}
+        )
         signal = adapter.compute(data)
         assert set(signal.to_list()).issubset({-1, 0, 1})
+
 
 # ── validate_genome ─────────────────────────────────────────────────
 
@@ -231,10 +225,7 @@ class TestValidateGenome:
 
     def test_empty_config(self) -> None:
         """An empty config with no params is a valid edge case."""
-        genome = Genome(
-            normalized_params=np.array([], dtype=np.float64),
-            param_defs=[],
-        )
+        genome = Genome(normalized_params=np.array([], dtype=np.float64), param_defs=[])
         assert validate_genome(genome)
 
     def test_single_parameter_genome_valid(self) -> None:

@@ -27,11 +27,7 @@ if TYPE_CHECKING:
     from core.domain.experiment import ExperimentRegistry
     from genetics.fitness.evaluator import WalkForwardConfig
 
-__all__ = [
-    "GAConfig",
-    "GAResult",
-    "GeneticEngine",
-]
+__all__ = ["GAConfig", "GAResult", "GeneticEngine"]
 
 
 # ---------------------------------------------------------------------------
@@ -164,8 +160,7 @@ class GeneticEngine:
             # ── Create / restore island manager ───────────────────────
             if self.config.resume_from and os.path.exists(self.config.resume_from):
                 self._island_manager = IslandManager.load_checkpoint(
-                    self.config.resume_from,
-                    self.config.genome_config,
+                    self.config.resume_from, self.config.genome_config
                 )
                 self._start_generation = self._island_manager.generation
             else:
@@ -174,6 +169,7 @@ class GeneticEngine:
                 encoded_seeds: list[list[float]] | None = None
                 if self.config.seed_genomes:
                     from genetics.genome.signal import encode
+
                     encoded_seeds = []
                     for raw in self.config.seed_genomes:
                         try:
@@ -203,18 +199,23 @@ class GeneticEngine:
             signal_factory: Callable[..., Any] | None = None
             if self.config.signal_type == "alpha":
                 from genetics.genome.signal import AlphaGenomeToSignal
+
                 signal_factory = AlphaGenomeToSignal
             elif self.config.signal_type == "knn":
                 from genetics.genome.knn_signal import KNNGenomeToSignal
+
                 signal_factory = KNNGenomeToSignal
             elif self.config.signal_type == "hybrid":
                 from genetics.genome.hybrid_signal import HybridGenomeToSignal
+
                 signal_factory = HybridGenomeToSignal
             elif self.config.signal_type == "pair":
                 from genetics.genome.pair_signal import PairTradingSignal
+
                 signal_factory = PairTradingSignal
             elif self.config.signal_type == "expression":
                 from genetics.genome.expression_signal import ExpressionGenomeToSignal
+
                 signal_factory = ExpressionGenomeToSignal
             elif self.config.signal_type != "genome":
                 msg = f"Unknown signal_type: {self.config.signal_type!r}"
@@ -232,7 +233,7 @@ class GeneticEngine:
             # ── Process pool for parallel island execution ────────────
             n_jobs = self.config.n_jobs or multiprocessing.cpu_count()
             individual_executor = ThreadPoolExecutor(
-                max_workers=max(1, n_jobs // self.config.n_islands),
+                max_workers=max(1, n_jobs // self.config.n_islands)
             )
 
             # ── Hall of Fame (wraps DEAP's) ────────────────────────────
@@ -270,10 +271,7 @@ class GeneticEngine:
 
                 # Checkpoint
                 if (gen + 1) % self.config.checkpoint_interval == 0:
-                    ckpt_path = os.path.join(
-                        self.config.checkpoint_dir,
-                        f"gen_{gen + 1:04d}.json",
-                    )
+                    ckpt_path = os.path.join(self.config.checkpoint_dir, f"gen_{gen + 1:04d}.json")
                     self._island_manager.save_checkpoint(ckpt_path)
                     self._checkpoint_paths.append(ckpt_path)
 
@@ -283,10 +281,7 @@ class GeneticEngine:
             signal.signal(signal.SIGTERM, original_sigterm)
 
         # ── Save final checkpoint ─────────────────────────────────────
-        final_checkpoint = os.path.join(
-            self.config.checkpoint_dir,
-            "final.json",
-        )
+        final_checkpoint = os.path.join(self.config.checkpoint_dir, "final.json")
         if self._island_manager is not None:
             self._island_manager.save_checkpoint(final_checkpoint)
             self._checkpoint_paths.append(final_checkpoint)
@@ -366,10 +361,7 @@ class GeneticEngine:
         )
 
         engine = GeneticEngine(config)
-        engine._island_manager = IslandManager.load_checkpoint(
-            checkpoint_path,
-            genome_config,
-        )
+        engine._island_manager = IslandManager.load_checkpoint(checkpoint_path, genome_config)
         engine._start_generation = data.get("generation", 0)
 
         return engine
@@ -379,16 +371,12 @@ class GeneticEngine:
     # ------------------------------------------------------------------
 
     def _aggregate_stats(
-        self,
-        generation: int,
-        island_stats: list[PopulationStats],
+        self, generation: int, island_stats: list[PopulationStats]
     ) -> dict[str, Any]:
         """Combine per-island stats into a single generation log entry."""
         n_pareto = sum(ps.n_pareto for ps in island_stats)
         diversity = (
-            sum(ps.diversity for ps in island_stats) / len(island_stats)
-            if island_stats
-            else 0.0
+            sum(ps.diversity for ps in island_stats) / len(island_stats) if island_stats else 0.0
         )
         n_evaluated = sum(ps.n_evaluated for ps in island_stats)
         return {

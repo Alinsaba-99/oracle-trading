@@ -16,17 +16,12 @@ class IcebergAlgo:
     """Iceberg execution: shows only portion of total quantity at a time."""
 
     def __init__(
-        self,
-        display_size: Decimal = Decimal("100"),
-        refresh_interval_s: float = 5.0,
+        self, display_size: Decimal = Decimal("100"), refresh_interval_s: float = 5.0
     ) -> None:
         self._display_size = display_size
         self._refresh = refresh_interval_s
-    async def execute(
-        self,
-        order: Any,
-        market_data: Any,
-    ) -> AsyncGenerator[FillReport, None]:
+
+    async def execute(self, order: Any, market_data: Any) -> AsyncGenerator[FillReport, None]:
         """Execute order in display_size chunks."""
         remaining = order.quantity
         while remaining > 0:

@@ -20,9 +20,7 @@ from core.logging import get_logger
 
 logger = get_logger("oracle.debate")
 
-__all__ = [
-    "DebateTeam",
-]
+__all__ = ["DebateTeam"]
 
 
 # ── Internal response models for structured LLM output ──────────────────────
@@ -85,9 +83,7 @@ class DebateTeam:
     # ── Public API ──────────────────────────────────────────────────────────
 
     async def debate(
-        self,
-        signals: list[AnalystSignal],
-        divergence_threshold: float = 0.3,
+        self, signals: list[AnalystSignal], divergence_threshold: float = 0.3
     ) -> DebateResult:
         """Run a 2-round debate over the provided analyst signals.
 
@@ -113,9 +109,7 @@ class DebateTeam:
             # 1a. Bull thesis
             bull_prompt = self._extract_bull_signals(signals)
             bull: _BullResponse = await self._call_role(
-                system=BULL_SYSTEM,
-                user=bull_prompt,
-                response_model=_BullResponse,
+                system=BULL_SYSTEM, user=bull_prompt, response_model=_BullResponse
             )
             round_1["bull_thesis"] = bull.thesis
             round_1["bull_indicators"] = bull.key_indicators
@@ -129,9 +123,7 @@ class DebateTeam:
                 f"Bear signals:\n{self._extract_bear_signals(signals)}"
             )
             bear: _BearResponse = await self._call_role(
-                system=BEAR_SYSTEM,
-                user=bear_user,
-                response_model=_BearResponse,
+                system=BEAR_SYSTEM, user=bear_user, response_model=_BearResponse
             )
             round_1["bear_critique"] = bear.counter_thesis
             round_1["bear_weaknesses"] = bear.weaknesses_found
@@ -148,9 +140,7 @@ class DebateTeam:
                 f"Blind spots from analysts:\n{self._extract_blind_spots(signals)}"
             )
             da: _DAResponse = await self._call_role(
-                system=DEVIL_SYSTEM,
-                user=da_user,
-                response_model=_DAResponse,
+                system=DEVIL_SYSTEM, user=da_user, response_model=_DAResponse
             )
             round_1["da_blind_spots"] = da.blind_spots
             round_1["da_third_way"] = da.third_way
@@ -180,10 +170,7 @@ class DebateTeam:
 
         # ── Score quality ───────────────────────────────────────────────────
         quality = self._scorer.score(
-            signals=signals,
-            round_1=round_1,
-            round_2=round_2,
-            consensus=consensus,
+            signals=signals, round_1=round_1, round_2=round_2, consensus=consensus
         )
 
         return DebateResult(
@@ -195,25 +182,13 @@ class DebateTeam:
         )
 
     # ── Internal helpers ───────────────────────────────────────────────────
-    async def _call_role(
-        self,
-        system: str,
-        user: str,
-        response_model: type[BaseModel],
-    ) -> Any:
+    async def _call_role(self, system: str, user: str, response_model: type[BaseModel]) -> Any:
         """Execute a single structured LLM call for a debate role."""
         return await self._llm.structured_call(
-            system=system,
-            user=user,
-            response_model=response_model,
-            temperature=0.7,
+            system=system, user=user, response_model=response_model, temperature=0.7
         )
 
-    async def _run_rebuttal_round(
-        self,
-        bull: _BullResponse,
-        bear: _BearResponse,
-    ) -> dict[str, Any]:
+    async def _run_rebuttal_round(self, bull: _BullResponse, bear: _BearResponse) -> dict[str, Any]:
         """Execute the second rebuttal round."""
         result: dict[str, Any] = {}
 
@@ -256,10 +231,7 @@ class DebateTeam:
             return "Nessun segnale rialzista disponibile."
         lines: list[str] = []
         for s in bull_signals:
-            lines.append(
-                f"- [{s.source}] {s.vote.reasoning} "
-                f"(confidence: {s.vote.confidence:.2f})"
-            )
+            lines.append(f"- [{s.source}] {s.vote.reasoning} (confidence: {s.vote.confidence:.2f})")
         return "\n".join(lines)
 
     @staticmethod
@@ -270,10 +242,7 @@ class DebateTeam:
             return "Nessun segnale ribassista disponibile."
         lines: list[str] = []
         for s in bear_signals:
-            lines.append(
-                f"- [{s.source}] {s.vote.reasoning} "
-                f"(confidence: {s.vote.confidence:.2f})"
-            )
+            lines.append(f"- [{s.source}] {s.vote.reasoning} (confidence: {s.vote.confidence:.2f})")
         return "\n".join(lines)
 
     @staticmethod

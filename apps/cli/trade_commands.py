@@ -48,9 +48,8 @@ async def handle_trade_submit(args: argparse.Namespace) -> int:
         print(f"  Error: {result.error}")
     return 0 if result.status == "submitted" else 1
 
-async def handle_trade_list(
-    _args: argparse.Namespace,
-) -> int:
+
+async def handle_trade_list(_args: argparse.Namespace) -> int:
     """List open orders."""
     from execution.brokers import BrokerConfig
     from execution.brokers.paper import PaperBroker
@@ -103,9 +102,7 @@ async def handle_trade_status(args: argparse.Namespace) -> int:
     return 0
 
 
-async def handle_trade_kill(
-    _args: argparse.Namespace,
-) -> int:
+async def handle_trade_kill(_args: argparse.Namespace) -> int:
     """Cancel ALL open orders."""
     from execution.brokers import BrokerConfig
     from execution.brokers.paper import PaperBroker

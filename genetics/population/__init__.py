@@ -91,17 +91,11 @@ def initialize_population(
     # Build a minimal toolbox for individual creation
     toolbox = base.Toolbox()
     toolbox.register("attr_float", rng.uniform, 0.0, 1.0)
-    toolbox.register(
-        "individual",
-        tools.initRepeat,
-        creator.Individual,
-        toolbox.attr_float,
-        n,
-    )
+    toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_float, n)
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
     n_seeded = max(0, min(pop_size, int(pop_size * seed_ratio)))
-    n_random = pop_size - n_seeded
+    pop_size - n_seeded
 
     # Build population
     population: list[Any] = []
@@ -119,11 +113,7 @@ def initialize_population(
     remaining = pop_size - len(population)
     n_seeded_actual = max(0, min(remaining, n_seeded))
     if n_seeded_actual > 0:
-        seeded_vecs = seeded_individuals(
-            genome_config.param_defs,
-            n_params=n,
-            rng=rng,
-        )
+        seeded_vecs = seeded_individuals(genome_config.param_defs, n_params=n, rng=rng)
         for i in range(n_seeded_actual):
             vec = seeded_vecs[i % len(seeded_vecs)]
             ind = creator.Individual(vec)

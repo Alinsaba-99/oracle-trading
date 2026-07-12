@@ -55,13 +55,7 @@ CATEGORIES: dict[str, list[str]] = {
         "beta_120",
         "idiosyncratic_vol",
     ],
-    "volume": [
-        "volume_zscore_20",
-        "volume_trend",
-        "dollar_volume",
-        "turnover",
-        "volume_vs_avg",
-    ],
+    "volume": ["volume_zscore_20", "volume_trend", "dollar_volume", "turnover", "volume_vs_avg"],
     "seasonality": [
         "month_effect",
         "day_of_week",
@@ -142,6 +136,7 @@ _FACTOR_META: dict[str, dict[str, Any]] = {
         ("price_reversal_1d", "microstructure", "1d price reversal"),
     ]
 }
+
 
 class CuratedAlphaLibrary:
     """Registry of all 50 curated alpha factors.
@@ -250,9 +245,7 @@ class CuratedAlphaLibrary:
             raise KeyError(msg)
         return self._registry[name]
 
-    def compute(
-        self, data: pl.DataFrame, names: list[str] | None = None
-    ) -> dict[str, pl.Series]:
+    def compute(self, data: pl.DataFrame, names: list[str] | None = None) -> dict[str, pl.Series]:
         """Compute specified factors (or all 50) on the given data.
 
         Args:

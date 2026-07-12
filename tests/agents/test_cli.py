@@ -38,22 +38,11 @@ class TestHandleAgentRun:
         """Happy path: MAS runs and returns exit code 0."""
         from apps.cli.agent_commands import handle_agent_run
 
-        args = argparse.Namespace(
-            instrument="SPY",
-            json=False,
-            table=True,
-            verbose=False,
-        )
+        args = argparse.Namespace(instrument="SPY", json=False, table=True, verbose=False)
 
         with (
-            patch(
-                "apps.cli.agent_commands._setup_mas",
-                return_value=_mock_mas_setup(),
-            ),
-            patch(
-                "apps.cli.agent_commands._fetch_market_data",
-                return_value={"close": [100.0]},
-            ),
+            patch("apps.cli.agent_commands._setup_mas", return_value=_mock_mas_setup()),
+            patch("apps.cli.agent_commands._fetch_market_data", return_value={"close": [100.0]}),
         ):
             exit_code = await handle_agent_run(args)
 
@@ -64,22 +53,11 @@ class TestHandleAgentRun:
         """JSON output mode is accepted without error."""
         from apps.cli.agent_commands import handle_agent_run
 
-        args = argparse.Namespace(
-            instrument="SPY",
-            json=True,
-            table=False,
-            verbose=False,
-        )
+        args = argparse.Namespace(instrument="SPY", json=True, table=False, verbose=False)
 
         with (
-            patch(
-                "apps.cli.agent_commands._setup_mas",
-                return_value=_mock_mas_setup(),
-            ),
-            patch(
-                "apps.cli.agent_commands._fetch_market_data",
-                return_value={"close": [100.0]},
-            ),
+            patch("apps.cli.agent_commands._setup_mas", return_value=_mock_mas_setup()),
+            patch("apps.cli.agent_commands._fetch_market_data", return_value={"close": [100.0]}),
         ):
             exit_code = await handle_agent_run(args)
 
@@ -90,22 +68,11 @@ class TestHandleAgentRun:
         """Verbose flag is accepted without error."""
         from apps.cli.agent_commands import handle_agent_run
 
-        args = argparse.Namespace(
-            instrument="SPY",
-            json=False,
-            table=False,
-            verbose=True,
-        )
+        args = argparse.Namespace(instrument="SPY", json=False, table=False, verbose=True)
 
         with (
-            patch(
-                "apps.cli.agent_commands._setup_mas",
-                return_value=_mock_mas_setup(),
-            ),
-            patch(
-                "apps.cli.agent_commands._fetch_market_data",
-                return_value={"close": [100.0]},
-            ),
+            patch("apps.cli.agent_commands._setup_mas", return_value=_mock_mas_setup()),
+            patch("apps.cli.agent_commands._fetch_market_data", return_value={"close": [100.0]}),
         ):
             exit_code = await handle_agent_run(args)
 
@@ -116,16 +83,10 @@ class TestHandleAgentRun:
         """When _setup_mas raises, the handler returns 1."""
         from apps.cli.agent_commands import handle_agent_run
 
-        args = argparse.Namespace(
-            instrument="SPY",
-            json=False,
-            table=False,
-            verbose=False,
-        )
+        args = argparse.Namespace(instrument="SPY", json=False, table=False, verbose=False)
 
         with patch(
-            "apps.cli.agent_commands._setup_mas",
-            side_effect=RuntimeError("LLM unavailable"),
+            "apps.cli.agent_commands._setup_mas", side_effect=RuntimeError("LLM unavailable")
         ):
             exit_code = await handle_agent_run(args)
 
@@ -136,22 +97,11 @@ class TestHandleAgentRun:
         """Unexpected exceptions in pipeline return exit code 1."""
         from apps.cli.agent_commands import handle_agent_run
 
-        args = argparse.Namespace(
-            instrument="SPY",
-            json=False,
-            table=False,
-            verbose=False,
-        )
+        args = argparse.Namespace(instrument="SPY", json=False, table=False, verbose=False)
 
         with (
-            patch(
-                "apps.cli.agent_commands._setup_mas",
-                return_value=_mock_mas_setup(),
-            ),
-            patch(
-                "apps.cli.agent_commands._fetch_market_data",
-                return_value={"close": [100.0]},
-            ),
+            patch("apps.cli.agent_commands._setup_mas", return_value=_mock_mas_setup()),
+            patch("apps.cli.agent_commands._fetch_market_data", return_value={"close": [100.0]}),
         ):
             exit_code = await handle_agent_run(args)
 
@@ -174,14 +124,8 @@ class TestHandleAgentDebate:
         args = argparse.Namespace(instrument="SPY")
 
         with (
-            patch(
-                "apps.cli.agent_commands._setup_mas",
-                return_value=_mock_mas_setup(),
-            ),
-            patch(
-                "apps.cli.agent_commands._fetch_market_data",
-                return_value={"close": [100.0]},
-            ),
+            patch("apps.cli.agent_commands._setup_mas", return_value=_mock_mas_setup()),
+            patch("apps.cli.agent_commands._fetch_market_data", return_value={"close": [100.0]}),
         ):
             exit_code = await handle_agent_debate(args)
 
@@ -195,8 +139,7 @@ class TestHandleAgentDebate:
         args = argparse.Namespace(instrument="SPY")
 
         with patch(
-            "apps.cli.agent_commands._setup_mas",
-            side_effect=RuntimeError("LLM unavailable"),
+            "apps.cli.agent_commands._setup_mas", side_effect=RuntimeError("LLM unavailable")
         ):
             exit_code = await handle_agent_debate(args)
 
@@ -234,9 +177,7 @@ class TestFormatOutput:
         from apps.cli.agent_commands import _format_output
 
         result = _format_output(
-            {"direction": "buy", "confidence": 0.8},
-            instrument="SPY",
-            fmt="json",
+            {"direction": "buy", "confidence": 0.8}, instrument="SPY", fmt="json"
         )
         import json
 
@@ -248,9 +189,7 @@ class TestFormatOutput:
         from apps.cli.agent_commands import _format_output
 
         result = _format_output(
-            {"direction": "buy", "confidence": 0.8},
-            instrument="SPY",
-            fmt="standard",
+            {"direction": "buy", "confidence": 0.8}, instrument="SPY", fmt="standard"
         )
         assert "MAS Result" in result
         assert "direction" in result
@@ -260,9 +199,7 @@ class TestFormatOutput:
         from apps.cli.agent_commands import _format_output
 
         result = _format_output(
-            {"direction": "buy", "confidence": 0.8},
-            instrument="SPY",
-            fmt="table",
+            {"direction": "buy", "confidence": 0.8}, instrument="SPY", fmt="table"
         )
         assert result is not None
         assert len(result) > 0

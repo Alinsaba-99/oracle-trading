@@ -7,12 +7,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from pydantic import BaseModel
 
-from agents.llm import (
-    FallbackLLMClient,
-    LitellmLLMClient,
-    LLMClient,
-    ModelCallError,
-)
+from agents.llm import FallbackLLMClient, LitellmLLMClient, LLMClient, ModelCallError
 
 # ── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -84,9 +79,7 @@ class TestLitellmLLMClient:
 
         client = LitellmLLMClient(model="gpt-4")
         result = await client.structured_call(
-            system_prompt="Be helpful",
-            user_prompt="What is 42?",
-            response_model=_TestModel,
+            system_prompt="Be helpful", user_prompt="What is 42?", response_model=_TestModel
         )
 
         assert isinstance(result, _TestModel)
@@ -104,9 +97,7 @@ class TestLitellmLLMClient:
         client = LitellmLLMClient()
         with pytest.raises(ModelCallError, match="Malformed JSON"):
             await client.structured_call(
-                system_prompt="",
-                user_prompt="",
-                response_model=_TestModel,
+                system_prompt="", user_prompt="", response_model=_TestModel
             )
 
     @patch("litellm.acompletion")
@@ -119,9 +110,7 @@ class TestLitellmLLMClient:
         client = LitellmLLMClient()
         with pytest.raises(ModelCallError, match="Empty response"):
             await client.structured_call(
-                system_prompt="",
-                user_prompt="",
-                response_model=_TestModel,
+                system_prompt="", user_prompt="", response_model=_TestModel
             )
 
     @patch("litellm.acompletion")
@@ -134,9 +123,7 @@ class TestLitellmLLMClient:
         client = LitellmLLMClient()
         with pytest.raises(ModelCallError, match="Empty response"):
             await client.structured_call(
-                system_prompt="",
-                user_prompt="",
-                response_model=_TestModel,
+                system_prompt="", user_prompt="", response_model=_TestModel
             )
 
     @patch("litellm.acompletion")
@@ -147,9 +134,7 @@ class TestLitellmLLMClient:
         client = LitellmLLMClient()
         with pytest.raises(ModelCallError, match="LLM call failed"):
             await client.structured_call(
-                system_prompt="",
-                user_prompt="",
-                response_model=_TestModel,
+                system_prompt="", user_prompt="", response_model=_TestModel
             )
 
     def test_model_name(self) -> None:
@@ -188,9 +173,7 @@ class TestFallbackLLMClient:
         client = FallbackLLMClient([primary, fallback])
 
         result = await client.structured_call(
-            system_prompt="",
-            user_prompt="",
-            response_model=_TestModel,
+            system_prompt="", user_prompt="", response_model=_TestModel
         )
         assert isinstance(result, _TestModel)
         assert result.value == 1
@@ -202,9 +185,7 @@ class TestFallbackLLMClient:
         client = FallbackLLMClient([primary, fallback])
 
         result = await client.structured_call(
-            system_prompt="",
-            user_prompt="",
-            response_model=_TestModel,
+            system_prompt="", user_prompt="", response_model=_TestModel
         )
         assert isinstance(result, _TestModel)
         assert result.value == 1
@@ -217,9 +198,7 @@ class TestFallbackLLMClient:
 
         with pytest.raises(ModelCallError, match="All LLM clients failed"):
             await client.structured_call(
-                system_prompt="",
-                user_prompt="",
-                response_model=_TestModel,
+                system_prompt="", user_prompt="", response_model=_TestModel
             )
 
     def test_model_name_joins_with_pipe(self) -> None:
@@ -242,8 +221,6 @@ class TestFallbackLLMClient:
         """Single client list works fine."""
         client = FallbackLLMClient([_DummyClient(succeed=True)])
         result = await client.structured_call(
-            system_prompt="",
-            user_prompt="",
-            response_model=_TestModel,
+            system_prompt="", user_prompt="", response_model=_TestModel
         )
         assert isinstance(result, _TestModel)

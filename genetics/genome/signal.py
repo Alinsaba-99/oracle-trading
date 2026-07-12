@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 import polars as pl
@@ -24,14 +24,7 @@ from genetics.genome.parameters import (
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
-__all__ = [
-    "Genome",
-    "GenomeConfig",
-    "GenomeToSignal",
-    "decode",
-    "encode",
-    "validate_genome",
-]
+__all__ = ["Genome", "GenomeConfig", "GenomeToSignal", "decode", "encode", "validate_genome"]
 
 
 @dataclass
@@ -66,8 +59,7 @@ class GenomeConfig:
 
 
 def encode(
-    raw_params_dict: Mapping[str, float | int | str],
-    param_defs: Sequence[GenomeParameter],
+    raw_params_dict: Mapping[str, float | int | str], param_defs: Sequence[GenomeParameter]
 ) -> Genome:
     """Encode a dictionary of raw parameter values into a normalised Genome.
 
@@ -199,11 +191,7 @@ class GenomeToSignal:
     and thresholds to produce -1, 0, or 1 signals.
     """
 
-    def __init__(
-        self,
-        genome: Genome,
-        param_defs: Sequence[GenomeParameter],
-    ) -> None:
+    def __init__(self, genome: Genome, param_defs: Sequence[GenomeParameter]) -> None:
         self._param_defs = param_defs
         self._raw_params = decode(genome)
 
@@ -278,15 +266,21 @@ class AlphaGenomeToSignal:
         seas_weight, fund_weight, micr_weight, threshold
     """
 
-    _CATEGORY_ORDER = [
-        "momentum", "mean_reversion", "volatility", "correlation",
-        "volume", "seasonality", "fundamental_proxies", "microstructure",
+    _CATEGORY_ORDER: ClassVar[list[str]] = [
+        "momentum",
+        "mean_reversion",
+        "volatility",
+        "correlation",
+        "volume",
+        "seasonality",
+        "fundamental_proxies",
+        "microstructure",
     ]
 
     def __init__(
         self,
         genome: Genome,
-        param_defs: Sequence[GenomeParameter],
+        param_defs: Sequence[GenomeParameter],  # noqa: ARG002 — protocol compat
     ) -> None:
         self._raw_params = decode(genome)
 
@@ -318,8 +312,14 @@ class AlphaGenomeToSignal:
         weights: list[float] = []
         threshold: float = 0.2
         for p_name in [
-            "mom_weight", "mr_weight", "vol_weight", "corr_weight",
-            "volu_weight", "seas_weight", "fund_weight", "micr_weight",
+            "mom_weight",
+            "mr_weight",
+            "vol_weight",
+            "corr_weight",
+            "volu_weight",
+            "seas_weight",
+            "fund_weight",
+            "micr_weight",
         ]:
             raw = self._raw_params.get(p_name, 1.0)
             weights.append(float(raw))

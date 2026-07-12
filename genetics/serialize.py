@@ -60,9 +60,7 @@ def population_to_dict(population: list[Any]) -> list[dict[str, Any]]:
     """Serialize a DEAP population (list of individuals) to a list of dicts."""
     result: list[dict[str, Any]] = []
     for ind in population:
-        entry: dict[str, Any] = {
-            "values": list(ind),
-        }
+        entry: dict[str, Any] = {"values": list(ind)}
         if hasattr(ind, "fitness") and ind.fitness.valid:
             entry["fitness"] = {
                 "values": _sanitize_fitness(ind.fitness.values),
@@ -73,10 +71,7 @@ def population_to_dict(population: list[Any]) -> list[dict[str, Any]]:
     return result
 
 
-def population_from_dict(
-    data: list[dict[str, Any]],
-    toolbox: Any,
-) -> list[Any]:
+def population_from_dict(data: list[dict[str, Any]], toolbox: Any) -> list[Any]:
     """Deserialize a population from a list of dicts produced by :func:`population_to_dict`.
 
     Uses ``toolbox.individual`` to create individuals so DEAP's ``creator.Individual``
@@ -90,16 +85,15 @@ def population_from_dict(
         if "fitness" in entry:
             if not hasattr(ind, "fitness"):
                 from deap import creator
+
                 ind.fitness = creator.FitnessMulti()
             ind.fitness.values = entry["fitness"]["values"]
         population.append(ind)
     return population
 
+
 def pop_snapshot(
-    population: list[Any],
-    generation: int,
-    pareto_indices: list[int],
-    diversity: float,
+    population: list[Any], generation: int, pareto_indices: list[int], diversity: float
 ) -> dict[str, Any]:
     """Snapshot an entire population with metadata.
 

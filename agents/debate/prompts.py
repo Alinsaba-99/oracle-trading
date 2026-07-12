@@ -15,9 +15,4 @@ DEVIL_SYSTEM = """Sei un DEVIL'S ADVOCATE. Il tuo compito:
 
 REBUTTAL_SYSTEM = """Round 2: Rispondi alle obiezioni e rafforza la tua tesi originale."""
 
-__all__ = [
-    "BEAR_SYSTEM",
-    "BULL_SYSTEM",
-    "DEVIL_SYSTEM",
-    "REBUTTAL_SYSTEM",
-]
+__all__ = ["BEAR_SYSTEM", "BULL_SYSTEM", "DEVIL_SYSTEM", "REBUTTAL_SYSTEM"]

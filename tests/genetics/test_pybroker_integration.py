@@ -1,4 +1,5 @@
 """Tests for PyBroker integration — walkforward backtesting bridge."""
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
@@ -16,19 +17,21 @@ def small_data() -> pl.DataFrame:
     n = 100
     rng = np.random.default_rng(42)
     close = 100.0 + np.arange(n) * 0.1 + rng.normal(0, 0.5, n)
-    return pl.DataFrame({
-        "timestamp": pl.date_range(
-            start=datetime(2020, 1, 1),
-            end=datetime(2020, 1, 1) + timedelta(days=n - 1),
-            interval="1d",
-            eager=True,
-        ),
-        "open": close - 0.2,
-        "high": close + 0.5,
-        "low": close - 0.5,
-        "close": close,
-        "volume": [1_000_000] * n,
-    })
+    return pl.DataFrame(
+        {
+            "timestamp": pl.date_range(
+                start=datetime(2020, 1, 1),
+                end=datetime(2020, 1, 1) + timedelta(days=n - 1),
+                interval="1d",
+                eager=True,
+            ),
+            "open": close - 0.2,
+            "high": close + 0.5,
+            "low": close - 0.5,
+            "close": close,
+            "volume": [1_000_000] * n,
+        }
+    )
 
 
 def _constant_long(_data: pl.DataFrame) -> pl.Series:

@@ -18,16 +18,11 @@ class VWAPAlgo:
     def __init__(self, n_slices: int = 12) -> None:
         self._n_slices = n_slices
         self._scheduler = AlgoScheduler()
-    async def execute(
-        self,
-        order: Any,
-        market_data: Any,
-    ) -> AsyncGenerator[FillReport, None]:
+
+    async def execute(self, order: Any, market_data: Any) -> AsyncGenerator[FillReport, None]:
         """Execute order sliced by volume profile."""
         slices = self._scheduler.volume_slices(
-            order.quantity,
-            market_data.volume_profile,
-            self._n_slices,
+            order.quantity, market_data.volume_profile, self._n_slices
         )
         delay = 3600 / max(len(slices), 1)
         for qty in slices:

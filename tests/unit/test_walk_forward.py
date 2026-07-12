@@ -238,7 +238,9 @@ class TestWalkForwardEngine:
 
         n_splits = 5
         n_test_splits = 2
-        results = engine.run(data, sig, n_splits=n_splits, n_test_splits=n_test_splits, split_method="cpcv")
+        results = engine.run(
+            data, sig, n_splits=n_splits, n_test_splits=n_test_splits, split_method="cpcv"
+        )
         assert len(results) == comb(n_splits, n_test_splits)
 
     def test_each_fold_has_result(self) -> None:
@@ -311,7 +313,9 @@ class TestWalkForwardEngine:
         from decimal import Decimal
 
         cfg = BacktestConfig(initial_capital=Decimal("50000"))
-        results = engine.run(data, sig, settings=cfg, n_splits=4, n_test_splits=1, split_method="cpcv")
+        results = engine.run(
+            data, sig, settings=cfg, n_splits=4, n_test_splits=1, split_method="cpcv"
+        )
         for r in results:
             assert r.initial_capital == Decimal("50000")
 

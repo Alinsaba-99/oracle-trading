@@ -85,9 +85,7 @@ class SentimentAnalyst(BaseAnalyst):
         return AnalystSignal(
             source="sentiment",
             vote=AgentVote(
-                direction=direction,
-                confidence=resp.confidence,
-                reasoning=resp.reasoning,
+                direction=direction, confidence=resp.confidence, reasoning=resp.reasoning
             ),
             metadata=metadata,
             blind_spot=self.blind_spot,

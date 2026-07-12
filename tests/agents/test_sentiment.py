@@ -41,11 +41,7 @@ def _make_input(
     overall: float | None = None,
     fear_greed: int = 55,
 ) -> AnalystInput:
-    sentiment_data: dict[str, Any] = {
-        "news": news,
-        "social": social,
-        "fear_greed": fear_greed,
-    }
+    sentiment_data: dict[str, Any] = {"news": news, "social": social, "fear_greed": fear_greed}
     if overall is not None:
         sentiment_data["overall"] = overall
     return AnalystInput(
@@ -65,8 +61,7 @@ class TestSentimentAnalystConstruction:
         llm = _make_llm()
         analyst = SentimentAnalyst(llm_client=llm, config=config)
         assert (
-            analyst.blind_spot
-            == "Ignora prezzi e fondamentali — si basa solo su sentiment e news"
+            analyst.blind_spot == "Ignora prezzi e fondamentali — si basa solo su sentiment e news"
         )
 
     def test_name(self) -> None:
@@ -100,9 +95,7 @@ class TestSentimentAnalystAnalyze:
         )
         llm = _make_llm(bullish)
         analyst = SentimentAnalyst(llm_client=llm, config=MASConfig())
-        result = await analyst.analyze(
-            _make_input(news=0.9, social=0.85, fear_greed=85),
-        )
+        result = await analyst.analyze(_make_input(news=0.9, social=0.85, fear_greed=85))
         assert result.vote.direction == "buy"
         assert result.vote.confidence >= 0.9
 
@@ -117,9 +110,7 @@ class TestSentimentAnalystAnalyze:
         )
         llm = _make_llm(bearish)
         analyst = SentimentAnalyst(llm_client=llm, config=MASConfig())
-        result = await analyst.analyze(
-            _make_input(news=-0.8, social=-0.9, fear_greed=15),
-        )
+        result = await analyst.analyze(_make_input(news=-0.8, social=-0.9, fear_greed=15))
         assert result.vote.direction == "sell"
         assert result.vote.confidence >= 0.85
 
@@ -134,9 +125,7 @@ class TestSentimentAnalystAnalyze:
         )
         llm = _make_llm(neutral)
         analyst = SentimentAnalyst(llm_client=llm, config=MASConfig())
-        result = await analyst.analyze(
-            _make_input(news=0.1, social=-0.1, fear_greed=50),
-        )
+        result = await analyst.analyze(_make_input(news=0.1, social=-0.1, fear_greed=50))
         assert result.vote.direction == "hold"
 
     @pytest.mark.asyncio
@@ -145,7 +134,7 @@ class TestSentimentAnalystAnalyze:
         llm = _make_llm()
         analyst = SentimentAnalyst(llm_client=llm, config=MASConfig())
         result = await analyst.analyze(
-            _make_input(news=0.4, social=0.6, overall=0.5, fear_greed=65),
+            _make_input(news=0.4, social=0.6, overall=0.5, fear_greed=65)
         )
         assert result.metadata["news_sentiment"] == 0.4
         assert result.metadata["social_sentiment"] == 0.6
@@ -166,8 +155,6 @@ class TestSentimentAnalystAnalyze:
         """When overall is not provided, it's computed as (news+social)/2."""
         llm = _make_llm()
         analyst = SentimentAnalyst(llm_client=llm, config=MASConfig())
-        result = await analyst.analyze(
-            _make_input(news=0.8, social=0.6, overall=None),
-        )
+        result = await analyst.analyze(_make_input(news=0.8, social=0.6, overall=None))
         # (0.8 + 0.6) / 2 = 0.7 → should be in metadata
         assert result.metadata["overall_sentiment"] == 0.7

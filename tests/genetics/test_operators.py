@@ -236,7 +236,7 @@ class TestRank:
         x = np.array([1.0, np.nan, 3.0, np.nan])
         r = rank(x)
         assert not np.any(np.isnan(r))
-        assert 0.0 <= r.min() and r.max() <= 1.0
+        assert r.min() >= 0.0 and r.max() <= 1.0
 
 
 class TestScale:
@@ -359,9 +359,7 @@ class TestCorrelation:
         assert np.isclose(result[2], -1.0, atol=1e-10)
 
     def test_short_series(self):
-        assert np.allclose(
-            correlation(np.ones(2), np.ones(2), 5), [0, 0]
-        )
+        assert np.allclose(correlation(np.ones(2), np.ones(2), 5), [0, 0])
 
     def test_constant_input_no_nan(self):
         x = np.ones(5)
@@ -378,9 +376,7 @@ class TestCovariance:
         assert np.isclose(result[4], np.var([3, 4, 5], ddof=1), rtol=RTOL, atol=ATOL)
 
     def test_short_series(self):
-        assert np.allclose(
-            covariance(np.ones(2), np.ones(2), 5), [0, 0]
-        )
+        assert np.allclose(covariance(np.ones(2), np.ones(2), 5), [0, 0])
 
 
 class TestDelta:
@@ -419,7 +415,6 @@ class TestEMA:
     def test_basic(self):
         x = np.array([1.0, 2.0, 3.0])
         result = ema(x, 3)
-        alpha = 2.0 / 4  # = 0.5
         expected = np.array([1.0, 0.5 * 2 + 0.5 * 1, 0.5 * 3 + 0.5 * 1.5])
         assert np.allclose(result, expected, rtol=RTOL, atol=ATOL)
 

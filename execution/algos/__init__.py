@@ -8,10 +8,4 @@ from execution.algos.scheduler import AlgoScheduler
 from execution.algos.twap import TWAPAlgo
 from execution.algos.vwap import VWAPAlgo
 
-__all__ = [
-    "AlgoScheduler",
-    "IcebergAlgo",
-    "TWAPAlgo",
-    "VWAPAlgo",
-    "create_algo",
-]
+__all__ = ["AlgoScheduler", "IcebergAlgo", "TWAPAlgo", "VWAPAlgo", "create_algo"]

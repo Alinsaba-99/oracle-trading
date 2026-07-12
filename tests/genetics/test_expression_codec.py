@@ -1,4 +1,5 @@
 """Tests for GP genome encoding — DEAP PrimitiveTree <-> ExprNode AST."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -127,10 +128,9 @@ class TestEvaluation:
         gp_tree = expr_to_gp_tree(expr, pset)
         back = gp_tree_to_expr(gp_tree)
 
-        data = pl.DataFrame({
-            "close": np.arange(1.0, 101.0, dtype=float),
-        })
+        data = pl.DataFrame({"close": np.arange(1.0, 101.0, dtype=float)})
         from genetics.alpha.expression import evaluate as eval_expr
+
         array = eval_expr(back, data, OPERATORS_MAP)
         assert len(array) == 100
         assert np.all(np.isfinite(array))
@@ -142,10 +142,9 @@ class TestEvaluation:
         gp_tree = expr_to_gp_tree(expr, pset)
         back = gp_tree_to_expr(gp_tree)
 
-        data = pl.DataFrame({
-            "close": np.arange(1.0, 101.0, dtype=float),
-        })
+        data = pl.DataFrame({"close": np.arange(1.0, 101.0, dtype=float)})
         from genetics.alpha.expression import evaluate as eval_expr
+
         array = eval_expr(back, data, OPERATORS_MAP)
         assert np.allclose(array, 1.0)
 

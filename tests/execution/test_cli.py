@@ -77,6 +77,7 @@ class TestCLIParser:
         ]:
             ns = parser.parse_args(["trade", cmd, *extra_args])
             assert ns.trade_action == cmd
+
     def test_submit_help(self) -> None:
         """trade submit --help works."""
         parser = self._build_trade_parser()
@@ -99,12 +100,18 @@ class TestCLIParser:
         parser = self._build_trade_parser()
         ns = parser.parse_args(
             [
-                "trade", "submit",
-                "--instrument", "AAPL",
-                "--side", "sell",
-                "--qty", "50",
-                "--algo", "vwap",
-                "--price", "200",
+                "trade",
+                "submit",
+                "--instrument",
+                "AAPL",
+                "--side",
+                "sell",
+                "--qty",
+                "50",
+                "--algo",
+                "vwap",
+                "--price",
+                "200",
                 "--dry-run",
             ]
         )

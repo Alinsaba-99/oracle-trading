@@ -9,8 +9,4 @@ from __future__ import annotations
 from genetics.fitness.cache import FitnessCache
 from genetics.fitness.evaluator import FitnessEvaluator, WalkForwardConfig
 
-__all__ = [
-    "FitnessCache",
-    "FitnessEvaluator",
-    "WalkForwardConfig",
-]
+__all__ = ["FitnessCache", "FitnessEvaluator", "WalkForwardConfig"]

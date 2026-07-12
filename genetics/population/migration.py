@@ -37,10 +37,7 @@ class MigrationPolicy:
     size: int = 3
 
 
-def _total_weighted_fitness(
-    individual: Any,
-    weights: tuple[float, ...] | None = None,
-) -> float:
+def _total_weighted_fitness(individual: Any, weights: tuple[float, ...] | None = None) -> float:
     """Compute total weighted fitness for an individual.
 
     Uses fitness weights from the DEAP creator if not explicitly given.
@@ -109,10 +106,7 @@ def replace_worst(population: list[Any], newcomers: list[Any]) -> list[Any]:
     return population
 
 
-def ring_migration(
-    islands: list[list[Any]],
-    migration_size: int,
-) -> list[list[Any]]:
+def ring_migration(islands: list[list[Any]], migration_size: int) -> list[list[Any]]:
     """Perform ring-topology migration between islands.
 
     Each island *i* sends its best *migration_size* individuals to island

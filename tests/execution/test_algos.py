@@ -109,9 +109,7 @@ class TestVWAPAlgo:
     """VWAP execution algo."""
 
     async def test_slices_according_to_volume_profile(
-        self,
-        mock_order: MagicMock,
-        mock_market_data: MagicMock,
+        self, mock_order: MagicMock, mock_market_data: MagicMock
     ) -> None:
         """VWAP yields fills proportional to volume profile."""
         algo = VWAPAlgo(n_slices=4)
@@ -122,10 +120,7 @@ class TestVWAPAlgo:
         assert all(isinstance(f, FillReport) for f in fills)
         assert sum(f.quantity for f in fills) == Decimal("1000")
 
-    async def test_skips_zero_quantity_slices(
-        self,
-        mock_order: MagicMock,
-    ) -> None:
+    async def test_skips_zero_quantity_slices(self, mock_order: MagicMock) -> None:
         """VWAP skips slices where volume profile yields zero quantity."""
         algo = VWAPAlgo(n_slices=12)
         md: MagicMock = MagicMock()
@@ -176,9 +171,7 @@ class TestTWAPAlgo:
     """TWAP execution algo."""
 
     async def test_produces_correct_number_of_slices(
-        self,
-        mock_order: MagicMock,
-        mock_market_data: MagicMock,
+        self, mock_order: MagicMock, mock_market_data: MagicMock
     ) -> None:
         """TWAP yields correct number of equal-sized fills."""
         algo = TWAPAlgo(n_slices=6)
@@ -190,11 +183,7 @@ class TestTWAPAlgo:
         expected_qty = Decimal("1000") / 6
         assert all(f.quantity == expected_qty for f in fills)
 
-    async def test_zero_quantity(
-        self,
-        mock_order: MagicMock,
-        mock_market_data: MagicMock,
-    ) -> None:
+    async def test_zero_quantity(self, mock_order: MagicMock, mock_market_data: MagicMock) -> None:
         """TWAP with zero quantity yields zero-quantity fills."""
         mock_order.quantity = Decimal("0")
         algo = TWAPAlgo(n_slices=6)
@@ -204,10 +193,7 @@ class TestTWAPAlgo:
         assert len(fills) == 6
         assert all(f.quantity == Decimal("0") for f in fills)
 
-    async def test_uses_last_price(
-        self,
-        mock_market_data: MagicMock,
-    ) -> None:
+    async def test_uses_last_price(self, mock_market_data: MagicMock) -> None:
         """TWAP uses market last price as fill price."""
         algo = TWAPAlgo(n_slices=1)
         order: MagicMock = MagicMock()
@@ -225,16 +211,11 @@ class TestIcebergAlgo:
     """Iceberg execution algo."""
 
     async def test_divides_into_display_size_chunks(
-        self,
-        mock_order: MagicMock,
-        mock_market_data: MagicMock,
+        self, mock_order: MagicMock, mock_market_data: MagicMock
     ) -> None:
         """Iceberg yields display_size chunks, last one is remainder."""
         mock_order.quantity = Decimal("250")
-        algo = IcebergAlgo(
-            display_size=Decimal("100"),
-            refresh_interval_s=0.01,
-        )
+        algo = IcebergAlgo(display_size=Decimal("100"), refresh_interval_s=0.01)
         fills: list[FillReport] = []
         async for fill in algo.execute(mock_order, mock_market_data):
             fills.append(fill)
@@ -245,9 +226,7 @@ class TestIcebergAlgo:
         assert sum(f.quantity for f in fills) == Decimal("250")
 
     async def test_single_chunk_when_below_display_size(
-        self,
-        mock_order: MagicMock,
-        mock_market_data: MagicMock,
+        self, mock_order: MagicMock, mock_market_data: MagicMock
     ) -> None:
         """Iceberg yields single fill when quantity below display size."""
         mock_order.quantity = Decimal("50")

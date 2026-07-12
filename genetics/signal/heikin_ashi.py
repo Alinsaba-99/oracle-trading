@@ -10,6 +10,7 @@ candles that make trends and reversals more visible:
 
 Reference: https://www.tradingview.com/support/solutions/43000501980-heikin-ashi/
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -18,7 +19,7 @@ if TYPE_CHECKING:
     import polars as pl
 
 
-def to_heikin_ashi(data: "pl.DataFrame") -> "pl.DataFrame":
+def to_heikin_ashi(data: pl.DataFrame) -> pl.DataFrame:
     """Convert OHLCV DataFrame to Heikin Ashi format.
 
     Expects columns: open, high, low, close, volume (plus any others).
@@ -61,22 +62,24 @@ def to_heikin_ashi(data: "pl.DataFrame") -> "pl.DataFrame":
     ha_low = np_minimum(low_arr, ha_open)
     ha_low = np_minimum(ha_low, ha_close)
 
-    return data.with_columns([
-        pl.Series("open", ha_open),
-        pl.Series("high", ha_high),
-        pl.Series("low", ha_low),
-        pl.Series("close", ha_close),
-    ])
+    return data.with_columns(
+        [
+            pl.Series("open", ha_open),
+            pl.Series("high", ha_high),
+            pl.Series("low", ha_low),
+            pl.Series("close", ha_close),
+        ]
+    )
 
 
-def np_maximum(a: "np.ndarray", b: "np.ndarray") -> "np.ndarray":  # type: ignore[no-any-unimported]
+def np_maximum(a: np.ndarray, b: np.ndarray) -> np.ndarray:  # type: ignore[no-any-unimported]
     """Element-wise maximum, handling numpy import lazily."""
     import numpy as np
 
     return np.maximum(a, b)
 
 
-def np_minimum(a: "np.ndarray", b: "np.ndarray") -> "np.ndarray":  # type: ignore[no-any-unimported]
+def np_minimum(a: np.ndarray, b: np.ndarray) -> np.ndarray:  # type: ignore[no-any-unimported]
     """Element-wise minimum, handling numpy import lazily."""
     import numpy as np
 

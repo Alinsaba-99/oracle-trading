@@ -18,9 +18,7 @@ class AlgoScheduler:
 
     @staticmethod
     def volume_slices(
-        total_quantity: Decimal,
-        volume_profile: list[float],
-        n_slices: int,
+        total_quantity: Decimal, volume_profile: list[float], n_slices: int
     ) -> list[Decimal]:
         """Divide total_quantity according to volume profile."""
         if not volume_profile or n_slices <= 0:
@@ -29,7 +27,4 @@ class AlgoScheduler:
         total = sum(profile)
         if total <= 0:
             return [total_quantity / n_slices] * n_slices
-        return [
-            Decimal(str(round(p / total * float(total_quantity), 4)))
-            for p in profile
-        ]
+        return [Decimal(str(round(p / total * float(total_quantity), 4))) for p in profile]

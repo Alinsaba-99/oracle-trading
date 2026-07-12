@@ -67,8 +67,4 @@ class LLMResponseCache:
     def stats(self) -> dict[str, int]:
         """Return current cache statistics."""
         with self._lock:
-            return {
-                "hits": self._hits,
-                "misses": self._misses,
-                "size": len(self._cache),
-            }
+            return {"hits": self._hits, "misses": self._misses, "size": len(self._cache)}

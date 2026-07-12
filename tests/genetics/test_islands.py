@@ -22,7 +22,6 @@ from genetics.islands import (
 )
 
 if TYPE_CHECKING:
-
     from genetics.genome.parameters import GenomeParameter
 
 
@@ -93,9 +92,7 @@ class TestIslandManagerCreate:
 
         for i in range(2):
             for ind1, ind2 in zip(
-                manager1.islands[i].population,
-                manager2.islands[i].population,
-                strict=True,
+                manager1.islands[i].population, manager2.islands[i].population, strict=True
             ):
                 assert list(ind1) == list(ind2)
 
@@ -104,7 +101,9 @@ class TestIslandManagerCreate:
 
 
 class TestEvaluateNextGen:
-    def test_returns_population_stats(self, genome_config: GenomeConfig, mock_evaluator: MagicMock, small_data: pl.DataFrame) -> None:
+    def test_returns_population_stats(
+        self, genome_config: GenomeConfig, mock_evaluator: MagicMock, small_data: pl.DataFrame
+    ) -> None:
         manager = IslandManager(genome_config, n_islands=1, pop_size_per_island=5)
         island = manager.islands[0]
 
@@ -114,7 +113,9 @@ class TestEvaluateNextGen:
         assert stats.pop_size == 5
         assert stats.n_evaluated > 0
 
-    def test_generation_increments(self, genome_config: GenomeConfig, mock_evaluator: MagicMock, small_data: pl.DataFrame) -> None:
+    def test_generation_increments(
+        self, genome_config: GenomeConfig, mock_evaluator: MagicMock, small_data: pl.DataFrame
+    ) -> None:
         manager = IslandManager(genome_config, n_islands=1, pop_size_per_island=5)
         island = manager.islands[0]
         assert island.generation == 0
@@ -125,7 +126,9 @@ class TestEvaluateNextGen:
         island.evaluate_next_gen(mock_evaluator, small_data)
         assert island.generation == 2
 
-    def test_population_unchanged_size(self, genome_config: GenomeConfig, mock_evaluator: MagicMock, small_data: pl.DataFrame) -> None:
+    def test_population_unchanged_size(
+        self, genome_config: GenomeConfig, mock_evaluator: MagicMock, small_data: pl.DataFrame
+    ) -> None:
         """NSGA-II selection maintains a constant population size."""
         manager = IslandManager(genome_config, n_islands=1, pop_size_per_island=10)
         island = manager.islands[0]
@@ -133,7 +136,9 @@ class TestEvaluateNextGen:
         island.evaluate_next_gen(mock_evaluator, small_data)
         assert len(island.population) == 10
 
-    def test_evaluator_called(self, genome_config: GenomeConfig, mock_evaluator: MagicMock, small_data: pl.DataFrame) -> None:
+    def test_evaluator_called(
+        self, genome_config: GenomeConfig, mock_evaluator: MagicMock, small_data: pl.DataFrame
+    ) -> None:
         manager = IslandManager(genome_config, n_islands=1, pop_size_per_island=3)
         island = manager.islands[0]
 
@@ -146,7 +151,9 @@ class TestEvaluateNextGen:
 
 
 class TestParallelExecution:
-    def test_with_thread_pool_executor(self, genome_config: GenomeConfig, small_data: pl.DataFrame) -> None:
+    def test_with_thread_pool_executor(
+        self, genome_config: GenomeConfig, small_data: pl.DataFrame
+    ) -> None:
         """Island evaluation works with ThreadPoolExecutor for per-individual eval."""
         from concurrent.futures import ThreadPoolExecutor
 
@@ -162,7 +169,9 @@ class TestParallelExecution:
         assert isinstance(stats, PopulationStats)
         assert stats.generation == 1
 
-    def test_run_generation_async(self, genome_config: GenomeConfig, mock_evaluator: MagicMock, small_data: pl.DataFrame) -> None:
+    def test_run_generation_async(
+        self, genome_config: GenomeConfig, mock_evaluator: MagicMock, small_data: pl.DataFrame
+    ) -> None:
         """IslandManager.run_generation works asynchronously."""
         import asyncio
 
@@ -170,9 +179,7 @@ class TestParallelExecution:
 
         async def _run() -> list[PopulationStats]:
             return await manager.run_generation(
-                generation=0,
-                evaluator=mock_evaluator,
-                data=small_data,
+                generation=0, evaluator=mock_evaluator, data=small_data
             )
 
         results = asyncio.run(_run())
@@ -200,7 +207,9 @@ class TestMigration:
         edges = ring_migration(manager.islands, 2)
         assert edges == []
 
-    def test_migration_changes_population_diversity(self, genome_config: GenomeConfig, mock_evaluator: MagicMock, small_data: pl.DataFrame) -> None:
+    def test_migration_changes_population_diversity(
+        self, genome_config: GenomeConfig, mock_evaluator: MagicMock, small_data: pl.DataFrame
+    ) -> None:
         """Migration should affect population diversity when replacement is on."""
         import asyncio
 
@@ -233,7 +242,9 @@ class TestMigration:
         # The main check is that the method doesn't error
         assert isinstance(any_changed, bool)
 
-    def test_migration_policy_no_migration_when_not_due(self, genome_config: GenomeConfig, mock_evaluator: MagicMock, small_data: pl.DataFrame) -> None:
+    def test_migration_policy_no_migration_when_not_due(
+        self, genome_config: GenomeConfig, mock_evaluator: MagicMock, small_data: pl.DataFrame
+    ) -> None:
         """Migration shouldn't fire when generation is not a multiple of interval."""
         import asyncio
 
@@ -267,7 +278,9 @@ class TestMergeParetoFronts:
         # No valid fitness → empty front
         assert isinstance(front, list)
 
-    def test_merge_non_empty(self, genome_config: GenomeConfig, mock_evaluator: MagicMock, small_data: pl.DataFrame) -> None:
+    def test_merge_non_empty(
+        self, genome_config: GenomeConfig, mock_evaluator: MagicMock, small_data: pl.DataFrame
+    ) -> None:
         import asyncio
 
         manager = IslandManager(genome_config, n_islands=2, pop_size_per_island=5)
@@ -280,7 +293,9 @@ class TestMergeParetoFronts:
         for ind in front:
             assert ind.fitness.valid
 
-    def test_merge_returns_non_dominated(self, genome_config: GenomeConfig, mock_evaluator: MagicMock, small_data: pl.DataFrame) -> None:
+    def test_merge_returns_non_dominated(
+        self, genome_config: GenomeConfig, mock_evaluator: MagicMock, small_data: pl.DataFrame
+    ) -> None:
         """All returned individuals should be mutually non-dominated."""
         import asyncio
 
@@ -301,7 +316,9 @@ class TestMergeParetoFronts:
                 b_dom_a = all(bw[j] >= aw[j] for j in range(len(aw))) and any(
                     bw[j] > aw[j] for j in range(len(aw))
                 )
-                assert not (a_dom_b or b_dom_a), f"Individual {i} and {i+1} are not mutually non-dominated"
+                assert not (a_dom_b or b_dom_a), (
+                    f"Individual {i} and {i + 1} are not mutually non-dominated"
+                )
 
 
 # ── PopulationStats / compute_stats ────────────────────────────────
@@ -339,7 +356,9 @@ class TestComputeStats:
 
 
 class TestCheckpoint:
-    def test_save_checkpoint(self, genome_config: GenomeConfig, mock_evaluator: MagicMock, small_data: pl.DataFrame) -> None:
+    def test_save_checkpoint(
+        self, genome_config: GenomeConfig, mock_evaluator: MagicMock, small_data: pl.DataFrame
+    ) -> None:
         import asyncio
 
         manager = IslandManager(genome_config, n_islands=2, pop_size_per_island=5)
@@ -358,7 +377,9 @@ class TestCheckpoint:
         assert data["islands"][0]["id"] == 0
         assert data["islands"][1]["id"] == 1
 
-    def test_load_checkpoint_round_trip(self, genome_config: GenomeConfig, mock_evaluator: MagicMock, small_data: pl.DataFrame) -> None:
+    def test_load_checkpoint_round_trip(
+        self, genome_config: GenomeConfig, mock_evaluator: MagicMock, small_data: pl.DataFrame
+    ) -> None:
         import asyncio
 
         manager = IslandManager(genome_config, n_islands=2, pop_size_per_island=5)
@@ -380,7 +401,9 @@ class TestCheckpoint:
         with pytest.raises(ValueError, match="Unsupported checkpoint schema"):
             IslandManager.load_checkpoint(path, genome_config)
 
-    def test_load_checkpoint_generation_restored(self, genome_config: GenomeConfig, mock_evaluator: MagicMock, small_data: pl.DataFrame) -> None:
+    def test_load_checkpoint_generation_restored(
+        self, genome_config: GenomeConfig, mock_evaluator: MagicMock, small_data: pl.DataFrame
+    ) -> None:
         import asyncio
 
         manager = IslandManager(genome_config, n_islands=1, pop_size_per_island=5)

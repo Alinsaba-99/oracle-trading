@@ -567,6 +567,7 @@ def corr_stability(data: pl.DataFrame) -> pl.Series:
     result = -corr_vol
     return _safe_fill(result)
 
+
 def beta_60(data: pl.DataFrame) -> pl.Series:
     """60-day market beta.
 
@@ -731,11 +732,7 @@ def month_effect(data: pl.DataFrame) -> pl.Series:
         .agg(pl.col("close").pct_change().mean().alias("_month_mean"))
     )
     month_map = dict(
-        zip(
-            month_means["_month"].to_list(),
-            month_means["_month_mean"].to_list(),
-            strict=False,
-        )
+        zip(month_means["_month"].to_list(), month_means["_month_mean"].to_list(), strict=False)
     )
     month_arr = month.to_numpy()
     out = np.zeros(len(close))
@@ -763,13 +760,7 @@ def day_of_week(data: pl.DataFrame) -> pl.Series:
         .group_by("_dow")
         .agg(pl.col("close").pct_change().mean().alias("_dow_mean"))
     )
-    dow_map = dict(
-        zip(
-            dow_means["_dow"].to_list(),
-            dow_means["_dow_mean"].to_list(),
-            strict=False,
-        )
-    )
+    dow_map = dict(zip(dow_means["_dow"].to_list(), dow_means["_dow_mean"].to_list(), strict=False))
     dow_arr = dow.to_numpy()
     out = np.zeros(len(close))
     for d, mean_val in dow_map.items():
@@ -796,13 +787,7 @@ def quarter_effect(data: pl.DataFrame) -> pl.Series:
         .group_by("_q")
         .agg(pl.col("close").pct_change().mean().alias("_q_mean"))
     )
-    q_map = dict(
-        zip(
-            q_means["_q"].to_list(),
-            q_means["_q_mean"].to_list(),
-            strict=False,
-        )
-    )
+    q_map = dict(zip(q_means["_q"].to_list(), q_means["_q_mean"].to_list(), strict=False))
     q_arr = quarter.to_numpy()
     out = np.zeros(len(close))
     for q, mean_val in q_map.items():

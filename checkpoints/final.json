@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generation": 6,
+  "generation": 4,
   "n_islands": 1,
-  "pop_size_per_island": 6,
+  "pop_size_per_island": 4,
   "seed": 42,
   "islands": [
     {
       "id": 0,
-      "generation": 6,
+      "generation": 4,
       "population": [
         {
           "values": [
@@ -16,10 +16,10 @@
           ],
           "fitness": {
             "values": [
-              -1000000.0,
-              -1000000.0,
-              -1000000.0,
-              1000000.0
+              -1.0,
+              -1.0,
+              -1.0,
+              1.0
             ],
             "weights": [
               1.0,
@@ -31,55 +31,15 @@
         },
         {
           "values": [
-            0.8921795677048454,
-            0.08693883262941615
-          ],
-          "fitness": {
-            "values": [
-              -1000000.0,
-              -1000000.0,
-              -1000000.0,
-              1000000.0
-            ],
-            "weights": [
-              1.0,
-              1.0,
-              1.0,
-              -1.0
-            ]
-          }
-        },
-        {
-          "values": [
-            0.8921795677048454,
-            0.02534118034715597
-          ],
-          "fitness": {
-            "values": [
-              -1000000.0,
-              -1000000.0,
-              -1000000.0,
-              1000000.0
-            ],
-            "weights": [
-              1.0,
-              1.0,
-              1.0,
-              -1.0
-            ]
-          }
-        },
-        {
-          "values": [
-            0.6394267984578837,
+            0.63931869178824,
             0.025010755222666936
           ],
           "fitness": {
             "values": [
-              -1000000.0,
-              -1000000.0,
-              -1000000.0,
-              1000000.0
+              -1.0,
+              -1.0,
+              -1.0,
+              1.0
             ],
             "weights": [
               1.0,
@@ -91,15 +51,15 @@
         },
         {
           "values": [
-            0.8921795677048454,
-            0.08693883262941615
+            0.6370370374105023,
+            0.6766994874229113
           ],
           "fitness": {
             "values": [
-              -1000000.0,
-              -1000000.0,
-              -1000000.0,
-              1000000.0
+              -1.0,
+              -1.0,
+              -1.0,
+              1.0
             ],
             "weights": [
               1.0,
@@ -111,15 +71,15 @@
         },
         {
           "values": [
-            0.6394267984578837,
-            0.023801721198512295
+            0.7364712141640124,
+            0.6766994874229113
           ],
           "fitness": {
             "values": [
-              -1000000.0,
-              -1000000.0,
-              -1000000.0,
-              1000000.0
+              -1.0,
+              -1.0,
+              -1.0,
+              1.0
             ],
             "weights": [
               1.0,
@@ -141,24 +101,24 @@
     "n_params": 2,
     "param_defs": [
       {
-        "type": "ContinuousParameter",
-        "name": "entry_threshold",
-        "low": "0.5",
-        "high": "3.0",
-        "init_range": "(0.0, 1.0)",
+        "type": "IntParameter",
+        "name": "knn_k",
+        "low": "3",
+        "high": "20",
+        "init_range": "(0, 1)",
         "scaling": "linear",
         "mutation_step_size": "None"
       },
       {
         "type": "ContinuousParameter",
-        "name": "exit_threshold",
+        "name": "hybrid_knn_w",
         "low": "0.0",
-        "high": "1.5",
+        "high": "1.0",
         "init_range": "(0.0, 1.0)",
         "scaling": "linear",
         "mutation_step_size": "None"
       }
     ]
   },
-  "signal_type": "pair"
+  "signal_type": "hybrid"
 }

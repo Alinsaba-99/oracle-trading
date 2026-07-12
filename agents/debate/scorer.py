@@ -7,9 +7,7 @@ from typing import Any
 
 from agents.protocol import AgentVote, AnalystSignal
 
-__all__ = [
-    "DebateScorer",
-]
+__all__ = ["DebateScorer"]
 
 
 class DebateScorer:
@@ -72,10 +70,7 @@ class DebateScorer:
         return min(covered / 4.0, 1.0)
 
     @staticmethod
-    def _evidence_use(
-        round_1: dict[str, Any],
-        round_2: dict[str, Any] | None,
-    ) -> float:
+    def _evidence_use(round_1: dict[str, Any], round_2: dict[str, Any] | None) -> float:
         """Score (0-1) based on number of distinct indicators cited."""
         indicators: set[str] = set()
 
@@ -103,10 +98,7 @@ class DebateScorer:
         return 0.0
 
     @staticmethod
-    def _consensus_distance(
-        signals: list[AnalystSignal],
-        consensus: AgentVote | None,
-    ) -> float:
+    def _consensus_distance(signals: list[AnalystSignal], consensus: AgentVote | None) -> float:
         """Score (0-1): closer votes / reached consensus = higher score."""
         if not signals:
             return 0.0

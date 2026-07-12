@@ -15,7 +15,6 @@ from genetics.genome.parameters import ContinuousParameter
 from genetics.genome.signal import GenomeConfig
 
 if TYPE_CHECKING:
-
     from genetics.genome.parameters import GenomeParameter
 
 
@@ -90,10 +89,7 @@ class TestEngineInit:
 
 class TestEngineRun:
     def test_run_produces_ga_result(
-        self,
-        ga_config: GAConfig,
-        small_data: pl.DataFrame,
-        mock_evaluator: MagicMock,
+        self, ga_config: GAConfig, small_data: pl.DataFrame, mock_evaluator: MagicMock
     ) -> None:
         """run() returns a GAResult with valid fields."""
         import asyncio
@@ -110,10 +106,7 @@ class TestEngineRun:
         assert result.n_fitness_evaluations > 0
 
     def test_run_generations_log_length(
-        self,
-        ga_config: GAConfig,
-        small_data: pl.DataFrame,
-        mock_evaluator: MagicMock,
+        self, ga_config: GAConfig, small_data: pl.DataFrame, mock_evaluator: MagicMock
     ) -> None:
         """The generations log should have one entry per generation."""
         import asyncio
@@ -126,10 +119,7 @@ class TestEngineRun:
         assert len(result.generations_log) == ga_config.generations
 
     def test_run_checkpoint_paths(
-        self,
-        ga_config: GAConfig,
-        small_data: pl.DataFrame,
-        mock_evaluator: MagicMock,
+        self, ga_config: GAConfig, small_data: pl.DataFrame, mock_evaluator: MagicMock
     ) -> None:
         """Checkpoints should be created at the configured interval."""
         import asyncio
@@ -143,10 +133,7 @@ class TestEngineRun:
         assert any("final" in p for p in result.checkpoint_paths)
 
     def test_run_pareto_front_populated(
-        self,
-        ga_config: GAConfig,
-        small_data: pl.DataFrame,
-        mock_evaluator: MagicMock,
+        self, ga_config: GAConfig, small_data: pl.DataFrame, mock_evaluator: MagicMock
     ) -> None:
         """The Pareto front should have at least one individual."""
         import asyncio
@@ -166,10 +153,7 @@ class TestEngineRun:
 
 class TestCheckpointRestore:
     def test_save_and_restore_round_trip(
-        self,
-        genome_config: GenomeConfig,
-        small_data: pl.DataFrame,
-        mock_evaluator: MagicMock,
+        self, genome_config: GenomeConfig, small_data: pl.DataFrame, mock_evaluator: MagicMock
     ) -> None:
         """Checkpoint save → restore returns engine with matching state."""
         config = GAConfig(
@@ -198,10 +182,7 @@ class TestCheckpointRestore:
         assert restored.island_manager is not None
         assert restored.island_manager.generation >= 1
 
-    def test_restore_wrong_schema(
-        self,
-        genome_config: GenomeConfig,
-    ) -> None:
+    def test_restore_wrong_schema(self, genome_config: GenomeConfig) -> None:
         """Restoring from a corrupted/malformed checkpoint raises ValueError."""
         with tempfile.NamedTemporaryFile(suffix=".json", mode="w", delete=False) as f:
             json.dump({"schema_version": 999, "generation": 0}, f)
@@ -216,10 +197,7 @@ class TestCheckpointRestore:
             GeneticEngine.restore("/nonexistent/checkpoint.json", genome_config)
 
     def test_resume_skips_completed_generations(
-        self,
-        genome_config: GenomeConfig,
-        small_data: pl.DataFrame,
-        mock_evaluator: MagicMock,
+        self, genome_config: GenomeConfig, small_data: pl.DataFrame, mock_evaluator: MagicMock
     ) -> None:
         """Resuming from checkpoint should skip already-complete generations."""
         config = GAConfig(

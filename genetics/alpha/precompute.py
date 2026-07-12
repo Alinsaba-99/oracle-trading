@@ -62,9 +62,7 @@ class FactorPrecomputer:
         max_cache_size: Maximum number of cache entries (default 100).
     """
 
-    def __init__(
-        self, library: CuratedAlphaLibrary, max_cache_size: int = 100
-    ) -> None:
+    def __init__(self, library: CuratedAlphaLibrary, max_cache_size: int = 100) -> None:
         self._library = library
         self._max_cache_size = max(1, max_cache_size)
         self._cache: FactorCache = OrderedDict()

@@ -1,4 +1,5 @@
 """Pair trading — cointegration test + spread signal."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -20,9 +21,7 @@ class CointegrationResult:
     is_cointegrated: bool  # pvalue < 0.05
 
 
-def compute_cointegration(
-    asset_a: pl.Series, asset_b: pl.Series,
-) -> CointegrationResult:
+def compute_cointegration(asset_a: pl.Series, asset_b: pl.Series) -> CointegrationResult:
     """Test di cointegrazione Engle-Granger tra due serie di prezzi.
 
     Args:
@@ -48,11 +47,7 @@ def compute_cointegration(
     return CointegrationResult(
         score=float(score),
         pvalue=float(pvalue),
-        critical_values={
-            "1%": float(crit[0]),
-            "5%": float(crit[1]),
-            "10%": float(crit[2]),
-        },
+        critical_values={"1%": float(crit[0]), "5%": float(crit[1]), "10%": float(crit[2])},
         hedge_ratio=float(beta),
         spread=pl.Series("spread", spread, dtype=pl.Float64),
         is_cointegrated=pvalue < 0.05,
@@ -116,10 +111,7 @@ def spread_zscore(
     return pl.Series("signal", signal, dtype=pl.Int8)
 
 
-def build_pair_df(
-    data_a: pl.DataFrame,
-    data_b: pl.DataFrame,
-) -> pl.DataFrame:
+def build_pair_df(data_a: pl.DataFrame, data_b: pl.DataFrame) -> pl.DataFrame:
     """Allinea due DataFrame per data e calcola spread.
 
     Args:

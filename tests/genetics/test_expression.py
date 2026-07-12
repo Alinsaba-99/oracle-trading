@@ -1,4 +1,5 @@
 """Tests for expression-based alpha — parser and evaluator."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -14,7 +15,6 @@ from genetics.alpha.expression import (
     expression_depth,
     parse_expression,
 )
-
 
 # ---------------------------------------------------------------------------
 # Parser tests
@@ -106,13 +106,15 @@ def test_string_roundtrip():
 def _sample_data(n: int = 100) -> pl.DataFrame:
     rng = np.random.default_rng(42)
     close = 100.0 + np.arange(n) * 0.05 + rng.normal(0, 0.5, n)
-    return pl.DataFrame({
-        "open": close - 0.1,
-        "high": close + 0.3,
-        "low": close - 0.3,
-        "close": close,
-        "volume": np.abs(rng.normal(1e6, 1e5, n)),
-    })
+    return pl.DataFrame(
+        {
+            "open": close - 0.1,
+            "high": close + 0.3,
+            "low": close - 0.3,
+            "close": close,
+            "volume": np.abs(rng.normal(1e6, 1e5, n)),
+        }
+    )
 
 
 @pytest.fixture
@@ -122,13 +124,14 @@ def sample_data() -> pl.DataFrame:
 
 def _make_op_map():
     """Minimal operator map for testing."""
+
     def ts_mean(x, d):
         d = int(d)
         n = len(x)
         result = np.zeros(n)
         for i in range(n):
             start = max(0, i - d + 1)
-            result[i] = np.nanmean(x[start:i+1])
+            result[i] = np.nanmean(x[start : i + 1])
         return result
 
     def ts_std(x, d):
@@ -137,11 +140,15 @@ def _make_op_map():
         result = np.ones(n)
         for i in range(1, n):
             start = max(0, i - d + 1)
-            s = np.nanstd(x[start:i+1])
+            s = np.nanstd(x[start : i + 1])
             result[i] = s if s > 1e-10 else 1.0
         return result
 
-    return {"ts_mean": ts_mean, "ts_std": ts_std, "rank": lambda x: (x - np.nanmin(x)) / (np.nanmax(x) - np.nanmin(x) + 1e-10)}
+    return {
+        "ts_mean": ts_mean,
+        "ts_std": ts_std,
+        "rank": lambda x: (x - np.nanmin(x)) / (np.nanmax(x) - np.nanmin(x) + 1e-10),
+    }
 
 
 def test_evaluate_leaf(sample_data):

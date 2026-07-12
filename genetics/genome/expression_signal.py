@@ -4,16 +4,16 @@ Bridges the expression-based alpha system with the GA pipeline:
 an expression string is stored in the genome, parsed into an ExprNode
 AST, and evaluated using the operator library.
 """
+
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any
 
 import numpy as np
 import polars as pl
 
-from genetics.genome.signal import Genome
 from genetics.genome.parameters import GenomeParameter
+from genetics.genome.signal import Genome
 
 
 class ExpressionGenomeToSignal:
@@ -61,7 +61,7 @@ class ExpressionGenomeToSignal:
             return pl.Series("signal", [0] * n, dtype=pl.Int8)
 
 
-def encode_expression(expr_str: str, genome_len: int = 1) -> Genome:
+def encode_expression(expr_str: str, genome_len: int = 1) -> Genome:  # noqa: ARG001 -> Genome:
     """Encode an expression string into a Genome suitable for GA.
 
     Uses a hash of the string to create a seed genome with known params.
@@ -71,7 +71,5 @@ def encode_expression(expr_str: str, genome_len: int = 1) -> Genome:
 
     # Store the expression as a categorical parameter
     raw = {"expression": expr_str}
-    param_defs = [
-        CategoricalParameter("expression", categories=[expr_str]),
-    ]
+    param_defs = [CategoricalParameter("expression", categories=[expr_str])]
     return encode(raw, param_defs)
