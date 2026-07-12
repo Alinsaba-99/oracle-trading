@@ -1,4 +1,5 @@
-from apps.api.config import APISettings
-from apps.api.main import app
+"""Oracle Dashboard API."""
 
-__all__ = ["APISettings", "app"]
+from apps.api.config import APISettings
+
+__all__ = ["APISettings"]

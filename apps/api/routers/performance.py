@@ -1,26 +1,41 @@
+"""Performance metrics endpoints."""
+from __future__ import annotations
+
 from fastapi import APIRouter
+
+from apps.api.services.checkpoint_reader import (
+    get_equity_curve,
+    get_latest_run_summary,
+)
 
 router = APIRouter(prefix="/performance", tags=["performance"])
 
+
 @router.get("/summary")
 async def get_summary():
-    """Return current performance metrics."""
-    # TODO: read from latest checkpoint or BacktestResult
-    return {
-        "sharpe": 1.24,
-        "sortino": 0.89,
-        "calmar": 1.67,
-        "max_drawdown": 0.123,
-        "profit_factor": 1.50,
-        "cagr": 0.086,
-        "total_return": 0.29,
-    }
+    """Return performance metrics from latest GA run."""
+    summary = get_latest_run_summary()
+    if summary is None:
+        return {
+            "sharpe": 0.0,
+            "sortino": 0.0,
+            "calmar": 0.0,
+            "max_drawdown": 0.0,
+            "profit_factor": 0.0,
+            "cagr": 0.0,
+            "total_return": 0.0,
+            "run_id": "",
+            "run_seed": 0,
+            "run_generations": 0,
+        }
+    return summary
+
 
 @router.get("/equity")
 async def get_equity():
-    """Return equity curve data."""
-    # TODO: read from latest checkpoint
-    return {"points": []}
+    """Return equity curve (currently placeholder)."""
+    return {"points": get_equity_curve()}
+
 
 @router.get("/today")
 async def get_today():
