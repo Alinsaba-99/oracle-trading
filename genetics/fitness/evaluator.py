@@ -164,7 +164,9 @@ class FitnessEvaluator:
             if constrained != fitness:
                 fitness = constrained
 
-        except Exception:
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
             return _FAILED_FITNESS
 
         # ── cache the result ─────────────────────────────────────
@@ -273,10 +275,9 @@ def _apply_constraints(
     total_trades: int,
     min_trades: int,
 ) -> FitnessValue:
-    """Apply constraints to a fitness tuple: min trades, CAGR, PF, MaxDD.
+    """Apply constraints: min trades, CAGR (soft), MaxDD (hard), PF (soft).
 
-    Returns modified fitness if soft constraints are violated, or
-    ``_EMPTY_FITNESS`` for hard constraint violations.
+    Returns modified fitness or ``_EMPTY_FITNESS`` for hard violations.
     """
     # ── Hard: min trades sentinel ──────────────────────────────────
     if total_trades < min_trades:
@@ -285,21 +286,17 @@ def _apply_constraints(
     sharpe, sortino, calmar, maxdd = fitness
 
     # ── Hard: MaxDD cap ────────────────────────────────────────────
-    # Drawdown > 25 % → degenerate strategy; reject outright.
-    # This prevents GA from finding high-risk strategies that
-    # achieve extreme Sharpe on short walkforward folds.
-    if maxdd > 0.25:
+    if maxdd > 0.50:
         return _EMPTY_FITNESS
 
-    # ── Hard: negative CAGR → degenerate ───────────────────────────
+    # ── Soft: CAGR multiplier ──────────────────────────────────────
     cagr = combined.get("cagr_mean")
-    if cagr is not None and cagr <= 0.0:
-        return _EMPTY_FITNESS
-
-    # ── Soft: CAGR multiplier (linear penalty below 5 %) ───────────
     cagr_mult = 1.0
-    if cagr is not None and cagr < 0.05:
-        cagr_mult = cagr / 0.05
+    if cagr is not None:
+        if cagr <= 0.0:
+            cagr_mult = 0.01  # severe penalty (×0.01) but not fatal
+        elif cagr < 0.05:
+            cagr_mult = cagr / 0.05  # linear penalty below 5% CAGR
 
     # ── Soft: PF multiplier (linear penalty below 1.0) ─────────────
     pf = combined.get("profit_factor_mean")

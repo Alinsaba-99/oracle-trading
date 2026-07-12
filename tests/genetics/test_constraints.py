@@ -166,20 +166,20 @@ class TestApplyConstraints:
 
 
 class TestMaxDDConstraint:
-    """MaxDD > 25 % → _EMPTY_FITNESS (hard cap)."""
+    """MaxDD > 50 % → _EMPTY_FITNESS (hard cap)."""
 
     def test_maxdd_above_cap_rejected(self) -> None:
-        """MaxDD 42 % → rejected."""
+        """MaxDD 60 % → rejected (above 50% cap)."""
         result = _apply_constraints(
-            fitness=(1.0, 2.0, 3.0, 0.42),
+            fitness=(1.0, 2.0, 3.0, 0.60),
             combined={"cagr_mean": 0.10, "profit_factor_mean": 1.5},
             total_trades=15,
             min_trades=10,
         )
         assert result == _EMPTY_FITNESS
 
-    def test_maxdd_at_cap_accepted(self) -> None:
-        """MaxDD exactly 25 % → accepted (boundary)."""
+    def test_maxdd_at_old_cap_still_accepted(self) -> None:
+        """MaxDD 25 % is now below the 50% cap → accepted."""
         result = _apply_constraints(
             fitness=(1.0, 2.0, 3.0, 0.25),
             combined={"cagr_mean": 0.10, "profit_factor_mean": 1.5},
@@ -198,22 +198,22 @@ class TestMaxDDConstraint:
         )
         assert result == (1.0, 2.0, 3.0, 0.10)
 
-    def test_negative_cagr_rejected(self) -> None:
-        """Negative CAGR → rejected regardless of Sharpe."""
+    def test_negative_cagr_penalty(self) -> None:
+        """Negative CAGR → soft penalty (×0.01), not fatal."""
         result = _apply_constraints(
             fitness=(5.0, 5.0, 5.0, 0.10),
             combined={"cagr_mean": -0.02, "profit_factor_mean": 1.5},
             total_trades=15,
             min_trades=10,
         )
-        assert result == _EMPTY_FITNESS
+        assert result == (0.05, 0.05, 0.05, 0.10)
 
-    def test_zero_cagr_rejected(self) -> None:
-        """CAGR exactly 0 % → rejected."""
+    def test_zero_cagr_penalty(self) -> None:
+        """CAGR exactly 0 % → soft penalty (×0.01)."""
         result = _apply_constraints(
             fitness=(5.0, 5.0, 5.0, 0.10),
             combined={"cagr_mean": 0.0, "profit_factor_mean": 1.5},
             total_trades=15,
             min_trades=10,
         )
-        assert result == _EMPTY_FITNESS
+        assert result == (0.05, 0.05, 0.05, 0.10)
