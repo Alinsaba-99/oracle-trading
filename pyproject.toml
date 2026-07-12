@@ -23,6 +23,10 @@ dependencies = [
     "opentelemetry-exporter-otlp>=1.24",
     "langgraph>=0.1",
     "langchain-community>=0.2",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic-settings>=2.5",
+    "sse-starlette>=2.1",
 ]
 
 [project.scripts]
@@ -156,7 +160,7 @@ exclude_also = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["core*", "market*", "analytics*", "execution*", "genetics*", "research*", "agents*", "audit*", "policy*", "orchestration*"]
+include = ["core*", "market*", "analytics*", "execution*", "genetics*", "research*", "agents*", "audit*", "policy*", "orchestration*", "apps*"]
 exclude = ["tests*"]
 
 [build-system]
