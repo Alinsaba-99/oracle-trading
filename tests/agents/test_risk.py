@@ -207,9 +207,17 @@ class TestApprove:
 class TestCorrelationCheck:
     """Correlation threshold check."""
 
-    def test_always_passes(self) -> None:
-        """Current implementation always returns True."""
+    def test_no_correlation_data_passes(self) -> None:
+        """No entries for the instrument → passes (no correlation found)."""
         assert RiskManager.correlation_check({"SPY": 0.9}, "QQQ")
+
+    def test_high_correlation_rejected(self) -> None:
+        """Correlation above threshold → rejected."""
+        assert not RiskManager.correlation_check({"SPY:QQQ": 0.85}, "QQQ")
+
+    def test_low_correlation_passes(self) -> None:
+        """Correlation below threshold → passes."""
+        assert RiskManager.correlation_check({"SPY:QQQ": 0.3}, "QQQ")
 
 
 class TestHelpers:

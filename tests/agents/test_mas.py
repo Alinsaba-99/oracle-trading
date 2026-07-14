@@ -209,6 +209,77 @@ class TestMASOrchestrator:
         assert decision["direction"] == "buy"
         assert decision["position_size"] == 100.0
 
+    async def test_run_submits_order_when_bridge_and_manager_present(self) -> None:
+        mock_engine = AsyncMock(spec=WorkflowEngine)
+        mock_engine.run.return_value = {
+            "decision": {
+                "direction": "buy",
+                "instrument": "SPY",
+                "position_size": 1.5,
+                "confidence": 0.85,
+                "reasoning": "Strong signals.",
+                "agents_contributing": ["macro"],
+                "regime_at_decision": "bull",
+                "risk_approved": True,
+                "escalated": False,
+            }
+        }
+        mock_bridge = MagicMock()
+        mock_request = MagicMock()
+        mock_bridge.to_order_request.return_value = mock_request
+        mock_manager = MagicMock()
+        mock_manager.submit = AsyncMock(return_value={"status": "submitted"})
+
+        orch = MASOrchestrator(
+            engine=mock_engine,
+            bridge=mock_bridge,
+            order_manager=mock_manager,
+        )
+        decision = await orch.run(market_data="mock", instrument="SPY")
+
+        assert decision is not None
+        mock_bridge.to_order_request.assert_called_once()
+        mock_manager.submit.assert_awaited_once_with(mock_request)
+        assert orch.last_order_request is mock_request
+        assert orch.last_order_result == {"status": "submitted"}
+        assert orch.last_result is not None
+        assert orch.last_result["order_result"] == {"status": "submitted"}
+
+    async def test_run_does_not_submit_hold_decision(self) -> None:
+        mock_engine = AsyncMock(spec=WorkflowEngine)
+        mock_engine.run.return_value = {
+            "decision": {
+                "direction": "hold",
+                "instrument": "SPY",
+                "position_size": 0.0,
+                "confidence": 0.2,
+                "reasoning": "No edge.",
+                "agents_contributing": ["macro"],
+                "regime_at_decision": "neutral",
+                "risk_approved": True,
+                "escalated": False,
+            }
+        }
+        mock_bridge = MagicMock()
+        mock_bridge.to_order_request.return_value = None
+        mock_manager = MagicMock()
+        mock_manager.submit = AsyncMock()
+
+        orch = MASOrchestrator(
+            engine=mock_engine,
+            bridge=mock_bridge,
+            order_manager=mock_manager,
+        )
+        decision = await orch.run(market_data="mock", instrument="SPY")
+
+        assert decision is not None
+        mock_bridge.to_order_request.assert_called_once()
+        mock_manager.submit.assert_not_awaited()
+        assert orch.last_order_request is None
+        assert orch.last_order_result is None
+        assert orch.last_result is not None
+        assert "order_result" not in orch.last_result
+
     async def test_last_result_property(self) -> None:
         mock_engine = AsyncMock(spec=WorkflowEngine)
         mock_engine.run.return_value = {"decision": "mock_decision"}

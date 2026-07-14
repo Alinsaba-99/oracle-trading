@@ -29,6 +29,10 @@ venv/
 # Docker
 docker/data/
 
+# Generated backtest results + cached FX data (Fase 3/4)
+results/
+data/ohlcv/
+
 # Experiment artifacts
 experiments/*/
 

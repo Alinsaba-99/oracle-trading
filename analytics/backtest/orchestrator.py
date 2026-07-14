@@ -19,6 +19,7 @@ from analytics.backtest.data import BacktestDataProvider
 from analytics.backtest.engines.vectorized import VectorizedEngine
 from analytics.backtest.protocol import BacktestSignal
 from analytics.backtest.result import BacktestResult
+from analytics.backtest.store import BacktestResultStore
 from analytics.backtest.walk_forward import WalkForwardEngine
 from core.domain.experiment import ExperimentContext, ExperimentRegistry
 from core.logging import get_logger
@@ -94,6 +95,16 @@ class BacktestOrchestrator:
         result.engine = engine
 
         self._log_experiment(result)
+        # Persist the full result (equity curve + trades + all metrics) so
+        # the dashboard API can serve real numbers instead of placeholders.
+        try:
+            BacktestResultStore().save(result)
+        except OSError as exc:
+            logger.warning(
+                "backtest.orchestrator.save_failed",
+                run_id=result.run_id,
+                error=str(exc),
+            )
         self._run_count += 1
         logger.info(
             "backtest.orchestrator.run.completed",

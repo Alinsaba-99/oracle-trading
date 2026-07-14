@@ -6,6 +6,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from analytics.backtest.store import (
+    BacktestResultStore,
+    to_equity_points,
+    to_performance_summary,
+)
+
 
 @dataclass
 class ParetoIndividual:
@@ -58,12 +64,12 @@ def _read_checkpoint(path: Path) -> dict[str, Any] | None:
     """Read a single checkpoint JSON file."""
     try:
         with open(path) as f:
-            return json.load(f)
+            return dict(json.load(f))
     except (json.JSONDecodeError, OSError):
         return None
 
 
-def _decode_params(values: list[float], param_defs: list[dict]) -> dict[str, float]:
+def _decode_params(values: list[float], param_defs: list[dict[str, Any]]) -> dict[str, float]:
     """Decode normalized parameters back to raw values."""
     params: dict[str, float] = {}
     for i, v in enumerate(values):
@@ -219,7 +225,17 @@ def get_ga_run(run_id: str) -> GARun | None:
 
 
 def get_latest_run_summary() -> dict[str, Any] | None:
-    """Get performance summary from the most recent checkpoint."""
+    """Get performance summary — prefer a real persisted BacktestResult.
+
+    When a :class:`BacktestResult` has been persisted (by the backtest
+    orchestrator), every field reflects an actual backtest — no
+    placeholder zeros.  Falls back to the GA-checkpoint-derived summary
+    (partial metrics) only when no real result exists yet.
+    """
+    result = BacktestResultStore().load_latest()
+    if result is not None:
+        return to_performance_summary(result)
+
     runs = list_ga_runs()
     if not runs:
         return None
@@ -245,8 +261,11 @@ def get_latest_run_summary() -> dict[str, Any] | None:
 
 
 def get_equity_curve() -> list[dict[str, float]]:
-    """Return equity curve data (currently empty — BacktestResult not persisted).
+    """Return equity curve — from a persisted BacktestResult when available.
 
-    TODO: When BacktestResult is saved alongside checkpoints, read from it.
+    Returns an empty list when no real backtest has been persisted yet.
     """
+    result = BacktestResultStore().load_latest()
+    if result is not None and result.equity_curve:
+        return to_equity_points(result)
     return []

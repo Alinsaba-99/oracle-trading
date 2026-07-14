@@ -33,28 +33,27 @@ class EquityCurve(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class TradeModel(BaseModel):
-    """Trade record."""
+class ExperimentResult(BaseModel):
+    """Fold-level backtest result from experiments.db."""
     time: str
-    asset: str
-    side: str
-    qty: float
-    price: float
-    pnl: float
-    status: str
-    trade_id: str
+    experiment_id: str
+    fold: str
+    engine: str
+    total_return: float
+    sharpe_ratio: float
 
     model_config = {"from_attributes": True}
 
 
-class TradeList(BaseModel):
-    """Paginated trade list."""
-    items: list[TradeModel]
+class ExperimentList(BaseModel):
+    """Paginated experiment result list."""
+    items: list[ExperimentResult]
     total: int
     limit: int
     offset: int
 
     model_config = {"from_attributes": True}
+
 
 
 class PositionModel(BaseModel):
@@ -86,8 +85,8 @@ class GARunDetail(BaseModel):
     run_id: str
     seed: int
     status: str
-    pareto_front: list
-    convergence: list
-    best_params: dict
+    pareto_front: list[dict[str, float]]
+    convergence: list[dict[str, float]]
+    best_params: dict[str, float]
 
     model_config = {"from_attributes": True}

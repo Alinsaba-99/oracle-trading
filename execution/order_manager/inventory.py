@@ -11,10 +11,14 @@ from execution.order_manager.types import FillReport
 class InventoryTracker:
     """Track open positions and P&L."""
 
-    def __init__(self) -> None:
+    def __init__(self, daily_loss_limit: float = -10000.0) -> None:
         self._positions: dict[str, dict[str, Any]] = {}
         self._daily_pnl: float = 0.0
-        self._daily_loss_limit: float = -10000.0
+        #: Account is "breached" when daily P&L falls below this (negative)
+        #: threshold.  In prop-firm mode this is wired to the
+        #: :class:`~policy.prop_firm.PropFirmRiskGovernor`'s daily-loss budget;
+        #: the default keeps legacy behaviour.
+        self._daily_loss_limit: float = daily_loss_limit
 
     def update(self, order: Any, fill: FillReport) -> None:
         """Update position from a fill event."""

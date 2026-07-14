@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings
 
 class APISettings(BaseSettings):
     """API configuration."""
-    api_key: str = "oracle-dev-key"  # override via ORACLE_API_KEY env
+    api_key: str = ""
     host: str = "0.0.0.0"
     port: int = 8000
     debug: bool = True

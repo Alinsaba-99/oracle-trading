@@ -81,31 +81,87 @@ class RiskManager:
     ) -> bool:
         """Check instrument correlation against existing positions.
 
-        Returns False if any existing position has correlation > threshold.
-        Current implementation always passes.
+        ``corr_matrix`` maps ``"INSTRUMENT_A:INSTRUMENT_B"`` (or just
+        ``"INSTRUMENT_A"`` when the key represents the correlation of
+        *instrument* against an existing position) to a correlation
+        coefficient in ``[-1, 1]``.
+
+        Returns ``False`` if any correlation with *instrument* exceeds
+        *threshold* in absolute value.
         """
-        _ = corr_matrix, instrument, threshold  # consumed when implemented
+        for key, coeff in corr_matrix.items():
+            if instrument not in key and key != instrument:
+                continue
+            if abs(coeff) > threshold:
+                return False
         return True
 
     def approve(
         self, decision: PortfolioDecision, portfolio: dict[str, object] | None = None
     ) -> RiskAssessment:
-        """Apply hard risk limits. Returns approved or rejected with reasons."""
-        _ = portfolio  # available for enriched checks
+        """Apply hard risk limits. Returns approved or rejected with reasons.
+
+        When *portfolio* contains historical data the metrics are computed
+        from it; otherwise sensible defaults are used.
+        """
+        pf: dict[str, object] = portfolio or {}
         reasons: list[str] = []
 
-        if decision.position_size > 0.25:
-            reasons.append("Position size exceeds 25% max")
+        raw_pct = pf.get("max_position_pct", 0.25)
+        max_pct: float = float(raw_pct) if isinstance(raw_pct, (int, float)) else 0.25
 
-        # VaR check placeholder — would use real portfolio data
-        # if decision.confidence < 0.2:
-        #     reasons.append("Confidence too low for trade")
+        # Position size limit
+        if decision.position_size > max_pct:
+            reasons.append(f"Position size exceeds {max_pct:.0%} max")
+
+        # Confidence floor
+        raw_conf = pf.get("min_confidence", 0.0)
+        min_confidence: float = float(raw_conf) if isinstance(raw_conf, (int, float)) else 0.0
+        if decision.confidence < min_confidence:
+            reasons.append(
+                f"Confidence {decision.confidence:.2f} below minimum {min_confidence:.2f}"
+            )
+
+        # VaR from portfolio returns (if provided)
+        returns = pf.get("returns", [])
+        var_95: float
+        kelly: float
+        if isinstance(returns, list) and returns:
+            var_95 = self.var(returns, alpha=0.05)
+            # Kelly from portfolio trade history (if provided)
+            trades = pf.get("trades", [])
+            if isinstance(trades, list) and trades:
+                wins = [t for t in trades if t > 0]
+                losses = [t for t in trades if t < 0]
+                if wins and losses:
+                    win_rate = len(wins) / len(trades)
+                    avg_win = sum(wins) / len(wins)
+                    avg_loss = abs(sum(losses) / len(losses))
+                    kelly = self.kelly_fraction(win_rate, avg_win, avg_loss)
+                else:
+                    kelly = 0.0
+            else:
+                kelly = 0.0
+        else:
+            var_95 = 0.0
+            kelly = 0.0
+
+        # Correlation check (if matrix provided)
+        corr_matrix = pf.get("correlations", {})
+        if (
+            isinstance(corr_matrix, dict)
+            and corr_matrix
+            and not self.correlation_check(
+                corr_matrix, decision.instrument, threshold=0.7
+            )
+        ):
+            reasons.append("Correlation with existing positions exceeds 0.7")
 
         approved = len(reasons) == 0
         return RiskAssessment(
             approved=approved,
-            max_position_size=0.25,
-            kelly_fraction=0.2,
-            var_95=-0.02,
+            max_position_size=max_pct,
+            kelly_fraction=kelly,
+            var_95=var_95,
             reasons=reasons,
         )

@@ -25,6 +25,7 @@ class PortfolioManager:
         signals: list[AnalystSignal],
         market_state: object,
         portfolio: dict[str, object] | None = None,
+        instrument: str = "SPY",
     ) -> PortfolioDecision:
         buy_w, sell_w, hold_w = self._scorer.weighted_vote(signals)
 
@@ -38,7 +39,7 @@ class PortfolioManager:
 
         decision = PortfolioDecision(
             direction=direction,  # type: ignore[arg-type]
-            instrument="SPY",
+            instrument=instrument,
             position_size=position_size,
             confidence=confidence,
             reasoning=self._build_reasoning(signals, direction),
@@ -51,14 +52,16 @@ class PortfolioManager:
         risk = self._risk.approve(decision, portfolio)
         final_direction: str = decision.direction
         final_reasoning = decision.reasoning
+        final_size = decision.position_size
         if not risk.approved:
             final_direction = "no_trade"
+            final_size = 0.0
             final_reasoning += f" | RISK REJECTED: {', '.join(risk.reasons)}"
 
         return PortfolioDecision(
             direction=final_direction,  # type: ignore[arg-type]
             instrument=decision.instrument,
-            position_size=decision.position_size,
+            position_size=final_size,
             confidence=decision.confidence,
             reasoning=final_reasoning,
             agents_contributing=decision.agents_contributing,
@@ -79,12 +82,12 @@ class PortfolioManager:
         return "\n".join(parts)
 
     @staticmethod
-    def escalate(debate: object) -> PortfolioDecision:
+    def escalate(debate: object, instrument: str = "SPY") -> PortfolioDecision:
         """Handle escalate edge from debate — produce decision with weighted vote."""
         _ = debate
         return PortfolioDecision(
             direction="hold",
-            instrument="SPY",
+            instrument=instrument,
             position_size=0.0,
             confidence=0.3,
             reasoning="Escalated — no consensus, defaulting to HOLD",

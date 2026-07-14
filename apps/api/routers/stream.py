@@ -1,3 +1,5 @@
+from collections.abc import AsyncGenerator
+
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 
@@ -5,11 +7,11 @@ router = APIRouter(prefix="/stream", tags=["stream"])
 
 
 @router.get("/positions")
-async def stream_positions(request: Request):
+async def stream_positions(request: Request) -> StreamingResponse:
     """SSE endpoint for real-time position updates."""
     from apps.api.ws import sse_manager
 
-    async def event_generator():
+    async def event_generator() -> AsyncGenerator[str, None]:
         queue = sse_manager.connect()
         try:
             while True:

@@ -5,26 +5,26 @@ export default {
   theme: {
     extend: {
       colors: {
-        border: 'hsl(240 5% 14%)',
-        background: 'hsl(240 10% 4%)',
-        foreground: 'hsl(240 10% 90%)',
+        border: 'hsl(var(--border))',
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
         muted: {
-          DEFAULT: 'hsl(240 5% 12%)',
-          foreground: 'hsl(240 5% 45%)',
+          DEFAULT: 'hsl(var(--muted))',
+          foreground: 'hsl(var(--muted-foreground))',
         },
         card: {
-          DEFAULT: 'hsl(240 5% 8%)',
-          foreground: 'hsl(240 10% 90%)',
+          DEFAULT: 'hsl(var(--card))',
+          foreground: 'hsl(var(--card-foreground))',
         },
         accent: {
-          DEFAULT: 'hsl(240 5% 16%)',
-          foreground: 'hsl(240 10% 90%)',
+          DEFAULT: 'hsl(var(--accent))',
+          foreground: 'hsl(var(--accent-foreground))',
         },
         destructive: {
-          DEFAULT: 'hsl(0 62% 30%)',
-          foreground: 'hsl(0 62% 90%)',
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))',
         },
-        ring: 'hsl(240 5% 65%)',
+        ring: 'hsl(var(--ring))',
       },
       fontFamily: {
         mono: ['JetBrains Mono', 'monospace'],

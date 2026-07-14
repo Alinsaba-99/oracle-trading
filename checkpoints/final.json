@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "generation": 4,
+  "generation": 1,
   "n_islands": 1,
-  "pop_size_per_island": 4,
+  "pop_size_per_island": 2,
   "seed": 42,
   "islands": [
     {
       "id": 0,
-      "generation": 4,
+      "generation": 1,
       "population": [
         {
           "values": [
@@ -16,10 +16,10 @@
           ],
           "fitness": {
             "values": [
-              -1.0,
-              -1.0,
-              -1.0,
-              1.0
+              0.5,
+              0.3,
+              0.4,
+              -0.1
             ],
             "weights": [
               1.0,
@@ -31,55 +31,15 @@
         },
         {
           "values": [
-            0.63931869178824,
+            0.6394267984578837,
             0.025010755222666936
           ],
           "fitness": {
             "values": [
-              -1.0,
-              -1.0,
-              -1.0,
-              1.0
-            ],
-            "weights": [
-              1.0,
-              1.0,
-              1.0,
-              -1.0
-            ]
-          }
-        },
-        {
-          "values": [
-            0.6370370374105023,
-            0.6766994874229113
-          ],
-          "fitness": {
-            "values": [
-              -1.0,
-              -1.0,
-              -1.0,
-              1.0
-            ],
-            "weights": [
-              1.0,
-              1.0,
-              1.0,
-              -1.0
-            ]
-          }
-        },
-        {
-          "values": [
-            0.7364712141640124,
-            0.6766994874229113
-          ],
-          "fitness": {
-            "values": [
-              -1.0,
-              -1.0,
-              -1.0,
-              1.0
+              0.5,
+              0.3,
+              0.4,
+              -0.1
             ],
             "weights": [
               1.0,
@@ -101,18 +61,18 @@
     "n_params": 2,
     "param_defs": [
       {
-        "type": "IntParameter",
-        "name": "knn_k",
-        "low": "3",
-        "high": "20",
-        "init_range": "(0, 1)",
+        "type": "ContinuousParameter",
+        "name": "alpha",
+        "low": "0.0",
+        "high": "1.0",
+        "init_range": "(0.0, 1.0)",
         "scaling": "linear",
         "mutation_step_size": "None"
       },
       {
         "type": "ContinuousParameter",
-        "name": "hybrid_knn_w",
-        "low": "0.0",
+        "name": "beta",
+        "low": "-1.0",
         "high": "1.0",
         "init_range": "(0.0, 1.0)",
         "scaling": "linear",
@@ -120,5 +80,5 @@
       }
     ]
   },
-  "signal_type": "hybrid"
+  "signal_type": "knn"
 }

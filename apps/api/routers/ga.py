@@ -9,13 +9,13 @@ router = APIRouter(prefix="/ga", tags=["ga"])
 
 
 @router.get("/runs")
-async def get_runs():
+async def get_runs() -> dict[str, object]:
     """List available GA runs."""
     return {"runs": list_ga_runs()}
 
 
 @router.get("/runs/{run_id}")
-async def get_run_detail(run_id: str):
+async def get_run_detail(run_id: str) -> dict[str, object]:
     """Get GA run detail with Pareto front and convergence."""
     run = get_ga_run(run_id)
     if run is None:

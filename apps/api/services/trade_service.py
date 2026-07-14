@@ -1,7 +1,8 @@
-"""Read trade data from experiments.db."""
+"""Read trade data from experiments.db with filtering."""
 from __future__ import annotations
 
 import json
+import math
 import sqlite3
 from pathlib import Path
 from typing import Any
@@ -19,27 +20,71 @@ def _get_conn() -> sqlite3.Connection | None:
     except sqlite3.Error:
         return None
 
+
+def _safe_float(val: str | float | int | None, default: float = 0.0) -> float:
+    if val is None:
+        return default
+    try:
+        v = float(val)
+        if math.isinf(v) or math.isnan(v):
+            return default
+        return v
+    except (ValueError, TypeError):
+        return default
+
+
+def _build_where(
+    engine: str | None,
+    fold: str | None,
+    from_date: str | None,
+    to_date: str | None,
+) -> tuple[str, list[str | int]]:
+    """Build WHERE clause and params from filters.
+
+    Engine/fold live inside the JSON ``data`` column as ``tags.engine``
+    and ``tags.fold`` — use json_extract at the SQL level so filtering
+    happens in the database, not in Python.
+    """
+    clauses: list[str] = []
+    params: list[str | int] = []
+
+    if engine:
+        clauses.append("json_extract(data, '$.tags.engine') = ?")
+        params.append(engine)
+
+    if fold is not None:
+        clauses.append("json_extract(data, '$.tags.fold') = ?")
+        params.append(str(fold))
+
+    if from_date:
+        clauses.append("created_at >= ?")
+        params.append(from_date)
+
+    if to_date:
+        # Include the whole ``to_date`` day
+        clauses.append("created_at <= ?")
+        params.append(f"{to_date}T23:59:59")
+
+    where = ""
+    if clauses:
+        where = "WHERE " + " AND ".join(clauses)
+
+    return where, params
+
+
 def list_trades(
     limit: int = 20,
     offset: int = 0,
-    asset: str | None = None,  # noqa: ARG001
-    side: str | None = None,  # noqa: ARG001
-    from_date: str | None = None,  # noqa: ARG001
-    to_date: str | None = None,  # noqa: ARG001
+    engine: str | None = None,
+    fold: str | None = None,
+    from_date: str | None = None,
+    to_date: str | None = None,
 ) -> dict[str, Any]:
-    """List trades from experiments.db.
+    """List trade-like records from experiments.db with optional filters.
 
-    The experiments table stores JSON blobs with fold-level metrics.
-    Individual trades are not yet persisted — this returns experimental
-    folds as pseudo-trades.
-
-    Args (future use — filtering not yet implemented):
-        limit: max results.
-        offset: pagination offset.
-        asset: filter by asset (unused).
-        side: filter by side (unused).
-        from_date: start date filter (unused).
-        to_date: end date filter (unused).
+    Each row in the experiments table represents a fold-level backtest
+    result stored as a JSON blob.  ``engine`` and ``fold`` are extracted
+    from ``tags`` inside the blob via ``json_extract`` at the SQL level.
     """
     conn = _get_conn()
     if conn is None:
@@ -47,16 +92,18 @@ def list_trades(
 
     try:
         cursor = conn.cursor()
+        where, params = _build_where(engine, fold, from_date, to_date)
 
         # Count
-        cursor.execute("SELECT COUNT(*) FROM experiments")
+        cursor.execute(f"SELECT COUNT(*) FROM experiments {where}", params)
         total = cursor.fetchone()[0]
 
         # Query rows
         cursor.execute(
-            "SELECT id, parent_id, data, created_at"
-            " FROM experiments ORDER BY created_at DESC LIMIT ? OFFSET ?",
-            (limit, offset),
+            f"SELECT id, parent_id, data, created_at"
+            f" FROM experiments {where}"
+            f" ORDER BY created_at DESC LIMIT ? OFFSET ?",
+            [*params, limit, offset],
         )
 
         items = []
@@ -73,8 +120,8 @@ def list_trades(
                 "experiment_id": data.get("experiment_id", "")[:8],
                 "fold": tags.get("fold", "?"),
                 "engine": tags.get("engine", "?"),
-                "total_return": float(tags.get("total_return", 0)),
-                "sharpe_ratio": float(tags.get("sharpe_ratio", 0)),
+                "total_return": _safe_float(tags.get("total_return")),
+                "sharpe_ratio": _safe_float(tags.get("sharpe_ratio")),
             })
 
         conn.close()
