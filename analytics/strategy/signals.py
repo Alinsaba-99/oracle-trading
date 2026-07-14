@@ -260,3 +260,8 @@ class KeltnerReversion:
 DEFAULT_STRATEGIES["roc_momentum"] = RocMomentum
 DEFAULT_STRATEGIES["zscore_reversion"] = ZscoreReversion
 DEFAULT_STRATEGIES["keltner_reversion"] = KeltnerReversion
+
+
+# R1 breadth - extended families (signals_r1) self-register into
+# DEFAULT_STRATEGIES on import. Keep LAST so the dict is populated first.
+from analytics.strategy import signals_r1 as _signals_r1  # noqa: E402,F401
