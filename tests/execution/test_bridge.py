@@ -39,7 +39,9 @@ def make_decision(**overrides: object) -> PortfolioDecision:
 
 @pytest.fixture
 def bridge() -> PortfolioBridge:
-    return PortfolioBridge()
+    risk = MagicMock()
+    risk.check_order.return_value = True
+    return PortfolioBridge(risk_manager=risk)
 
 
 @pytest.fixture
@@ -106,10 +108,14 @@ class TestDirectionConversion:
 
 
 class TestDecimalConversion:
-    """float position_size is converted to Decimal with 4 decimal places."""
+    """float position_size is treated as fraction-of-portfolio.
+
+    Default bridge uses portfolio_value=100000 and fallback price=$100,
+    so quantity = (100000 * fraction) / 100 = fraction * 1000.
+    """
 
     def test_quantity_is_decimal(self, bridge: PortfolioBridge) -> None:
-        decision = make_decision(position_size=100.0)
+        decision = make_decision(position_size=0.25)  # 25% of portfolio
         req = bridge.to_order_request(decision)
 
         assert isinstance(req.quantity, Decimal)
@@ -117,26 +123,26 @@ class TestDecimalConversion:
     def test_quantize_four_places(self, bridge: PortfolioBridge) -> None:
         decision = make_decision(position_size=0.25)
         req = bridge.to_order_request(decision)
-
-        assert str(req.quantity) == "0.2500"
+        # 0.25 * 100000 / 100 = 250.0000 shares
+        assert str(req.quantity) == "250.0000"
 
     def test_large_position(self, bridge: PortfolioBridge) -> None:
-        decision = make_decision(position_size=12345.6789)
+        decision = make_decision(position_size=1.0)  # 100% of portfolio
         req = bridge.to_order_request(decision)
-
-        assert req.quantity == Decimal("12345.6789")
+        # 1.0 * 100000 / 100 = 1000.0000 shares
+        assert req.quantity == Decimal("1000.0000")
 
     def test_integer_position(self, bridge: PortfolioBridge) -> None:
-        decision = make_decision(position_size=50.0)
+        decision = make_decision(position_size=0.05)  # 5% of portfolio
         req = bridge.to_order_request(decision)
-
+        # 0.05 * 100000 / 100 = 50.0000 shares
         assert str(req.quantity) == "50.0000"
 
     def test_small_fraction(self, bridge: PortfolioBridge) -> None:
-        decision = make_decision(position_size=0.001)
+        decision = make_decision(position_size=0.001)  # 0.1% of portfolio
         req = bridge.to_order_request(decision)
-
-        assert req.quantity == Decimal("0.0010")
+        # 0.001 * 100000 / 100 = 1.0000 share
+        assert req.quantity == Decimal("1.0000")
 
     def test_zero_position(self, bridge: PortfolioBridge) -> None:
         decision = make_decision(position_size=0.0)
@@ -207,11 +213,12 @@ class TestMetadata:
 
         assert req.source == "mas"
 
-    def test_algo_config_has_confidence(self, bridge: PortfolioBridge) -> None:
-        decision = make_decision(confidence=0.75)
+    def test_algo_config_has_confidence_and_target_value(self, bridge: PortfolioBridge) -> None:
+        decision = make_decision(confidence=0.75, position_size=0.1)  # 10% -> 10k target
         req = bridge.to_order_request(decision)
 
-        assert req.algo_config == {"confidence": 0.75}
+        assert req.algo_config["confidence"] == 0.75
+        assert "target_value" in req.algo_config
 
     def test_instrument_id_maps(self, bridge: PortfolioBridge) -> None:
         decision = make_decision(instrument="BTC/USD")
@@ -251,12 +258,17 @@ class TestRiskGate:
         assert req.side == "buy"
         risk.check_order.assert_called_once()
 
-    def test_no_risk_manager_passes_through(self, bridge: PortfolioBridge) -> None:
+    def test_risk_approves_through_bridge(self) -> None:
+        risk = MagicMock()
+        risk.check_order.return_value = True
+        bridge = PortfolioBridge(risk_manager=risk)
+
         decision = make_decision(direction="buy")
         req = bridge.to_order_request_with_risk_check(decision)
 
         assert req is not None
         assert req.side == "buy"
+        risk.check_order.assert_called_once()
 
     def test_risk_hold_decision_skips_check(self) -> None:
         risk = MagicMock()

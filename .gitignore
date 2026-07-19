@@ -35,6 +35,21 @@ data/ohlcv/
 
 # Experiment artifacts
 experiments/*/
+experiments/experiments.db
+
+# Checkpoints from GA runs
+checkpoints/legacy/
+checkpoints/pb_seed*/
+checkpoints/*.json
+
+# Agent / tooling local state
+.omx/
+.omc/
+.omo/
+.lean-ctx/
+
+# TypeScript incremental build cache
+*.tsbuildinfo
 
 # Logs
 *.log
