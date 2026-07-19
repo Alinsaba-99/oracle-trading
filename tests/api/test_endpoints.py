@@ -1,4 +1,5 @@
 """Test all API endpoints respond with correct status and shape."""
+
 from __future__ import annotations
 
 from fastapi.testclient import TestClient
@@ -91,8 +92,5 @@ class TestAuth:
     def test_wrong_key_returns_401(self, client: TestClient) -> None:
         settings = APISettings()
         if settings.api_key:
-            r = client.get(
-                "/api/v1/performance/summary",
-                headers={"X-API-Key": "wrong-key"},
-            )
+            r = client.get("/api/v1/performance/summary", headers={"X-API-Key": "wrong-key"})
             assert r.status_code == 401

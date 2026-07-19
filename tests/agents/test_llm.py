@@ -7,7 +7,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from pydantic import BaseModel
 
-from agents.llm import FallbackLLMClient, LitellmLLMClient, LLMClient, ModelCallError
+from agents.errors import ModelCallError
+from agents.llm import FallbackLLMClient, LitellmLLMClient, LLMClient
 
 # ── Fixtures ─────────────────────────────────────────────────────────────────
 

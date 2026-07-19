@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 from agents.orchestrator import (
     LangGraphWorkflowEngine,
@@ -230,11 +230,7 @@ class TestMASOrchestrator:
         mock_manager = MagicMock()
         mock_manager.submit = AsyncMock(return_value={"status": "submitted"})
 
-        orch = MASOrchestrator(
-            engine=mock_engine,
-            bridge=mock_bridge,
-            order_manager=mock_manager,
-        )
+        orch = MASOrchestrator(engine=mock_engine, bridge=mock_bridge, order_manager=mock_manager)
         decision = await orch.run(market_data="mock", instrument="SPY")
 
         assert decision is not None
@@ -265,11 +261,7 @@ class TestMASOrchestrator:
         mock_manager = MagicMock()
         mock_manager.submit = AsyncMock()
 
-        orch = MASOrchestrator(
-            engine=mock_engine,
-            bridge=mock_bridge,
-            order_manager=mock_manager,
-        )
+        orch = MASOrchestrator(engine=mock_engine, bridge=mock_bridge, order_manager=mock_manager)
         decision = await orch.run(market_data="mock", instrument="SPY")
 
         assert decision is not None

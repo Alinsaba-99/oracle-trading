@@ -14,15 +14,61 @@ from policy.prop_firm import (
     THE5ERS,
     BreachType,
     ChallengeStatus,
-    PropFirmProfile,
+    DrawdownMode,
+    FirmProgramProfile,
     PropFirmRiskGovernor,
+    SupportMode,
 )
 
 INITIAL = 100_000.0
 
 
-def _gov(profile: PropFirmProfile = THE5ERS, balance: float = INITIAL) -> PropFirmRiskGovernor:
+def _make_profile(
+    *,
+    profit_target_pct: float = 0.10,
+    max_daily_loss_pct: float = 0.03,
+    max_overall_loss_pct: float = 0.06,
+    dd_mode: str = "static",
+    consistency_pct: float = 0.0,
+    min_trading_days: int = 0,
+    min_profitable_days: int = 0,
+    support_mode: str = "research_only",
+) -> FirmProgramProfile:
+    """Minimal profile factory for governor tests."""
+    return FirmProgramProfile(
+        firm="Test",
+        program="Test",
+        stage="evaluation",
+        platform="test",
+        account_size=INITIAL,
+        rule_version="1.0",
+        effective_from="2026-01-01",
+        source_url="https://test.example.com",
+        source_checked_at="2026-07-17",
+        support_mode=SupportMode(support_mode),
+        profit_target_pct=profit_target_pct,
+        max_daily_loss_pct=max_daily_loss_pct,
+        max_overall_loss_pct=max_overall_loss_pct,
+        dd_mode=DrawdownMode(dd_mode),
+        consistency_pct=consistency_pct,
+        min_trading_days=min_trading_days,
+        min_profitable_days=min_profitable_days,
+    )
+
+
+Prof = _make_profile  # shorthand
+
+
+def _gov(profile: FirmProgramProfile = THE5ERS, balance: float = INITIAL) -> PropFirmRiskGovernor:
     return PropFirmRiskGovernor(profile, initial_balance=balance)
+
+
+def _auto_gov(balance: float = INITIAL) -> PropFirmRiskGovernor:
+    """Governor with AUTO_SUPPORTED profile for gate tests."""
+    p = _make_profile(
+        support_mode="auto_supported", max_daily_loss_pct=0.03, max_overall_loss_pct=0.06
+    )
+    return PropFirmRiskGovernor(p, initial_balance=balance)
 
 
 class TestProfile:
@@ -32,7 +78,7 @@ class TestProfile:
         assert THE5ERS.max_overall_loss_pct == 0.06
 
     def test_lucid_marked_unverified(self) -> None:
-        assert "unverified" in LUCID.name.lower()
+        assert "unverified" in LUCID.version_key.lower()
 
 
 class TestDailyLoss:
@@ -66,12 +112,11 @@ class TestOverallLoss:
         assert gov.overall_floor() == pytest.approx(94_000)
 
     def test_trailing_floor_rises_with_peak(self) -> None:
-        profile = PropFirmProfile(
-            name="trail",
+        profile = _make_profile(
             profit_target_pct=0.10,
             max_daily_loss_pct=0.05,
             max_overall_loss_pct=0.06,
-            dd_mode="trailing",
+            dd_mode="trailing_eod",
         )
         gov = PropFirmRiskGovernor(profile, initial_balance=INITIAL)
         gov.update(balance=110_000, equity=110_000)  # peak rises
@@ -130,22 +175,29 @@ class TestPositionSizing:
 
 
 class TestPreTradeGate:
+    def test_support_mode_blocks_non_auto(self) -> None:
+        """ASSISTED_ONLY profili sono bloccati dal gate."""
+        gov = _gov()  # THE5ERS is ASSISTED_ONLY
+        check = gov.check_new_order(entry=1.10, stop=1.095, lots=1.0, contract_size=100_000)
+        assert check.allowed is False
+        assert "automation denied" in check.reason.lower()
+
     def test_allow_safe_order(self) -> None:
-        gov = _gov()
+        gov = _auto_gov()
         # risk = 1.0 lot * 500 = 500, well within daily 3000
         check = gov.check_new_order(entry=1.10, stop=1.095, lots=1.0, contract_size=100_000)
         assert check.allowed is True
         assert check.max_lots == pytest.approx(2.0)
 
     def test_deny_order_breaching_daily(self) -> None:
-        gov = _gov()
+        gov = _auto_gov()
         # 7 lots -> risk 3500 > daily 3000
         check = gov.check_new_order(entry=1.10, stop=1.095, lots=7.0, contract_size=100_000)
         assert check.allowed is False
         assert "daily" in check.reason.lower()
 
     def test_deny_when_challenge_already_failed(self) -> None:
-        gov = _gov()
+        gov = _auto_gov()
         gov.update(balance=INITIAL, equity=INITIAL - 3_000)
         gov.evaluate()  # triggers FAILED_DAILY
         assert gov.status == ChallengeStatus.FAILED_DAILY
@@ -158,18 +210,26 @@ class TestChallengeOutcome:
         assert _gov().challenge_outcome() == ChallengeStatus.IN_PROGRESS
 
     def test_passed_on_target(self) -> None:
-        gov = _gov(profile=PropFirmProfile(
-            name="t", profit_target_pct=0.10, max_daily_loss_pct=0.03,
-            max_overall_loss_pct=0.06, min_trading_days=0,
-        ))
+        gov = _gov(
+            profile=_make_profile(
+                profit_target_pct=0.10,
+                max_daily_loss_pct=0.03,
+                max_overall_loss_pct=0.06,
+                min_trading_days=0,
+            )
+        )
         gov.update(balance=INITIAL * 1.10, equity=INITIAL * 1.10)
         assert gov.challenge_outcome() == ChallengeStatus.PASSED
 
     def test_not_passed_without_min_days(self) -> None:
-        gov = _gov(profile=PropFirmProfile(
-            name="t", profit_target_pct=0.10, max_daily_loss_pct=0.03,
-            max_overall_loss_pct=0.06, min_trading_days=3,
-        ))
+        gov = _gov(
+            profile=_make_profile(
+                profit_target_pct=0.10,
+                max_daily_loss_pct=0.03,
+                max_overall_loss_pct=0.06,
+                min_trading_days=3,
+            )
+        )
         gov.update(balance=INITIAL * 1.10, equity=INITIAL * 1.10)
         assert gov.challenge_outcome() == ChallengeStatus.IN_PROGRESS
 
@@ -185,9 +245,11 @@ class TestChallengeOutcome:
 
 class TestConsistency:
     def test_soft_breach_when_one_day_dominates(self) -> None:
-        profile = PropFirmProfile(
-            name="c", profit_target_pct=0.10, max_daily_loss_pct=0.05,
-            max_overall_loss_pct=0.10, consistency_pct=0.45,
+        profile = _make_profile(
+            profit_target_pct=0.10,
+            max_daily_loss_pct=0.05,
+            max_overall_loss_pct=0.10,
+            consistency_pct=0.45,
         )
         gov = PropFirmRiskGovernor(profile, initial_balance=INITIAL)
         gov.record_trade(5_000)  # one big winning day

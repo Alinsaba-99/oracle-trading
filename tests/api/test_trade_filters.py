@@ -1,4 +1,5 @@
 """Test trade_service filtering logic against the real DB."""
+
 from __future__ import annotations
 
 from apps.api.services.trade_service import list_trades
