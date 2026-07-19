@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from agents.committee import OrderStyle, TradeIntent, TradingMode
+from application.contracts import OrderStyle, TradeIntent, TradingMode
 from execution.order_manager.types import OrderRequest
 
 
