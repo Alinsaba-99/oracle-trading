@@ -353,7 +353,7 @@ class TestPrompts:
     ) -> None:
         await team_round1_only.debate(mixed_signals)
         call_0 = llm_client_round1_only.structured_call.call_args_list[0]
-        system = call_0.kwargs.get("system", call_0.args[0] if call_0.args else "")
+        system = call_0.kwargs.get("system_prompt", call_0.args[0] if call_0.args else "")
         assert "BULL" in system.upper()
         assert system == BULL_SYSTEM
 
@@ -366,7 +366,7 @@ class TestPrompts:
     ) -> None:
         await team_round1_only.debate(mixed_signals)
         call_1 = llm_client_round1_only.structured_call.call_args_list[1]
-        system = call_1.kwargs.get("system", call_1.args[0] if call_1.args else "")
+        system = call_1.kwargs.get("system_prompt", call_1.args[0] if call_1.args else "")
         assert "BEAR" in system.upper()
         assert system == BEAR_SYSTEM
 
@@ -379,7 +379,7 @@ class TestPrompts:
     ) -> None:
         await team_round1_only.debate(mixed_signals)
         call_2 = llm_client_round1_only.structured_call.call_args_list[2]
-        system = call_2.kwargs.get("system", call_2.args[0] if call_2.args else "")
+        system = call_2.kwargs.get("system_prompt", call_2.args[0] if call_2.args else "")
         assert "DEVIL" in system.upper() or "ADVOCATE" in system.upper()
         assert system == DEVIL_SYSTEM
 
@@ -393,7 +393,7 @@ class TestPrompts:
         await team_with_rebuttal.debate(mixed_signals)
         # Call indices 3 and 4 are round 2 rebuttals
         call_3 = llm_client_with_rebuttal.structured_call.call_args_list[3]
-        system_3 = call_3.kwargs.get("system", call_3.args[0] if call_3.args else "")
+        system_3 = call_3.kwargs.get("system_prompt", call_3.args[0] if call_3.args else "")
         assert "Round 2" in system_3
 
 
