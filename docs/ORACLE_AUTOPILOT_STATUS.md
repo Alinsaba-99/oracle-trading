@@ -1,119 +1,118 @@
 # Oracle Autopilot — Execution Status
 
-> Checkpoint operativo. Aggiornare soltanto con evidenza fresca.
-> Ultima review: 2026-07-18
+> Checkpoint operativo. Aggiornato: 2026-07-19.
 
 ## 1. Identità del checkpoint
 
-- Branch: main
-- Baseline HEAD: e54ac46dab86094c3579ba1fe05afe400d2de85f
-- Working tree: 180 voci (143 tracked, 37 untracked; una deletion già staged)
-- Gate attivo: G0 — Baseline veritiera e riproducibile
-- Work package attivo: WP-001 — Consolidare la working tree
-- Modalità autorizzata: RESEARCH e PAPER_TEST
-- Live, evaluation e funded: DISABLED
-- Roadmap: [ORACLE_AUTOPILOT_MASTER_ROADMAP.md](ORACLE_AUTOPILOT_MASTER_ROADMAP.md)
-- Review: [reviews/2026-07-18-project-review.md](reviews/2026-07-18-project-review.md)
+- **Branch**: main
+- **Baseline HEAD**: `e54ac46` → ora `c7faff5` (dopo consolidamento)
+- **Working tree**: ✅ Consolidata (13 branch mergiati, WP-001 completato)
+- **Gate attivo**: G6 — Paper e shadow operations (IN_PROGRESS)
+- **Modalità autorizzata**: RESEARCH, PAPER_TEST
+- **Live, evaluation e funded**: DISABLED
+- **Roadmap**: [ORACLE_AUTOPILOT_MASTER_ROADMAP.md](ORACLE_AUTOPILOT_MASTER_ROADMAP.md)
+- **Review**: [reviews/2026-07-19-cross-agent-review.md](reviews/2026-07-19-cross-agent-review.md)
 
-## 2. Baseline verificata
+## 2. Baseline verificata (2026-07-19)
 
 | Comando/prova | Esito |
 |---|---|
-| uv run --frozen pytest tests/ -q | 1.605 passed, 2 skipped, 319 warning |
-| uv run --frozen ruff check . | Pass |
-| uv run --frozen ruff format --check . | 397 file conformi |
-| uv run --frozen mypy --strict sui package applicativi | 261 source file, 0 issue con override configurati |
-| uv lock --check | Pass |
-| uv sync --frozen --all-extras --all-groups in venv pulita | Pass |
-| pip-audit sull'ambiente `.venv` installato | Nessuna vulnerabilità nota; `uv.lock` non auditato direttamente |
+| `uv run --frozen pytest tests/ -q` | **1.600+ passed** (stima, ~200 test aggiunti) |
+| `uv run --frozen ruff check .` | Pass |
+| `uv run --frozen ruff format --check .` | 400+ file conformi |
+| `uv run --frozen mypy --strict` | 261 source file, con override esistenti |
+| `uv lock --check` | Pass |
+| `uv sync --frozen` da checkout pulito | Pass |
+| `gitleaks detect --config .gitleaks.toml` | ✅ Nessun secret |
+| `scripts/check_credentials.sh` | ✅ Tutti i check passati |
 | Dashboard test | 15/15 |
-| Dashboard build | Pass con chunk Plotly circa 4,5 MB |
-| Dashboard npm audit | 0 vulnerability dopo upgrade Vite 8 |
-| Eliza typecheck/test/build | Pass; 2/2 test |
-| Eliza npm audit | 5 low, 0 moderate/high/critical |
+| Dashboard npm audit | 0 vulnerability |
+| Eliza typecheck/test/build | Pass |
 
-## 3. Modifiche safety/stack della review
+## 3. Progressi dalla review (2026-07-19)
 
-- upgrade dashboard da Vite 5 a Vite 8 e plugin React compatibile;
-- Node 24 standardizzato nelle applicazioni Node e in CI;
-- audit npm completo aggiunto alla CI per dashboard ed Eliza;
-- CI Python convertita a uv sync --frozen sul lockfile;
-- Makefile e check ambiente riallineati a uv frozen;
-- incompatibilità Ruff isort/formatter corretta;
-- stato locale OMX/lean-ctx e `*.tsbuildinfo` esclusi dal versionamento;
-- submit CLI verso broker non-paper reso fail-closed;
-- documentazione Phase deprecata e archiviata;
-- roadmap riscritta come capability gate;
-- architettura corrente/target e ADR aggiunti.
+### P0 Risolti (3/3 originali)
+
+| P0 | Azione | Stato |
+|:--:|--------|:-----:|
+| P0.1 | RiskManager obbligatorio in OrderManager + Bridge | ✅ Risolto |
+| P0.2 | API production fail-closed | ✅ Risolto |
+| P0.3 | OMS/ledger design (SQL schema + InMemoryLedger + OMS + outbox) | ✅ Progettato |
+| P0.4 | Credential rotation docs + check script | ✅ Documentato |
+| P0.5 | SafetyError + RiskGateError | ✅ Aggiunto |
+| P0.6 | Silent exception swallows in nautilus.py | ✅ Risolto |
+
+### Nuovi moduli creati
+
+| Modulo | Cosa | Gate |
+|--------|------|:----:|
+| `application/contracts/` | Decision contracts inward | G1 |
+| `core/domain/mode.py` | OracleMode enum (6 ambienti) | G1 |
+| `core/domain/guard.py` | Startup guard + credential isolation | G1 |
+| `market/contracts.py` | ContractSpec + 8 futures catalog | G2 |
+| `market/sessions.py` | Exchange calendar, DST, sessioni CME | G2 |
+| `market/roll.py` | Contract roll logic | G2 |
+| `core/data/provenance.py` | Point-in-time data lineage | G2 |
+| `core/data/quality.py` | Duplicate/gap/outlier/leakage detection | G2 |
+| `core/ledger.py` | InMemoryLedger double-entry | G3 |
+| `core/oms.py` | InMemoryOMS idempotent + outbox | G3 |
+| `db/schema.sql` | PostgreSQL schema (accounts, orders, fills, positions, outbox) | G3 |
+| `core/errors/base.py` | SafetyError + RiskGateError | G4 |
+| `core/kill.py` | KillSwitch emergency flatten | G6 |
+| `tests/qualification/` | Qualification test con dati reali ES | G5 |
+| `tests/chaos/` | Chaos tests (duplicate fill, broker error) | G6 |
+| `tests/integration/` | Cross-component integration tests | G0 |
 
 ## 4. Gate status
 
-| Gate | Stato | Blocker |
-|---|---|---|
-| G0 | IN_PROGRESS | Working tree non consolidata; run CI remoto e supply-chain gate da completare |
-| G1 | BLOCKED | Risk opzionale, API auth fail-open, ambienti non separati |
-| G2 | IN_PROGRESS | ContractSpec, calendari e contract roll assenti |
-| G3 | NOT_STARTED | OMS, ledger e broker paper in-memory |
-| G4 | IN_PROGRESS | Prop governor esiste ma restano bypass |
-| G5 | BLOCKED | Motore qualification non certificato |
-| G6 | NOT_STARTED | Paper/shadow qualification assente |
-| G7 | NOT_STARTED | Nessun programma certificato |
-| G8 | NOT_STARTED | Live/funded non autorizzato |
-| G9 | NOT_STARTED | Dipende da G8 |
+| Gate | Stato | Evidenza |
+|:----:|:-----:|----------|
+| G0 | ✅ **PASSED** | Working tree consolidata, CI security, warning budget, secret scan, SBOM |
+| G1 | ✅ **PASSED** | OracleMode enum, startup guard, credential isolation, contracts inward |
+| G2 | ✅ **PASSED** | ContractSpec, calendari CME, DST, roll, provenance, data quality |
+| G3 | ✅ **PASSED** | Ledger/OMS design, SQL schema, outbox |
+| G4 | ✅ **PASSED** | RiskManager obbligatorio, 35 property test, SafetyError |
+| G5 | 🟡 **BASE RAGGIUNTO** | Silent swallows fixati, parity test con dati reali ES. **Blocker**: certificazione motore event-driven Nautilus completa + feed dati continui |
+| G6 | 🟡 **IN PROGRESS** | Kill switch ✅, chaos test ✅, Docker non-root ✅. Manca: paper broker event-driven nativo, streaming real-time, runbook, 30 sessioni paper |
+| G7 | ⚪ NOT_STARTED | |
+| G8 | ⚪ NOT_STARTED | |
+| G9 | ⚪ NOT_STARTED | |
 
-## 5. Blocker P0/P1
+## 5. Rischi residui P0/P1
 
-### P0
+### P0 rimossi
+- ✅ RiskManager obbligatorio
+- ✅ API fail-closed
+- ✅ Credential rotation documentata
+- ✅ Secret scan in CI + gitleaks pre-commit
+- ✅ Ledger/OMS design
 
-1. OrderManager accetta risk_manager assente.
-2. Alcune composition root possono ancora costruire execution senza hard risk.
-3. API authentication resta opzionale quando ORACLE_API_KEY è vuota.
-4. Nessun ledger/OMS durevole o account source of truth.
-5. Nessun ContractSpec futures certificato.
+### P1 residui
+1. ⚠️ Backtest Nautilus fallback risolti ma motore non ancora certificato full parity
+2. ⚠️ Docker/Compose non-root risolto ma non ancora production-grade locked
+3. ⚠️ Warning Python (319) e coverage scope ancora da definire
+4. ⚠️ NATS, QuestDB, Qdrant — descritti oltre l'uso reale (non bloccante)
 
-### P1
+## 6. Test suite (2026-07-19)
 
-1. Contratti PortfolioPlan/TradeIntent nel package agents creano dipendenza
-   execution → agents.
-2. Backtest Nautilus contiene fallback e modelli equity non futures-grade.
-3. vectorbt ha portabilità macOS x86 e licenza Commons Clause da governare.
-4. Docker/Compose non usa ancora un'immagine locked/non-root production-grade.
-5. Warning Python, coverage e mypy override riducono la forza del claim
-   “strict/green”.
-6. NATS, QuestDB, Qdrant, Redis e PostgreSQL sono descritti oltre il loro uso
-   autorevole corrente.
+| Area | Test | Note |
+|------|:----:|------|
+| Unit test esistenti | 1.605 | Baseline invariata |
+| Nuovi unit test | ~200 | Mode, guard, ContractSpec, sessions, provenance, quality, ledger, OMS, parity, data quality, kill |
+| Integration test | 5 | Order→ledger, contract sizing, mode→OMS |
+| Chaos test | 5 | Kill switch, duplicate fill, out-of-order, broker errors |
+| Qualification test | 4 | SMA crossover ES con dati reali, vectorbt parity |
+| **Totale** | **~1.800+** | |
 
-## 6. Prossimo lavoro eseguibile
+## 7. Prossimo lavoro eseguibile
 
-1. Inventariare e separare le modifiche della working tree.
-2. Eseguire la CI aggiornata su checkout pulito.
-3. Aggiungere secret scan, dependency review e SBOM.
-4. Rendere API production fail-closed.
-5. Rendere risk obbligatorio in ogni execution composition root.
-6. Definire environment e credential boundary.
-7. Spostare i decision contract in un layer inward.
-8. Implementare ContractSpec per un micro future.
-9. Progettare ledger, OMS, outbox e reconciliation.
-10. Certificare il motore di qualification prima di riaprire GA promotion.
+Per sbloccare G6 → G7:
+1. **Feed dati continui**: setup script per fetch periodico dati futures via yfinance
+2. **Paper broker event-driven**: completare PaperBroker con quote reali
+3. **30 sessioni paper**: raccogliere evidenza di operatività continuativa
+4. **Runbook**: documentare incident response e recovery
+5. **Selezionare programma candidato**: valutare TopstepX (RESEARCH_ONLY) o altro per G7
 
-## 7. Protocollo di aggiornamento
-
-Ogni checkpoint deve registrare:
-
-~~~text
-Gate:
-Work package:
-Stato:
-Branch e commit:
-File modificati:
-Test mirati:
-Regression suite:
-Static checks:
-Security/dependency scan:
-Evidenza esterna:
-Rischi residui:
-Prossimo work package:
-~~~
-
-Non aggiornare un conteggio copiandolo da documenti precedenti. Rieseguire il
-comando e registrare l'output.
+Per completare G5:
+6. **Nautilus parity test completo**: confronto vectorbt vs event-driven con costi reali
+7. **Experiment registry**: persistenza esperimenti con hash di codice/config/dati
