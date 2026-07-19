@@ -20,8 +20,11 @@ import polars as pl
 from analytics.backtest.config import BacktestConfig
 from analytics.backtest.walk_forward import WalkForwardEngine
 from core.domain.experiment import ExperimentContext, ExperimentRegistry
+from core.logging import get_logger
 from genetics.fitness.cache import FitnessCache, FitnessValue, fold_config_hash, genome_hash
 from genetics.genome.signal import Genome, GenomeToSignal
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -155,9 +158,7 @@ class FitnessEvaluator:
                 fitness = constrained
 
         except Exception:
-            import traceback
-
-            traceback.print_exc()
+            logger.exception("Fitness evaluation failed")
             return _FAILED_FITNESS
 
         # ── cache the result ─────────────────────────────────────

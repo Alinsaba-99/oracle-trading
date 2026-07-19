@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from analytics.backtest.config import BacktestConfig
+from core.logging import get_logger
 from genetics.genome.signal import GenomeConfig
 from genetics.islands import IslandManager, PopulationStats
 
@@ -27,6 +28,8 @@ if TYPE_CHECKING:
     from core.domain.experiment import ExperimentRegistry
     from genetics.fitness.evaluator import WalkForwardConfig
 
+
+logger = get_logger(__name__)
 __all__ = ["GAConfig", "GAResult", "GeneticEngine"]
 
 
@@ -176,6 +179,7 @@ class GeneticEngine:
                             g = encode(raw, self.config.genome_config.param_defs)
                             encoded_seeds.append(list(g.normalized_params))
                         except Exception:
+                            logger.exception("Failed to encode seed genome, skipping")
                             continue
                 self._island_manager = IslandManager(
                     genome_config=self.config.genome_config,

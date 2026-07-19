@@ -7,10 +7,10 @@ from genetics.islands import (
     IslandManager,
     MigrationPolicy,
     PopulationStats,
-    compute_diversity,
     compute_stats,
     ring_migration,
 )
+from genetics.population.stats import compute_diversity
 from genetics.serialize import (
     config_to_dict,
     dict_to_genome,

@@ -30,11 +30,14 @@ class MigrationPolicy:
         topology: Topology of inter-island communication.
         interval: Number of generations between migrations.
         size: Number of individuals to exchange per migration.
+        replacement: If *True*, migrants **replace** the worst individuals
+            in the target island; if *False* they are added.
     """
 
     topology: MigrationTopology = MigrationTopology.RING
     interval: int = 5
     size: int = 3
+    replacement: bool = True
 
 
 def _total_weighted_fitness(individual: Any, weights: tuple[float, ...] | None = None) -> float:

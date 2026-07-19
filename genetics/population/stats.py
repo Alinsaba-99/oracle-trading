@@ -8,7 +8,7 @@ from typing import Any
 import numpy as np
 from deap import tools
 
-__all__ = ["PopulationStats", "compute_stats", "pareto_front_individuals"]
+__all__ = ["PopulationStats", "compute_diversity", "compute_stats", "pareto_front_individuals"]
 
 
 @dataclass
@@ -24,6 +24,9 @@ class PopulationStats:
             in normalised [0, 1]^n genome space.
         pareto_front_size: Number of non-dominated individuals.
         generation: Generation at which these stats were computed.
+        pop_size: Total number of individuals in the population.
+        best_fitness: Best (frontier) fitness values per objective.
+        n_evaluated: Number of individuals evaluated this generation.
     """
 
     mean_fitness: tuple[float, ...]
@@ -32,11 +35,20 @@ class PopulationStats:
     diversity: float
     pareto_front_size: int
     generation: int
+    pop_size: int = 0
+    best_fitness: tuple[float, ...] = ()
+    n_evaluated: int = 0
+
+    @property
+    def n_pareto(self) -> int:
+        """Alias for ``pareto_front_size`` (backwards compatibility)."""
+        return self.pareto_front_size
 
 
-def _compute_diversity(population: list[list[float]]) -> float:
+def compute_diversity(population: list[Any]) -> float:
     """Mean pairwise Euclidean distance in normalised genome space.
 
+    Accepts DEAP individuals or raw genome value lists.
     For large populations (n > 100), samples 100 random pairs to avoid O(n^2).
     """
     if len(population) < 2:
@@ -99,7 +111,8 @@ def compute_stats(population: list[Any], generation: int) -> PopulationStats:
     Returns:
         A :class:`PopulationStats` instance.
     """
-    if len(population) == 0:
+    n = len(population)
+    if n == 0:
         return PopulationStats(
             mean_fitness=(0.0, 0.0, 0.0, 0.0),
             max_fitness=(0.0, 0.0, 0.0, 0.0),
@@ -107,11 +120,14 @@ def compute_stats(population: list[Any], generation: int) -> PopulationStats:
             diversity=0.0,
             pareto_front_size=0,
             generation=generation,
+            pop_size=0,
+            n_evaluated=0,
         )
 
     mean_f, max_f, min_f = _aggregate_fitness(population)
-    diversity = _compute_diversity(population)
+    diversity = compute_diversity(population)
     pareto_front = pareto_front_individuals(population)
+    n_evaluated = sum(1 for ind in population if ind.fitness.valid)
 
     return PopulationStats(
         mean_fitness=mean_f,
@@ -120,6 +136,9 @@ def compute_stats(population: list[Any], generation: int) -> PopulationStats:
         diversity=diversity,
         pareto_front_size=len(pareto_front),
         generation=generation,
+        pop_size=n,
+        best_fitness=max_f,
+        n_evaluated=n_evaluated,
     )
 
 
