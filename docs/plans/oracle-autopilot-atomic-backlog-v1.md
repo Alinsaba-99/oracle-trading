@@ -757,13 +757,13 @@ idempotenti.
 **Dipendenze:** M19, M20.
 **Exit gate:** broker, OMS e ledger convergono o il sistema si blocca.
 
-- [ ] `M21-001` Definire reconciliation snapshot.
+- [x] `M21-001` Definire reconciliation snapshot.
 - [ ] `M21-002` Definire position mismatch.
 - [ ] `M21-003` Definire order mismatch.
 - [ ] `M21-004` Definire fill mismatch.
 - [ ] `M21-005` Definire cash mismatch.
 - [ ] `M21-006` Definire margin mismatch.
-- [ ] `M21-007` Implementare startup reconciliation.
+- [x] `M21-007` Implementare startup reconciliation.
 - [ ] `M21-008` Implementare periodic reconciliation.
 - [ ] `M21-009` Implementare post-fill reconciliation.
 - [ ] `M21-010` Implementare post-reconnect reconciliation.
@@ -771,10 +771,10 @@ idempotenti.
 - [ ] `M21-012` Importare broker positions.
 - [ ] `M21-013` Importare broker executions.
 - [ ] `M21-014` Importare broker account values.
-- [ ] `M21-015` Classificare mismatch recoverable.
-- [ ] `M21-016` Classificare mismatch fatal.
-- [ ] `M21-017` Bloccare aperture su mismatch.
-- [ ] `M21-018` Preservare flatten capability su mismatch.
+- [x] `M21-015` Classificare mismatch recoverable.
+- [x] `M21-016` Classificare mismatch fatal.
+- [x] `M21-017` Bloccare aperture su mismatch.
+- [x] `M21-018` Preservare flatten capability su mismatch.
 - [ ] `M21-019` Aggiungere orphan-order test.
 - [ ] `M21-020` Aggiungere missing-fill test.
 - [ ] `M21-021` Aggiungere duplicate-fill test.
@@ -951,10 +951,10 @@ idempotenti.
 **Dipendenze:** M04, M07, M20.
 **Exit gate:** paper fill model sufficient per confrontare shadow e live.
 
-- [ ] `M27-001` Modellare bid/ask spread.
+- [x] `M27-001` Modellare bid/ask spread.
 - [ ] `M27-002` Modellare latency.
 - [ ] `M27-003` Modellare queue position.
-- [ ] `M27-004` Modellare partial fill.
+- [x] `M27-004` Modellare partial fill.
 - [ ] `M27-005` Modellare fill probability.
 - [ ] `M27-006` Modellare market impact.
 - [ ] `M27-007` Modellare adverse selection.
@@ -965,7 +965,7 @@ idempotenti.
 - [ ] `M27-012` Modellare delayed ack.
 - [ ] `M27-013` Modellare duplicate execution event.
 - [ ] `M27-014` Modellare out-of-order execution event.
-- [ ] `M27-015` Modellare commissioni reali.
+- [x] `M27-015` Modellare commissioni reali.
 - [ ] `M27-016` Modellare exchange fees reali.
 - [ ] `M27-017` Modellare overnight margin.
 - [ ] `M27-018` Modellare forced liquidation.
