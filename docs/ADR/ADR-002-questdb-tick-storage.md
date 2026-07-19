@@ -1,7 +1,7 @@
 # ADR-002: QuestDB per Tick Storage
 
 **Data:** 2026-07-06
-**Status:** ACCEPTED
+**Status:** SUPERSEDED by ADR-009
 
 ---
 

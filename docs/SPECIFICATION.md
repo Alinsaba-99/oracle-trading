@@ -3,6 +3,13 @@
 > Piattaforma di Ricerca Quantitativa — Motore Decisionale Deterministico con Consulenza LLM
 > Data: 2026-07-06 | Status: **FROZEN** (modifiche via ADR)
 
+Questa specifica descrive il perimetro research v1.0. Non certifica execution
+live, profitability o prop-firm readiness. Il percorso verso una v2 automatica
+è governato da
+[PROP_FIRM_READINESS_ROADMAP.md](PROP_FIRM_READINESS_ROADMAP.md);
+la rimozione della supervisione umana o l'estensione del perimetro production
+richiederanno una nuova versione della specifica e ADR dedicati.
+
 ---
 
 ## 1. Vision
@@ -319,21 +326,20 @@ PostgreSQL per contenuti strutturati, Qdrant per retrieval semantico.
 
 ## 14. Versioni e Governance della Specifica
 
-- **v1.0**: Data 2026-07-06. **FROZEN**.
-- Modifiche sostanziali: richiedono ADR con votazione
-- Modifiche minori: richiedono ADR approvato
-- Violazioni dei principi immutabili: richiedono nuova major version
+- **v1.0**: 2026-07-06. **FROZEN come specifica research storica**.
+- La living architecture è mantenuta in [ARCHITECTURE.md](ARCHITECTURE.md).
+- La roadmap production/autopilot è mantenuta in
+  [ORACLE_AUTOPILOT_MASTER_ROADMAP.md](ORACLE_AUTOPILOT_MASTER_ROADMAP.md).
+- Ogni modifica normativa richiede un nuovo ADR; gli ADR accettati vengono
+  superseded, non riscritti.
+- I principi safety-critical prevalgono sulle intenzioni v1 quando un ADR più
+  recente lo dichiara esplicitamente.
 
 ---
 
-## 15. ADR Iniziali
+## 15. Architecture Decision Records
 
-| ID | Titolo | Decisione |
-|----|--------|-----------|
-| 001 | Event Bus | NATS come event bus |
-| 002 | Tick Storage | QuestDB per time-series |
-| 003 | Policy Engine | Embeddato come libreria in v1.0 |
-| 004 | Plugin Architecture | Plugin-first con ciclo di vita standard |
-| 005 | Monorepo Structure | Monorepo con apps/services/libraries/plugins |
-| 006 | Genome Pipeline | Genoma come pipeline Universe→Feature→Signal→Filter→Risk→Execution |
-| 007 | Experiment Registry | Registro obbligatorio per ogni run |
+L'indice normativo, inclusi status e supersessioni, è in
+[ADR/README.md](ADR/README.md). Gli ADR 001, 002, 004 e 005 sono stati
+superseded perché descrivevano una topologia aspirazionale diversa dal
+repository e dai confini safety richiesti.
