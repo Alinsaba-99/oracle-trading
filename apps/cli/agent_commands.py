@@ -34,8 +34,16 @@ def _setup_mas(_args: argparse.Namespace | None = None) -> dict[str, Any]:
     risk = RiskManager()
     portfolio = PortfolioManager(SignalScorer(), risk)
 
-    # Build LangGraph engine and orchestrator
-    engine = LangGraphWorkflowEngine(build_mas_graph())
+    # Build LangGraph engine with real components and orchestrator
+    engine = LangGraphWorkflowEngine(
+        build_mas_graph(
+            oracle=oracle,
+            analysts=analysts,
+            debate_team=debate,
+            risk_manager=risk,
+            portfolio_manager=portfolio,
+        )
+    )
     orchestrator = MASOrchestrator(config=config, engine=engine)
 
     return {

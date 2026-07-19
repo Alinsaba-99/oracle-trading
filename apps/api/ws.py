@@ -3,6 +3,7 @@
 No Redis needed. Each subscriber gets their own queue.
 Broadcast pushes to all connected clients.
 """
+
 from __future__ import annotations
 
 import asyncio

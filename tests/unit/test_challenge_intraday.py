@@ -9,14 +9,24 @@ import pytest
 from analytics.backtest.challenge import ChallengeSimulator
 from analytics.backtest.challenge_intraday import run_intraday
 from policy.prop_firm.governor import ChallengeStatus
-from policy.prop_firm.profile import PropFirmProfile
+from policy.prop_firm.profile import FirmProgramProfile, SupportMode, DrawdownMode
 
 # 10% target, 3% daily, 6% overall — The5ers-shaped, no min-day gates.
-PROFILE = PropFirmProfile(
-    name="test",
+PROFILE = FirmProgramProfile(
+    firm="test",
+    program="challenge",
+    stage="evaluation",
+    platform="paper",
+    account_size=100_000,
+    rule_version="1",
+    effective_from="2026-01-01",
+    source_url="https://example.com",
+    source_checked_at="2026-07-19",
+    support_mode=SupportMode.RESEARCH_ONLY,
     profit_target_pct=0.10,
     max_daily_loss_pct=0.03,
     max_overall_loss_pct=0.06,
+    dd_mode=DrawdownMode.STATIC,
 )
 
 

@@ -7,7 +7,10 @@ import random
 from abc import ABC, abstractmethod
 from typing import Any
 
+from core.logging import get_logger
 from execution.brokers.config import BrokerConfig
+
+logger = get_logger(__name__)
 
 
 class BaseBroker(ABC):
@@ -74,6 +77,9 @@ class BaseBroker(ABC):
                 self._reconnect_attempts = i + 1
                 return
             except Exception:
+                logger.exception(
+                    "Reconnection attempt %d/%d failed", i + 1, self._config.reconnect_max_retries
+                )
                 continue
         self._connected = False
         msg = f"Failed to reconnect after {self._config.reconnect_max_retries} attempts"

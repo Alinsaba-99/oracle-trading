@@ -21,7 +21,14 @@ from typing import Any
 
 import polars as pl
 
-from analytics.backtest.fx_data import OHLCV_SCHEMA
+OHLCV_SCHEMA: dict[str, pl.DataType] = {
+    "timestamp": pl.Datetime(time_unit="us"),
+    "open": pl.Float64(),
+    "high": pl.Float64(),
+    "low": pl.Float64(),
+    "close": pl.Float64(),
+    "volume": pl.Float64(),
+}
 
 
 class MetaApiClient:
@@ -60,11 +67,7 @@ class MetaApiClient:
         return await self._connection.get_positions()  # type: ignore[no-any-return]
 
     async def historical_candles(
-        self,
-        symbol: str,
-        timeframe: str,
-        start: datetime,
-        end: datetime,
+        self, symbol: str, timeframe: str, start: datetime, end: datetime
     ) -> pl.DataFrame:
         """Fetch historical candles and return wide OHLCV (matches fx_data schema).
 
@@ -76,9 +79,7 @@ class MetaApiClient:
             end: Inclusive end (UTC).
         """
         self._require()
-        candles = await self._connection.get_historical_candles(
-            symbol, timeframe, start, end
-        )
+        candles = await self._connection.get_historical_candles(symbol, timeframe, start, end)
         return _candles_to_ohlcv(candles)
 
     async def market_buy(
@@ -131,10 +132,7 @@ def _candles_to_ohlcv(candles: list[Any]) -> pl.DataFrame:
         elif hasattr(raw, "as_dict"):
             c = raw.as_dict()
         else:
-            c = {
-                k: getattr(raw, k)
-                for k in ("time", "open", "high", "low", "close", "volume")
-            }
+            c = {k: getattr(raw, k) for k in ("time", "open", "high", "low", "close", "volume")}
         ts_ms = c.get("time")
         ts = datetime.fromtimestamp(ts_ms / 1000.0, tz=UTC) if ts_ms else None
         rows.append(

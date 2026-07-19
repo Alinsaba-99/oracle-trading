@@ -1,4 +1,5 @@
 """Read GA checkpoint files and extract performance data."""
+
 from __future__ import annotations
 
 import json
@@ -6,16 +7,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from analytics.backtest.store import (
-    BacktestResultStore,
-    to_equity_points,
-    to_performance_summary,
-)
+from analytics.backtest.store import BacktestResultStore, to_equity_points, to_performance_summary
 
 
 @dataclass
 class ParetoIndividual:
     """A single individual in the Pareto front."""
+
     sharpe: float = -1.0
     sortino: float = -1.0
     calmar: float = -1.0
@@ -26,6 +24,7 @@ class ParetoIndividual:
 @dataclass
 class GARun:
     """Summary of a single GA run."""
+
     run_id: str = ""
     seed: int = 0
     n_generations: int = 0
@@ -98,17 +97,18 @@ def list_ga_runs() -> list[dict[str, Any]]:
         if last is None:
             continue
 
-
-        result.append({
-            "run_id": d.name,
-            "seed": last.get("seed", 0),
-            "n_generations": last.get("generation", 0),
-            "n_islands": last.get("n_islands", 0),
-            "pop_size": last.get("pop_size_per_island", 0) * last.get("n_islands", 0),
-            "signal_type": last.get("signal_type", ""),
-            "status": "completed",
-            "checkpoint_count": len(gens),
-        })
+        result.append(
+            {
+                "run_id": d.name,
+                "seed": last.get("seed", 0),
+                "n_generations": last.get("generation", 0),
+                "n_islands": last.get("n_islands", 0),
+                "pop_size": last.get("pop_size_per_island", 0) * last.get("n_islands", 0),
+                "signal_type": last.get("signal_type", ""),
+                "status": "completed",
+                "checkpoint_count": len(gens),
+            }
+        )
 
     return result
 
@@ -175,10 +175,11 @@ def get_ga_run(run_id: str) -> GARun | None:
             seen.add(key)
 
             params = _decode_params(ind.get("values", []), param_defs)
-            run.pareto_front.append(ParetoIndividual(
-                sharpe=sharpe, sortino=sortino, calmar=calmar,
-                max_drawdown=maxdd, params=params,
-            ))
+            run.pareto_front.append(
+                ParetoIndividual(
+                    sharpe=sharpe, sortino=sortino, calmar=calmar, max_drawdown=maxdd, params=params
+                )
+            )
 
     # Sort by Sharpe descending
     run.pareto_front.sort(key=lambda x: x.sharpe, reverse=True)
@@ -213,13 +214,15 @@ def get_ga_run(run_id: str) -> GARun | None:
             avg_sortino = sum(v[1] for v in values) / len(values)
             avg_calmar = sum(v[2] for v in values) / len(values)
             if best > -1000:
-                run.convergence.append({
-                    "generation": gen,
-                    "best_sharpe": round(best, 4),
-                    "avg_sharpe": round(avg_sharpe, 4),
-                    "avg_sortino": round(avg_sortino, 4),
-                    "avg_calmar": round(avg_calmar, 4),
-                })
+                run.convergence.append(
+                    {
+                        "generation": gen,
+                        "best_sharpe": round(best, 4),
+                        "avg_sharpe": round(avg_sharpe, 4),
+                        "avg_sortino": round(avg_sortino, 4),
+                        "avg_calmar": round(avg_calmar, 4),
+                    }
+                )
 
     return run
 

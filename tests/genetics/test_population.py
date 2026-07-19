@@ -19,7 +19,7 @@ from genetics.population import (
     random_individual,
     seeded_individuals,
 )
-from genetics.population.stats import _compute_diversity
+from genetics.population.stats import compute_diversity
 
 if TYPE_CHECKING:
     pass
@@ -344,20 +344,20 @@ class TestParetoFront:
 class TestComputeDiversity:
     def test_no_individuals(self) -> None:
         """Empty list should return 0.0 diversity."""
-        assert _compute_diversity([]) == 0.0
+        assert compute_diversity([]) == 0.0
 
     def test_single_individual(self) -> None:
-        assert _compute_diversity([[0.5, 0.5]]) == 0.0
+        assert compute_diversity([[0.5, 0.5]]) == 0.0
 
     def test_two_identical(self) -> None:
         vec = [0.5, 0.5, 0.5]
-        assert _compute_diversity([vec, list(vec)]) == 0.0
+        assert compute_diversity([vec, list(vec)]) == 0.0
 
     def test_two_different(self) -> None:
         a = [0.0, 0.0]
         b = [1.0, 1.0]
         # Euclidean distance = sqrt(2)
-        assert _compute_diversity([a, b]) == pytest.approx(np.sqrt(2.0))
+        assert compute_diversity([a, b]) == pytest.approx(np.sqrt(2.0))
 
     def test_three_individuals(self) -> None:
         """Diversity of three points in 2D."""
@@ -365,4 +365,4 @@ class TestComputeDiversity:
         # Distances: d(0,1)=1, d(0,2)=1, d(1,2)=sqrt(2)
         # Mean = (1 + 1 + sqrt(2)) / 3
         expected = (1.0 + 1.0 + np.sqrt(2.0)) / 3.0
-        assert _compute_diversity(individuals) == pytest.approx(expected)
+        assert compute_diversity(individuals) == pytest.approx(expected)

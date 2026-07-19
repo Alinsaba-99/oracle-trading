@@ -1,4 +1,5 @@
 """Pydantic models for API responses."""
+
 from __future__ import annotations
 
 from pydantic import BaseModel
@@ -6,6 +7,7 @@ from pydantic import BaseModel
 
 class PerformanceSummary(BaseModel):
     """Aggregate performance metrics."""
+
     sharpe: float
     sortino: float
     calmar: float
@@ -19,6 +21,7 @@ class PerformanceSummary(BaseModel):
 
 class EquityPoint(BaseModel):
     """Single point on the equity curve."""
+
     date: str
     equity: float
     drawdown: float
@@ -28,6 +31,7 @@ class EquityPoint(BaseModel):
 
 class EquityCurve(BaseModel):
     """Full equity curve."""
+
     points: list[EquityPoint]
 
     model_config = {"from_attributes": True}
@@ -35,6 +39,7 @@ class EquityCurve(BaseModel):
 
 class ExperimentResult(BaseModel):
     """Fold-level backtest result from experiments.db."""
+
     time: str
     experiment_id: str
     fold: str
@@ -47,6 +52,7 @@ class ExperimentResult(BaseModel):
 
 class ExperimentList(BaseModel):
     """Paginated experiment result list."""
+
     items: list[ExperimentResult]
     total: int
     limit: int
@@ -55,9 +61,9 @@ class ExperimentList(BaseModel):
     model_config = {"from_attributes": True}
 
 
-
 class PositionModel(BaseModel):
     """Open position."""
+
     asset: str
     side: str
     qty: float
@@ -71,6 +77,7 @@ class PositionModel(BaseModel):
 
 class GARunSummary(BaseModel):
     """Genetic algorithm run summary."""
+
     run_id: str
     seed: int
     generations: int
@@ -82,6 +89,7 @@ class GARunSummary(BaseModel):
 
 class GARunDetail(BaseModel):
     """Detailed GA run with Pareto front and convergence."""
+
     run_id: str
     seed: int
     status: str
