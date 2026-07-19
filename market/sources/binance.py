@@ -130,25 +130,48 @@ class BinanceWebSocketSource(BaseSource):
     def _parse_kline(raw: dict[str, Any]) -> dict[str, Any] | None:
         """Parse a Binance kline WebSocket message into a normalized dict.
 
+        - When the kline is **final** (``x: true``): returns the full OHLCV
+          record with ``event_type: "bar"`` so the pipeline publishes it
+          directly as a ``MarketBarEvent`` preserving high/low/open.
+        - When the kline is **intermediate** (``x: false``): returns a thin
+          tick with only the latest ``close`` price so the pipeline treats it
+          as a normal price tick for the tick buffer.
+
         Returns ``None`` when the message is not a kline event.
         """
         if raw.get("e") != "kline":
             return None
 
         k = raw.get("k", {})
+        instrument_id: str = raw.get("s", "").lower()
+        timestamp = k.get("t")
+        close = float(k.get("c", 0))
+        volume = float(k.get("v", 0))
+        is_final: bool = k.get("x", False)
+
+        if is_final:
+            return {
+                "source": "binance",
+                "instrument_id": instrument_id,
+                "event_type": "bar",
+                "timestamp": timestamp,
+                "open": float(k.get("o", 0)),
+                "high": float(k.get("h", 0)),
+                "low": float(k.get("l", 0)),
+                "close": close,
+                "volume": volume,
+                "quote_volume": float(k.get("q", 0)),
+                "trades": int(k.get("n", 0)),
+                "taker_buy_volume": float(k.get("V", 0)),
+                "taker_buy_quote_volume": float(k.get("Q", 0)),
+            }
+
+        # Intermediate update: publish as a thin price tick
         return {
             "source": "binance",
-            "instrument_id": raw.get("s", "").lower(),
-            "event_type": "kline",
-            "timestamp": k.get("t"),
-            "open": float(k.get("o", 0)),
-            "high": float(k.get("h", 0)),
-            "low": float(k.get("l", 0)),
-            "close": float(k.get("c", 0)),
-            "volume": float(k.get("v", 0)),
-            "quote_volume": float(k.get("q", 0)),
-            "trades": int(k.get("n", 0)),
-            "taker_buy_volume": float(k.get("V", 0)),
-            "taker_buy_quote_volume": float(k.get("Q", 0)),
-            "is_final": k.get("x", False),
+            "instrument_id": instrument_id,
+            "event_type": "tick",
+            "timestamp": timestamp,
+            "price": close,
+            "volume": volume,
         }
