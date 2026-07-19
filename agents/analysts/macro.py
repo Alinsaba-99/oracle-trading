@@ -12,9 +12,12 @@ from typing import TYPE_CHECKING, Any
 
 from agents.analysts.base import BaseAnalyst
 from agents.protocol import AgentVote, AnalystSignal
+from core.logging import get_logger
 
 if TYPE_CHECKING:
     from agents.protocol import AnalystInput
+
+logger = get_logger(__name__)
 
 
 # ── Constants ─────────────────────────────────────────────────────────────────
@@ -117,6 +120,7 @@ class MacroAnalyst(BaseAnalyst):
                 timeout_s=self._config.llm_timeout_s,
             )
         except Exception:
+            logger.exception("LLM structured call failed for macro analyst")
             # Return a safe neutral signal on LLM failure.
             return AnalystSignal(
                 source="macro",

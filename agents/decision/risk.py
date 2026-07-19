@@ -151,9 +151,7 @@ class RiskManager:
         if (
             isinstance(corr_matrix, dict)
             and corr_matrix
-            and not self.correlation_check(
-                corr_matrix, decision.instrument, threshold=0.7
-            )
+            and not self.correlation_check(corr_matrix, decision.instrument, threshold=0.7)
         ):
             reasons.append("Correlation with existing positions exceeds 0.7")
 

@@ -10,16 +10,12 @@ if TYPE_CHECKING:
 
 import litellm
 
-from core.errors.base import OracleError
+from agents.errors import ModelCallError
 from core.logging import get_logger
 
 logger = get_logger("oracle.agents")
 
-__all__ = ["FallbackLLMClient", "LLMClient", "LitellmLLMClient", "ModelCallError"]
-
-
-class ModelCallError(OracleError):
-    """Raised when an LLM call fails (all providers exhausted)."""
+__all__ = ["FallbackLLMClient", "LLMClient", "LitellmLLMClient"]
 
 
 @runtime_checkable
@@ -120,6 +116,7 @@ class LitellmLLMClient:
             count = litellm.token_counter(model=self._model, text=text)
             return int(count)
         except Exception:
+            logger.exception("Token count failed, falling back to estimate")
             # Approximate: ~4 chars per token
             return len(text) // 4
 

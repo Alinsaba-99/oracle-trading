@@ -36,9 +36,13 @@ class GeneticStrategist:
         _market_state: Any,  # MarketState
         _n_suggestions: int = 5,
     ) -> list[StrategySuggestion]:
-        """Run GA (or load cached) and return regime-filtered suggestions."""
-        # Full GA run requires async HPC dispatch + config wiring.
-        # Skeleton for Phase 4 integration.
+        """Run GA (or load cached) and return regime-filtered suggestions.
+
+        Currently returns an empty list by design.  Strategy suggestions
+        are produced by the GA engine and consumed through
+        :meth:`get_last_pareto` after a full run — this agent method is a
+        pass-through stub awaiting Phase 4 integration with HPC dispatch.
+        """
         return []
 
     def get_last_pareto(self) -> list[StrategySuggestion]:

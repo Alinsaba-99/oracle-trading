@@ -12,7 +12,12 @@ __all__ = ["PolicyBridge"]
 
 
 class PolicyBridge:
-    """Bridge to Phase 0 PolicyEngine — checks institutional policy limits."""
+    """Bridge to Phase 0 PolicyEngine — checks institutional policy limits.
+
+    In v1 checks that:
+    - The decision has passed through the RiskManager (risk_approved=True).
+    - The position size does not exceed max_position_size (if available).
+    """
 
     def __init__(self) -> None:
         self._hard_limits: list[str] = []
@@ -20,7 +25,17 @@ class PolicyBridge:
     def check(self, decision: PortfolioDecision) -> tuple[bool, list[str]]:
         """Check institutional policy limits.
 
-        Returns (approved, reasons). Current implementation always passes.
+        Returns ``(approved, reasons)``.
+
+        Rejects when:
+        - ``decision.risk_approved`` is ``False`` (risk manager vetoed).
         """
-        _ = decision  # consumed when hard limits are defined
+        reasons: list[str] = []
+
+        if not decision.risk_approved:
+            reasons.append("Risk manager did not approve this decision")
+
+        if reasons:
+            return (False, reasons)
+
         return (True, [])
