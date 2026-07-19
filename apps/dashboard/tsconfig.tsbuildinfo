@@ -1,1 +1,0 @@
-{"root":["./src/main.tsx","./src/vite-env.d.ts","./src/lib/utils.ts","./src/routes/dashboard-page.tsx","./src/routes/ga-page.tsx","./src/routes/index.tsx","./src/routes/layout.tsx","./src/routes/trades-page.tsx"],"version":"5.9.3"}
