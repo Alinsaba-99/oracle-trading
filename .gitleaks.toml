@@ -1,0 +1,43 @@
+# Gitleaks configuration for Oracle Trading
+# Extended rules beyond default to cover project-specific patterns
+
+title = "Oracle Trading - Gitleaks Config"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "oracle-api-key"
+description = "Oracle API Key"
+regex = '''(?i)(?:ORACLE_API_KEY|ORACLE_SECRET)(?:['\"\s]*(?:=|:)\s*['\"]?)([a-zA-Z0-9_\-]{16,})'''
+tags = ["oracle", "api-key"]
+
+[[rules]]
+id = "metaapi-token"
+description = "MetaAPI JWT Token"
+regex = '''(?i)(?:METAAPI_TOKEN|METAAPI_JWT)(?:['\"\s]*(?:=|:)\s*['\"]?)([a-zA-Z0-9_\-]{20,})'''
+tags = ["metaapi", "jwt"]
+
+[[rules]]
+id = "llm-api-key"
+description = "LLM Provider API Key"
+regex = '''(?i)(?:LLM_API_KEY|OPENAI_API_KEY|ANTHROPIC_API_KEY)(?:['\"\s]*(?:=|:)\s*['\"]?)(sk-[a-zA-Z0-9_\-]{20,})'''
+tags = ["llm", "api-key"]
+
+[[rules]]
+id = "broker-password"
+description = "Broker account password"
+regex = '''(?i)(?:PASSWORD|PASS|SECRET)(?:['\"\s]*(?:=|:)\s*['\"]?)([a-zA-Z0-9!@#$%^&*()_+]{8,})'''
+tags = ["broker", "credentials"]
+
+[allowlist]
+description = "Allowlisted files and patterns"
+paths = [
+    # Test fixtures with example values
+    '''(?i)\.test\..*''',
+    '''(?i)test_.*\.py''',
+    '''conftest\.py''',
+    # Gitignored files
+    '''\.env''',
+    '''\.env\.example''',
+]
