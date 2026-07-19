@@ -238,23 +238,23 @@ separati dal sorgente e stato riprendibile.
 **Exit gate:** ogni timestamp appartiene a una sessione verificata e ogni
 contratto è tradabile alla data richiesta.
 
-- [ ] `M05-001` Definire `TradingSession`.
-- [ ] `M05-002` Definire timezone exchange.
-- [ ] `M05-003` Definire maintenance break.
-- [ ] `M05-004` Definire liquidation deadline.
-- [ ] `M05-005` Definire early close.
-- [ ] `M05-006` Integrare holiday calendar CME.
+- [x] `M05-001` Definire `TradingSession`.
+- [x] `M05-002` Definire timezone exchange.
+- [x] `M05-003` Definire maintenance break.
+- [x] `M05-004` Definire liquidation deadline.
+- [x] `M05-005` Definire early close.
+- [x] `M05-006` Integrare holiday calendar CME.
 - [ ] `M05-007` Integrare holiday calendar ICE se necessario.
-- [ ] `M05-008` Aggiungere test DST spring transition.
-- [ ] `M05-009` Aggiungere test DST autumn transition.
+- [x] `M05-008` Aggiungere test DST spring transition.
+- [x] `M05-009` Aggiungere test DST autumn transition.
 - [ ] `M05-010` Aggiungere test holiday close.
 - [ ] `M05-011` Aggiungere test early close.
-- [ ] `M05-012` Definire roll policy volume-based.
-- [ ] `M05-013` Definire roll policy calendar-based.
-- [ ] `M05-014` Definire back-adjustment policy.
-- [ ] `M05-015` Separare continuous symbol e tradable symbol.
-- [ ] `M05-016` Aggiungere mapping continuous→contract.
-- [ ] `M05-017` Aggiungere controllo expired contract.
+- [x] `M05-012` Definire roll policy volume-based.
+- [x] `M05-013` Definire roll policy calendar-based.
+- [x] `M05-014` Definire back-adjustment policy.
+- [x] `M05-015` Separare continuous symbol e tradable symbol.
+- [x] `M05-016` Aggiungere mapping continuous→contract.
+- [x] `M05-017` Aggiungere controllo expired contract.
 - [ ] `M05-018` Aggiungere controllo first notice date.
 - [ ] `M05-019` Aggiungere roll cost al backtest.
 - [ ] `M05-020` Aggiungere roll event al bus.
