@@ -97,10 +97,10 @@ separati dal sorgente e stato riprendibile.
 - [ ] `M00-017` Documentare i componenti che richiedono review di sicurezza.
 - [ ] `M00-018` Documentare i componenti che richiedono review quantitativa.
 - [ ] `M00-019` Documentare i componenti che richiedono verifica legale/firm rules.
-- [ ] `M00-020` Verificare che il repository non contenga credenziali.
-- [ ] `M00-021` Aggiungere secret scanning alla CI.
-- [ ] `M00-022` Aggiungere dependency review alla CI.
-- [ ] `M00-023` Aggiungere SBOM Python alla release pipeline.
+- [x] `M00-020` Verificare che il repository non contenga credenziali.
+- [x] `M00-021` Aggiungere secret scanning alla CI.
+- [x] `M00-022` Aggiungere dependency review alla CI.
+- [x] `M00-023` Aggiungere SBOM Python alla release pipeline.
 - [ ] `M00-024` Aggiungere SBOM Node alla release pipeline.
 - [ ] `M00-025` Pubblicare il report di chiusura M00.
 
@@ -140,17 +140,17 @@ separati dal sorgente e stato riprendibile.
 **Dipendenze:** M01.
 **Exit gate:** configurazioni tipizzate e separate per replay, paper, shadow e live.
 
-- [ ] `M02-001` Definire enum canonico degli ambienti operativi.
-- [ ] `M02-002` Aggiungere profilo configurazione `replay`.
-- [ ] `M02-003` Aggiungere profilo configurazione `paper`.
-- [ ] `M02-004` Aggiungere profilo configurazione `shadow`.
-- [ ] `M02-005` Aggiungere profilo configurazione `evaluation`.
-- [ ] `M02-006` Aggiungere profilo configurazione `funded`.
-- [ ] `M02-007` Impedire l'avvio live con configurazione debug.
-- [ ] `M02-008` Impedire l'avvio live senza API authentication.
+- [x] `M02-001` Definire enum canonico degli ambienti operativi.
+- [x] `M02-002` Aggiungere profilo configurazione `replay`.
+- [x] `M02-003` Aggiungere profilo configurazione `paper`.
+- [x] `M02-004` Aggiungere profilo configurazione `shadow`.
+- [x] `M02-005` Aggiungere profilo configurazione `evaluation`.
+- [x] `M02-006` Aggiungere profilo configurazione `funded`.
+- [x] `M02-007` Impedire l'avvio live con configurazione debug.
+- [x] `M02-008` Impedire l'avvio live senza API authentication.
 - [ ] `M02-009` Impedire l'avvio live con broker paper.
-- [ ] `M02-010` Impedire l'avvio paper con credenziali funded.
-- [ ] `M02-011` Definire schema tipizzato delle credenziali broker.
+- [x] `M02-010` Impedire l'avvio paper con credenziali funded.
+- [x] `M02-011` Definire schema tipizzato delle credenziali broker.
 - [ ] `M02-012` Integrare un secrets manager locale per sviluppo.
 - [ ] `M02-013` Definire interfaccia per secrets manager production.
 - [ ] `M02-014` Eliminare password statiche dal Compose.
@@ -159,10 +159,10 @@ separati dal sorgente e stato riprendibile.
 - [ ] `M02-017` Aggiungere scope execution per OMS soltanto.
 - [ ] `M02-018` Aggiungere scope emergency per kill switch.
 - [ ] `M02-019` Registrare hash della configurazione a ogni run.
-- [ ] `M02-020` Aggiungere validazione startup fail-closed.
-- [ ] `M02-021` Aggiungere test di configurazione mancante.
-- [ ] `M02-022` Aggiungere test di credenziale errata.
-- [ ] `M02-023` Aggiungere test di environment crossing.
+- [x] `M02-020` Aggiungere validazione startup fail-closed.
+- [x] `M02-021` Aggiungere test di configurazione mancante.
+- [x] `M02-022` Aggiungere test di credenziale errata.
+- [x] `M02-023` Aggiungere test di environment crossing.
 - [ ] `M02-024` Documentare procedura di bootstrap ambiente.
 - [ ] `M02-025` Pubblicare il report di chiusura M02.
 
