@@ -273,18 +273,18 @@ decisione.
 - [x] `M06-001` Definire evidence reference con timestamp e hash.
 - [x] `M06-002` Definire opportunity observation point-in-time.
 - [x] `M06-003` Rifiutare availability precedente all'event time.
-- [ ] `M06-004` Aggiungere `published_at` ai record esterni.
-- [ ] `M06-005` Aggiungere `ingested_at` ai record esterni.
-- [ ] `M06-006` Aggiungere `revision_id` ai record revisionabili.
-- [ ] `M06-007` Aggiungere `source_license` ai dataset.
-- [ ] `M06-008` Aggiungere `provider_version` alle cache key.
+- [x] `M06-004` Aggiungere `published_at` ai record esterni.
+- [x] `M06-005` Aggiungere `ingested_at` ai record esterni.
+- [x] `M06-006` Aggiungere `revision_id` ai record revisionabili.
+- [x] `M06-007` Aggiungere `source_license` ai dataset.
+- [x] `M06-008` Aggiungere `provider_version` alle cache key.
 - [ ] `M06-009` Aggiungere contract alle cache key futures.
 - [ ] `M06-010` Aggiungere adjustment version alle cache key.
-- [ ] `M06-011` Persistire raw event prima della normalizzazione.
-- [ ] `M06-012` Persistire normalized event separatamente.
-- [ ] `M06-013` Creare data lineage raw→normalized→feature.
-- [ ] `M06-014` Creare query `as_of` obbligatoria.
-- [ ] `M06-015` Vietare query senza cutoff nei backtest.
+- [x] `M06-011` Persistire raw event prima della normalizzazione.
+- [x] `M06-012` Persistire normalized event separatamente.
+- [x] `M06-013` Creare data lineage raw→normalized→feature.
+- [x] `M06-014` Creare query `as_of` obbligatoria.
+- [x] `M06-015` Vietare query senza cutoff nei backtest.
 - [ ] `M06-016` Aggiungere test di future-news leakage.
 - [ ] `M06-017` Aggiungere test di macro revision leakage.
 - [ ] `M06-018` Aggiungere test di filing availability.
