@@ -34,6 +34,12 @@ class SafeJSONEncoder:
 
 settings = APISettings()
 
+# ── Mode guard ──────────────────────────────────────────────────────
+# Every entry point verifies the operating mode at startup.
+from core.domain.guard import current_mode, guard
+
+guard(current_mode())
+
 # ── Production fail-closed guard ────────────────────────────────────
 # If running in production (debug=False) without an API key, refuse to
 # start rather than silently exposing an open API.
