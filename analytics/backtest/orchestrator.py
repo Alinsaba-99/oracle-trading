@@ -101,9 +101,7 @@ class BacktestOrchestrator:
             BacktestResultStore().save(result)
         except OSError as exc:
             logger.warning(
-                "backtest.orchestrator.save_failed",
-                run_id=result.run_id,
-                error=str(exc),
+                "backtest.orchestrator.save_failed", run_id=result.run_id, error=str(exc)
             )
         self._run_count += 1
         logger.info(

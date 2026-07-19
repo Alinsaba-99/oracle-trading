@@ -75,7 +75,9 @@ class AdxTrend:
         if len(c) < self.slow:
             return _zeros(len(c))
         above = _to_np(ema(close, self.fast)) > _to_np(ema(close, self.slow))
-        a = _to_np(adx(_col(data, "high", "High"), _col(data, "low", "Low"), close, self.adx_period))
+        a = _to_np(
+            adx(_col(data, "high", "High"), _col(data, "low", "Low"), close, self.adx_period)
+        )
         out = np.where((above & (a > self.threshold)), 1, 0).astype(np.int8)
         out = np.where(np.isnan(a), 0, out)
         return pl.Series("signal", out)
@@ -137,7 +139,7 @@ class Pullback:
     """Buy the dip in an uptrend: long when close > long MA and close > short MA
     (price pulled back then resumed above the short MA). Exit below the long MA."""
 
-    def __init__(self, short: int = 20, long: int = 50) -> None:  # noqa: A002 - param name
+    def __init__(self, short: int = 20, long: int = 50) -> None:
         self.short = short
         self.long = long
 
@@ -219,7 +221,7 @@ class PatternSignal:
     ``technical.patterns`` does not map to per-bar positions).
     """
 
-    def __init__(self) -> None:  # noqa: D401
+    def __init__(self) -> None:
         pass
 
     def compute(self, data: pl.DataFrame) -> pl.Series:
@@ -274,7 +276,9 @@ class RegimeGatedSignal:
     def compute(self, data: pl.DataFrame) -> pl.Series:
         base_sig = _to_np(self.base.compute(data))
         close = _close(data)
-        a = _to_np(adx(_col(data, "high", "High"), _col(data, "low", "Low"), close, self.adx_period))
+        a = _to_np(
+            adx(_col(data, "high", "High"), _col(data, "low", "Low"), close, self.adx_period)
+        )
         gate = np.where(np.isnan(a), 0, (a > self.threshold).astype(np.int8))
         out = (base_sig * gate).astype(np.int8)
         return pl.Series("signal", out)
@@ -332,13 +336,16 @@ class MlSignal:
         feats["rsi"] = pd.Series(_to_np(rsi(close, 14)))
         feats["vol20"] = ret.rolling(20).std()
         feats["z20"] = (s - s.rolling(20).mean()) / s.rolling(20).std().replace(0.0, np.nan)
-        feats["atr_pct"] = pd.Series(_to_np(atr(_col(data, "high", "High"), _col(data, "low", "Low"), close, 14))) / s
-        X = pd.DataFrame(feats).to_numpy()
+        feats["atr_pct"] = (
+            pd.Series(_to_np(atr(_col(data, "high", "High"), _col(data, "low", "Low"), close, 14)))
+            / s
+        )
+        x = pd.DataFrame(feats).to_numpy()
         y = (ret.shift(-1) > 0).to_numpy().astype(float)  # next-bar direction
-        valid = ~np.isnan(X).any(axis=1) & ~np.isnan(y)
+        valid = ~np.isnan(x).any(axis=1) & ~np.isnan(y)
         sig = np.zeros(n, dtype=np.int8)
         model = None
-        last_train = -10**9
+        last_train = -(10**9)
         for i in range(self.train_min, n):
             if not valid[i]:
                 continue
@@ -347,9 +354,9 @@ class MlSignal:
                 if len(rows) < self.train_min:
                     continue
                 model = lgb.LGBMClassifier(n_estimators=50, verbose=-1, n_jobs=1)
-                model.fit(X[rows], y[rows].astype(int))
+                model.fit(x[rows], y[rows].astype(int))
                 last_train = i
-            sig[i] = int(model.predict(X[i : i + 1])[0])
+            sig[i] = int(model.predict(x[i : i + 1])[0])
         return pl.Series("signal", sig)
 
 

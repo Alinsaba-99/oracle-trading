@@ -17,12 +17,12 @@ from market.store import FeatureStore
 
 # Schema for wide-format OHLCV DataFrames returned by get_ohlcv.
 _OHLCV_SCHEMA: dict[str, pl.DataType] = {
-    "timestamp": pl.Datetime,
-    "open": pl.Float64,
-    "high": pl.Float64,
-    "low": pl.Float64,
-    "close": pl.Float64,
-    "volume": pl.Float64,
+    "timestamp": pl.Datetime(time_unit="us"),
+    "open": pl.Float64(),
+    "high": pl.Float64(),
+    "low": pl.Float64(),
+    "close": pl.Float64(),
+    "volume": pl.Float64(),
 }
 
 _OHLCV_COLUMNS = list(_OHLCV_SCHEMA.keys())
@@ -223,6 +223,7 @@ class BacktestDataProvider:
 
         # DuckDB returns timezone-naive timestamps; restore UTC so that
         # time-range comparisons against UTC-aware literals work.
-        if result.schema["timestamp"].time_zone is None:
+        ts_dtype = result.schema["timestamp"]
+        if isinstance(ts_dtype, pl.Datetime) and ts_dtype.time_zone is None:
             result = result.with_columns(pl.col("timestamp").dt.replace_time_zone("UTC"))
         return result

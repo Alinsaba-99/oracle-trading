@@ -3,12 +3,19 @@
 from __future__ import annotations
 
 from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from analytics.common.config import AnalyticsSettings
 
+class SentimentSettings(BaseSettings):
+    """Configuration for sentiment analysis.
 
-class SentimentSettings(AnalyticsSettings):
-    """Configuration for sentiment analysis."""
+    Loaded from environment variables with ``ORACLE_`` prefix, e.g.
+    ``ORACLE_ALPHA_AI_API_KEY``, ``ORACLE_FINBERT_MODEL``.
+    """
+
+    model_config = SettingsConfigDict(
+        env_prefix="ORACLE_", env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
 
     # FinBERT
     finbert_model: str = "ProsusAI/finbert"

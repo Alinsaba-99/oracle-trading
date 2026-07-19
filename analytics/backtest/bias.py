@@ -34,14 +34,14 @@ def _equity_to_returns(equity: list[float]) -> list[float]:
     return returns
 
 
-def _annualise(avg_return: float, n_periods: int) -> float:
-    """Annualise a per-period return assuming daily frequency (252 trading days)."""
+def _annualise(avg_return: float, n_periods: int, periods_per_year: int = 252) -> float:
+    """Annualise a per-period return."""
     if n_periods < 1:
         return 0.0
     excess = 1.0 + avg_return
     if excess <= 0.0:
         return -1.0
-    return float(excess**252.0 - 1.0)
+    return float(excess**periods_per_year - 1.0)
 
 
 def _haircut_factor(total_trades: int) -> float:

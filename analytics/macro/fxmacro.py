@@ -3,6 +3,11 @@
 The real FXMacroData service has paid tiers. This connector provides a
 mock-based implementation that returns sensible synthetic data when no
 API key is configured, making it usable in development and testing.
+
+In production, when ``FXMACRO_API_KEY`` or ``FRED_API_KEY`` is set, the
+connector delegates to the respective real API.  When neither is available
+and ``mock=False`` was explicitly requested, an error is raised rather than
+silently returning mock data.
 """
 
 from __future__ import annotations
@@ -14,6 +19,7 @@ from typing import Any
 import polars as pl
 
 from analytics.common.errors import MacroError
+from analytics.macro.fred import FREDClient
 
 logger = logging.getLogger(__name__)
 
@@ -85,20 +91,39 @@ class FXMacroDataClient:
     synthetic default data suitable for development and testing.
 
     In production, set ``FXMACRO_API_KEY`` and ``FXMACRO_BASE_URL`` to point
-    at your FXMacroData subscription endpoint.
+    at your FXMacroData subscription endpoint, or set ``FRED_API_KEY`` to
+    use the FRED API for US data.
+
+    Setting ``mock=False`` explicitly will raise an error when no real
+    API is available, preventing silent mock fallback.
     """
 
-    def __init__(self, api_key: str | None = None, base_url: str | None = None) -> None:
+    def __init__(
+        self, api_key: str | None = None, base_url: str | None = None, mock: bool | None = None
+    ) -> None:
         self._api_key = api_key or os.environ.get("FXMACRO_API_KEY", "")
         self._base_url = base_url or os.environ.get(
             "FXMACRO_BASE_URL", "https://api.fxmacrodata.com/v1"
         )
-        self._mock = not self._api_key
+        self._fred_api_key = os.environ.get("FRED_API_KEY", "")
+
+        # Resolve mock mode:
+        # - Explicit mock=True/False takes precedence
+        # - Default: mock=True when no API key is available
+        if mock is not None:
+            self._mock = mock
+        else:
+            self._mock = not (bool(self._api_key) or bool(self._fred_api_key))
 
         if self._mock:
             logger.info("FXMacroDataClient running in MOCK mode (no API key)")
         else:
-            logger.info("FXMacroDataClient configured for %s", self._base_url)
+            sources = []
+            if self._api_key:
+                sources.append("FXMacroData")
+            if self._fred_api_key:
+                sources.append("FRED")
+            logger.info("FXMacroDataClient configured with: %s", ", ".join(sources))
 
     # ------------------------------------------------------------------
     # Public API
@@ -107,17 +132,39 @@ class FXMacroDataClient:
     async def fetch_central_bank_rates(self) -> dict[str, float]:
         """Fetch current central bank policy rates.
 
-        Returns a dict mapping ISO 4217 currency code → annualised rate (``%``).
+        Returns a dict mapping ISO 4217 currency code -> annualised rate (``%``).
 
-        In mock mode returns the default rates defined in ``_DEFAULT_RATES``.
+        Uses FRED's ``FEDFUNDS`` series for USD when ``FRED_API_KEY`` is
+        available, otherwise falls back to FXMacroData API.  Raises
+        ``MacroError`` when ``mock=False`` and no real API is accessible.
         """
         if self._mock:
             return dict(_DEFAULT_RATES)
 
-        # Production path — would call the real FXMacroData API.
-        # Placeholder awaiting API subscription credentials.
-        logger.warning("FXMacroData real API not yet implemented — returning mock data")
-        return dict(_DEFAULT_RATES)
+        # Try FRED for USD rate first (free, no subscription needed)
+        if self._fred_api_key:
+            try:
+                async with FREDClient(self._fred_api_key) as fred:
+                    df = await fred.fetch_series("FEDFUNDS")
+                    if not df.is_empty():
+                        latest = df["value"][-1]
+                        rates = dict(_DEFAULT_RATES)
+                        rates["USD"] = latest
+                        return rates
+            except Exception as exc:
+                logger.warning("FRED FEDFUNDS fetch failed: %s", exc)
+
+        # Try FXMacroData API
+        if self._api_key:
+            msg = "FXMacroData API not yet implemented — use FRED_API_KEY instead"
+            raise MacroError(msg)
+
+        msg = (
+            "No API key configured for production mode. "
+            "Set FRED_API_KEY environment variable for free US data, "
+            "or FXMACRO_API_KEY for the FXMacroData service."
+        )
+        raise MacroError(msg)
 
     async def fetch_inflation_data(self, country: str) -> pl.DataFrame:
         """Fetch historical CPI inflation data for a country.
@@ -136,9 +183,37 @@ class FXMacroDataClient:
         if self._mock:
             return self._mock_inflation(country)
 
-        # Production path placeholder.
-        logger.warning("FXMacroData real API not yet implemented — falling back to mock")
-        return self._mock_inflation(country)
+        # FRED -> CPIAUCSL series for US CPI
+        if country.upper() == "US" and self._fred_api_key:
+            try:
+                async with FREDClient(self._fred_api_key) as fred:
+                    raw = await fred.fetch_series("CPIAUCSL")
+                    if raw.is_empty():
+                        return self._mock_inflation(country)
+                    # Convert CPI level to YoY change %
+                    df = raw.with_columns(
+                        pl.col("value").pct_change(periods=12).alias("rate") * 100  # type: ignore[call-arg]
+                    ).drop_nulls()
+                    if df.is_empty():
+                        return self._mock_inflation(country)
+                    return df.select("date", "rate").sort("date")
+            except Exception as exc:
+                logger.warning("FRED CPI fetch failed for %s: %s", country, exc)
+                if self._api_key:
+                    msg = f"FRED failed and FXMacroData fallback not available: {exc}"
+                    raise MacroError(msg) from exc
+                return self._mock_inflation(country)
+
+        # Fallback to mock data if available for this country
+        if country.upper() in _SUPPORTED_COUNTRIES:
+            logger.warning("No API available for %s inflation, returning mock data", country)
+            return self._mock_inflation(country)
+
+        msg = (
+            f"No data available for country '{country}' in production mode. "
+            "Set FRED_API_KEY for US data, or use mock=True for development."
+        )
+        raise MacroError(msg)
 
     # ------------------------------------------------------------------
     # Helpers

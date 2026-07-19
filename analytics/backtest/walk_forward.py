@@ -105,9 +105,9 @@ class WalkForwardEngine:
         strategy_name = getattr(signal, "__class__", signal.__class__).__name__
 
         for fold_idx, (_train_idx, test_idx) in enumerate(splits):
-            # Compute signal causally on data up to the end of THIS test fold.
-            # Using the full dataset would let later folds influence the
-            # training features / normalisation of this fold (look-ahead).
+            # Compute signal causally on data up to the end of THIS test
+            # fold.  Using the full dataset would let later folds influence
+            # the training features / normalisation of this fold.
             fold_end = test_idx[-1] if len(test_idx) > 0 else len(data)
             fold_data = data[: fold_end + 1]
             full_signal = signal.compute(fold_data)
@@ -193,7 +193,11 @@ class WalkForwardEngine:
             oos_equity_parts: list[float] = []
             for r in self._fold_results:
                 if r.equity_curve and len(r.equity_curve) > 1:
-                    oos_equity_parts.extend(r.equity_curve)
+                    if oos_equity_parts and r.equity_curve:
+                        scale = oos_equity_parts[-1] / r.equity_curve[0]
+                        oos_equity_parts.extend([v * scale for v in r.equity_curve])
+                    else:
+                        oos_equity_parts.extend(r.equity_curve)
             if len(oos_equity_parts) > 10:
                 oos_eq = pl.Series(oos_equity_parts, dtype=pl.Float64)
                 oos_rets = oos_eq.pct_change().drop_nulls()

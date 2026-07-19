@@ -31,14 +31,12 @@ def donchian_channels(close: pl.Series, period: int = 20) -> tuple[pl.Series, pl
     return pl.Series("don_up", upper.to_numpy()), pl.Series("don_lo", lower.to_numpy())
 
 
-def stochastic(
-    high: pl.Series, low: pl.Series, close: pl.Series, period: int = 14
-) -> pl.Series:
+def stochastic(high: pl.Series, low: pl.Series, close: pl.Series, period: int = 14) -> pl.Series:
     """Stochastic %K over ``period``."""
     h = _to_pd(high).rolling(period).max()
-    l = _to_pd(low).rolling(period).min()
+    lo = _to_pd(low).rolling(period).min()
     c = _to_pd(close)
-    k = 100.0 * (c - l) / (h - l).replace(0.0, np.nan)
+    k = 100.0 * (c - lo) / (h - lo).replace(0.0, np.nan)
     return pl.Series("stoch_k", k.to_numpy())
 
 
@@ -54,18 +52,16 @@ def _wilder_smooth(s: pd.Series, period: int) -> pd.Series:
     return out
 
 
-def adx(
-    high: pl.Series, low: pl.Series, close: pl.Series, period: int = 14
-) -> pl.Series:
+def adx(high: pl.Series, low: pl.Series, close: pl.Series, period: int = 14) -> pl.Series:
     """Average Directional Index (Wilder). Higher = stronger trend."""
     h = _to_pd(high)
-    l = _to_pd(low)
+    lo = _to_pd(low)
     c = _to_pd(close)
     up = h.diff()
-    down = -l.diff()
+    down = -lo.diff()
     plus_dm = pd.Series(np.where((up > down) & (up > 0), up, 0.0), index=h.index)
     minus_dm = pd.Series(np.where((down > up) & (down > 0), down, 0.0), index=h.index)
-    tr = pd.concat([(h - l), (h - c.shift()).abs(), (l - c.shift()).abs()], axis=1).max(axis=1)
+    tr = pd.concat([(h - lo), (h - c.shift()).abs(), (lo - c.shift()).abs()], axis=1).max(axis=1)
     atr_s = _wilder_smooth(tr, period)
     plus_di = 100.0 * _wilder_smooth(plus_dm, period) / atr_s.replace(0.0, np.nan)
     minus_di = 100.0 * _wilder_smooth(minus_dm, period) / atr_s.replace(0.0, np.nan)

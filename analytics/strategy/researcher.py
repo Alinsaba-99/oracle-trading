@@ -152,10 +152,7 @@ class LLMStrategyResearcher:
             model=f"openai/{self.model}",
             api_base=self.api_base,
             api_key=self.api_key,
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ],
+            messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
             temperature=self.temperature,
             max_tokens=2000,
         )
@@ -209,7 +206,7 @@ def _parse_specs(text: str, n: int) -> list[StrategySpec]:
     starts = [i for i in (cleaned.find("["), cleaned.find("{")) if i >= 0]
     if not starts:
         return []
-    cleaned = cleaned[min(starts):]
+    cleaned = cleaned[min(starts) :]
     try:
         data = json.loads(cleaned)
     except json.JSONDecodeError:
