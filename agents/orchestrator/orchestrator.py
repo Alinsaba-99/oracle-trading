@@ -88,7 +88,7 @@ class MASOrchestrator:
             return decision
         if isinstance(decision, dict):
             return PortfolioDecision(**decision)
-        return decision
+        return decision  # type: ignore[no-any-return]
 
     @property
     def last_result(self) -> dict[str, Any] | None:

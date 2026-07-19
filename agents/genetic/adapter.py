@@ -77,8 +77,10 @@ class GAAdapter:
     def filter_by_regime(
         suggestions: list[StrategySuggestion], _regime: str
     ) -> list[StrategySuggestion]:
-        """Filter strategies appropriate for current market regime.
+        """Filter strategies appropriate for the current market regime.
 
-        For now, pass-through.  Future: tag strategies by regime.
+        Pass-through in v1 — returns *suggestions* unchanged.  Regime-aware
+        filtering will be added when strategies are tagged with per-regime
+        performance metadata.
         """
         return suggestions

@@ -9,24 +9,19 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
-import structlog
 from pydantic import BaseModel
 
+from agents.protocol import MarketState
 from analytics.regime.config import RegimeSettings
 from analytics.regime.detector import RegimeDetector
+from core.logging import get_logger
 
-logger = structlog.get_logger(__name__)
+
+class _NarrativeResponse(BaseModel):
+    text: str
 
 
-class MarketState(BaseModel, frozen=True):
-    """Immutable snapshot of the inferred market state."""
-
-    regime: str
-    phase: str
-    volatility: str
-    liquidity: str
-    risk_appetite: str
-    narrative: str | None = None
+logger = get_logger(__name__)
 
 
 class MarketOracle:
@@ -120,11 +115,11 @@ class MarketOracle:
             return "unknown"
 
         sma_50 = float(np.mean(closes[-50:]))
-        sma_200_short = float(np.mean(closes[-50:]))
+        sma_200 = float(np.mean(closes[-200:])) if len(closes) >= 200 else float(np.mean(closes))
         sma_200_long = float(np.mean(closes[:50])) if len(closes) >= 50 else float(np.mean(closes))
-        if sma_50 > sma_200_short > sma_200_long:
+        if sma_50 > sma_200 > sma_200_long:
             return "markup"
-        if sma_50 < sma_200_short < sma_200_long:
+        if sma_50 < sma_200 < sma_200_long:
             return "markdown"
         return "accumulation"
 
@@ -152,8 +147,10 @@ class MarketOracle:
         """Call LLM for market narrative — text only, never affects state."""
         system = "Sei un analista di mercato. Descrivi le condizioni attuali in 3-4 frasi."
         user = f"Regime: {state.regime}, Fase: {state.phase}, Volatilita: {state.volatility}"
-        result: str = await self._llm.structured_call(system, user, str)
-        return result
+        result = await self._llm.structured_call(
+            system_prompt=system, user_prompt=user, response_model=_NarrativeResponse
+        )
+        return result.text  # type: ignore[no-any-return]
 
     # ------------------------------------------------------------------
     # Internal helpers

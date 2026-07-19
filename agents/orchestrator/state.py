@@ -9,9 +9,10 @@ class StateManager:
     """Manages MASState lifecycle: init, validate, snapshot."""
 
     @staticmethod
-    def initial(instrument: str = "SPY") -> dict[str, object]:  # noqa: ARG004
+    def initial(instrument: str = "SPY") -> dict[str, object]:
         """Create initial state dict suitable for LangGraph TypedDict."""
         return {
+            "instrument": instrument,
             "market_data": None,
             "market_state": None,
             "analyst_signals": [],

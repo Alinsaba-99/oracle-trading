@@ -185,7 +185,7 @@ class DebateTeam:
     async def _call_role(self, system: str, user: str, response_model: type[BaseModel]) -> Any:
         """Execute a single structured LLM call for a debate role."""
         return await self._llm.structured_call(
-            system=system, user=user, response_model=response_model, temperature=0.7
+            system_prompt=system, user_prompt=user, response_model=response_model, temperature=0.7
         )
 
     async def _run_rebuttal_round(self, bull: _BullResponse, bear: _BearResponse) -> dict[str, Any]:
@@ -220,6 +220,7 @@ class DebateTeam:
         )
         result["bear_counter"] = bear_rb.counter_thesis
         result["bear_counter_weaknesses"] = bear_rb.weaknesses_found
+        result["bear_counter_confidence"] = bear_rb.confidence
 
         return result
 
@@ -271,18 +272,20 @@ class DebateTeam:
 
     @staticmethod
     def _build_consensus(
-        round_1: dict[str, Any],
-        round_2: dict[str, Any] | None,  # noqa: ARG004
+        round_1: dict[str, Any], round_2: dict[str, Any] | None
     ) -> AgentVote | None:
         """Build a unified AgentVote if consensus confidence > 0.5.
 
-        If Bull and Bear agree on direction, their average confidence is used.
+        Incorporates round 2 rebuttal confidence adjustments when available.
         Returns ``None`` when confidence is too low.
         """
         bull_dir = round_1.get("bull_direction", "hold")
         bear_dir = round_1.get("bear_direction", "hold")
         bull_conf = round_1.get("bull_confidence", 0.0)
         bear_conf = round_1.get("bear_confidence", 0.0)
+        if round_2 is not None:
+            bull_conf = round_2.get("bull_rebuttal_confidence", bull_conf)
+            bear_conf = round_2.get("bear_counter_confidence", bear_conf)
 
         if bull_dir == bear_dir:
             avg_conf = (bull_conf + bear_conf) / 2.0

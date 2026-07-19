@@ -8,11 +8,17 @@ from __future__ import annotations
 
 from typing import Any
 
-import structlog
+from pydantic import BaseModel
 
-from agents.oracle.oracle import MarketState
+from agents.protocol import MarketState
+from core.logging import get_logger
 
-logger = structlog.get_logger(__name__)
+
+class _NarrativeResponse(BaseModel):
+    text: str
+
+
+logger = get_logger(__name__)
 
 
 class NarrativeSynthesizer:
@@ -70,8 +76,10 @@ class NarrativeSynthesizer:
             if scores:
                 user += f"Scores: {scores}\n"
         assert self._llm is not None
-        result: str = await self._llm.structured_call(system, user, str)
-        return result
+        result = await self._llm.structured_call(
+            system_prompt=system, user_prompt=user, response_model=_NarrativeResponse
+        )
+        return result.text  # type: ignore[no-any-return]
 
     # ------------------------------------------------------------------
     # Template fallback

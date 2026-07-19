@@ -8,6 +8,9 @@ from pydantic import BaseModel, Field
 
 from agents.analysts.base import BaseAnalyst
 from agents.protocol import AgentVote, AnalystSignal
+from core.logging import get_logger
+
+logger = get_logger("oracle.agents.sentiment")
 
 if TYPE_CHECKING:
     from agents.protocol import AnalystInput
@@ -46,6 +49,18 @@ class SentimentAnalyst(BaseAnalyst):
         return "sentiment"
 
     async def analyze(self, data: AnalystInput) -> AnalystSignal:
+        try:
+            return await self._analyze_impl(data)
+        except Exception as exc:
+            logger.warning("SentimentAnalyst LLM error", exc_info=exc)
+            return AnalystSignal(
+                source="sentiment",
+                vote=AgentVote(direction="hold", confidence=0.0, reasoning=f"LLM error: {exc}"),
+                metadata={},
+                blind_spot=self.blind_spot,
+            )
+
+    async def _analyze_impl(self, data: AnalystInput) -> AnalystSignal:
         scores: dict[str, Any] = data.agent_specific_data.get("sentiment", {})
 
         news = scores.get("news", 0.0)
