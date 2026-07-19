@@ -105,9 +105,8 @@ class MetricsCalculator:
         """
         if len(returns) < 2:
             return 0.0
-        total_ret = _to_float(returns.sum())
         n = len(returns)
-        ann_return = total_ret / n * 252
+        ann_return = float(((1 + returns).product() ** (252 / n)) - 1)
 
         if max_drawdown is None:
             equity = (1 + returns).cum_prod()

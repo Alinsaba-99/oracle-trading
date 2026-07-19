@@ -51,11 +51,7 @@ class ChallengeSimulator:
         self.profile = profile
         self.initial_balance = initial_balance
 
-    def run(
-        self,
-        equity: list[float],
-        dates: list[date] | None = None,
-    ) -> ChallengeResult:
+    def run(self, equity: list[float], dates: list[date] | None = None) -> ChallengeResult:
         """Simulate one challenge over the given daily equity curve.
 
         Args:
@@ -121,9 +117,7 @@ class ChallengeSimulator:
             days_ok = days_elapsed >= self.profile.min_trading_days
             prof_ok = profitable_days >= self.profile.min_profitable_days
             if eq >= target and days_ok and prof_ok:
-                return self._finish(
-                    ChallengeStatus.PASSED, eq, max_dd, days_elapsed, breaches
-                )
+                return self._finish(ChallengeStatus.PASSED, eq, max_dd, days_elapsed, breaches)
 
         # Equity exhausted without a terminal outcome.
         return self._finish(gov.status, equity[-1], max_dd, days_elapsed, breaches)

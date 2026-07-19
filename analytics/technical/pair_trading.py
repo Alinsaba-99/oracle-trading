@@ -16,7 +16,7 @@ class CointegrationResult:
     score: float
     pvalue: float
     critical_values: dict[str, float]
-    hedge_ratio: float  # beta della regressione OLS
+    hedge_ratio: float  # beta della regressione OLS (full-sample)
     spread: pl.Series
     is_cointegrated: bool  # pvalue < 0.05
 
@@ -52,6 +52,46 @@ def compute_cointegration(asset_a: pl.Series, asset_b: pl.Series) -> Cointegrati
         spread=pl.Series("spread", spread, dtype=pl.Float64),
         is_cointegrated=pvalue < 0.05,
     )
+
+
+def compute_spread_causal(asset_a: pl.Series, asset_b: pl.Series) -> pl.Series:
+    """Calcola lo spread tra due asset in modo causale (expanding window).
+
+    A differenza di :func:`compute_cointegration`, che usa l'intero campione
+    per la stima OLS, questa funzione calcola l'hedge ratio con una finestra
+    *expanding*: per ogni punto temporale ``i``, la regressione usa solo
+    i dati fino a ``i``.  Questo elimina il look-ahead bias nello spread.
+
+    Args:
+        asset_a: Prezzi del primo asset.
+        asset_b: Prezzi del secondo asset.
+
+    Returns:
+        ``pl.Series`` con lo spread causale.
+    """
+    a = asset_a.to_numpy().astype(np.float64)
+    b = asset_b.to_numpy().astype(np.float64)
+
+    min_len = min(len(a), len(b))
+    a, b = a[:min_len], b[:min_len]
+
+    n = len(a)
+    spread = np.full(n, np.nan, dtype=np.float64)
+
+    for i in range(1, n):
+        # Expanding window: use data [0..i] for OLS
+        window_a = a[: i + 1]
+        window_b = b[: i + 1]
+
+        design = np.column_stack([window_a, np.ones_like(window_a)])
+        try:
+            beta_i, _ = np.linalg.lstsq(design, window_b, rcond=None)[0]
+        except np.linalg.LinAlgError:
+            beta_i = 0.0
+
+        spread[i] = b[i] - beta_i * a[i]
+
+    return pl.Series("spread_causal", spread, dtype=pl.Float64)
 
 
 def spread_zscore(

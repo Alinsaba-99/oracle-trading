@@ -171,7 +171,7 @@ class FREDClient:
             raw_val = obs.get("value")
             if raw_val in (".", None, ""):
                 continue
-            rows.append({"date": obs["date"], "value": float(raw_val)})  # type: ignore[arg-type]
+            rows.append({"date": obs["date"], "value": float(raw_val)})
 
         if not rows:
             return pl.DataFrame(

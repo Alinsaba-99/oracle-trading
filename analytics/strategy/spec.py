@@ -86,8 +86,7 @@ class StrategySpec(BaseModel):
     instrument: str = Field(description="One of INSTRUMENTS keys, e.g. 'GOLD'")
     entry: str = Field(description="One of ENTRY_TYPES keys")
     entry_params: dict[str, int | float] = Field(
-        default_factory=dict,
-        description="Signal params, e.g. {'period': 20, 'ma_period': 200}",
+        default_factory=dict, description="Signal params, e.g. {'period': 20, 'ma_period': 200}"
     )
     timeframe: str = Field(default="1d", description="Bar timeframe: 1d, 1h, or 15m")
     regime: str = Field(

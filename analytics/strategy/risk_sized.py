@@ -90,11 +90,7 @@ def sized_backtest(
     entries = raw == 1
     exits = raw == 0
     sizes = atr_percent_sizes(
-        data,
-        atr_period=atr_period,
-        risk_pct=risk_pct,
-        stop_atr_mult=stop_atr_mult,
-        max_pct=max_pct,
+        data, atr_period=atr_period, risk_pct=risk_pct, stop_atr_mult=stop_atr_mult, max_pct=max_pct
     ).to_numpy()
 
     portfolio = vbt.Portfolio.from_signals(

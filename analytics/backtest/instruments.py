@@ -16,11 +16,11 @@ already consumes, keyed by ``Instrument.id``.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import ClassVar
 
 
-class AssetClass(str, Enum):
+class AssetClass(StrEnum):
     FX = "fx"
     METAL = "metal"
     INDEX = "index"
@@ -29,21 +29,21 @@ class AssetClass(str, Enum):
     CRYPTO = "crypto"
 
 
-class ProductType(str, Enum):
+class ProductType(StrEnum):
     """How the instrument trades — drives data source and venue eligibility."""
 
-    SPOT = "spot"     # cash FX / spot metal (CFD-able on MT5)
-    CFD = "cfd"       # MT5 contract-for-difference (The5ers)
+    SPOT = "spot"  # cash FX / spot metal (CFD-able on MT5)
+    CFD = "cfd"  # MT5 contract-for-difference (The5ers)
     FUTURE = "future"  # exchange-listed futures (Lucid)
 
 
-class Venue(str, Enum):
+class Venue(StrEnum):
     THE5ERS = "the5ers"
     LUCID = "lucid"
     FREE = "free"
 
 
-class DataSource(str, Enum):
+class DataSource(StrEnum):
     YFINANCE = "yfinance"
     CCXT = "ccxt"
     METAAPI = "metaapi"
@@ -63,8 +63,8 @@ class Instrument:
     asset_class: AssetClass
     product_type: ProductType
     # symbol per data source (None = not fetchable from that source)
-    yf: str | None = None       # yfinance ticker ("GC=F")
-    ccxt: str | None = None     # ccxt unified symbol ("BTC/USDT")
+    yf: str | None = None  # yfinance ticker ("GC=F")
+    ccxt: str | None = None  # ccxt unified symbol ("BTC/USDT")
     metaapi: str | None = None  # MT5 symbol ("XAUUSD.r")
     futures: str | None = None  # futures root/continuous ("ES")
     venues: frozenset[Venue] = frozenset()
@@ -72,7 +72,7 @@ class Instrument:
     # Populated authoritatively by the R3 session calendar, not guessed here.
     session_open_utc: str | None = None
     session_close_utc: str | None = None
-    point_value: float = 1.0    # $ per point — finalized in sizing/execution layer
+    point_value: float = 1.0  # $ per point — finalized in sizing/execution layer
     min_tick: float = 0.01
 
 
@@ -118,97 +118,380 @@ class InstrumentRegistry:
     # indices); Lucid = CME futures (intraday-only); FREE = everything.
     DEFAULTS: ClassVar[list[Instrument]] = [
         # --- FX spot / CFD (The5ers MT5; yfinance daily proxy) ---
-        Instrument("EURUSD", "Euro / USD", AssetClass.FX, ProductType.SPOT,
-                   yf="EURUSD=X", metaapi="EURUSD", venues=_v(Venue.THE5ERS, Venue.FREE)),
-        Instrument("GBPUSD", "Pound / USD", AssetClass.FX, ProductType.SPOT,
-                   yf="GBPUSD=X", metaapi="GBPUSD", venues=_v(Venue.THE5ERS, Venue.FREE)),
-        Instrument("USDJPY", "USD / Yen", AssetClass.FX, ProductType.SPOT,
-                   yf="USDJPY=X", metaapi="USDJPY", venues=_v(Venue.THE5ERS, Venue.FREE)),
-        Instrument("USDCHF", "USD / Franc", AssetClass.FX, ProductType.SPOT,
-                   yf="USDCHF=X", metaapi="USDCHF", venues=_v(Venue.THE5ERS, Venue.FREE)),
-        Instrument("AUDUSD", "Aussie / USD", AssetClass.FX, ProductType.SPOT,
-                   yf="AUDUSD=X", metaapi="AUDUSD", venues=_v(Venue.THE5ERS, Venue.FREE)),
-        Instrument("USDCAD", "USD / Loonie", AssetClass.FX, ProductType.SPOT,
-                   yf="USDCAD=X", metaapi="USDCAD", venues=_v(Venue.THE5ERS, Venue.FREE)),
-        Instrument("NZDUSD", "Kiwi / USD", AssetClass.FX, ProductType.SPOT,
-                   yf="NZDUSD=X", metaapi="NZDUSD", venues=_v(Venue.THE5ERS, Venue.FREE)),
-        Instrument("EURGBP", "Euro / Pound", AssetClass.FX, ProductType.SPOT,
-                   yf="EURGBP=X", metaapi="EURGBP", venues=_v(Venue.THE5ERS, Venue.FREE)),
-        Instrument("EURJPY", "Euro / Yen", AssetClass.FX, ProductType.SPOT,
-                   yf="EURJPY=X", metaapi="EURJPY", venues=_v(Venue.THE5ERS, Venue.FREE)),
-        Instrument("GBPJPY", "Pound / Yen", AssetClass.FX, ProductType.SPOT,
-                   yf="GBPJPY=X", metaapi="GBPJPY", venues=_v(Venue.THE5ERS, Venue.FREE)),
+        Instrument(
+            "EURUSD",
+            "Euro / USD",
+            AssetClass.FX,
+            ProductType.SPOT,
+            yf="EURUSD=X",
+            metaapi="EURUSD",
+            venues=_v(Venue.THE5ERS, Venue.FREE),
+        ),
+        Instrument(
+            "GBPUSD",
+            "Pound / USD",
+            AssetClass.FX,
+            ProductType.SPOT,
+            yf="GBPUSD=X",
+            metaapi="GBPUSD",
+            venues=_v(Venue.THE5ERS, Venue.FREE),
+        ),
+        Instrument(
+            "USDJPY",
+            "USD / Yen",
+            AssetClass.FX,
+            ProductType.SPOT,
+            yf="USDJPY=X",
+            metaapi="USDJPY",
+            venues=_v(Venue.THE5ERS, Venue.FREE),
+        ),
+        Instrument(
+            "USDCHF",
+            "USD / Franc",
+            AssetClass.FX,
+            ProductType.SPOT,
+            yf="USDCHF=X",
+            metaapi="USDCHF",
+            venues=_v(Venue.THE5ERS, Venue.FREE),
+        ),
+        Instrument(
+            "AUDUSD",
+            "Aussie / USD",
+            AssetClass.FX,
+            ProductType.SPOT,
+            yf="AUDUSD=X",
+            metaapi="AUDUSD",
+            venues=_v(Venue.THE5ERS, Venue.FREE),
+        ),
+        Instrument(
+            "USDCAD",
+            "USD / Loonie",
+            AssetClass.FX,
+            ProductType.SPOT,
+            yf="USDCAD=X",
+            metaapi="USDCAD",
+            venues=_v(Venue.THE5ERS, Venue.FREE),
+        ),
+        Instrument(
+            "NZDUSD",
+            "Kiwi / USD",
+            AssetClass.FX,
+            ProductType.SPOT,
+            yf="NZDUSD=X",
+            metaapi="NZDUSD",
+            venues=_v(Venue.THE5ERS, Venue.FREE),
+        ),
+        Instrument(
+            "EURGBP",
+            "Euro / Pound",
+            AssetClass.FX,
+            ProductType.SPOT,
+            yf="EURGBP=X",
+            metaapi="EURGBP",
+            venues=_v(Venue.THE5ERS, Venue.FREE),
+        ),
+        Instrument(
+            "EURJPY",
+            "Euro / Yen",
+            AssetClass.FX,
+            ProductType.SPOT,
+            yf="EURJPY=X",
+            metaapi="EURJPY",
+            venues=_v(Venue.THE5ERS, Venue.FREE),
+        ),
+        Instrument(
+            "GBPJPY",
+            "Pound / Yen",
+            AssetClass.FX,
+            ProductType.SPOT,
+            yf="GBPJPY=X",
+            metaapi="GBPJPY",
+            venues=_v(Venue.THE5ERS, Venue.FREE),
+        ),
         # --- Metals spot / CFD (The5ers) ---
-        Instrument("XAUUSD", "Gold spot", AssetClass.METAL, ProductType.SPOT,
-                   metaapi="XAUUSD", venues=_v(Venue.THE5ERS, Venue.FREE)),
-        Instrument("XAGUSD", "Silver spot", AssetClass.METAL, ProductType.SPOT,
-                   metaapi="XAGUSD", venues=_v(Venue.THE5ERS, Venue.FREE)),
-        Instrument("XPTUSD", "Platinum spot", AssetClass.METAL, ProductType.SPOT,
-                   metaapi="XPTUSD", venues=_v(Venue.THE5ERS, Venue.FREE)),
-        Instrument("XPDUSD", "Palladium spot", AssetClass.METAL, ProductType.SPOT,
-                   metaapi="XPDUSD", venues=_v(Venue.THE5ERS, Venue.FREE)),
+        Instrument(
+            "XAUUSD",
+            "Gold spot",
+            AssetClass.METAL,
+            ProductType.SPOT,
+            metaapi="XAUUSD",
+            venues=_v(Venue.THE5ERS, Venue.FREE),
+        ),
+        Instrument(
+            "XAGUSD",
+            "Silver spot",
+            AssetClass.METAL,
+            ProductType.SPOT,
+            metaapi="XAGUSD",
+            venues=_v(Venue.THE5ERS, Venue.FREE),
+        ),
+        Instrument(
+            "XPTUSD",
+            "Platinum spot",
+            AssetClass.METAL,
+            ProductType.SPOT,
+            metaapi="XPTUSD",
+            venues=_v(Venue.THE5ERS, Venue.FREE),
+        ),
+        Instrument(
+            "XPDUSD",
+            "Palladium spot",
+            AssetClass.METAL,
+            ProductType.SPOT,
+            metaapi="XPDUSD",
+            venues=_v(Venue.THE5ERS, Venue.FREE),
+        ),
         # --- Index CFD (The5ers; yfinance cash-index proxy) ---
-        Instrument("SP500", "S&P 500 CFD", AssetClass.INDEX, ProductType.CFD,
-                   yf="^GSPC", metaapi="SP500", venues=_v(Venue.THE5ERS, Venue.FREE)),
-        Instrument("NAS100", "Nasdaq 100 CFD", AssetClass.INDEX, ProductType.CFD,
-                   yf="^NDX", metaapi="NAS100", venues=_v(Venue.THE5ERS, Venue.FREE)),
-        Instrument("US30", "Dow 30 CFD", AssetClass.INDEX, ProductType.CFD,
-                   yf="^DJI", metaapi="US30", venues=_v(Venue.THE5ERS, Venue.FREE)),
-        Instrument("DAX", "Dax 40 CFD", AssetClass.INDEX, ProductType.CFD,
-                   yf="^GDAXI", metaapi="GER40", venues=_v(Venue.THE5ERS, Venue.FREE)),
-        Instrument("UK100", "FTSE 100 CFD", AssetClass.INDEX, ProductType.CFD,
-                   yf="^FTSE", metaapi="UK100", venues=_v(Venue.THE5ERS, Venue.FREE)),
-        Instrument("JP225", "Nikkei 225 CFD", AssetClass.INDEX, ProductType.CFD,
-                   yf="^N225", metaapi="JP225", venues=_v(Venue.THE5ERS, Venue.FREE)),
+        Instrument(
+            "SP500",
+            "S&P 500 CFD",
+            AssetClass.INDEX,
+            ProductType.CFD,
+            yf="^GSPC",
+            metaapi="SP500",
+            venues=_v(Venue.THE5ERS, Venue.FREE),
+        ),
+        Instrument(
+            "NAS100",
+            "Nasdaq 100 CFD",
+            AssetClass.INDEX,
+            ProductType.CFD,
+            yf="^NDX",
+            metaapi="NAS100",
+            venues=_v(Venue.THE5ERS, Venue.FREE),
+        ),
+        Instrument(
+            "US30",
+            "Dow 30 CFD",
+            AssetClass.INDEX,
+            ProductType.CFD,
+            yf="^DJI",
+            metaapi="US30",
+            venues=_v(Venue.THE5ERS, Venue.FREE),
+        ),
+        Instrument(
+            "DAX",
+            "Dax 40 CFD",
+            AssetClass.INDEX,
+            ProductType.CFD,
+            yf="^GDAXI",
+            metaapi="GER40",
+            venues=_v(Venue.THE5ERS, Venue.FREE),
+        ),
+        Instrument(
+            "UK100",
+            "FTSE 100 CFD",
+            AssetClass.INDEX,
+            ProductType.CFD,
+            yf="^FTSE",
+            metaapi="UK100",
+            venues=_v(Venue.THE5ERS, Venue.FREE),
+        ),
+        Instrument(
+            "JP225",
+            "Nikkei 225 CFD",
+            AssetClass.INDEX,
+            ProductType.CFD,
+            yf="^N225",
+            metaapi="JP225",
+            venues=_v(Venue.THE5ERS, Venue.FREE),
+        ),
         # --- Index futures (Lucid; yfinance continuous proxy) ---
-        Instrument("ES", "E-mini S&P 500", AssetClass.INDEX, ProductType.FUTURE,
-                   yf="ES=F", futures="ES", venues=_v(Venue.LUCID, Venue.FREE)),
-        Instrument("NQ", "E-mini Nasdaq 100", AssetClass.INDEX, ProductType.FUTURE,
-                   yf="NQ=F", futures="NQ", venues=_v(Venue.LUCID, Venue.FREE)),
-        Instrument("YM", "E-mini Dow", AssetClass.INDEX, ProductType.FUTURE,
-                   yf="YM=F", futures="YM", venues=_v(Venue.LUCID, Venue.FREE)),
-        Instrument("RTY", "E-mini Russell 2000", AssetClass.INDEX, ProductType.FUTURE,
-                   yf="RTY=F", futures="RTY", venues=_v(Venue.LUCID, Venue.FREE)),
+        Instrument(
+            "ES",
+            "E-mini S&P 500",
+            AssetClass.INDEX,
+            ProductType.FUTURE,
+            yf="ES=F",
+            futures="ES",
+            venues=_v(Venue.LUCID, Venue.FREE),
+        ),
+        Instrument(
+            "NQ",
+            "E-mini Nasdaq 100",
+            AssetClass.INDEX,
+            ProductType.FUTURE,
+            yf="NQ=F",
+            futures="NQ",
+            venues=_v(Venue.LUCID, Venue.FREE),
+        ),
+        Instrument(
+            "YM",
+            "E-mini Dow",
+            AssetClass.INDEX,
+            ProductType.FUTURE,
+            yf="YM=F",
+            futures="YM",
+            venues=_v(Venue.LUCID, Venue.FREE),
+        ),
+        Instrument(
+            "RTY",
+            "E-mini Russell 2000",
+            AssetClass.INDEX,
+            ProductType.FUTURE,
+            yf="RTY=F",
+            futures="RTY",
+            venues=_v(Venue.LUCID, Venue.FREE),
+        ),
         # --- Metals futures (Lucid) ---
-        Instrument("GC", "Gold futures", AssetClass.METAL, ProductType.FUTURE,
-                   yf="GC=F", futures="GC", venues=_v(Venue.LUCID, Venue.FREE)),
-        Instrument("SI", "Silver futures", AssetClass.METAL, ProductType.FUTURE,
-                   yf="SI=F", futures="SI", venues=_v(Venue.LUCID, Venue.FREE)),
+        Instrument(
+            "GC",
+            "Gold futures",
+            AssetClass.METAL,
+            ProductType.FUTURE,
+            yf="GC=F",
+            futures="GC",
+            venues=_v(Venue.LUCID, Venue.FREE),
+        ),
+        Instrument(
+            "SI",
+            "Silver futures",
+            AssetClass.METAL,
+            ProductType.FUTURE,
+            yf="SI=F",
+            futures="SI",
+            venues=_v(Venue.LUCID, Venue.FREE),
+        ),
         # --- Energy futures (Lucid) ---
-        Instrument("CL", "WTI Crude futures", AssetClass.ENERGY, ProductType.FUTURE,
-                   yf="CL=F", futures="CL", venues=_v(Venue.LUCID, Venue.FREE)),
-        Instrument("NG", "Natural Gas futures", AssetClass.ENERGY, ProductType.FUTURE,
-                   yf="NG=F", futures="NG", venues=_v(Venue.LUCID, Venue.FREE)),
-        Instrument("RB", "RBOB Gasoline futures", AssetClass.ENERGY, ProductType.FUTURE,
-                   yf="RB=F", futures="RB", venues=_v(Venue.LUCID, Venue.FREE)),
-        Instrument("HO", "Heating Oil futures", AssetClass.ENERGY, ProductType.FUTURE,
-                   yf="HO=F", futures="HO", venues=_v(Venue.LUCID, Venue.FREE)),
+        Instrument(
+            "CL",
+            "WTI Crude futures",
+            AssetClass.ENERGY,
+            ProductType.FUTURE,
+            yf="CL=F",
+            futures="CL",
+            venues=_v(Venue.LUCID, Venue.FREE),
+        ),
+        Instrument(
+            "NG",
+            "Natural Gas futures",
+            AssetClass.ENERGY,
+            ProductType.FUTURE,
+            yf="NG=F",
+            futures="NG",
+            venues=_v(Venue.LUCID, Venue.FREE),
+        ),
+        Instrument(
+            "RB",
+            "RBOB Gasoline futures",
+            AssetClass.ENERGY,
+            ProductType.FUTURE,
+            yf="RB=F",
+            futures="RB",
+            venues=_v(Venue.LUCID, Venue.FREE),
+        ),
+        Instrument(
+            "HO",
+            "Heating Oil futures",
+            AssetClass.ENERGY,
+            ProductType.FUTURE,
+            yf="HO=F",
+            futures="HO",
+            venues=_v(Venue.LUCID, Venue.FREE),
+        ),
         # --- Rates futures (Lucid) ---
-        Instrument("ZN", "10yr Treasury futures", AssetClass.RATE, ProductType.FUTURE,
-                   yf="ZN=F", futures="ZN", venues=_v(Venue.LUCID, Venue.FREE)),
-        Instrument("ZB", "30yr Bond futures", AssetClass.RATE, ProductType.FUTURE,
-                   yf="ZB=F", futures="ZB", venues=_v(Venue.LUCID, Venue.FREE)),
-        Instrument("ZF", "5yr Treasury futures", AssetClass.RATE, ProductType.FUTURE,
-                   yf="ZF=F", futures="ZF", venues=_v(Venue.LUCID, Venue.FREE)),
+        Instrument(
+            "ZN",
+            "10yr Treasury futures",
+            AssetClass.RATE,
+            ProductType.FUTURE,
+            yf="ZN=F",
+            futures="ZN",
+            venues=_v(Venue.LUCID, Venue.FREE),
+        ),
+        Instrument(
+            "ZB",
+            "30yr Bond futures",
+            AssetClass.RATE,
+            ProductType.FUTURE,
+            yf="ZB=F",
+            futures="ZB",
+            venues=_v(Venue.LUCID, Venue.FREE),
+        ),
+        Instrument(
+            "ZF",
+            "5yr Treasury futures",
+            AssetClass.RATE,
+            ProductType.FUTURE,
+            yf="ZF=F",
+            futures="ZF",
+            venues=_v(Venue.LUCID, Venue.FREE),
+        ),
         # --- FX futures (Lucid) ---
-        Instrument("6E", "Euro FX futures", AssetClass.FX, ProductType.FUTURE,
-                   yf="6E=F", futures="6E", venues=_v(Venue.LUCID, Venue.FREE)),
-        Instrument("6B", "Pound FX futures", AssetClass.FX, ProductType.FUTURE,
-                   yf="6B=F", futures="6B", venues=_v(Venue.LUCID, Venue.FREE)),
-        Instrument("6J", "Yen FX futures", AssetClass.FX, ProductType.FUTURE,
-                   yf="6J=F", futures="6J", venues=_v(Venue.LUCID, Venue.FREE)),
+        Instrument(
+            "6E",
+            "Euro FX futures",
+            AssetClass.FX,
+            ProductType.FUTURE,
+            yf="6E=F",
+            futures="6E",
+            venues=_v(Venue.LUCID, Venue.FREE),
+        ),
+        Instrument(
+            "6B",
+            "Pound FX futures",
+            AssetClass.FX,
+            ProductType.FUTURE,
+            yf="6B=F",
+            futures="6B",
+            venues=_v(Venue.LUCID, Venue.FREE),
+        ),
+        Instrument(
+            "6J",
+            "Yen FX futures",
+            AssetClass.FX,
+            ProductType.FUTURE,
+            yf="6J=F",
+            futures="6J",
+            venues=_v(Venue.LUCID, Venue.FREE),
+        ),
         # --- Crypto spot (ccxt intraday + yfinance daily) ---
-        Instrument("BTC", "Bitcoin", AssetClass.CRYPTO, ProductType.SPOT,
-                   yf="BTC-USD", ccxt="BTC/USDT", venues=_v(Venue.FREE, Venue.THE5ERS)),
-        Instrument("ETH", "Ethereum", AssetClass.CRYPTO, ProductType.SPOT,
-                   yf="ETH-USD", ccxt="ETH/USDT", venues=_v(Venue.FREE, Venue.THE5ERS)),
-        Instrument("SOL", "Solana", AssetClass.CRYPTO, ProductType.SPOT,
-                   yf="SOL-USD", ccxt="SOL/USDT", venues=_v(Venue.FREE, Venue.THE5ERS)),
+        Instrument(
+            "BTC",
+            "Bitcoin",
+            AssetClass.CRYPTO,
+            ProductType.SPOT,
+            yf="BTC-USD",
+            ccxt="BTC/USDT",
+            venues=_v(Venue.FREE, Venue.THE5ERS),
+        ),
+        Instrument(
+            "ETH",
+            "Ethereum",
+            AssetClass.CRYPTO,
+            ProductType.SPOT,
+            yf="ETH-USD",
+            ccxt="ETH/USDT",
+            venues=_v(Venue.FREE, Venue.THE5ERS),
+        ),
+        Instrument(
+            "SOL",
+            "Solana",
+            AssetClass.CRYPTO,
+            ProductType.SPOT,
+            yf="SOL-USD",
+            ccxt="SOL/USDT",
+            venues=_v(Venue.FREE, Venue.THE5ERS),
+        ),
         # --- Crypto futures (Lucid; CME) ---
-        Instrument("BTF", "Bitcoin futures", AssetClass.CRYPTO, ProductType.FUTURE,
-                   yf="BTC=F", futures="BRR", venues=_v(Venue.LUCID, Venue.FREE)),
-        Instrument("ETHF", "Ethereum futures", AssetClass.CRYPTO, ProductType.FUTURE,
-                   yf="ETH=F", futures="ETH", venues=_v(Venue.LUCID, Venue.FREE)),
+        Instrument(
+            "BTF",
+            "Bitcoin futures",
+            AssetClass.CRYPTO,
+            ProductType.FUTURE,
+            yf="BTC=F",
+            futures="BRR",
+            venues=_v(Venue.LUCID, Venue.FREE),
+        ),
+        Instrument(
+            "ETHF",
+            "Ethereum futures",
+            AssetClass.CRYPTO,
+            ProductType.FUTURE,
+            yf="ETH=F",
+            futures="ETH",
+            venues=_v(Venue.LUCID, Venue.FREE),
+        ),
     ]
 
 

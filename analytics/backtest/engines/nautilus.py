@@ -8,8 +8,9 @@ and returns a ``BacktestResult`` compatible with the vectorized engine.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from typing import cast
 from uuid import uuid4
 
 import numpy as np
@@ -51,11 +52,7 @@ def _infer_bar_aggregation(data: pl.DataFrame) -> BarAggregation:
         return BarAggregation.DAY
     ts = data["timestamp"]
     diffs = ts.diff().drop_nulls()
-    median_secs = float(
-        diffs.median().total_seconds()
-        if hasattr(diffs.median(), "total_seconds")
-        else diffs.median()
-    )
+    median_secs = float(cast(timedelta, diffs.median()).total_seconds())
     if median_secs >= 86400 * 0.5:
         return BarAggregation.DAY
     if median_secs >= 3600 * 0.5:
@@ -80,7 +77,7 @@ def _make_strategy_class() -> type:
     """
     from nautilus_trader.trading.strategy import Strategy
 
-    class _OracleStrategy(Strategy):
+    class _OracleStrategy(Strategy):  # type: ignore[misc]
         """Strategy that follows a pre-computed signal array."""
 
         def __init__(
@@ -103,7 +100,13 @@ def _make_strategy_class() -> type:
             if idx >= len(self._signals):
                 return
 
-            target = int(self._signals[idx])
+            # Signal at bar idx is computed from close[idx]; execution can
+            # only happen at bar idx+1 at the earliest (look-ahead prevention
+            # to match the VectorizedEngine semantics).
+            if idx == 0:
+                # First bar: no prior signal to act on.
+                return
+            target = int(self._signals[idx - 1])
             if target == self._current_position:
                 return
 
@@ -115,9 +118,10 @@ def _make_strategy_class() -> type:
 
         def _close_position(self) -> None:
             try:
-                pos = self.cache.position(self._instrument_id)
-                if pos is None:
+                positions = self.cache.positions(instrument_id=self._instrument_id)
+                if not positions:
                     return
+                pos = positions[0]
                 close_side = OrderSide.SELL if self._current_position > 0 else OrderSide.BUY
                 order = self.order_factory.market(
                     instrument_id=self._instrument_id,
@@ -130,10 +134,10 @@ def _make_strategy_class() -> type:
                 pass
 
         def _open_position(self, target: int, bar: Bar) -> None:
-            price = float(bar.close.as_double())  # type: ignore[union-attr]
+            price = float(bar.close.as_double())
             try:
                 acct = self.cache.account_for_venue(self._venue)
-                cash = float(acct.balance().free.as_double())  # type: ignore[union-attr]
+                cash = float(acct.balance().free.as_double())
             except Exception:
                 cash = 100_000.0
 
@@ -156,14 +160,15 @@ def _make_strategy_class() -> type:
 def _extract_trades(engine: BacktestEngine) -> list[Trade]:
     """Convert nautilus positions to Oracle ``Trade`` models."""
     trades: list[Trade] = []
-    for position in engine.cache.positions():
+    all_positions = list(engine.cache.positions()) + list(engine.cache.positions_closed())
+    for position in all_positions:
         direction = TradeDirection.long if position.signed_qty > 0 else TradeDirection.short
         entry_price_val = float(position.avg_px_open)
         exit_price_val = float(position.avg_px_close) if position.ts_closed else None
         qty = float(abs(position.signed_qty))
 
         rpnl = position.realized_pnl
-        pnl_val = float(rpnl.as_double()) if hasattr(rpnl, "as_double") else float(rpnl)  # type: ignore[union-attr]
+        pnl_val = float(rpnl.as_double()) if hasattr(rpnl, "as_double") else float(rpnl)
 
         entry_time = (
             datetime.fromtimestamp(position.ts_opened / 1e9, tz=UTC)
@@ -297,8 +302,11 @@ def _compute_equity_curve(
                 cash += shares * price
                 shares = 0.0
 
-        # Record equity at this bar
-        eq = cash + abs(shares) * closes[i] if shares != 0 else cash
+        # Record equity at this bar.
+        # For long positions (shares > 0): equity = cash + shares * close
+        # For short positions (shares < 0): equity = cash + shares * close
+        # (shares is negative, so position value decreases as price rises)
+        eq = cash + shares * closes[i] if shares != 0 else cash
         equity_vals.append(eq)
 
         # Default: follow signal for bars without trade info
@@ -311,7 +319,7 @@ def _compute_equity_curve(
                     shares = 0.0
                 elif cur_sig == 0 and next_sig != 0:
                     price = closes[i]
-                    qty = max(1, int(cash * 0.95 / price)) if price > 0 else 1
+                    qty = max(1, int(cash / price)) if price > 0 else 1
                     shares = float(qty if next_sig > 0 else -qty)
                     cash -= qty * price
 
@@ -423,13 +431,19 @@ class NautilusEngine:
         engine_config = BacktestEngineConfig()
         engine = BacktestEngine(engine_config)
 
+        # Slippage: nautilus's FillModel uses prob_slippage (probability of
+        # one-tick slippage).  We convert the configured bps value to a
+        # probability heuristic: higher bps -> higher slippage probability.
+        # This is an approximation; exact bps-based slippage would require
+        # a custom Cython FillModel.
+        slippage_prob = min(1.0, cfg.slippage_bps / 100.0)
         engine.add_venue(
             venue=venue,
             oms_type=OmsType.NETTING,
             account_type=AccountType.CASH,
             starting_balances=[Money(float(cfg.initial_capital), USD)],
             base_currency=USD,
-            fill_model=FillModel(),
+            fill_model=FillModel(prob_slippage=slippage_prob),
         )
         engine.add_instrument(instrument)
         engine.add_data(bars)
@@ -445,7 +459,7 @@ class NautilusEngine:
         try:
             account_id = AccountId("ORACLE-001")
             acct = engine.cache.account(account_id)
-            final_cash = float(acct.balance().total.as_double())  # type: ignore[union-attr]
+            final_cash = float(acct.balance().total.as_double())
         except Exception:
             final_cash = float(cfg.initial_capital)
 
@@ -502,16 +516,18 @@ class NautilusEngine:
         sharpe = MetricsCalculator.sharpe_ratio(returns)
         sortino = MetricsCalculator.sortino_ratio(returns)
         max_dd = MetricsCalculator.max_drawdown(equity_series)
-        volatility = float(returns.std()) * (252**0.5) if returns.std() is not None else 0.0
+        _std = returns.std()
+        volatility = cast(float, _std) * (252**0.5) if _std is not None else 0.0
         calmar = cagr / max_dd if max_dd > 0 else 0.0
 
         total_trades_count = len(trades)
         wins = [t for t in trades if t.pnl is not None and t.pnl > 0]
         losses = [t for t in trades if t.pnl is not None and t.pnl < 0]
         win_rate = len(wins) / max(total_trades_count, 1)
-
-        gross_win = sum(float(t.pnl) for t in wins)  # type: ignore[union-attr]
-        gross_loss = abs(sum(float(t.pnl) for t in losses))  # type: ignore[union-attr]
+        win_values: list[float] = [float(t.pnl) for t in wins]  # type: ignore[arg-type]
+        loss_values: list[float] = [float(t.pnl) for t in losses]  # type: ignore[arg-type]
+        gross_win = sum(win_values)
+        gross_loss = abs(sum(loss_values))
         profit_factor = (
             (gross_win / gross_loss) if gross_loss > 0 else (gross_win if gross_win > 0 else 1.0)
         )

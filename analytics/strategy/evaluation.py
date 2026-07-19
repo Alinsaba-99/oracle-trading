@@ -149,9 +149,7 @@ def monte_carlo_calendar_windows(
         if len(seg) < 2 or seg[0][1] <= 0:
             continue
         norm = [initial_balance * (e / seg[0][1]) for _, e in seg]
-        out = ChallengeSimulator(profile, initial_balance).run(
-            norm, dates=[d for d, _ in seg]
-        )
+        out = ChallengeSimulator(profile, initial_balance).run(norm, dates=[d for d, _ in seg])
         report.total += 1
         report.max_drawdowns.append(out.max_drawdown_pct)
         report.days_to_resolve.append(out.days_elapsed)

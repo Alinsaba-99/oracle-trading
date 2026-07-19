@@ -22,12 +22,12 @@ import polars as pl
 
 #: Wide OHLCV schema matching :class:`BacktestDataProvider`.
 OHLCV_SCHEMA: dict[str, pl.DataType] = {
-    "timestamp": pl.Datetime,
-    "open": pl.Float64,
-    "high": pl.Float64,
-    "low": pl.Float64,
-    "close": pl.Float64,
-    "volume": pl.Float64,
+    "timestamp": pl.Datetime(time_unit="us"),
+    "open": pl.Float64(),
+    "high": pl.Float64(),
+    "low": pl.Float64(),
+    "close": pl.Float64(),
+    "volume": pl.Float64(),
 }
 
 #: Prop-firm instrument id -> yfinance ticker.

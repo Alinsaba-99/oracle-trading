@@ -18,17 +18,11 @@ import asyncio
 import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
 
 import polars as pl
 
 from analytics.backtest.fx_data import OHLCV_SCHEMA, _to_wide_ohlcv
-from analytics.backtest.instruments import (
-    AssetClass,
-    Instrument,
-    InstrumentRegistry,
-    default_registry,
-)
+from analytics.backtest.instruments import Instrument, InstrumentRegistry, default_registry
 
 SUPPORTED_TIMEFRAMES = ("15m", "1h", "4h", "1d")
 
@@ -80,16 +74,42 @@ def fetch_ccxt(
     *,
     exchange_id: str = "binance",
     limit: int = 1000,
+    since: int | None = None,
+    max_requests: int = 5,
 ) -> pl.DataFrame:
-    """Fetch OHLCV via ccxt for an instrument's ``ccxt`` symbol (crypto)."""
+    """Fetch OHLCV via ccxt for an instrument's ``ccxt`` symbol (crypto).
+
+    Supports pagination via the *since* timestamp (epoch ms).  When the
+    exchange returns a full page (== limit rows), the method continues
+    fetching until fewer than *limit* rows are returned or *max_requests*
+    is reached.
+    """
     import ccxt
 
     if not inst.ccxt:
         return pl.DataFrame(schema=OHLCV_SCHEMA)
     exchange = getattr(ccxt, exchange_id)()
-    ohlcv = exchange.fetch_ohlcv(inst.ccxt, timeframe=_CCXT_INTERVAL[tf], limit=limit)
-    if not ohlcv:
+
+    all_bars: list[list[float]] = []
+    request_count = 0
+    current_since = since
+
+    while request_count < max_requests:
+        ohlcv = exchange.fetch_ohlcv(
+            inst.ccxt, timeframe=_CCXT_INTERVAL[tf], since=current_since, limit=limit
+        )
+        if not ohlcv:
+            break
+        all_bars.extend(ohlcv)
+        request_count += 1
+        if len(ohlcv) < limit:
+            break  # last page
+        # Advance *since* to the timestamp of the last bar for next page
+        current_since = int(ohlcv[-1][0]) + 1
+
+    if not all_bars:
         return pl.DataFrame(schema=OHLCV_SCHEMA)
+
     rows = [
         {
             "timestamp": datetime.fromtimestamp(bar[0] / 1000.0, tz=UTC),
@@ -99,7 +119,7 @@ def fetch_ccxt(
             "close": float(bar[4]),
             "volume": float(bar[5] or 0.0),
         }
-        for bar in ohlcv
+        for bar in all_bars
     ]
     return pl.DataFrame(rows, schema=OHLCV_SCHEMA).unique("timestamp").sort("timestamp")
 
@@ -135,9 +155,16 @@ def fetch_metaapi(inst: Instrument, tf: str, *, start: datetime, end: datetime) 
 def _dispatch(
     inst: Instrument, tf: str, *, period: str | None, start: datetime | None, end: datetime | None
 ) -> pl.DataFrame:
-    """Pick a provider for the instrument and fetch (no caching)."""
+    """Pick a provider for the instrument and fetch (no caching).
+
+    When *start* is provided for ccxt, the method paginates from that
+    timestamp backward.  Otherwise it uses the default ``limit=1000``.
+    """
     if inst.ccxt:  # crypto: ccxt is the reliable intraday + daily source
-        return fetch_ccxt(inst, tf)
+        since: int | None = None
+        if start is not None:
+            since = int(start.timestamp() * 1000)
+        return fetch_ccxt(inst, tf, since=since)
     if inst.yf:
         return fetch_yfinance(inst, tf, period=period)
     if inst.metaapi:
@@ -154,9 +181,7 @@ class DataRegistry:
     """
 
     def __init__(
-        self,
-        root: Path | str = Path("data/ohlcv"),
-        registry: InstrumentRegistry | None = None,
+        self, root: Path | str = Path("data/ohlcv"), registry: InstrumentRegistry | None = None
     ) -> None:
         self.root = Path(root)
         self.registry = registry or default_registry()
@@ -202,7 +227,7 @@ class DataRegistry:
                 try:
                     df = self.get_ohlcv(inst_id, tf, period=period, force=True)
                     counts[(inst_id, tf)] = df.height
-                except Exception as exc:  # noqa: BLE001 — warm is best-effort bulk
+                except Exception as exc:
                     counts[(inst_id, tf)] = -1
                     print(f"[warm] {inst_id}/{tf} failed: {exc}")
         return counts
