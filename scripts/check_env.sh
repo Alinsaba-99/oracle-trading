@@ -23,7 +23,7 @@ fi
 echo "OK: Python $PY_VERSION"
 
 missing=0
-for pkg in talib vectorbt deap langgraph polars lightgbm numpy pandas ruff mypy pytest; do
+for pkg in talib vectorbt deap langgraph polars numpy pandas ruff mypy pytest; do
     if ! "$PYTHON" -c "import $pkg" 2>/dev/null; then
         echo "MISSING: $pkg"
         missing=$((missing + 1))

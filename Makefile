@@ -1,4 +1,4 @@
-.PHONY: install dev lint format typecheck test test-cov clean docker-up docker-down precommit
+.PHONY: install dev lint lint-fix format typecheck test test-venv test-cov test-fast test-unit test-integration docker-up docker-down docker-logs docker-build precommit precommit-install clean fresh docs-tree setup-hooks
 
 # Python
 install:
