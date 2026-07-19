@@ -3,6 +3,9 @@
 
 FROM python:3.12-slim
 
+# ── Non-root user ────────────────────────────────────────────────────
+RUN groupadd -r oracle && useradd -r -g oracle -d /app -s /sbin/nologin oracle
+
 WORKDIR /app
 
 # Install system deps
@@ -11,22 +14,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy project files
-COPY pyproject.toml .
-COPY .python-version .
-
-# Install runtime dependencies (Polars per API, plus dev/lint/test tools)
+# Copy project files and install deps
+COPY pyproject.toml .python-version ./
 RUN pip install --no-cache-dir -e ".[dev]" polars
 
 # Copy source
-COPY agents/ agents/
-COPY analytics/ analytics/
-COPY apps/ apps/
-COPY core/ core/
-COPY execution/ execution/
-COPY genetics/ genetics/
-COPY market/ market/
-COPY policy/ policy/
+COPY agents/ analytics/ apps/ core/ execution/ genetics/ market/ policy/ ./
+
+# Non-root user from here on
+USER oracle
 
 # Expose API port
 EXPOSE 8000
