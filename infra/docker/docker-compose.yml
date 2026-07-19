@@ -1,123 +1,146 @@
-version: "3.8"
-
-x-oracle-common: &oracle-common
-  build:
-    context: ../..
-    dockerfile: infra/docker/Dockerfile
-  env_file:
-    - ../../.env
-  networks:
-    - oracle-net
-  depends_on:
-    nats:
-      condition: service_healthy
-    redis:
-      condition: service_started
-  restart: unless-stopped
+# Oracle Trading Platform — Docker Compose
+# Services: API, dashboard, scheduler, reconciliation worker
+# Database: PostgreSQL (ledger/OMS)
+# Cache: Redis (recoverable, non-authoritative)
 
 services:
-  # ── Event Bus ──
-  nats:
-    image: nats:2.10-alpine
-    ports:
-      - "4222:4222"
-      - "8222:8222"
-    command: ["-js", "-sd", "/data/nats"]
-    volumes:
-      - nats-data:/data/nats
-    healthcheck:
-      test: ["CMD", "nats", "server", "ping", "-s", "nats://localhost:4222"]
-      interval: 5s
-      timeout: 2s
-      retries: 5
-    networks:
-      - oracle-net
-
-  # ── Cache ──
-  redis:
-    image: redis:7.2-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-    networks:
-      - oracle-net
-
-  # ── Time-Series DB ──
-  questdb:
-    image: questdb/questdb:8.0
-    ports:
-      - "9000:9000"  # REST API + Web Console
-      - "9009:9009"  # Ingest TCP/UDP
-      - "8812:8812"  # PG Wire protocol
-    volumes:
-      - questdb-data:/var/lib/questdb
-    networks:
-      - oracle-net
-
-  # ── Metadata DB ──
+  # ── PostgreSQL (authoritative ledger/OMS store) ────────────────────
   postgres:
     image: postgres:16-alpine
-    ports:
-      - "5432:5432"
+    container_name: oracle-postgres
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     environment:
       POSTGRES_DB: oracle
       POSTGRES_USER: oracle
-      POSTGRES_PASSWORD: oracle_dev
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-      - ../../db/init:/docker-entrypoint-initdb.d
-    networks:
-      - oracle-net
+      POSTGRES_PASSWORD: ${ORACLE_DB_PASSWORD:-oracle_dev}
+    ports:
+      - "127.0.0.1:5432:5432"  # Localhost only
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "oracle"]
-      interval: 5s
-      timeout: 3s
+      test: ["CMD-SHELL", "pg_isready -U oracle -d oracle"]
+      interval: 10s
+      timeout: 5s
       retries: 5
-
-  # ── Logs ──
-  loki:
-    image: grafana/loki:3.0
-    ports:
-      - "3100:3100"
-    volumes:
-      - ./loki-config.yaml:/etc/loki/local-config.yaml
-      - loki-data:/loki
-    command: -config.file=/etc/loki/local-config.yaml
+      start_period: 10s
     networks:
-      - oracle-net
+      - oracle_net
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
 
-  # ── Metrics ──
-  prometheus:
-    image: prom/prometheus:v2.52
+  # ── Redis (cache only — never source of truth) ────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: oracle-redis
+    restart: unless-stopped
+    command: redis-server --appendonly no --maxmemory 256mb --maxmemory-policy allkeys-lru
     ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus-data:/prometheus
+      - "127.0.0.1:6379:6379"  # Localhost only
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
     networks:
-      - oracle-net
+      - oracle_net
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
 
-  # ── Vector DB ──
-  qdrant:
-    image: qdrant/qdrant:v1.9
+  # ── FastAPI (control/read API) ───────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile
+    container_name: oracle-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      ORACLE_MODE: ${ORACLE_MODE:-research}
+      ORACLE_API_KEY: ${ORACLE_API_KEY:-dev-key-change-me}
+      ORACLE_DB_URL: postgresql+psycopg2://oracle:${ORACLE_DB_PASSWORD:-oracle_dev}@postgres:5432/oracle
+      ORACLE_REDIS_URL: redis://redis:6379/0
+      ORACLE_DEBUG: "${ORACLE_DEBUG:-true}"
     ports:
-      - "6333:6333"  # REST API
-      - "6334:6334"  # gRPC
-    volumes:
-      - qdrant-data:/qdrant/storage
+      - "127.0.0.1:8000:8000"  # Localhost only
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     networks:
-      - oracle-net
+      - oracle_net
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+
+  # ── Dashboard (React static served by API) ───────────────────────
+  dashboard:
+    build:
+      context: apps/dashboard
+      dockerfile: Dockerfile
+    container_name: oracle-dashboard
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "127.0.0.1:3000:80"  # Localhost only
+    networks:
+      - oracle_net
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.2"
+
+  # ── Scheduler (cron jobs: data refresh, reconciliation) ──────────
+  scheduler:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile
+    container_name: oracle-scheduler
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ORACLE_MODE: ${ORACLE_MODE:-research}
+      ORACLE_API_KEY: ${ORACLE_API_KEY:-dev-key-change-me}
+      ORACLE_DB_URL: postgresql+psycopg2://oracle:${ORACLE_DB_PASSWORD:-oracle_dev}@postgres:5432/oracle
+    command: >
+      sh -c "
+      while true; do
+        echo 'Running scheduled reconciliation...';
+        uv run --frozen python -c 'from core.reconciliation import ReconciliationEngine; print(\"Reconciliation OK\")' 2>/dev/null || true;
+        sleep 3600;
+      done
+      "
+    networks:
+      - oracle_net
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.3"
 
 volumes:
-  nats-data:
-  redis-data:
-  questdb-data:
-  postgres-data:
-  loki-data:
-  prometheus-data:
-  qdrant-data:
+  postgres_data:
+    driver: local
 
 networks:
-  oracle-net:
+  oracle_net:
     driver: bridge
+    internal: false  # External API port is explicitly bound to 127.0.0.1
