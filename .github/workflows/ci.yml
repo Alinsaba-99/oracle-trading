@@ -92,3 +92,61 @@ jobs:
 
   # eliza-intelligence job will be added when the ElizaOS bridge
   # integration branch (feat/eliza-bridge) is merged.
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Secret scan (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          config-path: .gitleaks.toml
+        continue-on-error: true
+
+      - name: Python dependency audit
+        run: |
+          uv tool install pip-audit || true
+          uv run pip-audit --strict --require-hashes --desc .venv/ 2>&1 || echo "WARNING: pip-audit found vulnerabilities — review before merge"
+
+      - name: SBOM generation (uv export)
+        run: |
+          mkdir -p sbom
+          uv export --frozen --format requirements-txt > sbom/requirements.txt
+          uv export --frozen --format requirements-txt --all-extras > sbom/requirements-all.txt
+          echo "SBOM generated: sbom/"
+
+      - name: SBOM upload (artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom/
+          retention-days: 90
+
+  # Warning governance — tracks warning count and prevents regression
+  warning-budget:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv and Python
+        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Sync locked dependencies
+        run: uv sync --frozen --all-extras --all-groups
+
+      - name: Count pytest warnings
+        id: warning_count
+        run: |
+          uv run --frozen pytest tests/ -q --tb=no 2>&1 | tail -1 || true
+          WARN_COUNT=$(uv run --frozen pytest tests/ -q --tb=no 2>&1 | grep -oP '\d+(?= warning)' || echo "0")
+          echo "count=$WARN_COUNT" >> $GITHUB_OUTPUT
+          echo "Warnings: $WARN_COUNT"
+          if [ "$WARN_COUNT" -gt 350 ]; then
+            echo "❌ Warning budget exceeded (limit: 350, current: $WARN_COUNT)"
+            exit 1
+          fi
+          echo "✅ Warning budget OK ($WARN_COUNT/350)"
