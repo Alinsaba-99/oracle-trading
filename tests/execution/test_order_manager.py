@@ -36,9 +36,9 @@ def mock_risk() -> MagicMock:
 
 
 @pytest.fixture
-def manager(mock_broker: MagicMock) -> OrderManager:
-    """Return an OrderManager with a clean mock broker and no risk manager."""
-    return OrderManager(broker=mock_broker, risk_manager=None)
+def manager(mock_broker: MagicMock, mock_risk: MagicMock) -> OrderManager:
+    """Return an OrderManager with a clean mock broker and risk manager."""
+    return OrderManager(broker=mock_broker, risk_manager=mock_risk)
 
 
 @pytest.fixture
@@ -272,16 +272,19 @@ class TestOpenOrders:
     ) -> None:
         """open_orders only returns orders with an open status."""
         await manager.submit(buy_request)
-        assert len(manager.open_orders()) == 1
+        result = await manager.open_orders()
+        assert len(result) == 1
 
         # Manually mark the order as filled
         order = next(iter(manager._orders.values()))
         order.status = OrderStatus.filled
-        assert len(manager.open_orders()) == 0
+        result2 = await manager.open_orders()
+        assert len(result2) == 0
 
-    def test_open_orders_empty_initially(self, manager: OrderManager) -> None:
+    async def test_open_orders_empty_initially(self, manager: OrderManager) -> None:
         """New manager has no open orders."""
-        assert manager.open_orders() == []
+        result = await manager.open_orders()
+        assert result == []
 
 
 # =========================================================================

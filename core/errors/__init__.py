@@ -1,6 +1,6 @@
 """Oracle error hierarchy — all exception classes."""
 
-from core.errors.base import OracleError, OracleFatalError
+from core.errors.base import OracleError, OracleFatalError, RiskGateError, SafetyError
 from core.errors.config_errors import ConfigError, ConfigNotFoundError, ConfigValidationError
 from core.errors.event_errors import EventError, EventPublishError, EventSubscribeError
 from core.errors.logging_errors import LoggingConfigurationError
@@ -31,4 +31,6 @@ __all__ = [
     "PluginFatalError",
     "PluginNotFoundError",
     "PluginRegistrationError",
+    "RiskGateError",
+    "SafetyError",
 ]
