@@ -1,79 +1,82 @@
-# Oracle Data Sources
+# Oracle Data Sources — Coverage Matrix
 
 > Aggiornato: 2026-07-19
 
-## Fonti Attive
+## Coverage Completa
 
-| Fonte | Tipo | Cosa | API Key | Limiti |
-|-------|------|------|---------|--------|
-| **yfinance** | OHLCV daily/intraday | Futures (ES, NQ, GC, CL...), equities, crypto, FX | ❌ | Rate limit ~2 req/s |
-| **CCXT** | OHLCV orderbook | Crypto spot & futures (Binance, Bybit, OKX, Kraken...) | ❌ (public) | Rate limit per exchange |
-| **OpenBB** | OHLCV + fondamentali | Equities, ETFs, futures, macro, FX | ❌ (base) | Gratuito per dati base |
+```
+ASSET CLASS    Timeframes              Fonti
+───────────────────────────────────────────────────────
+Futures (ES)   tick  ❌                 Polygon.io (con key)
+              1m-5m  🟡 Polygon.io     Polygon.io (con key)  
+              15m    🟡 Polygon.io     Polygon.io (con key)
+              1h     ✅ yfinance       yfinance
+              1d     ✅ yfinance/OBB   yfinance, OpenBB
 
-## Fonti per Gap Identificati
+Crypto (BTC)   tick  🟡 CCXT           CCXT orderbook
+              1m    ✅ CCXT            CCXT spot/futures
+              5m    ✅ CCXT            CCXT spot/futures
+              15m   ✅ CCXT            CCXT spot/futures
+              1h    ✅ CCXT            CCXT spot/futures
+              1d    ✅ CCXT/yfinance   CCXT, yfinance
+              fund. ✅ CCXT            Perpetual funding rate
 
-| Gap | Fonte | Cosa | Integrazione |
-|:---:|-------|------|:------------:|
-| Intraday futures 1m-15m | **IBKR** (ib_insync) | Tick/1m/5m ES, NQ, GC, CL | ✅ Già in dip. |
-| Intraday futures 1m-15m | **Polygon.io** | REST API stocks/options/futures | ❌ API key |
-| Crypto perpetuals | **CCXT futures** | Binance/BYBIT perpetual OHLCV + funding | ✅ Già in dip. |
-| Options chain | **OpenBB** | Options chain, Greeks | ✅ Installato |
-| Options pricing | **Helium MCP** | Fair value, prob_ITM, Greeks free | 🆕 Da integrare |
-| Macro real-time | **FRED** (OpenBB) | GDP, CPI, NFP, tassi | ✅ Installato |
-| Macro central banks | **FXMacroData** | Policy rates, inflation, 18 currency | 🆕 Da integrare |
-| News/Sentiment | **AlphaAI** | Relevance-scored news, free tier | 🆕 `market/sentiment.py` |
+Equities(SPY)  tick  ❌                 IBKR (con TWS)
+              1m    🟡 Polygon.io      Polygon.io (con key)
+              1d    ✅ yfinance/OBB    yfinance, OpenBB
+              fund. ✅ OpenBB           Financial statements
 
-## Multi-Timeframe / Multi-Asset Coverage
+FX majors      1d    ✅ yfinance/OBB    yfinance, OpenBB
+FX minors      1d    🟡 OpenBB         OpenBB
 
-| Timeframe | Futures | Crypto | Equities | FX | Macro |
-|:---------:|:-------:|:------:|:--------:|:--:|:----:|
-| tick | IBKR | CCXT | IBKR | IBKR | ❌ |
-| 1m | IBKR | CCXT | IBKR/Polygon | IBKR | ❌ |
-| 5m | IBKR | CCXT | IBKR/Polygon | IBKR | ❌ |
-| 15m | yfinance | CCXT | yfinance/IBKR | yfinance | ❌ |
-| 1h | yfinance | CCXT | yfinance | yfinance | ❌ |
-| 4h | yfinance | CCXT | yfinance | yfinance | ❌ |
-| 1d | yfinance/OpenBB | CCXT | yfinance/OpenBB | yfinance | FRED/OpenBB |
-| 1wk | yfinance | ❌ | yfinance | yfinance | FRED/OpenBB |
+Macro (GDP)    qrt   ✅ FRED           Federal Reserve API
+Macro (CPI)    mon   ✅ FRED           Federal Reserve API
+Macro (NFP)    mon   ✅ FRED           Federal Reserve API
+Macro (rates)  mon   ✅ FRED           FEDFUNDS, DGS10, DGS2
 
-## Script Multi-Timeframe
+News/Sentiment N/A   ✅ AlphaAI        Relevance-scored news
+
+Options        chain 🟡 OpenBB         OpenBB
+               greeks✅ Helium MCP     Free, no signup
+```
+
+## Fonti per Gap
+
+| Gap | Fonte | API Key | Costo | Integrazione |
+|:---:|-------|:-------:|:-----:|:------------:|
+| Intraday futures 1m/5m/15m | **Polygon.io** | ✅ `ORACLE_DATA_POLYGON_KEY` | Free (5 req/min) | `polygon_futures_minute()` |
+| Crypto perpetuals + funding | **CCXT** | ❌ | Free | `ccxt_futures_ohlcv()` |
+| Macro (GDP, CPI, NFP, rates) | **FRED** | 🟡 Demo/public | Free | `fred_series()` |
+| News/sentiment scoring | **AlphaAI** | ✅ `ORACLE_DATA_ALPHAI_KEY` | Free (20 req/min) | `SentimentFetcher.alphai_news()` |
+| Options Greeks (free) | **Helium MCP** | ❌ | Free (50 queries) | Da integrare |
+| Real-time tick futures | **IBKR** (ib_insync) | TWS/Gateway | Già in dip. | Da attivare |
+
+## Quick Reference
 
 ```bash
-# Fetch multi-timeframe data per un asset
+# Macro data (no key needed)
+uv run --frozen python -c "from market.data_sources import DataFetcher; f=DataFetcher(); f.fred_series('GDP')"
+
+# Crypto perpetual futures (no key)
+uv run --frozen python -c "from market.data_sources import DataFetcher; f=DataFetcher(); f.ccxt_futures_ohlcv('binance','BTC/USDT:USDT','1h')"
+
+# Intraday futures (Polygon key needed)
+uv run --frozen python -c "from market.data_sources import DataFetcher; f=DataFetcher(); f.polygon_futures_minute('ES','2026-07-01','2026-07-19')"
+
+# Multi-timeframe refresh
 uv run --frozen python scripts/refresh_data.py --multi-timeframe ES
-# Scarica: ES_1d.parquet, ES_1h.parquet, ES_15m.parquet
 ```
 
-## Fonti in Valutazione
-
-| Fonte | Cosa | Perché |
-|-------|------|--------|
-| FinanceDatabase | 300K+ simboli | Mappatura ticker→strumento |
-| Chart Library | Pattern similarity | ML pattern recognition |
-| The Stall MCP | 191 capabilities | Dati on-chain, prediction markets |
-
-## Script di Refresh
+## Setup Chiavi API
 
 ```bash
-# Aggiornare tutti i dati futures
-uv run --frozen python -c "
-from market.data_sources import DataFetcher
-f = DataFetcher()
-for sym in ['ES', 'NQ', 'GC', 'CL']:
-    f.yfinance_futures(sym, period='1y')
-"
+# Polygon.io (free tier: 5 API calls/min)
+export ORACLE_DATA_POLYGON_KEY="your_key_here"
 
-# Crypto via CCXT
-uv run --frozen python -c "
-from market.data_sources import DataFetcher
-f = DataFetcher()
-f.ccxt_ohlcv('binance', 'BTC/USDT', '1h', 1000)
-"
+# AlphaAI (free tier: 20 req/min, 100/day)
+export ORACLE_DATA_ALPHAI_KEY="your_key_here"
+
+# FRED (free, no key needed for basic CSV access)
+# Optional: get key at https://fred.stlouisfed.org/docs/api/api_key.html
+export ORACLE_DATA_FRED_KEY="your_key_here"
 ```
-
-## Come Aggiungere una Nuova Fonte
-
-1. Aggiungere metodo in `market/data_sources.py`
-2. Aggiungere dipendenza in `pyproject.toml`
-3. `uv sync --frozen`
-4. Test: `pytest tests/unit/test_data_sources.py`
