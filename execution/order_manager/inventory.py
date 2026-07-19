@@ -21,15 +21,62 @@ class InventoryTracker:
         self._daily_loss_limit: float = daily_loss_limit
 
     def update(self, order: Any, fill: FillReport) -> None:
-        """Update position from a fill event."""
+        """Update position from a fill event — track avg entry and realized P&L."""
         pos = self._positions.setdefault(
             order.instrument_id, {"qty": Decimal("0"), "avg_price": Decimal("0"), "pnl": 0.0}
         )
-        if order.side == "buy":
-            pos["qty"] += fill.quantity
-        else:
-            pos["qty"] -= fill.quantity
-        pos["avg_price"] = fill.price
+        old_qty: Decimal = pos["qty"]
+        old_avg: Decimal = pos["avg_price"]
+        fill_qty: Decimal = fill.quantity
+        fill_price: Decimal = fill.price
+        side: str = order.side
+
+        if side == "buy":
+            new_qty = old_qty + fill_qty
+            if old_qty < 0:
+                # Covering a short — realised P&L
+                closed_qty = min(abs(old_qty), fill_qty)
+                realized_pnl = float(old_avg - fill_price) * float(closed_qty)
+                self._daily_pnl += realized_pnl
+                pos["pnl"] = float(pos["pnl"]) + realized_pnl
+                remaining = fill_qty - closed_qty
+                if remaining > 0:
+                    pos["avg_price"] = fill_price  # flipped to long
+                elif abs(new_qty) > 0:
+                    pos["avg_price"] = old_avg  # partial cover
+                else:
+                    pos["avg_price"] = Decimal("0")  # fully closed
+            else:
+                # Adding to long / opening
+                if old_qty == 0:
+                    pos["avg_price"] = fill_price
+                else:
+                    pos["avg_price"] = (old_avg * old_qty + fill_price * fill_qty) / new_qty
+        else:  # sell
+            new_qty = old_qty - fill_qty
+            if old_qty > 0:
+                # Closing a long — realised P&L
+                closed_qty = min(old_qty, fill_qty)
+                realized_pnl = float(fill_price - old_avg) * float(closed_qty)
+                self._daily_pnl += realized_pnl
+                pos["pnl"] = float(pos["pnl"]) + realized_pnl
+                remaining = fill_qty - closed_qty
+                if remaining > 0:
+                    pos["avg_price"] = fill_price  # flipped to short
+                elif abs(new_qty) > 0:
+                    pos["avg_price"] = old_avg  # partial close
+                else:
+                    pos["avg_price"] = Decimal("0")  # fully closed
+            else:
+                # Adding to short / opening
+                if old_qty == 0:
+                    pos["avg_price"] = fill_price
+                else:
+                    pos["avg_price"] = (old_avg * abs(old_qty) + fill_price * fill_qty) / abs(
+                        new_qty
+                    )
+
+        pos["qty"] = new_qty
 
     def position(self, instrument_id: str) -> Decimal:
         """Return current net position quantity for an instrument."""

@@ -24,7 +24,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
-from policy.prop_firm.profile import PropFirmProfile
+from policy.prop_firm.profile import FirmProgramProfile as PropFirmProfile
 
 
 class ChallengeStatus(StrEnum):
@@ -87,7 +87,7 @@ class AccountState:
 
 
 class PropFirmRiskGovernor:
-    """Stateful enforcer of a :class:`PropFirmProfile`.
+    """Stateful enforcer of a :class:`~policy.prop_firm.profile.FirmProgramProfile`.
 
     Usage::
 
@@ -142,10 +142,23 @@ class PropFirmRiskGovernor:
 
         Call once per day at the prop-firm server's midnight (typically
         EET, 22:00 GMT in winter / 21:00 GMT in summer).
+
+        For ``TRAILING_EOD`` mode, the peak balance/equity is captured
+        at rollover and becomes the new reference floor.  For
+        ``TRAILING_INTRADAY`` the peak is continuous and does not
+        reset here.
         """
+        from policy.prop_firm.profile import DrawdownMode
+
         s = self.state
         if s.today_has_trade:
             s.trading_days += 1
+
+        # EOD trailing: lock the peak at end of day
+        if self.profile.dd_mode == DrawdownMode.TRAILING_EOD:
+            s.peak_balance = max(s.peak_balance, s.current_balance)
+            s.peak_equity = max(s.peak_equity, s.current_equity)
+
         s.day_start_balance = s.current_balance
         s.day_start_equity = s.current_equity
         s.realized_pnl_today = 0.0
@@ -158,13 +171,15 @@ class PropFirmRiskGovernor:
     def _daily_reference(self) -> float:
         """Day-start balance or equity per ``daily_loss_basis``."""
         s = self.state
-        if self.profile.daily_loss_basis == "equity":
+        if str(self.profile.daily_loss_basis) == "equity":
             return s.day_start_equity
         return s.day_start_balance
 
     def _overall_reference(self) -> float:
         """Peak balance (trailing) or initial balance (static)."""
-        if self.profile.dd_mode == "trailing":
+        from policy.prop_firm.profile import DrawdownMode
+
+        if self.profile.dd_mode in (DrawdownMode.TRAILING_INTRADAY, DrawdownMode.TRAILING_EOD):
             return self.state.peak_balance
         return self.state.initial_balance
 
@@ -200,12 +215,7 @@ class PropFirmRiskGovernor:
     # ------------------------------------------------------------------
     # Position sizing
     # ------------------------------------------------------------------
-    def max_position_size(
-        self,
-        entry: float,
-        stop: float,
-        contract_size: float,
-    ) -> float:
+    def max_position_size(self, entry: float, stop: float, contract_size: float) -> float:
         """Maximum lots allowed without breaching the daily-loss budget.
 
         Two caps bind: the remaining daily-loss budget, and the per-trade
@@ -233,21 +243,29 @@ class PropFirmRiskGovernor:
     # Pre-trade gate
     # ------------------------------------------------------------------
     def check_new_order(
-        self,
-        entry: float,
-        stop: float,
-        lots: float,
-        contract_size: float,
+        self, entry: float, stop: float, lots: float, contract_size: float
     ) -> OrderCheck:
         """Gate a new entry: allow only if it cannot breach a hard limit.
+
+        Checks (in order):
+        1. Support mode — only AUTO_SUPPORTED profiles can trade automatically.
+        2. Challenge status — must be IN_PROGRESS.
+        3. Projected loss — must not breach daily or overall ceiling.
 
         Computes the projected loss if the stop is hit and refuses when
         it would push the account past the daily or overall ceiling.
         """
-        if self.status != ChallengeStatus.IN_PROGRESS:
+        # Gate 0: Support mode check
+        from policy.prop_firm.profile import SupportMode
+
+        if self.profile.support_mode != SupportMode.AUTO_SUPPORTED:
             return OrderCheck(
-                allowed=False, reason=f"Challenge already {self.status.value}"
+                allowed=False,
+                reason=f"Automation denied: support_mode={self.profile.support_mode.value}",
             )
+
+        if self.status != ChallengeStatus.IN_PROGRESS:
+            return OrderCheck(allowed=False, reason=f"Challenge already {self.status.value}")
 
         risk_per_lot = contract_size * abs(entry - stop)
         projected_loss = lots * risk_per_lot
@@ -275,6 +293,16 @@ class PropFirmRiskGovernor:
                     f"Projected loss {projected_loss:.2f} would breach overall "
                     f"limit ({self.profile.max_overall_loss_pct:.0%}); "
                     f"overall used {used:.0%}"
+                ),
+                max_lots=max_lots,
+            )
+
+        if lots > max_lots:
+            return OrderCheck(
+                allowed=False,
+                reason=(
+                    f"Requested size {lots:.4f} exceeds risk budget; "
+                    f"maximum allowed is {max_lots:.4f}"
                 ),
                 max_lots=max_lots,
             )
@@ -352,7 +380,7 @@ class PropFirmRiskGovernor:
             return self.status
         s = self.state
         p = self.profile
-        target_balance = s.initial_balance * (1.0 + p.profit_target_pct)
+        target_balance = round(s.initial_balance * (1.0 + p.profit_target_pct), 2)
         days_ok = s.trading_days + (1 if s.today_has_trade else 0) >= p.min_trading_days
         if s.current_balance >= target_balance and days_ok:
             self.status = ChallengeStatus.PASSED
