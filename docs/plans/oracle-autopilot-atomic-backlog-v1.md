@@ -206,7 +206,7 @@ separati dal sorgente e stato riprendibile.
 **Dipendenze:** M03.
 **Exit gate:** prezzi, P&L e sizing usano unità reali per contratto.
 
-- [ ] `M04-001` Definire `ContractSpec` canonico.
+- [x] `M04-001` Definire `ContractSpec` canonico.
 - [ ] `M04-002` Aggiungere exchange al ContractSpec.
 - [ ] `M04-003` Aggiungere root symbol al ContractSpec.
 - [ ] `M04-004` Aggiungere tradable contract symbol.
@@ -222,13 +222,13 @@ separati dal sorgente e stato riprendibile.
 - [ ] `M04-014` Aggiungere contract expiry.
 - [ ] `M04-015` Aggiungere first notice date.
 - [ ] `M04-016` Aggiungere last trade date.
-- [ ] `M04-017` Creare catalogo ES/MES.
-- [ ] `M04-018` Creare catalogo NQ/MNQ.
-- [ ] `M04-019` Creare catalogo GC/MGC.
-- [ ] `M04-020` Creare catalogo CL/MCL.
+- [x] `M04-017` Creare catalogo ES/MES.
+- [x] `M04-018` Creare catalogo NQ/MNQ.
+- [x] `M04-019` Creare catalogo GC/MGC.
+- [x] `M04-020` Creare catalogo CL/MCL.
 - [ ] `M04-021` Creare catalogo ZN/ZB.
 - [ ] `M04-022` Creare catalogo 6E/M6E.
-- [ ] `M04-023` Verificare P&L campione contro specifiche exchange.
+- [x] `M04-023` Verificare P&L campione contro specifiche exchange.
 - [ ] `M04-024` Eliminare ogni fallback generico di point value.
 - [ ] `M04-025` Pubblicare il report di chiusura M04.
 
