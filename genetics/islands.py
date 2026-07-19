@@ -18,11 +18,17 @@ from deap import creator
 
 from genetics.genome.signal import Genome, GenomeConfig
 from genetics.operators import create_toolbox
+from genetics.population import (
+    HallOfFameWrapper,
+    MigrationPolicy,
+    PopulationStats,
+    compute_diversity,
+    compute_stats,
+)
 from genetics.serialize import population_from_dict, population_to_dict
 
 if TYPE_CHECKING:
     import polars as pl
-    from deap import tools
 
     from genetics.fitness.evaluator import FitnessEvaluator
 
@@ -39,25 +45,8 @@ __all__ = [
 
 
 # ---------------------------------------------------------------------------
-# Migration types
+# Migration topology helpers
 # ---------------------------------------------------------------------------
-
-
-@dataclass
-class MigrationPolicy:
-    """Configuration for migration between islands.
-
-    Attributes:
-        interval: How many generations between migrations.
-        size: Number of individuals to migrate per island.
-        replacement: If *True*, migrants **replace** the worst individuals
-            in the target island; if *False* they are added (*population
-            grows by ``migration.size``*).
-    """
-
-    interval: int = 5
-    size: int = 3
-    replacement: bool = True
 
 
 def ring_migration(
@@ -84,172 +73,6 @@ def ring_migration(
 
 
 # ---------------------------------------------------------------------------
-# Statistics
-# ---------------------------------------------------------------------------
-
-
-@dataclass
-class PopulationStats:
-    """Aggregate statistics for a single-island population at one generation.
-
-    Attributes:
-        generation: Generation number.
-        pop_size: Number of individuals.
-        n_pareto: Size of the Pareto-optimal front.
-        diversity: Population diversity metric (mean pairwise distance).
-        best_fitness: Best (frontier) fitness values per objective.
-        mean_fitness: Mean fitness values per objective.
-        n_evaluated: Number of individuals evaluated this generation.
-    """
-
-    generation: int = 0
-    pop_size: int = 0
-    n_pareto: int = 0
-    diversity: float = 0.0
-    best_fitness: tuple[float, ...] = ()
-    mean_fitness: tuple[float, ...] = ()
-    n_evaluated: int = 0
-
-
-def compute_stats(population: list[Any], generation: int) -> PopulationStats:
-    """Compute summary statistics for a population at a given generation.
-
-    Extracts fitness information from DEAP individuals (which carry
-    ``.fitness.values``), identifies the Pareto front via non-dominated
-    sorting, and calculates a simple diversity metric.
-    """
-    n = len(population)
-    if n == 0:
-        return PopulationStats(generation=generation)
-
-    # Collect valid fitness vectors
-    all_fitness = [ind.fitness.values for ind in population if ind.fitness.valid]
-
-    if not all_fitness:
-        return PopulationStats(
-            generation=generation, pop_size=n, diversity=compute_diversity(population)
-        )
-
-    n_obj = len(all_fitness[0])
-
-    # Pareto front: non-dominated individuals
-    # DEAP gives us sorted Pareto fronts via tools.sortNondominated
-    from deap import tools as deap_tools
-
-    pareto = deap_tools.sortNondominated(population, n, first_front_only=True)[0]
-    n_pareto = len(pareto)
-
-    # Best fitness: for maximised objectives take max, for minimised take min
-    # We need to know the weights — read from the first individual
-    weights: tuple[float, ...]
-    if hasattr(population[0].fitness, "weights"):
-        weights = population[0].fitness.weights
-    else:
-        weights = (1.0,) * n_obj
-
-    best = list(all_fitness[0])
-    for fv in all_fitness[1:]:
-        for i, w in enumerate(weights):
-            if w > 0:
-                best[i] = max(best[i], fv[i])
-            else:
-                best[i] = min(best[i], fv[i])
-
-    # Mean fitness
-    mean = tuple(sum(f[i] for f in all_fitness) / len(all_fitness) for i in range(n_obj))
-
-    # Diversity
-    diversity = compute_diversity(population)
-
-    return PopulationStats(
-        generation=generation,
-        pop_size=n,
-        n_pareto=n_pareto,
-        diversity=diversity,
-        best_fitness=tuple(best),
-        mean_fitness=mean,
-        n_evaluated=len(all_fitness),
-    )
-
-
-def compute_diversity(population: list[Any]) -> float:
-    """Mean pairwise Euclidean distance among individuals (genotype diversity).
-
-    Uses a random subsample when the population is large (>500) to keep
-    computation bounded.
-    """
-    if len(population) < 2:
-        return 0.0
-
-    values = np.array([list(ind) for ind in population], dtype=np.float64)
-    n = len(values)
-
-    # Subsample for large populations
-    if n > 500:
-        rng = np.random.default_rng(42)
-        idx = rng.choice(n, size=500, replace=False)
-        values = values[idx]
-        n = 500
-
-    # Mean distance between all pairs via vectorised computation
-    # dist = 1/(n*(n-1)) * sum_i sum_{j!=i} ||v_i - v_j||
-    norms = np.linalg.norm(values, axis=1, keepdims=True)
-    dot = values @ values.T
-    sq = norms @ norms.T
-    pairwise = np.sqrt(np.abs(sq + sq.T - 2 * dot))
-    # Zero out diagonal
-    np.fill_diagonal(pairwise, 0.0)
-    mean_dist = float(np.sum(pairwise) / (n * (n - 1)))
-    return mean_dist
-
-
-# ---------------------------------------------------------------------------
-# Hall of Fame wrapper
-# ---------------------------------------------------------------------------
-
-
-class HallOfFameWrapper:
-    """Wraps DEAP's :class:`~deap.tools.HallOfFame` with additional tracking.
-
-    Args:
-        maxsize: Maximum number of individuals in the hall of fame.
-
-    The hall of fame maintains the *maxsize* best individuals ever seen
-    (according to Pareto dominance, or the default DEAP comparison).
-    """
-
-    def __init__(self, maxsize: int = 10) -> None:
-        from deap import tools as deap_tools
-
-        self._hof: tools.HallOfFame = deap_tools.HallOfFame(maxsize)
-        self._maxsize = maxsize
-
-    @property
-    def hof(self) -> tools.HallOfFame:
-        """Access the underlying DEAP HallOfFame."""
-        return self._hof
-
-    @property
-    def items(self) -> list[Any]:
-        """Individuals currently in the hall of fame."""
-        return list(self._hof)
-
-    def update(self, population: list[Any]) -> None:
-        """Update the hall of fame with a new population."""
-        self._hof.update(population)
-
-    def clear(self) -> None:
-        """Remove all entries."""
-        self._hof = type(self._hof)(self._maxsize)
-
-    def __len__(self) -> int:
-        return len(self._hof)
-
-    def __iter__(self) -> Any:
-        return iter(self._hof)
-
-
-# ---------------------------------------------------------------------------
 # Island
 # ---------------------------------------------------------------------------
 
@@ -261,6 +84,12 @@ class Island:
     Each island has its own DEAP toolbox and population, and evolves
     independently except for periodic migrations coordinated by the
     :class:`IslandManager`.
+
+    Each island maintains its own ``random.Random`` instance (``_rng``)
+    seeded with ``_seed``.  This ensures that parallel islands produce
+    deterministic results independently — unlike the global
+    ``random.seed()`` approach which would race when islands run
+    concurrently via ``asyncio.to_thread``.
 
     Attributes:
         id: Island identifier (0-indexed).
@@ -282,9 +111,12 @@ class Island:
     # Internal: seed for deterministic RNG for this island
     _seed: int = field(default=0, repr=False)
 
+    # Internal: island-specific RNG (not the global random module)
+    _rng: _random.Random = field(init=False, repr=False)
+
     def __post_init__(self) -> None:
-        """Seed this island's RNG for reproducibility."""
-        _random.seed(self._seed)
+        """Create an island-specific RNG for reproducibility."""
+        self._rng = _random.Random(self._seed)
 
     def evaluate_next_gen(
         self,
@@ -332,14 +164,14 @@ class Island:
 
         # --- Crossover ---
         for i in range(1, len(offspring), 2):
-            if _random.random() < cxpb:
+            if self._rng.random() < cxpb:
                 toolbox.mate(offspring[i - 1], offspring[i])
                 del offspring[i - 1].fitness.values
                 del offspring[i].fitness.values
 
         # --- Mutation ---
         for i in range(len(offspring)):
-            if _random.random() < mutpb:
+            if self._rng.random() < mutpb:
                 toolbox.mutate(offspring[i])
                 del offspring[i].fitness.values
 

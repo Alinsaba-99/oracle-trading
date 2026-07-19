@@ -7,6 +7,8 @@ e restituisce np.ndarray. L'output e` sempre sanitizzato con np.nan_to_num.
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 import numpy as np
 import polars as pl
 
@@ -26,19 +28,20 @@ def _clean(x: np.ndarray) -> np.ndarray:
 
 
 def ts_mean(x: np.ndarray, d: int) -> np.ndarray:
-    """Rolling mean di finestra ``d``.
+    """Rolling mean di finestra ``d`` — causale.
 
-    Head (primi ``d-1`` elementi): riempiti con la media del primo finestra
-    ``x[:d].mean()``.
+    Head (primi ``d-1`` elementi): media *expanding* (solo prefisso), non
+    usa la prima finestra completa.  Garantisce prefix invariance.
     """
     n = len(x)
     if n < d:
         return _clean(np.zeros(n))
     out = np.empty(n)
-    head_val = np.mean(x[:d])
-    out[: d - 1] = head_val
+    # Head causale: expanding mean
+    for i in range(d - 1):
+        out[i] = np.nanmean(x[: i + 1]) if i > 0 else x[0]
     for i in range(d - 1, n):
-        out[i] = np.mean(x[i - d + 1 : i + 1])
+        out[i] = np.nanmean(x[i - d + 1 : i + 1])
     return _clean(out)
 
 
@@ -168,33 +171,68 @@ def ts_argmin(x: np.ndarray, d: int) -> np.ndarray:
 
 
 def rank(x: np.ndarray) -> np.ndarray:
-    """Rank normalizzato tra 0 e 1."""
+    """Rank normalizzato tra 0 e 1 — EXPANDING (causale).
+
+    Per ogni posizione ``i``, il rank è calcolato solo sui dati
+    ``x[:i+1]``.  Le prime posizioni usano il prefisso disponibile.
+    """
     xc = np.nan_to_num(x, nan=0.0)
     n = len(xc)
     if n <= 1:
         return _clean(np.zeros_like(xc))
-    # argsort degli argsort → rank 0-based
-    ranks = np.argsort(np.argsort(xc)).astype(float)
-    return _clean(ranks / (n - 1))
+    out = np.empty(n)
+    for i in range(n):
+        prefix = xc[: i + 1]
+        m = len(prefix)
+        if m <= 1:
+            out[i] = 0.5
+        else:
+            r = np.argsort(np.argsort(prefix)).astype(float)
+            out[i] = r[-1] / (m - 1)
+    return _clean(out)
 
 
 def scale(x: np.ndarray) -> np.ndarray:
-    """Normalizza in [-1, 1] tale che sum(abs) = 1."""
+    """Normalizza in [-1, 1] tale che sum(abs) = 1 — EXPANDING (causale).
+
+    Per ogni posizione ``i``, la normalizzazione usa solo i dati
+    ``x[:i+1]``.  Le prime posizioni non usano dati futuri.
+    """
     xc = np.nan_to_num(x, nan=0.0)
-    total = np.sum(np.abs(xc))
-    if total == 0.0:
+    n = len(xc)
+    if n <= 1:
         return _clean(np.zeros_like(xc))
-    return _clean(xc / total)
+    out = np.empty(n)
+    for i in range(n):
+        prefix = xc[: i + 1]
+        total = np.sum(np.abs(prefix))
+        if total == 0.0:
+            out[i] = 0.0
+        else:
+            out[i] = prefix[-1] / total
+    return _clean(out)
 
 
 def zscore(x: np.ndarray) -> np.ndarray:
-    """Z-score: (x - mean) / std sull'intero array."""
+    """Z-score: (x - mean) / std — EXPANDING (causale).
+
+    Per ogni posizione ``i``, media e std sono calcolati solo sui dati
+    ``x[:i+1]``.  Le prime posizioni non usano dati futuri.
+    """
     xc = np.nan_to_num(x, nan=0.0)
-    mu = np.mean(xc)
-    s = np.std(xc)
-    if s == 0.0:
+    n = len(xc)
+    if n <= 1:
         return _clean(np.zeros_like(xc))
-    return _clean((xc - mu) / s)
+    out = np.empty(n)
+    for i in range(n):
+        prefix = xc[: i + 1]
+        mu = np.mean(prefix)
+        s = np.std(prefix)
+        if s == 0.0:
+            out[i] = 0.0
+        else:
+            out[i] = (prefix[-1] - mu) / s
+    return _clean(out)
 
 
 # ---------------------------------------------------------------------------
@@ -361,7 +399,7 @@ def leaf_vwap(data: pl.DataFrame) -> np.ndarray:
 # Registry
 # ---------------------------------------------------------------------------
 
-OPERATORS_MAP: dict[str, callable] = {
+OPERATORS_MAP: dict[str, Callable] = {
     # Time-series
     "ts_mean": ts_mean,
     "ts_std": ts_std,

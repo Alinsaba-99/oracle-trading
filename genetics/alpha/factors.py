@@ -712,90 +712,84 @@ def volume_vs_avg(data: pl.DataFrame) -> pl.Series:
 
 
 def month_effect(data: pl.DataFrame) -> pl.Series:
-    """Month-of-year effect.
+    """Month-of-year effect (causal expanding window — no look-ahead bias).
 
-    Average return for the current calendar month over the last 5 years.
-    For each observation, assigns the historical average return of that month.
+    For each bar, assigns the average return of that calendar month computed
+    from all *previous* occurrences of the same month.
     """
     close = data["close"]
     ts = data["timestamp"]
     if _constant_or_short(close, 2) or len(ts) == 0:
         return pl.Series("month_effect", [0.0] * len(close))
 
-    # Compute month from timestamp
-    month = ts.dt.month()
-    result = close.pct_change().fill_nan(0.0)
-    # Month average return across all data
-    month_means = (
-        data.with_columns(month.alias("_month"))
-        .group_by("_month")
-        .agg(pl.col("close").pct_change().mean().alias("_month_mean"))
-    )
-    month_map = dict(
-        zip(month_means["_month"].to_list(), month_means["_month_mean"].to_list(), strict=False)
-    )
-    month_arr = month.to_numpy()
-    out = np.zeros(len(close))
-    for m, mean_val in month_map.items():
-        mask = month_arr == m
-        if np.isfinite(mean_val):
-            out[mask] = mean_val
-    result = pl.Series("month_effect", out)
-    return _safe_fill(result)
+    ret = close.pct_change().fill_nan(0.0).to_numpy()
+    month_arr = ts.dt.month().to_numpy()
+    n = len(ret)
+    out = np.zeros(n)
+    month_sum: dict[int, float] = {}
+    month_cnt: dict[int, int] = {}
+    for i in range(n):
+        m = int(month_arr[i])
+        s = month_sum.get(m, 0.0)
+        c = month_cnt.get(m, 0)
+        out[i] = s / c if c > 0 else 0.0
+        month_sum[m] = s + ret[i]
+        month_cnt[m] = c + 1
+    return _safe_fill(pl.Series("month_effect", out))
 
 
 def day_of_week(data: pl.DataFrame) -> pl.Series:
-    """Day-of-week effect.
+    """Day-of-week effect (causal expanding window — no look-ahead bias).
 
-    Average return for the current day of the week.
+    For each bar, assigns the average return of that weekday computed
+    from all *previous* occurrences of the same weekday.
     """
     close = data["close"]
     ts = data["timestamp"]
     if _constant_or_short(close, 2) or len(ts) == 0:
         return pl.Series("day_of_week", [0.0] * len(close))
 
-    dow = ts.dt.weekday()
-    dow_means = (
-        data.with_columns(dow.alias("_dow"))
-        .group_by("_dow")
-        .agg(pl.col("close").pct_change().mean().alias("_dow_mean"))
-    )
-    dow_map = dict(zip(dow_means["_dow"].to_list(), dow_means["_dow_mean"].to_list(), strict=False))
-    dow_arr = dow.to_numpy()
-    out = np.zeros(len(close))
-    for d, mean_val in dow_map.items():
-        mask = dow_arr == d
-        if np.isfinite(mean_val):
-            out[mask] = mean_val
-    result = pl.Series("day_of_week", out)
-    return _safe_fill(result)
+    ret = close.pct_change().fill_nan(0.0).to_numpy()
+    dow_arr = ts.dt.weekday().to_numpy()
+    n = len(ret)
+    out = np.zeros(n)
+    dow_sum: dict[int, float] = {}
+    dow_cnt: dict[int, int] = {}
+    for i in range(n):
+        d = int(dow_arr[i])
+        s = dow_sum.get(d, 0.0)
+        c = dow_cnt.get(d, 0)
+        out[i] = s / c if c > 0 else 0.0
+        dow_sum[d] = s + ret[i]
+        dow_cnt[d] = c + 1
+    return _safe_fill(pl.Series("day_of_week", out))
 
 
 def quarter_effect(data: pl.DataFrame) -> pl.Series:
-    """Quarter-of-year effect.
+    """Quarter-of-year effect (causal expanding window — no look-ahead bias).
 
-    Average return for the current calendar quarter.
+    For each bar, assigns the average return of that calendar quarter computed
+    from all *previous* occurrences of the same quarter.
     """
     close = data["close"]
     ts = data["timestamp"]
     if _constant_or_short(close, 2) or len(ts) == 0:
         return pl.Series("quarter_effect", [0.0] * len(close))
 
-    quarter = (ts.dt.month().cast(pl.Int64) - 1) // 3 + 1
-    q_means = (
-        data.with_columns(quarter.alias("_q"))
-        .group_by("_q")
-        .agg(pl.col("close").pct_change().mean().alias("_q_mean"))
-    )
-    q_map = dict(zip(q_means["_q"].to_list(), q_means["_q_mean"].to_list(), strict=False))
-    q_arr = quarter.to_numpy()
-    out = np.zeros(len(close))
-    for q, mean_val in q_map.items():
-        mask = q_arr == q
-        if np.isfinite(mean_val):
-            out[mask] = mean_val
-    result = pl.Series("quarter_effect", out)
-    return _safe_fill(result)
+    ret = close.pct_change().fill_nan(0.0).to_numpy()
+    quarter_arr = ((ts.dt.month().cast(pl.Int64) - 1) // 3 + 1).to_numpy()
+    n = len(ret)
+    out = np.zeros(n)
+    q_sum: dict[int, float] = {}
+    q_cnt: dict[int, int] = {}
+    for i in range(n):
+        q = int(quarter_arr[i])
+        s = q_sum.get(q, 0.0)
+        c = q_cnt.get(q, 0)
+        out[i] = s / c if c > 0 else 0.0
+        q_sum[q] = s + ret[i]
+        q_cnt[q] = c + 1
+    return _safe_fill(pl.Series("quarter_effect", out))
 
 
 def turning_month(data: pl.DataFrame) -> pl.Series:

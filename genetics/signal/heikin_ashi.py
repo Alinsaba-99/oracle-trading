@@ -15,6 +15,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import numpy as np
+
 if TYPE_CHECKING:
     import polars as pl
 
@@ -72,14 +74,14 @@ def to_heikin_ashi(data: pl.DataFrame) -> pl.DataFrame:
     )
 
 
-def np_maximum(a: np.ndarray, b: np.ndarray) -> np.ndarray:  # type: ignore[no-any-unimported]
+def np_maximum(a: np.ndarray, b: np.ndarray) -> np.ndarray:  #
     """Element-wise maximum, handling numpy import lazily."""
     import numpy as np
 
     return np.maximum(a, b)
 
 
-def np_minimum(a: np.ndarray, b: np.ndarray) -> np.ndarray:  # type: ignore[no-any-unimported]
+def np_minimum(a: np.ndarray, b: np.ndarray) -> np.ndarray:  #
     """Element-wise minimum, handling numpy import lazily."""
     import numpy as np
 
