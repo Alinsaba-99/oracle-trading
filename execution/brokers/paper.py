@@ -79,24 +79,53 @@ class PaperBroker(BaseBroker):
 
     async def cancel_order(self, broker_order_id: str) -> bool:
         """Cancel a previously submitted order (no-op if filled)."""
-        if broker_order_id in self._orders:
-            self._orders[broker_order_id].status = "cancelled"
-            return True
-        return False
+        order = self._orders.get(broker_order_id)
+        if order is None:
+            return False
+        if order.status == "filled":
+            return False
+        order.status = "cancelled"
+        return True
 
     async def amend_order(self, broker_order_id: str, **changes: Any) -> bool:
-        """Amend an order's attributes (no-op for paper)."""
+        """Amend an order's attributes (no-op for paper).
+
+        Returns False when the order is already filled or does not exist.
+        """
         _ = changes  # unused for paper
-        return broker_order_id in self._orders
+        order = self._orders.get(broker_order_id)
+        return not (order is None or order.status == "filled")
 
     async def order_status(self, broker_order_id: str) -> str:
         """Return the status string, or ``"unknown"``."""
         order = self._orders.get(broker_order_id)
         return order.status if order else "unknown"
 
+    async def get_fills(self) -> list[BrokerFill]:
+        """Return all fills recorded by this broker (used by OrderManager reconciliation)."""
+        return list(self._fills)
+
     async def positions(self) -> list[BrokerPosition]:
-        """Return current positions (empty for paper)."""
-        return []
+        """Return current positions aggregated from fills."""
+        from decimal import Decimal
+
+        net: dict[str, Decimal] = {}
+        avg_price: dict[str, Decimal] = {}
+        for fill in self._fills:
+            order = self._orders.get(fill.broker_order_id)
+            if order is None:
+                continue
+            instrument = order.instrument_id
+            signed_qty = fill.quantity if order.side == "buy" else -fill.quantity
+            net[instrument] = net.get(instrument, Decimal("0")) + signed_qty
+            avg_price[instrument] = fill.price
+        return [
+            BrokerPosition(
+                instrument_id=inst, quantity=qty, avg_price=avg_price.get(inst, Decimal("0"))
+            )
+            for inst, qty in net.items()
+            if qty != Decimal("0")
+        ]
 
     async def stream_orders(self) -> AsyncGenerator[BrokerOrder, None]:
         """Stream order updates (passthrough stub for paper)."""

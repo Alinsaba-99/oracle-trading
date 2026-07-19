@@ -19,7 +19,7 @@ questdb:
   database: oracle
 
 postgres:
-  dsn: postgresql://oracle:oracle@postgres:5432/oracle
+  dsn: "${ORACLE_POSTGRES_DSN:postgresql://localhost:5432/oracle}"
   pool_size: 20
   timeout: 3.0
 

@@ -26,7 +26,7 @@ class IBKRBroker(BaseBroker):
     async def _do_connect(self) -> None:
         from ib_insync import IB
 
-        self._ib = IB()
+        self._ib = IB()  # type: ignore[no-untyped-call]
         self._ib.connect(
             host=self._config.ibkr_host,
             port=self._config.ibkr_port,
@@ -47,6 +47,7 @@ class IBKRBroker(BaseBroker):
         """
         from ib_insync import LimitOrder, MarketOrder
 
+        ib_order: Any
         if order.order_type == "market":
             ib_order = MarketOrder(action=order.side.upper(), totalQuantity=float(order.quantity))
         elif order.order_type == "limit":

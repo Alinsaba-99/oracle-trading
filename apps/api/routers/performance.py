@@ -1,13 +1,11 @@
 """Performance metrics endpoints."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from apps.api.services.checkpoint_reader import (
-    get_equity_curve,
-    get_latest_run_summary,
-)
+from apps.api.services.checkpoint_reader import get_equity_curve, get_latest_run_summary
 
 router = APIRouter(prefix="/performance", tags=["performance"])
 
@@ -41,8 +39,7 @@ async def get_equity() -> JSONResponse:
     points = get_equity_curve()
     if not points:
         return JSONResponse(
-            status_code=503,
-            content={"detail": "Equity curve not yet persisted.", "points": []},
+            status_code=503, content={"detail": "Equity curve not yet persisted.", "points": []}
         )
     return JSONResponse(status_code=200, content={"points": points})
 

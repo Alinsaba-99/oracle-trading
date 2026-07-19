@@ -1,4 +1,5 @@
 """Read trade data from experiments.db with filtering."""
+
 from __future__ import annotations
 
 import json
@@ -34,10 +35,7 @@ def _safe_float(val: str | float | int | None, default: float = 0.0) -> float:
 
 
 def _build_where(
-    engine: str | None,
-    fold: str | None,
-    from_date: str | None,
-    to_date: str | None,
+    engine: str | None, fold: str | None, from_date: str | None, to_date: str | None
 ) -> tuple[str, list[str | int]]:
     """Build WHERE clause and params from filters.
 
@@ -115,14 +113,16 @@ def list_trades(
 
             tags = data.get("tags", {})
 
-            items.append({
-                "time": row["created_at"][:19] if row["created_at"] else "",
-                "experiment_id": data.get("experiment_id", "")[:8],
-                "fold": tags.get("fold", "?"),
-                "engine": tags.get("engine", "?"),
-                "total_return": _safe_float(tags.get("total_return")),
-                "sharpe_ratio": _safe_float(tags.get("sharpe_ratio")),
-            })
+            items.append(
+                {
+                    "time": row["created_at"][:19] if row["created_at"] else "",
+                    "experiment_id": data.get("experiment_id", "")[:8],
+                    "fold": tags.get("fold", "?"),
+                    "engine": tags.get("engine", "?"),
+                    "total_return": _safe_float(tags.get("total_return")),
+                    "sharpe_ratio": _safe_float(tags.get("sharpe_ratio")),
+                }
+            )
 
         conn.close()
         return {"items": items, "total": total, "limit": limit, "offset": offset}

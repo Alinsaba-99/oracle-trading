@@ -48,6 +48,22 @@ ORDER_TYPE_SELL = 1
 ORDER_TYPE_BUY_LIMIT = 2
 ORDER_TYPE_SELL_LIMIT = 3
 
+#: MT5 trade actions.
+TRADE_ACTION_DEAL = 1  # market / immediate execution
+TRADE_ACTION_PENDING = 5  # place pending order
+TRADE_ACTION_SLTP = 6  # modify stop-loss / take-profit
+TRADE_ACTION_REMOVE = 7  # remove pending order
+
+#: MT5 order types (subset).
+ORDER_TYPE_BUY = 0
+ORDER_TYPE_SELL = 1
+ORDER_TYPE_BUY_LIMIT = 2
+ORDER_TYPE_SELL_LIMIT = 3
+ORDER_TYPE_BUY_STOP = 4
+ORDER_TYPE_SELL_STOP = 5
+ORDER_TYPE_BUY_STOP_LIMIT = 6
+ORDER_TYPE_SELL_STOP_LIMIT = 7
+
 #: MT5 result codes.
 RETCODE_DONE = 10009
 
@@ -151,9 +167,65 @@ class MockMT5Client:
         return self._rates.get(symbol, [])
 
     def order_send(self, request: dict[str, Any]) -> dict[str, Any]:
-        symbol = request["symbol"]
-        order_type = request["type"]
-        volume = float(request["volume"])
+        action = request.get("action", TRADE_ACTION_DEAL)
+
+        if action == TRADE_ACTION_REMOVE:
+            # Remove pending order
+            order_ticket = request.get("order", 0)
+            self._positions = [p for p in self._positions if p.get("ticket") != order_ticket]
+            return {"retcode": RETCODE_DONE}
+
+        if action == TRADE_ACTION_SLTP:
+            # Modify sl/tp on existing position
+            position_ticket = request.get("position", 0)
+            for p in self._positions:
+                if p.get("ticket") == position_ticket:
+                    if "sl" in request:
+                        p["sl"] = request["sl"]
+                    if "tp" in request:
+                        p["tp"] = request["tp"]
+                    return {"retcode": RETCODE_DONE}
+            return {"retcode": 10030}  # POSITION_NOT_FOUND
+
+        if action == TRADE_ACTION_DEAL:
+            # Market order — check if it's closing a position
+            position_ticket = request.get("position", 0)
+            if position_ticket:
+                # Close existing position
+                self._positions = [p for p in self._positions if p.get("ticket") != position_ticket]
+                return {"retcode": RETCODE_DONE, "order": position_ticket}
+
+            # New market order
+            symbol = request.get("symbol", "")
+            order_type = request.get("type", ORDER_TYPE_BUY)
+            volume = float(request.get("volume", 0))
+            price = float(request.get("price", self._prices.get(symbol, 0.0)))
+
+            self._next_order_id += 1
+            self._positions.append(
+                {
+                    "ticket": self._next_order_id,
+                    "symbol": symbol,
+                    "type": order_type,
+                    "volume": volume,
+                    "price_open": price,
+                    "sl": request.get("sl", 0.0),
+                    "tp": request.get("tp", 0.0),
+                    "magic": request.get("magic", 0),
+                    "comment": request.get("comment", ""),
+                }
+            )
+            self._magic_seen.add(int(request.get("magic", 0)))
+            return {
+                "retcode": RETCODE_DONE,
+                "order": self._next_order_id,
+                "deal": self._next_order_id,
+            }
+
+        # TRADE_ACTION_PENDING — place pending order (stop/limit)
+        symbol = request.get("symbol", "")
+        order_type = request.get("type", ORDER_TYPE_BUY_LIMIT)
+        volume = float(request.get("volume", 0))
         price = float(request.get("price", self._prices.get(symbol, 0.0)))
 
         self._next_order_id += 1
@@ -225,22 +297,53 @@ class MetaTraderBroker(BaseBroker):
     # -- BrokerProtocol order API ------------------------------------
     async def submit_order(self, order: Any) -> str:
         symbol = self._mapper.to_broker(order.instrument_id)
-        order_type = self._order_type(order)
         volume = float(order.quantity)
-        request: dict[str, Any] = {
-            "action": TRADE_ACTION_DEAL,
-            "symbol": symbol,
-            "volume": volume,
-            "type": order_type,
-            "magic": self._magic,
-            "comment": self._strategy_id,
-            "deviation": 20,
-        }
-        # Market orders omit price; limit/stop carry it.
-        if order.price is not None and getattr(order, "order_type", "") != "market":
-            request["price"] = float(order.price)
-        if order.stop_price is not None:
-            request["sl"] = float(order.stop_price)
+        otype = str(getattr(order, "order_type", "market")).lower()
+        stop_price = order.stop_price
+        price = order.price
+
+        # Determine action and order type
+        if stop_price is not None and otype in ("stop", "stop-loss", "stoplimit"):
+            # Stop-entry order — use TRADE_ACTION_PENDING with STOP types
+            action = TRADE_ACTION_PENDING
+            side_buy = str(getattr(order, "side", "")).lower() == "buy"
+            mt5_type = ORDER_TYPE_BUY_STOP if side_buy else ORDER_TYPE_SELL_STOP
+            request: dict[str, Any] = {
+                "action": action,
+                "symbol": symbol,
+                "volume": volume,
+                "type": mt5_type,
+                "price": float(stop_price),
+                "magic": self._magic,
+                "comment": self._strategy_id,
+            }
+        else:
+            # Market or limit order
+            action = TRADE_ACTION_DEAL
+            side_buy = str(getattr(order, "side", "")).lower() == "buy"
+            mt5_type = ORDER_TYPE_BUY if side_buy else ORDER_TYPE_SELL
+
+            if otype == "limit" and price is not None:
+                mt5_type = ORDER_TYPE_BUY_LIMIT if side_buy else ORDER_TYPE_SELL_LIMIT
+                action = TRADE_ACTION_PENDING
+
+            request = {
+                "action": action,
+                "symbol": symbol,
+                "volume": volume,
+                "type": mt5_type,
+                "magic": self._magic,
+                "comment": self._strategy_id,
+                "deviation": 20,
+            }
+            if action == TRADE_ACTION_PENDING or price is not None:
+                request["price"] = float(price)
+
+            # Attach stop-loss and take-profit to the position
+            if stop_price is not None:
+                request["sl"] = float(stop_price)
+            if getattr(order, "take_profit", None) is not None:
+                request["tp"] = float(order.take_profit)
 
         result = self._client.order_send(request)
         retcode = result.get("retcode")
@@ -248,6 +351,13 @@ class MetaTraderBroker(BaseBroker):
             raise RuntimeError(f"MT5 order_send failed: retcode={retcode}")
 
         broker_order_id = str(result.get("order"))
+        price_decimal: Decimal | None = (
+            Decimal(str(price))
+            if price is not None
+            else Decimal(str(stop_price))
+            if stop_price is not None
+            else None
+        )
         self._open[broker_order_id] = BrokerOrder(
             broker_order_id=broker_order_id,
             local_order_id=str(getattr(order, "order_id", "")),
@@ -255,17 +365,81 @@ class MetaTraderBroker(BaseBroker):
             instrument_id=order.instrument_id,
             side=str(order.side),
             quantity=Decimal(str(volume)),
-            price=Decimal(str(order.price)) if order.price is not None else None,
+            price=price_decimal,
             status="submitted",
         )
         return broker_order_id
 
     async def cancel_order(self, broker_order_id: str) -> bool:
-        self._open.pop(broker_order_id, None)
-        return True
+        """Cancel/close an order on the server.
 
-    async def amend_order(self, _broker_order_id: str, **_: Any) -> bool:
-        return True
+        Removes pending orders (TRADE_ACTION_REMOVE) or closes open
+        positions by sending an opposite-direction market order
+        (TRADE_ACTION_DEAL).
+        """
+        entry = self._open.pop(broker_order_id, None)
+        if entry is None:
+            return False
+
+        # Check if this is an open position (has a position on the server)
+        ticket = int(broker_order_id)
+        positions = self._client.positions_get()
+        position = next((p for p in positions if p.get("ticket") == ticket), None)
+
+        if position is None:
+            # Pending order — remove it
+            result = self._client.order_send({"action": TRADE_ACTION_REMOVE, "order": ticket})
+            return result.get("retcode") == RETCODE_DONE
+
+        # Open position — close with opposite direction
+        side = entry.side
+        close_side = ORDER_TYPE_SELL if side == "buy" else ORDER_TYPE_BUY
+        volume = float(entry.quantity)
+        symbol = self._mapper.to_broker(entry.instrument_id)
+
+        result = self._client.order_send(
+            {
+                "action": TRADE_ACTION_DEAL,
+                "symbol": symbol,
+                "volume": volume,
+                "type": close_side,
+                "position": ticket,
+                "magic": self._magic,
+                "comment": f"close_{self._strategy_id}",
+                "deviation": 20,
+            }
+        )
+        return result.get("retcode") == RETCODE_DONE
+
+    async def amend_order(self, broker_order_id: str, **changes: Any) -> bool:
+        """Modify stop-loss and/or take-profit on an open position.
+
+        Uses TRADE_ACTION_SLTP to update the position's sl/tp values
+        on the server.
+        """
+        ticket = int(broker_order_id)
+        request: dict[str, Any] = {"action": TRADE_ACTION_SLTP, "order": ticket, "position": ticket}
+        sl = changes.get("sl") or changes.get("stop_price")
+        tp = changes.get("tp") or changes.get("take_profit")
+        if sl is not None:
+            request["sl"] = float(sl)
+        if tp is not None:
+            request["tp"] = float(tp)
+
+        if sl is None and tp is None:
+            return True  # nothing to amend
+
+        result = self._client.order_send(request)
+        if result.get("retcode") == RETCODE_DONE:
+            # Update local entry
+            entry = self._open.get(broker_order_id)
+            if entry is not None:
+                if sl is not None:
+                    object.__setattr__(entry, "stop_price", Decimal(str(sl)))
+                if tp is not None:
+                    object.__setattr__(entry, "take_profit", Decimal(str(tp)))
+            return True
+        return False
 
     async def order_status(self, broker_order_id: str) -> Any:
         return self._open.get(broker_order_id)

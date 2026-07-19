@@ -32,4 +32,4 @@ class TWAPAlgo:
                 price=market_data.last,
                 filled_at=str(datetime.now(UTC)),
             )
-            await asyncio.sleep(delay_sec / self._n_slices if delay_sec else 1)
+            await asyncio.sleep(delay_sec if delay_sec else 1)

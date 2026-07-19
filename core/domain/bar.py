@@ -19,8 +19,10 @@ class Tick(BaseModel):
 
     @model_validator(mode="after")
     def validate_non_negative(self) -> "Tick":
-        assert self.price > 0, "Price must be positive"
-        assert self.volume >= 0, "Volume must be non-negative"
+        if not self.price > 0:
+            raise ValueError("Price must be positive")
+        if not self.volume >= 0:
+            raise ValueError("Volume must be non-negative")
         return self
 
 
@@ -40,11 +42,18 @@ class Bar(BaseModel):
 
     @model_validator(mode="after")
     def validate_ohlc(self) -> "Bar":
-        assert self.open > 0, "Open must be positive"
-        assert self.high >= self.low, "High must be >= Low"
-        assert self.high >= self.open, "High must be >= Open"
-        assert self.high >= self.close, "High must be >= Close"
-        assert self.low <= self.open, "Low must be <= Open"
-        assert self.low <= self.close, "Low must be <= Close"
-        assert self.volume >= 0, "Volume must be non-negative"
+        if not self.open > 0:
+            raise ValueError("Open must be positive")
+        if not self.high >= self.low:
+            raise ValueError("High must be >= Low")
+        if not self.high >= self.open:
+            raise ValueError("High must be >= Open")
+        if not self.high >= self.close:
+            raise ValueError("High must be >= Close")
+        if not self.low <= self.open:
+            raise ValueError("Low must be <= Open")
+        if not self.low <= self.close:
+            raise ValueError("Low must be <= Close")
+        if not self.volume >= 0:
+            raise ValueError("Volume must be non-negative")
         return self

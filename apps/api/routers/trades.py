@@ -1,4 +1,5 @@
 """Trade and position endpoints."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Query
@@ -20,12 +21,7 @@ async def get_trades(
 ) -> dict[str, object]:
     """List trade-like records from experiments.db."""
     result = list_trades(
-        limit=limit,
-        offset=offset,
-        engine=engine,
-        fold=fold,
-        from_date=from_,
-        to_date=to,
+        limit=limit, offset=offset, engine=engine, fold=fold, from_date=from_, to_date=to
     )
     return result
 
@@ -38,21 +34,28 @@ async def export_trades(
     from_: str | None = Query(None, alias="from"),
     to: str | None = None,
 ) -> PlainTextResponse:
-    """Export filtered trades as CSV."""
-    result = list_trades(
-        limit=10000,
-        engine=engine,
-        fold=fold,
-        from_date=from_,
-        to_date=to,
-    )
-    lines = ["time,experiment_id,fold,engine,total_return,sharpe_ratio"]
+    """Export filtered trades as CSV with proper quoting."""
+    import csv
+    import io
+
+    result = list_trades(limit=10000, engine=engine, fold=fold, from_date=from_, to_date=to)
+
+    buf = io.StringIO()
+    writer = csv.writer(buf, quoting=csv.QUOTE_ALL)
+    writer.writerow(["time", "experiment_id", "fold", "engine", "total_return", "sharpe_ratio"])
     for item in result["items"]:
-        lines.append(
-            f'{item["time"]},{item["experiment_id"]},{item["fold"]},'
-            f'{item["engine"]},{item["total_return"]},{item["sharpe_ratio"]}'
+        writer.writerow(
+            [
+                item["time"],
+                item["experiment_id"],
+                item["fold"],
+                item["engine"],
+                item["total_return"],
+                item["sharpe_ratio"],
+            ]
         )
-    return PlainTextResponse("\n".join(lines) + "\n", media_type="text/csv")
+
+    return PlainTextResponse(buf.getvalue(), media_type="text/csv")
 
 
 @router.get("/positions")
@@ -62,6 +65,5 @@ async def get_positions() -> JSONResponse:
     Returns 503 when live position tracking is not yet wired.
     """
     return JSONResponse(
-        status_code=503,
-        content={"detail": "Live position tracking not yet implemented."},
+        status_code=503, content={"detail": "Live position tracking not yet implemented."}
     )

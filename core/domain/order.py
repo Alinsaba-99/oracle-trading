@@ -32,15 +32,18 @@ class Order(BaseModel):
 
     @model_validator(mode="after")
     def validate_order_type(self) -> "Order":
-        if self.order_type == OrderType.market:
-            assert self.price is None, "Market orders must not have price"
-        if self.order_type == OrderType.limit:
-            assert self.price is not None, "Limit orders must have price"
-        if self.order_type == OrderType.stop:
-            assert self.stop_price is not None, "Stop orders must have stop_price"
-        assert self.quantity > 0, "Quantity must be positive"
-        assert self.filled_quantity <= self.quantity, "Filled qty must be <= quantity"
-        assert self.commission >= 0, "Commission must be non-negative"
+        if self.order_type == OrderType.market and self.price is not None:
+            raise ValueError("Market orders must not have price")
+        if self.order_type == OrderType.limit and self.price is None:
+            raise ValueError("Limit orders must have price")
+        if self.order_type == OrderType.stop and self.stop_price is None:
+            raise ValueError("Stop orders must have stop_price")
+        if not self.quantity > 0:
+            raise ValueError("Quantity must be positive")
+        if not self.filled_quantity <= self.quantity:
+            raise ValueError("Filled qty must be <= quantity")
+        if not self.commission >= 0:
+            raise ValueError("Commission must be non-negative")
         return self
 
     @property

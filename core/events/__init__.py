@@ -9,6 +9,12 @@ from core.events.client import EventBusClient
 from core.events.envelope import build_envelope
 from core.events.experiment import ExperimentCompletedEvent
 from core.events.feature import FeatureUpdatedEvent
+from core.events.intelligence import (
+    INTELLIGENCE_OBSERVATION_SUBJECT,
+    INTELLIGENCE_OUTCOME_SUBJECT,
+    IntelligenceObservationEvent,
+    IntelligenceOutcomeEvent,
+)
 from core.events.market import (
     MarketBarEvent,
     MarketOrderBookEvent,
@@ -31,6 +37,8 @@ from core.events.system import (
 from core.events.trade import TradeClosedEvent, TradeOpenedEvent
 
 __all__ = [
+    "INTELLIGENCE_OBSERVATION_SUBJECT",
+    "INTELLIGENCE_OUTCOME_SUBJECT",
     "SYSTEM_HEALTH",
     "SYSTEM_PLUGIN_REGISTERED",
     "AgentAnalysisCompletedEvent",
@@ -40,6 +48,8 @@ __all__ = [
     "ExperimentCompletedEvent",
     "FeatureUpdatedEvent",
     "HealthEventPayload",
+    "IntelligenceObservationEvent",
+    "IntelligenceOutcomeEvent",
     "MarketBarEvent",
     "MarketOrderBookEvent",
     "MarketTickEvent",
