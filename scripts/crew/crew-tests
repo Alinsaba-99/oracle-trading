@@ -1,0 +1,166 @@
+#!/usr/bin/env python3
+"""crew-tests — Mappa struttura test, coverage e categorie.
+
+Uso: python crew-tests [--coverage] [--categorie] [--flaky]
+"""
+
+from __future__ import annotations
+
+import ast
+import sys
+from collections import defaultdict
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent.parent
+TEST_DIR = ROOT / "tests"
+
+
+def get_test_files() -> list[Path]:
+    return sorted(TEST_DIR.rglob("test_*.py"))
+
+
+def extract_test_classes_and_functions(path: Path) -> tuple[list[str], list[str]]:
+    """Extract test class names and test function names."""
+    classes = []
+    functions = []
+    try:
+        tree = ast.parse(path.read_text())
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ClassDef):
+                methods = [
+                    n.name
+                    for n in ast.iter_child_nodes(node)
+                    if isinstance(n, ast.FunctionDef) and n.name.startswith("test_")
+                ]
+                if methods:
+                    classes.append((node.name, methods))
+            elif isinstance(node, ast.FunctionDef) and node.name.startswith("test_"):
+                # Check if it's a standalone function (not in a class)
+                if not any(
+                    isinstance(parent, ast.ClassDef)
+                    for parent in ast.walk(tree)
+                    if isinstance(parent, ast.ClassDef)
+                    and node in list(ast.iter_child_nodes(parent))
+                ):
+                    functions.append(node.name)
+    except SyntaxError:
+        pass
+    return classes, functions
+
+
+def extract_markers(path: Path) -> list[str]:
+    """Extract pytest markers from file."""
+    markers = []
+    try:
+        text = path.read_text()
+        for m in ["unit", "integration", "slow", "e2e", "asyncio"]:
+            if f"mark.{m}" in text or f"@pytest.mark.{m}" in text:
+                markers.append(m)
+    except Exception:
+        pass
+    return markers
+
+
+def main():
+    show_categories = "--categorie" in sys.argv or len(sys.argv) == 1
+    show_coverage = "--coverage" in sys.argv
+
+    test_files = get_test_files()
+
+    # Per-category breakdown
+    categories = defaultdict(list)
+    for f in test_files:
+        try:
+            rel = str(f.relative_to(TEST_DIR))
+            parts = rel.split("/")
+            category = parts[0] if len(parts) > 1 else "root"
+            categories[category].append(f)
+        except ValueError:
+            pass
+
+    if show_categories:
+        print("=== Test Structure ===\n")
+        total_tests = 0
+        total_classes = 0
+
+        for cat in sorted(categories):
+            files = categories[cat]
+            class_count = 0
+            func_count = 0
+            file_markers = defaultdict(int)
+
+            for f in files:
+                classes, funcs = extract_test_classes_and_functions(f)
+                class_count += len(classes)
+                func_count += len(funcs) + sum(len(m) for _, m in classes)
+                for m in extract_markers(f):
+                    file_markers[m] += 1
+
+            total_tests += func_count
+            total_classes += class_count
+            markers_str = ", ".join(f"{m}={n}" for m, n in sorted(file_markers.items()))
+
+            print(
+                f"  {cat:<20} {len(files):>3} files, {class_count:>3} classes, ~{func_count:>4} tests"
+            )
+            if markers_str:
+                print(f"  {'':20} markers: {markers_str}")
+
+        print(
+            f"\n  {'TOTAL':<20} {len(test_files):>3} files, {total_classes:>3} classes, ~{total_tests:>4} tests"
+        )
+        print()
+
+        # Coverage gaps by category
+        print("--- Coverage Areas ---")
+        source_packages = [
+            "core",
+            "market",
+            "analytics",
+            "execution",
+            "genetics",
+            "research",
+            "agents",
+            "audit",
+            "policy",
+            "orchestration",
+            "apps",
+        ]
+
+        for pkg in source_packages:
+            pkg_dir = ROOT / pkg
+            if not pkg_dir.exists():
+                continue
+            # Count source files
+            py_files = list(pkg_dir.rglob("*.py"))
+            source_files = [
+                f
+                for f in py_files
+                if not any(
+                    s in f.parts
+                    for s in [".git", "__pycache__", "node_modules", ".venv", "oracle.egg-info"]
+                )
+            ]
+            source_count = len([f for f in source_files if f.name != "__init__.py"])
+
+            # Count test files for this package
+            test_files_for_pkg = [f for f in test_files if pkg in f.parts]
+            test_count = len(test_files_for_pkg)
+
+            if source_count > 0:
+                ratio = test_count / source_count if source_count > 0 else 0
+                coverage_pct = min(ratio * 100, 100)
+                bar = "█" * int(coverage_pct / 5) + "░" * (20 - int(coverage_pct / 5))
+                print(
+                    f"  {pkg:<15} {bar} {coverage_pct:5.1f}%  ({test_count:>3} test files / {source_count:>3} src)"
+                )
+
+    if show_coverage:
+        print("\n\n=== Coverage Details (pytest --cov) ===")
+        print(
+            "Run: uv run --frozen pytest tests/ --cov=core --cov=market --cov=analytics --cov-report=term-missing"
+        )
+
+
+if __name__ == "__main__":
+    main()

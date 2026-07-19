@@ -1,0 +1,223 @@
+#!/usr/bin/env python3
+"""crew-gates — Verifica evidenza gate dalla struttura del codice.
+
+Analizza la codebase per trovare evidenza a supporto dei gate G0-G9.
+Uso: python crew-gates [--gate G0] [--full]
+"""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent.parent
+SKIP_DIRS = {
+    ".git",
+    "__pycache__",
+    "node_modules",
+    ".venv",
+    ".lint_venv",
+    "oracle.egg-info",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+}
+
+GATES = {
+    "G0": {
+        "title": "Baseline veritiera e riproducibile",
+        "checks": [
+            ("pyproject.toml", "pyproject.toml esiste", "file"),
+            ("uv.lock", "uv.lock esiste", "file"),
+            ("Makefile", "Makefile esiste", "file"),
+            ("apps/dashboard/package.json", "lock Node dashboard", "file"),
+            ("ruff check", "Ruff config in pyproject.toml", "config"),
+            ("mypy strict", "mypy strict configurato", "config"),
+            ("pytest config", "pytest configurato", "config"),
+            (".pre-commit-config.yaml", "pre-commit configurato", "file"),
+        ],
+    },
+    "G1": {
+        "title": "Autorità, ambienti e confini applicativi",
+        "checks": [
+            ("TradingMode", "Enum TradingMode (REPLAY/PAPER/SHADOW/LIVE)", "code"),
+            ("mode_guard", "Mode guard presente", "code"),
+            ("fail_closed", "Fail-closed pattern", "code"),
+            ("API authentication", "API auth fail-closed", "code"),
+            ("CLI live disabled", "CLI bloccata per broker live", "code"),
+            ("contracts inward", "Contratti spostati da agents", "code"),
+        ],
+    },
+    "G2": {
+        "title": "Verità futures e point-in-time data",
+        "checks": [
+            ("ContractSpec", "ContractSpec versionato", "code"),
+            ("calendari exchange", "Calendari exchange", "code"),
+            ("contract roll", "Roll e back-adjustment", "code"),
+            ("point-in-time", "Point-in-time data lineage", "code"),
+            ("raw data immutabile", "Raw data immutabile", "code"),
+        ],
+    },
+    "G3": {
+        "title": "Ledger, OMS e reconciliation durevoli",
+        "checks": [
+            ("PostgreSQL ledger", "PostgreSQL ledger", "code"),
+            ("SQLite ledger", "SQLite ledger dev", "code"),
+            ("double-entry", "Double-entry ledger", "code"),
+            ("idempotency key", "Idempotency key", "code"),
+            ("outbox", "Transactional outbox", "code"),
+            ("reconciliation", "Reconciliation", "code"),
+        ],
+    },
+    "G4": {
+        "title": "Hard risk non bypassabile",
+        "checks": [
+            ("risk_manager", "Risk manager obbligatorio", "code"),
+            ("daily_loss", "Daily loss limit", "code"),
+            ("drawdown", "Drawdown limit", "code"),
+            ("kill_switch", "Kill switch", "code"),
+            ("flatten", "Flatten", "code"),
+            ("property test", "Property test", "code"),
+        ],
+    },
+    "G5": {
+        "title": "Research truth e strategy qualification",
+        "checks": [
+            ("Nautilus", "Nautilus qualification engine", "code"),
+            ("PyBroker deprecated", "PyBroker deprecato", "code"),
+            ("WFA", "Walk-forward analysis", "code"),
+            ("holdout", "Holdout set", "code"),
+            ("experiment registry", "Experiment registry", "code"),
+            ("cost model futures", "Cost model futures", "code"),
+        ],
+    },
+    "G6": {
+        "title": "Paper e shadow operations",
+        "checks": [
+            ("paper broker", "Paper broker event-driven", "code"),
+            ("shadow mode", "Shadow mode", "code"),
+            ("account streaming", "Streaming account/order/fill", "code"),
+            ("deployment non-root", "Deployment non-root", "code"),
+            ("chaos test", "Chaos test", "code"),
+            ("runbook", "Runbook", "code"),
+        ],
+    },
+    "G7": {
+        "title": "Certificazione programma",
+        "checks": [
+            ("rule profile immutable", "Rule profile immutabile", "code"),
+            ("support mode AUTO", "Support mode AUTO_SUPPORTED", "code"),
+            ("manifest versioni", "Manifest versionato", "code"),
+        ],
+    },
+    "G8": {
+        "title": "Funded limited rollout",
+        "checks": [
+            ("payout tracking", "Payout tracking", "code"),
+            ("rollback test", "Rollback test", "code"),
+            ("risk budget cap", "Risk budget 25%", "code"),
+        ],
+    },
+    "G9": {
+        "title": "Continuous operations",
+        "checks": [
+            ("review periodiche", "Review periodiche", "code"),
+            ("dependency update", "Dependency update", "code"),
+        ],
+    },
+}
+
+
+def check_file_exists(relative: str) -> bool:
+    return (ROOT / relative).exists()
+
+
+def check_config_exists(relative: str) -> bool:
+    """Check pyproject.toml for certain config."""
+    if relative == "ruff check":
+        pyproject = ROOT / "pyproject.toml"
+        if pyproject.exists():
+            return "[tool.ruff]" in pyproject.read_text()
+    if relative == "mypy strict":
+        pyproject = ROOT / "pyproject.toml"
+        if pyproject.exists():
+            return "strict = true" in pyproject.read_text()
+    if relative == "pytest config":
+        pyproject = ROOT / "pyproject.toml"
+        if pyproject.exists():
+            return "[tool.pytest.ini_options]" in pyproject.read_text()
+    return False
+
+
+def check_code_exists(keyword: str, context: str = "") -> list[str]:
+    """Search for keyword in Python source files."""
+    findings = []
+    for f in sorted(ROOT.rglob("*.py")):
+        if any(skip in f.parts for skip in SKIP_DIRS):
+            continue
+        try:
+            text = f.read_text()
+            if keyword.lower() in text.lower():
+                rel = str(f.relative_to(ROOT))
+                findings.append(rel)
+        except Exception:
+            pass
+    return findings
+
+
+def main():
+    target_gate = None
+    if "--gate" in sys.argv:
+        idx = sys.argv.index("--gate")
+        if idx + 1 < len(sys.argv):
+            target_gate = sys.argv[idx + 1].upper()
+
+    full = "--full" in sys.argv
+
+    gates_to_check = [target_gate] if target_gate else list(GATES.keys())
+
+    for gate_id in gates_to_check:
+        if gate_id not in GATES:
+            print(f"Gate sconosciuto: {gate_id}")
+            continue
+
+        gate = GATES[gate_id]
+        print(f"\n{'=' * 70}")
+        print(f"{gate_id}: {gate['title']}")
+        print(f"{'=' * 70}")
+
+        passed = 0
+        total = 0
+        for keyword, label, check_type in gate["checks"]:
+            total += 1
+            if check_type == "file":
+                found = check_file_exists(keyword)
+            elif check_type == "config":
+                found = check_config_exists(keyword)
+            elif check_type == "code":
+                findings = check_code_exists(keyword)
+                found = len(findings) > 0
+            else:
+                found = False
+
+            status = "✓" if found else "✗"
+            if found:
+                passed += 1
+
+            if check_type == "code" and found and full:
+                findings = check_code_exists(keyword)
+                print(f"  {status} {label:<50} ({len(findings)} refs)")
+                for fi in findings[:3]:
+                    print(f"       {fi}")
+                if len(findings) > 3:
+                    print(f"       ... e altri {len(findings) - 3}")
+            else:
+                print(f"  {status} {label:<60}")
+
+        pct = (passed / total * 100) if total > 0 else 0
+        verdict = "PASS" if passed == total else "INCOMPLETE"
+        print(f"\n  {verdict}: {passed}/{total} checks ({pct:.0f}%)")
+
+
+if __name__ == "__main__":
+    main()

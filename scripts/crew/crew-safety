@@ -1,0 +1,195 @@
+#!/usr/bin/env python3
+"""crew-safety — Mappa il Safety Control Plane.
+
+Analizza:
+- Risk kernel (risk manager obbligatorio?)
+- OMS durability (in-memory vs SQLite/Postgres)
+- Ledger / account state
+- Execution paths da agents a broker
+- Mode guard e authority
+- Kill switch e flatten
+
+Uso: python crew-safety [--bypass] [--paths]
+"""
+
+from __future__ import annotations
+
+import re
+import sys
+from collections import defaultdict
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent.parent
+SKIP_DIRS = {
+    ".git",
+    "__pycache__",
+    "node_modules",
+    ".venv",
+    ".lint_venv",
+    "oracle.egg-info",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+}
+
+# Patterns for safety-critical files
+SAFETY_KEYWORDS = {
+    "risk_manager": "Risk manager reference",
+    "risk_kernel": "Risk kernel",
+    "order_manager": "Order manager",
+    "OrderManager": "OrderManager class",
+    "ledger": "Ledger/account state",
+    "reconciliation": "Reconciliation",
+    "kill_switch": "Kill switch",
+    "flatten": "Flatten/cancel-all",
+    "hard_risk": "Hard risk",
+    "daily_loss": "Daily loss limit",
+    "drawdown": "Drawdown limit",
+    "position_limit": "Position limit",
+    "mode_guard": "Mode guard",
+    "AUTO_SUPPORTED": "Auto-supported mode",
+    "RESEARCH_ONLY": "Research only mode",
+    "fail_closed": "Fail-closed",
+    "fail_open": "Fail-open (⚠)",
+    "bypass": "Bypass (⚠)",
+    "no_risk": "No risk check (⚠)",
+    "in_memory": "In-memory state (⚠)",
+}
+
+
+def search_keywords(path: Path) -> list[dict]:
+    """Search for safety keywords in a file."""
+    findings = []
+    try:
+        lines = path.read_text().splitlines()
+        for i, line in enumerate(lines, 1):
+            lower = line.lower()
+            for kw, label in SAFETY_KEYWORDS.items():
+                if kw.lower() in lower:
+                    # Highlight dangerous patterns
+                    severity = "⚠" if "⚠" in label else "✓" if "fail_closed" in kw else "i"
+                    findings.append(
+                        {
+                            "keyword": kw,
+                            "label": label,
+                            "line": i,
+                            "severity": severity,
+                            "snippet": line.strip()[:100],
+                        }
+                    )
+    except Exception:
+        pass
+    return findings
+
+
+def find_risk_bypasses(path: Path) -> list[dict]:
+    """Find patterns where risk might be bypassed."""
+    bypasses = []
+    patterns = [
+        (r"risk_manager\s*[=:]\s*None", "risk_manager = None (bypass)"),
+        (r"risk_manager\s*=\s*Optional", "risk_manager optional (bypass)"),
+        (r"\.risk_manager\s*[=:]\s*None", "risk_manager attribute set to None"),
+        (r"risk.*=.*None", "risk set to None"),
+        (r"bypass", "explicit bypass"),
+        (r"fail.open", "fail-open"),
+    ]
+    try:
+        text = path.read_text()
+        for pattern, label in patterns:
+            for match in re.finditer(pattern, text, re.IGNORECASE):
+                line_num = text[: match.start()].count("\n") + 1
+                bypasses.append(
+                    {
+                        "pattern": pattern,
+                        "label": label,
+                        "line": line_num,
+                        "snippet": text[max(0, match.start() - 20) : match.end() + 20].strip(),
+                    }
+                )
+    except Exception:
+        pass
+    return bypasses
+
+
+def main():
+    show_bypass = "--bypass" in sys.argv
+    show_paths = "--paths" in sys.argv
+
+    safety_files: list[Path] = []
+    for f in ROOT.rglob("*.py"):
+        if any(skip in f.parts for skip in SKIP_DIRS):
+            continue
+        text = f.read_text() if f.exists() else ""
+        if any(
+            kw in text.lower()
+            for kw in [
+                "risk_manager",
+                "order_manager",
+                "ledger",
+                "kill_switch",
+                "flatten",
+                "mode_guard",
+                "hard_risk",
+                "daily_loss",
+                "drawdown",
+            ]
+        ):
+            safety_files.append(f)
+
+    print("=== Safety Control Plane Map ===\n")
+    print(f"Safety-critical files found: {len(safety_files)}")
+
+    # P0 risks
+    all_bypasses = []
+    for f in safety_files:
+        bypasses = find_risk_bypasses(f)
+        all_bypasses.extend((f, b) for b in bypasses)
+
+    p0_risks = [
+        b for f, b in all_bypasses if "risk_manager" in b["pattern"] or "fail.open" in b["pattern"]
+    ]
+    print("\n--- P0 Risks (risk bypass / fail-open) ---")
+    if p0_risks:
+        for b in p0_risks:
+            print(f"  ⚠  Line {b['line']}: {b['label']}")
+    else:
+        print("  ✓ Nessun bypass P0 trovato")
+
+    # Safety files by component
+    print("\n\n--- Safety Components ---")
+    components = defaultdict(list)
+    for f in safety_files:
+        try:
+            rel = str(f.relative_to(ROOT))
+        except ValueError:
+            continue
+        findings = search_keywords(f)
+        for fi in findings:
+            components[fi["keyword"]].append((rel, fi["line"], fi["severity"]))
+
+    for kw in sorted(components.keys()):
+        files = components[kw]
+        unique_files = set(f[0] for f in files)
+        sev = set(f[2] for f in files)
+        sev_str = " ".join(sev)
+        print(f"  {sev_str} {kw:<20} in {len(files)} locationi, {len(unique_files)} file")
+
+    if show_paths or show_bypass:
+        print("\n\n--- Safety File Detail ---")
+        for f in sorted(safety_files, key=lambda x: str(x)):
+            try:
+                rel = str(f.relative_to(ROOT))
+            except ValueError:
+                continue
+            bypasses = find_risk_bypasses(f)
+            if show_bypass and not bypasses:
+                continue
+            print(f"\n  {rel}")
+            if bypasses:
+                for b in bypasses:
+                    print(f"    ⚠  L{b['line']}: {b['label']}")
+                    print(f"        ...{b['snippet']}...")
+
+
+if __name__ == "__main__":
+    main()

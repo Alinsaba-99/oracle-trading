@@ -1,0 +1,171 @@
+#!/usr/bin/env python3
+"""crew-contracts — Trova tutti i contratti Pydantic/dataclass/typing.
+
+Opzioni:
+  --domain-only  Solo core/domain
+  --package P    Solo un package
+  --summary      Solo conteggi riassuntivi
+"""
+
+from __future__ import annotations
+
+import ast
+import sys
+from collections import defaultdict
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent.parent
+SKIP_DIRS = {
+    ".git",
+    "__pycache__",
+    "node_modules",
+    ".venv",
+    ".lint_venv",
+    "oracle.egg-info",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+}
+SOURCE_PACKAGES = [
+    "core",
+    "market",
+    "analytics",
+    "execution",
+    "genetics",
+    "research",
+    "agents",
+    "audit",
+    "policy",
+    "orchestration",
+    "apps",
+]
+
+
+def find_contracts(path: Path) -> list[dict]:
+    """Find Pydantic BaseModel, dataclass, frozen dataclass, StrEnum, TypedDict."""
+    contracts = []
+    try:
+        tree = ast.parse(path.read_text())
+        for node in ast.walk(tree):
+            # Class definitions
+            if isinstance(node, ast.ClassDef):
+                bases = []
+                for base in node.bases:
+                    if isinstance(base, ast.Attribute):
+                        bases.append(
+                            f"{base.value.id}.{base.attr}"
+                            if isinstance(base.value, ast.Name)
+                            else base.attr
+                        )
+                    elif isinstance(base, ast.Name):
+                        bases.append(base.id)
+                    elif isinstance(base, ast.Subscript):
+                        if isinstance(base.value, ast.Name):
+                            bases.append(base.value.id)
+
+                decorators = []
+                for dec in node.decorator_list:
+                    if isinstance(dec, ast.Name):
+                        decorators.append(dec.id)
+                    elif isinstance(dec, ast.Attribute):
+                        decorators.append(dec.attr)
+
+                contract_type = None
+                if any("BaseModel" in b for b in bases):
+                    contract_type = "Pydantic"
+                elif "dataclass" in decorators:
+                    contract_type = "dataclass"
+                elif "StrEnum" in bases:
+                    contract_type = "StrEnum"
+                elif "TypedDict" in bases:
+                    contract_type = "TypedDict"
+                elif "Protocol" in bases:
+                    contract_type = "Protocol"
+                elif "ABC" in bases:
+                    contract_type = "ABC"
+
+                if contract_type:
+                    fields = []
+                    for item in ast.iter_child_nodes(node):
+                        if isinstance(item, ast.AnnAssign) and item.target:
+                            if isinstance(item.target, ast.Name):
+                                fields.append(item.target.id)
+
+                    contracts.append(
+                        {
+                            "name": node.name,
+                            "type": contract_type,
+                            "fields": fields,
+                            "line": node.lineno,
+                        }
+                    )
+    except SyntaxError:
+        pass
+    return contracts
+
+
+def main():
+    domain_only = "--domain-only" in sys.argv
+    summary_only = "--summary" in sys.argv
+    filter_pkg = None
+    if "--package" in sys.argv:
+        idx = sys.argv.index("--package")
+        if idx + 1 < len(sys.argv):
+            filter_pkg = sys.argv[idx + 1]
+
+    all_contracts = defaultdict(list)
+    py_files = list(ROOT.rglob("*.py"))
+
+    for f in py_files:
+        if any(skip in f.parts for skip in SKIP_DIRS):
+            continue
+        try:
+            rel = f.relative_to(ROOT)
+        except ValueError:
+            continue
+        parts = rel.parts
+        if not parts or parts[0] not in SOURCE_PACKAGES:
+            continue
+
+        pkg = parts[0]
+        if domain_only and pkg != "core":
+            continue
+        if filter_pkg and pkg != filter_pkg:
+            continue
+
+        # Build subpackage path for reporting
+        subpath = ".".join(parts[:-1])
+        contracts = find_contracts(f)
+        for c in contracts:
+            c["file"] = str(rel)
+            c["subpath"] = subpath
+            all_contracts[pkg].append(c)
+
+    if summary_only:
+        print("=== Contract Summary ===\n")
+        total = 0
+        for pkg in sorted(all_contracts):
+            by_type = defaultdict(int)
+            for c in all_contracts[pkg]:
+                by_type[c["type"]] += 1
+            count = len(all_contracts[pkg])
+            total += count
+            type_str = ", ".join(f"{t}={n}" for t, n in sorted(by_type.items()))
+            print(f"  {pkg:<15} {count:>4} contracts [{type_str}]")
+        print(f"\n  {'TOTAL':<15} {total:>4} contracts")
+        return
+
+    print("=== Contract Map — All Contracts ===\n")
+    for pkg in sorted(all_contracts):
+        print(f"\n--- {pkg} ---")
+        for c in sorted(all_contracts[pkg], key=lambda x: x["name"]):
+            fields = ", ".join(c["fields"][:8])
+            if len(c["fields"]) > 8:
+                fields += "..."
+            print(f"  [{c['type']:>10}] {c['name']:<35} L{c['line']:<6} ({c['file']})")
+            if fields:
+                print(f"                     fields: {fields}")
+
+
+if __name__ == "__main__":
+    main()

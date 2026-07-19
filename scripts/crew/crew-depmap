@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+"""crew-depmap — Analizza grafo delle import tra package del progetto Oracle.
+
+Trova violazioni della clean architecture:
+- execution → agents
+- policy → execution implementation
+- analytics ↔ market
+- genetics → analytics
+- agents → genetics
+
+Usage: python crew-depmap [--package agents]
+"""
+
+from __future__ import annotations
+
+import ast
+import sys
+from collections import defaultdict
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent.parent
+SOURCE_PACKAGES = [
+    "core",
+    "market",
+    "analytics",
+    "execution",
+    "genetics",
+    "research",
+    "agents",
+    "audit",
+    "policy",
+    "orchestration",
+    "apps",
+    "plugins",
+]
+SKIP_DIRS = {".git", "__pycache__", "node_modules", ".venv", ".lint_venv", "oracle.egg-info"}
+
+BOUNDARY_VIOLATIONS = [
+    ("execution", "agents", "execution NON deve importare agents (contratti in agents)"),
+    ("policy", "execution", "policy NON deve importare implementation execution"),
+    ("agents", "execution", "agents NON deve importare execution (intelligence ≠ safety)"),
+    ("analytics", "execution", "analytics NON deve importare execution"),
+    ("market", "execution", "market NON deve importare execution"),
+    ("agents", "core", "agents dovrebbe importare core/domain ma non implementazioni"),
+]
+
+
+def is_source_module(path: Path) -> bool:
+    """Check if file is under one of our source packages."""
+    try:
+        rel = path.relative_to(ROOT)
+        parts = rel.parts
+        return len(parts) > 0 and parts[0] in SOURCE_PACKAGES
+    except ValueError:
+        return False
+
+
+def get_package_from_path(path: Path) -> str | None:
+    try:
+        rel = path.relative_to(ROOT)
+        parts = rel.parts
+        return parts[0] if parts and parts[0] in SOURCE_PACKAGES else None
+    except ValueError:
+        return None
+
+
+def extract_imports(path: Path) -> list[str]:
+    """Extract top-level package names from import statements."""
+    imports = []
+    try:
+        tree = ast.parse(path.read_text())
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    top = alias.name.split(".")[0]
+                    imports.append(top)
+            elif isinstance(node, ast.ImportFrom):
+                if node.module:
+                    top = node.module.split(".")[0]
+                    imports.append(top)
+                elif node.level and node.level > 0:
+                    imports.append(f".{node.level}")
+    except SyntaxError:
+        pass
+    return imports
+
+
+def main():
+    filter_pkg = None
+    if len(sys.argv) > 2 and sys.argv[1] == "--package":
+        filter_pkg = sys.argv[2]
+
+    # Build import graph
+    graph: dict[str, dict[str, list[str]]] = defaultdict(lambda: defaultdict(list))
+
+    py_files = list(ROOT.rglob("*.py"))
+    for f in py_files:
+        if any(skip in f.parts for skip in SKIP_DIRS):
+            continue
+        if not is_source_module(f):
+            continue
+
+        pkg = get_package_from_path(f)
+        if not pkg:
+            continue
+        if filter_pkg and pkg != filter_pkg:
+            continue
+
+        imports = extract_imports(f)
+        for imp in imports:
+            if imp in SOURCE_PACKAGES:
+                rel_path = str(f.relative_to(ROOT))
+                graph[pkg][imp].append(rel_path)
+
+    # Print graph
+    print("=== Import Graph between Source Packages ===\n")
+
+    for src in sorted(SOURCE_PACKAGES):
+        if filter_pkg and src != filter_pkg:
+            continue
+        if src not in graph:
+            continue
+        print(f"\n--- {src} imports ---")
+        for tgt in sorted(graph[src].keys()):
+            files = graph[src][tgt]
+            print(f"  -> {tgt:<15} ({len(files)} file)")
+            if len(files) <= 5:
+                for f in files:
+                    print(f"       {f}")
+
+    # Boundary violations
+    print(f"\n{'=' * 70}")
+    print("BOUNDARY VIOLATIONS CHECK")
+    print(f"{'=' * 70}")
+
+    violations_found = False
+    for src, tgt, rule in BOUNDARY_VIOLATIONS:
+        if src in graph and tgt in graph[src]:
+            violations_found = True
+            files = graph[src][tgt]
+            print(f"\n⚠  VIOLATION: {rule}")
+            for f in files:
+                print(f"   {f}")
+
+    if not violations_found:
+        print("\n✓ Nessuna violazione di confine rilevata.")
+
+    # Cycles detection (simple 2-cycle)
+    print(f"\n\n{'=' * 70}")
+    print("POSSIBLE CYCLES (bidirectional imports)")
+    print(f"{'=' * 70}")
+    for p1 in SOURCE_PACKAGES:
+        for p2 in SOURCE_PACKAGES:
+            if p1 < p2:
+                if p1 in graph and p2 in graph and p2 in graph[p1] and p1 in graph[p2]:
+                    print(f"  ⟷ {p1} <-> {p2}")
+
+
+if __name__ == "__main__":
+    main()
