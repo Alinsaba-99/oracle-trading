@@ -1,0 +1,188 @@
+#!/usr/bin/env python3
+"""crew-untracked — Analizza file untracked e nuove directory.
+
+Output: struttura, tipi di file, contenuti chiave, rischi/opportunità.
+Uso: python crew-untracked [--summary] [--inspect nome_file]
+"""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent.parent
+SKIP = {
+    ".git",
+    "__pycache__",
+    "node_modules",
+    ".venv",
+    ".lint_venv",
+    "oracle.egg-info",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".omx",
+    ".omc",
+    ".omo",
+    ".bg-shell",
+}
+
+
+def get_git_status() -> list[tuple[str, str]]:
+    """Get list of (status, path) for untracked and modified files."""
+    import subprocess
+
+    result = subprocess.run(
+        ["git", "-C", str(ROOT), "status", "--porcelain"],
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    entries = []
+    for line in result.stdout.strip().split("\n"):
+        if not line.strip():
+            continue
+        status = line[:2].strip()
+        path = line[3:].strip()
+        if status in ("??", "A", "M", "D", "R"):
+            entries.append((status, path))
+    return entries
+
+
+def categorize(path: str) -> str:
+    """Categorize file type."""
+    p = Path(path)
+    suff = p.suffix.lower()
+    if p.name == "__init__.py":
+        return "py-init"
+    if suff == ".py":
+        return "python"
+    if suff in (".md",):
+        return "doc"
+    if suff in (".json", ".yaml", ".yml", ".toml"):
+        return "config"
+    if suff in (".ts", ".tsx", ".js", ".jsx", ".css"):
+        return "frontend"
+    if suff in (".sql",):
+        return "sql"
+    if suff in (".png", ".jpg", ".svg", ".ico"):
+        return "asset"
+    if suff in (".sh",):
+        return "shell"
+    if p.parent.name == "node_modules":
+        return "npm-dep"
+    return "other"
+
+
+def inspect_file(path: Path, max_lines: int = 40) -> str | None:
+    """Show first lines of a file for quick inspection."""
+    try:
+        lines = path.read_text().splitlines()
+        return "\n".join(lines[:max_lines])
+    except Exception:
+        return None
+
+
+def main():
+    summary_only = "--summary" in sys.argv
+    inspect_target = None
+    if "--inspect" in sys.argv:
+        idx = sys.argv.index("--inspect")
+        if idx + 1 < len(sys.argv):
+            inspect_target = sys.argv[idx + 1]
+
+    entries = get_git_status()
+    untracked = [e for e in entries if e[0] == "??"]
+    modified = [e for e in entries if e[0] in ("M", "A")]
+    deleted = [e for e in entries if e[0] == "D"]
+
+    # Categorize untracked
+    by_cat: dict[str, list[str]] = {}
+    for status, path in untracked:
+        cat = categorize(path)
+        if cat not in by_cat:
+            by_cat[cat] = []
+        by_cat[cat].append(path)
+
+    if summary_only:
+        print("=== Untracked Summary ===\n")
+        print(f"Untracked files: {len(untracked)}")
+        print(f"Modified files:  {len(modified)}")
+        print(f"Deleted files:   {len(deleted)}")
+        print()
+        for cat in sorted(by_cat):
+            print(f"  {cat:<15} {len(by_cat[cat]):>4} files")
+        print()
+
+        # Group by directory
+        dirs: dict[str, list[str]] = {}
+        for status, path in untracked:
+            p = Path(path)
+            parent = str(p.parent) if p.parent != "." else "."
+            if parent not in dirs:
+                dirs[parent] = []
+            dirs[parent].append(path)
+
+        print("--- By Directory (untracked) ---")
+        for d in sorted(dirs):
+            print(f"  {d}/ ({len(dirs[d])} files)")
+        return
+
+    # Inspect a specific file
+    if inspect_target:
+        target_path = ROOT / inspect_target
+        if target_path.exists():
+            content = inspect_file(target_path)
+            if content:
+                print(f"=== Inspect: {inspect_target} ===\n")
+                print(content)
+            else:
+                print(f"Unable to read {inspect_target}")
+        else:
+            print(f"File not found: {inspect_target}")
+        return
+
+    # Full report
+    print("=== Untracked & New Files Analysis ===\n")
+    print(f"Untracked: {len(untracked)} | Modified: {len(modified)} | Deleted: {len(deleted)}")
+    print()
+
+    for cat in sorted(by_cat):
+        files = by_cat[cat]
+        print(f"\n--- {cat} ({len(files)}) ---")
+        for f in sorted(files):
+            print(f"  + {f}")
+
+    # Show new directories created
+    print("\n\n=== New Directories ===")
+    new_dirs = set()
+    for status, path in untracked:
+        p = Path(path)
+        for parent in p.parents:
+            if parent != Path(".") and parent != ROOT:
+                new_dirs.add(str(parent))
+    for d in sorted(new_dirs):
+        print(f"  + {d}/")
+
+    # Highlight key new modules
+    print("\n\n=== Key New Modules (Python) ===")
+    for status, path in untracked:
+        if path.endswith(".py") and not path.endswith("__init__.py"):
+            full = ROOT / path
+            try:
+                lines = full.read_text().splitlines()
+                docstring = ""
+                for line in lines[:5]:
+                    if line.strip().startswith(('"""', "'''")):
+                        docstring += line.strip() + " "
+                if docstring:
+                    docstring = docstring[:120]
+                print(f"\n  {path}")
+                if docstring:
+                    print(f"    {docstring}")
+            except Exception:
+                pass
+
+
+if __name__ == "__main__":
+    main()

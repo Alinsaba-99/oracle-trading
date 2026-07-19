@@ -1,38 +1,46 @@
-.PHONY: install dev lint format typecheck test test-cov clean docker-up docker-down precommit
+.PHONY: install dev lint lint-fix format typecheck test test-venv test-cov test-fast test-unit test-integration docker-up docker-down docker-logs docker-build precommit precommit-install clean fresh docs-tree setup-hooks
 
 # Python
 install:
-	pip install -e ".[all]"
+	uv sync --frozen --all-extras --all-groups
 
 dev:
-	pip install -e ".[dev]"
+	uv sync --frozen --all-groups
 
 lint:
-	ruff check .
+	uv run --frozen ruff check .
 
 lint-fix:
-	ruff check --fix .
+	uv run --frozen ruff check --fix .
 
 format:
-	ruff format .
+	uv run --frozen ruff format .
 
 typecheck:
-	mypy core/ market/ analytics/ execution/ genetics/ research/ agents/ audit/ policy/ orchestration/
+	uv run --frozen mypy core/ market/ analytics/ execution/ genetics/ research/ agents/ audit/ policy/ orchestration/
 
 test:
-	pytest tests/ -v
+	uv run --frozen pytest tests/ -v
+
+test-venv:
+	@if [ ! -x ".venv/bin/python" ]; then \
+		echo "ERROR: .venv/bin/python not found. Create it with:"; \
+		echo "  uv sync --frozen --all-extras --all-groups"; \
+		exit 1; \
+	fi
+	.venv/bin/python -m pytest tests/ -v
 
 test-cov:
-	pytest tests/ --cov=core --cov=market --cov=analytics --cov-report=term-missing
+	uv run --frozen pytest tests/ --cov=core --cov=market --cov=analytics --cov-report=term-missing
 
 test-fast:
-	pytest tests/ -v -m "not slow"
+	uv run --frozen pytest tests/ -v -m "not slow"
 
 test-unit:
-	pytest tests/unit/ -v
+	uv run --frozen pytest tests/unit/ -v
 
 test-integration:
-	pytest tests/integration/ -v
+	uv run --frozen pytest tests/integration/ -v
 
 # Docker
 docker-up:
@@ -49,10 +57,10 @@ docker-build:
 
 # Pre-commit
 precommit:
-	pre-commit run --all-files
+	uv run --frozen pre-commit run --all-files
 
 precommit-install:
-	pre-commit install
+	uv run --frozen pre-commit install
 
 # Project
 clean:
