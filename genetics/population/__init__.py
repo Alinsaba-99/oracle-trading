@@ -15,16 +15,21 @@ from genetics.population.migration import (
     select_best_individuals,
 )
 from genetics.population.seeding import random_individual, seeded_individuals
-from genetics.population.stats import PopulationStats, compute_stats, pareto_front_individuals
+from genetics.population.stats import (
+    PopulationStats,
+    compute_diversity,
+    compute_stats,
+    pareto_front_individuals,
+)
 
 if TYPE_CHECKING:
     from genetics.genome.signal import GenomeConfig
-
 __all__ = [
     "HallOfFameWrapper",
     "MigrationPolicy",
     "MigrationTopology",
     "PopulationStats",
+    "compute_diversity",
     "compute_stats",
     "initialize_population",
     "pareto_front_individuals",

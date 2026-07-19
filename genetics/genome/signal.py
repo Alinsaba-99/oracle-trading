@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, ClassVar
 import numpy as np
 import polars as pl
 
+from core.logging import get_logger
 from genetics.genome.codec import clamp, denormalize, normalize
 from genetics.genome.parameters import (
     CategoricalParameter,
@@ -24,6 +25,8 @@ from genetics.genome.parameters import (
 if TYPE_CHECKING:
     from numpy.typing import NDArray
 
+
+logger = get_logger(__name__)
 __all__ = ["Genome", "GenomeConfig", "GenomeToSignal", "decode", "encode", "validate_genome"]
 
 
@@ -306,6 +309,7 @@ class AlphaGenomeToSignal:
             factor_names = [_CATEGORY_FACTORS[c] for c in self._CATEGORY_ORDER]
             factors = lib.compute(data, names=factor_names)
         except Exception:
+            logger.exception("Alpha factor computation failed, returning neutral signal")
             return pl.Series("signal", [0] * n, dtype=pl.Int8)
 
         # Collect weights from genome parameters (8 category weights)
@@ -351,6 +355,7 @@ class AlphaGenomeToSignal:
                 else:
                     normalized[j] = 0.5
             normalized = np.nan_to_num(normalized, nan=0.5)
+            raw_signal += w * normalized
             w_sum += w
 
         if w_sum == 0:

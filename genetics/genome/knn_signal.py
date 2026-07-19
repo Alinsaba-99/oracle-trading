@@ -67,8 +67,15 @@ def _compute_adx(
     atr[period] = float(np.mean(tr[1 : period + 1]))
     for i in range(period + 1, n):
         atr[i] = (atr[i - 1] * (period - 1) + tr[i]) / period
-    pdi = 100.0 * np.where(atr > 0, np.cumsum(plus_dm) / np.cumsum(atr), 0.0)
-    mdi = 100.0 * np.where(atr > 0, np.cumsum(minus_dm) / np.cumsum(atr), 0.0)
+    plus_dm_s = np.full_like(close, np.nan)
+    minus_dm_s = np.full_like(close, np.nan)
+    plus_dm_s[period] = float(np.mean(plus_dm[1 : period + 1]))
+    minus_dm_s[period] = float(np.mean(minus_dm[1 : period + 1]))
+    for i in range(period + 1, n):
+        plus_dm_s[i] = (plus_dm_s[i - 1] * (period - 1) + plus_dm[i]) / period
+        minus_dm_s[i] = (minus_dm_s[i - 1] * (period - 1) + minus_dm[i]) / period
+    pdi = 100.0 * np.where(atr > 0, plus_dm_s / atr, 0.0)
+    mdi = 100.0 * np.where(atr > 0, minus_dm_s / atr, 0.0)
     dx = 100.0 * np.abs(pdi - mdi) / np.maximum(pdi + mdi, 1e-10)
     adx = np.full_like(close, np.nan)
     adx[2 * period] = float(np.mean(dx[period + 1 : 2 * period + 1]))
