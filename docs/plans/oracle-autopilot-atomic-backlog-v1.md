@@ -285,13 +285,13 @@ decisione.
 - [x] `M06-013` Creare data lineage raw→normalized→feature.
 - [x] `M06-014` Creare query `as_of` obbligatoria.
 - [x] `M06-015` Vietare query senza cutoff nei backtest.
-- [ ] `M06-016` Aggiungere test di future-news leakage.
-- [ ] `M06-017` Aggiungere test di macro revision leakage.
-- [ ] `M06-018` Aggiungere test di filing availability.
-- [ ] `M06-019` Aggiungere test di exchange timestamp ordering.
-- [ ] `M06-020` Aggiungere duplicate detection.
-- [ ] `M06-021` Aggiungere gap detection.
-- [ ] `M06-022` Aggiungere outlier quarantine.
+- [x] `M06-016` Aggiungere test di future-news leakage.
+- [x] `M06-017` Aggiungere test di macro revision leakage.
+- [x] `M06-018` Aggiungere test di filing availability.
+- [x] `M06-019` Aggiungere test di exchange timestamp ordering.
+- [x] `M06-020` Aggiungere duplicate detection.
+- [x] `M06-021` Aggiungere gap detection.
+- [x] `M06-022` Aggiungere outlier quarantine.
 - [ ] `M06-023` Aggiungere provenance report per dataset.
 - [ ] `M06-024` Certificare un dataset intraday futures.
 - [ ] `M06-025` Pubblicare il report di chiusura M06.
