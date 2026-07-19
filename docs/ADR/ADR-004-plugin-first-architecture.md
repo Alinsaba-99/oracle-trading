@@ -1,7 +1,7 @@
 # ADR-004: Plugin-First Architecture
 
 **Data:** 2026-07-06
-**Status:** ACCEPTED
+**Status:** SUPERSEDED by ADR-008
 
 ---
 

@@ -1,7 +1,7 @@
 # ADR-001: NATS come Event Bus
 
 **Data:** 2026-07-06
-**Status:** ACCEPTED
+**Status:** SUPERSEDED by ADR-008
 **Deciders:** (architect)
 
 ---

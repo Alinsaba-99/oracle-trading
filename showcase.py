@@ -124,18 +124,23 @@ sec("Dati reali: 4 ETF x ~1500 giorni da Yahoo Finance")
 heading(5, "TECHNICAL INDICATORS SU SPY REALE")
 
 from analytics.technical.polars_indicators import bbands, ema, macd, rsi, sma
-from analytics.technical.ta_lib_wrapper import sma as ta_sma
 
 close = spy["close"]
-pl_sma_20 = sma(close, period=20)
-ta_sma_20 = ta_sma(close, period=20)
-match = all(
-    abs(a - b) < 0.001 if (a is not None and b is not None) else (a is None and b is None)
-    for a, b in zip(pl_sma_20.to_list(), ta_sma_20.to_list(), strict=True)
-)
-print(f"  TA-Lib vs Polars-native SMA(20):       {'MATCH' if match else 'MISMATCH'}")
+
+try:
+    from analytics.technical.ta_lib_wrapper import sma as ta_sma
+
+    pl_sma_20 = sma(close, period=20)
+    ta_sma_20 = ta_sma(close, period=20)
+    match = all(
+        abs(a - b) < 0.001 if (a is not None and b is not None) else (a is None and b is None)
+        for a, b in zip(pl_sma_20.to_list(), ta_sma_20.to_list(), strict=True)
+    )
+    print(f"  TA-Lib vs Polars-native SMA(20):       {'MATCH' if match else 'MISMATCH'}")
+except ImportError:
+    print("  TA-Lib non disponibile — uso Polars-native esclusivamente")
 print(f"  SPY Close ultimo:                      ${close[-1]:.2f}")
-print(f"  SMA(20) ultimo:                        ${pl_sma_20[-1]:.2f}")
+print(f"  SMA(20) ultimo:                        ${sma(close, period=20)[-1]:.2f}")
 print(f"  EMA(20) ultimo:                        ${ema(close, period=20)[-1]:.2f}")
 print(f"  RSI(14) ultimo:                        {rsi(close, period=14)[-1]:.1f}")
 
@@ -148,7 +153,7 @@ m_line, s_line, hist = macd(close, fast=12, slow=26, signal=9)
 print(f"  MACD ultimo:                           {m_line[-1]:.2f}")
 print(f"  MACD Histogram ultimo:                 {hist[-1]:.2f}")
 
-sec("Calcolati su {len(spy)} giorni di SPY reale")
+sec(f"Calcolati su {len(spy)} giorni di SPY reale")
 
 # ── 7. Regime Detection ───────────────────────────────────────────────────
 heading(6, "REGIME DETECTION (6-detector ensemble)")
@@ -266,7 +271,7 @@ print(f"  Trace ID:          {env['trace_id'][:8]}...")
 sec("NATS event bus con envelope + trace_id")
 
 # ── 12. Backtesting — SMA grid search su SPY ───────────────────────────
-heading(11, "BACKTESTING — OTTIMIZZAZIONE SMA SU SPY ({len(spy)} giorni)")
+heading(11, f"BACKTESTING — OTTIMIZZAZIONE SMA SU SPY ({len(spy)} giorni)")
 
 from analytics.backtest.config import BacktestConfig
 from analytics.backtest.engines.vectorized import VectorizedEngine, sma_crossover_signal
@@ -592,82 +597,86 @@ sec("OrderManager + PaperBroker + 3 algos + IBKR/CCXT + MarketDataFeed")
 heading(20, "PYBROKER WALKFORWARD — Phase 3.5 (time-based WFA)")
 
 print("  PyBroker run SPY 2010-2020 con seed KNN 5-fold:")
-from analytics.backtest.pybroker_integration import PyBrokerBacktest
-from genetics.genome.knn_signal import KNNGenomeToSignal
-from genetics.genome.parameters import ContinuousParameter, IntParameter
-from genetics.genome.signal import GenomeConfig, encode
+try:
+    from analytics.backtest.pybroker_integration import PyBrokerBacktest
+    from genetics.genome.knn_signal import KNNGenomeToSignal
+    from genetics.genome.parameters import ContinuousParameter, IntParameter
+    from genetics.genome.signal import GenomeConfig, encode
 
-_knn_params = [
-    IntParameter("k_neighbors", low=3, high=20),
-    IntParameter("train_length", low=2, high=10),
-    ContinuousParameter("threshold", low=0.3, high=0.9),
-    ContinuousParameter("class_weight", low=0.3, high=3.0),
-    IntParameter("rsi_period", low=7, high=21),
-    IntParameter("cci_period", low=10, high=30),
-    IntParameter("adx_period", low=7, high=21),
-    IntParameter("wt_channel", low=5, high=20),
-    IntParameter("wt_avg", low=7, high=21),
-    IntParameter("mom_period", low=5, high=20),
-    ContinuousParameter("w_rsi", low=0.0, high=2.0),
-    ContinuousParameter("w_cci", low=0.0, high=2.0),
-    ContinuousParameter("w_adx", low=0.0, high=2.0),
-    ContinuousParameter("w_wt", low=0.0, high=2.0),
-    ContinuousParameter("w_mom", low=0.0, high=2.0),
-]
-_seed_raw = {
-    "k_neighbors": 8,
-    "train_length": 4,
-    "threshold": 0.5,
-    "class_weight": 0.5,
-    "rsi_period": 14,
-    "cci_period": 20,
-    "adx_period": 14,
-    "wt_channel": 10,
-    "wt_avg": 11,
-    "mom_period": 12,
-    "w_rsi": 1.5,
-    "w_cci": 1.0,
-    "w_adx": 1.0,
-    "w_wt": 1.5,
-    "w_mom": 2.0,
-}
-_gc = GenomeConfig(n_params=len(_knn_params), param_defs=_knn_params)
-_g = encode(_seed_raw, _knn_params)
-_sig = KNNGenomeToSignal(_g, _knn_params)
+    _knn_params = [
+        IntParameter("k_neighbors", low=3, high=20),
+        IntParameter("train_length", low=2, high=10),
+        ContinuousParameter("threshold", low=0.3, high=0.9),
+        ContinuousParameter("class_weight", low=0.3, high=3.0),
+        IntParameter("rsi_period", low=7, high=21),
+        IntParameter("cci_period", low=10, high=30),
+        IntParameter("adx_period", low=7, high=21),
+        IntParameter("wt_channel", low=5, high=20),
+        IntParameter("wt_avg", low=7, high=21),
+        IntParameter("mom_period", low=5, high=20),
+        ContinuousParameter("w_rsi", low=0.0, high=2.0),
+        ContinuousParameter("w_cci", low=0.0, high=2.0),
+        ContinuousParameter("w_adx", low=0.0, high=2.0),
+        ContinuousParameter("w_wt", low=0.0, high=2.0),
+        ContinuousParameter("w_mom", low=0.0, high=2.0),
+    ]
+    _seed_raw = {
+        "k_neighbors": 8,
+        "train_length": 4,
+        "threshold": 0.5,
+        "class_weight": 0.5,
+        "rsi_period": 14,
+        "cci_period": 20,
+        "adx_period": 14,
+        "wt_channel": 10,
+        "wt_avg": 11,
+        "mom_period": 12,
+        "w_rsi": 1.5,
+        "w_cci": 1.0,
+        "w_adx": 1.0,
+        "w_wt": 1.5,
+        "w_mom": 2.0,
+    }
+    _gc = GenomeConfig(n_params=len(_knn_params), param_defs=_knn_params)
+    _g = encode(_seed_raw, _knn_params)
+    _sig = KNNGenomeToSignal(_g, _knn_params)
 
-_pb = PyBrokerBacktest()
-_m = _pb.run(spy, _sig.compute, n_windows=5, train_size=0.6)
+    _pb = PyBrokerBacktest()
+    _m = _pb.run(spy, _sig.compute, n_windows=5, train_size=0.6)
 
-print(f"  Sharpe ratio:        {_m['sharpe']:.3f}")
-print(f"  Sortino ratio:       {_m['sortino']:.3f}")
-print(f"  Calmar ratio:        {_m['calmar']:.3f}")
-print(f"  Profit Factor:       {_m['profit_factor']:.2f}")
-print(f"  Max Drawdown:        {_m['max_drawdown_pct']:.1f}%")
-print(f"  Total Return:        {_m['total_return_pct']:.1f}%")
-print(f"  Trade Count:         {_m['trade_count']}")
-print(f"  Win Rate:            {_m.get('win_rate', 0) * 100:.0f}%")
-print(f"  Tempo:               {time.time() - start:.1f}s")
-sec("PyBroker time-based WFA — Sharpe corretto senza vectorbt artifacts")
+    print(f"  Sharpe ratio:        {_m['sharpe']:.3f}")
+    print(f"  Sortino ratio:       {_m['sortino']:.3f}")
+    print(f"  Calmar ratio:        {_m['calmar']:.3f}")
+    print(f"  Profit Factor:       {_m['profit_factor']:.2f}")
+    print(f"  Max Drawdown:        {_m['max_drawdown_pct']:.1f}%")
+    print(f"  Total Return:        {_m['total_return_pct']:.1f}%")
+    print(f"  Trade Count:         {_m['trade_count']}")
+    print(f"  Win Rate:            {_m.get('win_rate', 0) * 100:.0f}%")
+    print(f"  Tempo:               {time.time() - start:.1f}s")
+    sec("PyBroker time-based WFA — Sharpe corretto senza vectorbt artifacts")
 
-print("  WFA combined_metrics (5-fold time-based):")
-from analytics.backtest.config import BacktestConfig
-from analytics.backtest.walk_forward import WalkForwardEngine
+    print("  WFA combined_metrics (5-fold time-based):")
+    from analytics.backtest.config import BacktestConfig
+    from analytics.backtest.walk_forward import WalkForwardEngine
 
-_wfe = WalkForwardEngine()
-_wf_results = _wfe.run(spy, _sig, BacktestConfig(), n_splits=5, purge_window=20)
-_cm = _wfe.combined_metrics()
-print(f"  Sharpe (mean):       {_cm['sharpe_ratio_mean']:.3f}")
-print(f"  Sortino (mean):      {_cm['sortino_ratio_mean']:.3f}")
-print(f"  Calmar (mean):       {_cm['calmar_ratio_mean']:.3f}")
-print(f"  MaxDD (mean):        {_cm['max_drawdown_mean']:.3f}")
-print(f"  PF (mean):           {_cm['profit_factor_mean']:.2f}")
-print(f"  CAGR (mean):         {_cm['cagr_mean']:.3f}")
-for i, r in enumerate(_wf_results):
-    print(
-        f"    Fold {i}: Sharpe={r.sharpe_ratio:.3f} PF={r.profit_factor:.2f} "
-        f"trades={r.total_trades}"
-    )
-sec("combined_metrics fix — metriche reali da equity curve (non piu 0.0)")
+    _wfe = WalkForwardEngine()
+    _wf_results = _wfe.run(spy, _sig, BacktestConfig(), n_splits=5, purge_window=20)
+    _cm = _wfe.combined_metrics()
+    print(f"  Sharpe (mean):       {_cm['sharpe_ratio_mean']:.3f}")
+    print(f"  Sortino (mean):      {_cm['sortino_ratio_mean']:.3f}")
+    print(f"  Calmar (mean):       {_cm['calmar_ratio_mean']:.3f}")
+    print(f"  MaxDD (mean):        {_cm['max_drawdown_mean']:.3f}")
+    print(f"  PF (mean):           {_cm['profit_factor_mean']:.2f}")
+    print(f"  CAGR (mean):         {_cm['cagr_mean']:.3f}")
+    for i, r in enumerate(_wf_results):
+        print(
+            f"    Fold {i}: Sharpe={r.sharpe_ratio:.3f} PF={r.profit_factor:.2f} "
+            f"trades={r.total_trades}"
+        )
+    sec("combined_metrics fix — metriche reali da equity curve (non piu 0.0)")
+except ImportError:
+    print("  PyBroker non disponibile — step saltato")
+    sec("PyBroker skip — modulo non installato")
 print("  20/20 componenti dimostrati con DATI REALI yfinance")
 
 # ── Summary ────────────────────────────────────────────────────────────────

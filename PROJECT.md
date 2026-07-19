@@ -1,267 +1,172 @@
 # Project Oracle — Systematic Trading Intelligence Platform
 
-> *"Un Bloomberg Terminal sotto steroidi con autopilot."*
-> Multi-agent AI trading system · Genetic strategy evolution · Real-time market oracle
+> Piattaforma di ricerca quantitativa e trading automation safety-first.
+> Stato corrente: **research-grade con paper test; live/funded non autorizzato**.
 
----
+## Visione
 
-## Vision
+Oracle combina analytics, ricerca alpha, sistemi multi-agente e infrastruttura
+di esecuzione. L'obiettivo non è delegare il broker a un LLM, ma costruire un
+sistema in cui:
 
-Sistema di trading end-to-end completamente autonomo che integra:
+- LLM e agenti propongono analisi e target di portafoglio;
+- dati, contract math, risk e execution restano deterministici;
+- ogni ordine attraversa un OMS durevole e un risk kernel non bypassabile;
+- ogni decisione è riproducibile da codice, dati, configurazione e regole;
+- la promozione procede per replay, paper, shadow, evaluation e funded.
 
-- **Multi-Agent AI**: agenti specializzati (macro, tecnico, fondamentale, sentiment, rischio) che collaborano come un hedge fund institutionale
-- **Evoluzione Genetica**: algoritmi genetici che scoprono e fanno evolvere strategie alpha con walk-forward validation
-- **Bloomberg-Grade Analytics**: dashboard onnicomprensiva, analisi multi-timeframe, screening multi-asset
-- **Autopilot**: esecuzione autonoma con risk management, adattamento ai cambiamenti di regime
-- **Oracolo Real-Time**: opportunità sia di breve (volatilità estrema) che di lungo termine (value investing, nicchie di mercato)
+Nessun rendimento, payout o superamento di challenge è garantibile.
 
----
+## Stato operativo
 
-## Architettura a 6 Strati
+| Area | Stato verificato | Limite principale |
+|---|---|---|
+| Foundation e CI | Verde localmente | Working tree storica non consolidata |
+| Analytics | Research-grade | Data quality e point-in-time coverage incompleti |
+| Backtesting | Research-only | Nessun motore event-driven certificato per qualification |
+| Genetic research | Research-only | Non riaprire promotion finché G5 non è chiuso |
+| Multi-Agent System | Prototipo avanzato | Confini e contratti ancora accoppiati al package agents |
+| ElizaOS | Bridge read-only | Plugin hardening e advisory low ancora aperti |
+| Prop policy | Modello e fixture iniziali | Enforcement live non ancora non-bypassabile |
+| OMS e ledger | Parziali/in-memory | Nessuna durabilità o source of truth account |
+| Broker | Adapter sperimentali | Nessun adapter futures certificato |
+| API e dashboard | Funzionanti | API auth production e osservabilità reale da chiudere |
+| Autopilot | Bloccato | Richiede i gate G0-G7 |
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                    LAYER 5: MONITORING & UI                                 │
-│  Dashboard Terminal · P&L Analytics · Risk Monitor · Alerting · Agent Logs │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                    LAYER 4: EXECUTION ENGINE                                │
-│  Order Manager · Smart Routing · Multi-Broker · Algo Execution (VWAP/TWAP) │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                    LAYER 3: MULTI-AGENT SYSTEM                              │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐         │
-│  │  Macro   │ │Technical │ │Fundamental│ │ Sentiment│ │  Alpha   │         │
-│  │  Analyst │ │ Analyst  │ │  Analyst  │ │ Analyst  │ │Researcher│         │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘         │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌─────────────────────┐           │
-│  │  Risk    │ │ Portfolio│ │  Genetic │ │   Market Oracle     │           │
-│  │  Manager │ │ Manager  │ │Strategist│ │  (Regime Detector)  │           │
-│  └──────────┘ └──────────┘ └──────────┘ └─────────────────────┘           │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                    LAYER 2: STRATEGY GENERATION                             │
-│  Genetic Algorithm Engine · Backtesting Pipeline · Walk-Forward Opt        │
-│  Factor Mining · Regime Detection · Meta-Learning · Ensemble               │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                    LAYER 1: ANALYTICS ENGINE                                │
-│  Technical Indicators (TA-Lib) · Fundamental Analysis · Sentiment NLP      │
-│  Macro Data · Risk Metrics (VaR/CVaR/Greeks) · Factor Models · Features   │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                    LAYER 0: DATA INFRASTRUCTURE                             │
-│  Real-Time Feeds (WebSocket) · Historical Store (QuestDB) · Cache (Redis)  │
-│  Message Queue (NATS) · Alternative Data · On-Chain · Normalization        │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
+La CLI pubblica rifiuta ora l'invio a broker non-paper. Questo riduce un bypass,
+ma non sostituisce il lavoro necessario per rendere risk, OMS e ledger
+obbligatori in ogni composition root.
 
----
+## Architettura sintetica
 
-## Stato dell'Arte (Ricerca)
+~~~text
+Intelligence plane
+  Analyst / LLM / Eliza / GA
+           |
+           v
+Decision contracts
+  PortfolioPlan -> TradeIntent
+           |
+           v
+Safety control plane
+  Mode guard -> Rule profile -> Hard risk -> Durable OMS
+           |
+           v
+Execution adapters
+  Paper / sandbox / certified broker
+           |
+           v
+Authoritative state
+  Ledger -> reconciliation -> audit
+~~~
 
-| Progetto | Stelle | Lezione per Oracle |
-|----------|--------|--------------------|
-| **TradingAgents** (91.3k ★) | Multi-agent LLM trading su LangGraph con analyst, researcher, risk e portfolio manager | Architettura agenti + checkpoint + persistenza |
-| **QuantAgent** (nuovo) | 4 agenti paralleli per HFT, open-source da CMU/Yale/Stony Brook | Parallelismo agnostico al LLM |
-| **ai-hedge-fund** (55k+ ★) | 6 agenti LLM su LangGraph, segnale majority-vote | Pattern disaccordo produttivo + blind spot mapping |
-| **nautilus_trader** | Backtesting HFT-grade, core in Rust, IBKR/Binance connector | Base execution engine + backtesting |
-| **vectorbt** | Backtesting vettoriale accelerato Numba | Validazione strategie rapida |
+### Regola di autorità
 
-### Pattern Architetturali Chiave
+| Componente | Può proporre | Può autorizzare | Può inviare |
+|---|---:|---:|---:|
+| Analyst, LLM, Eliza, GA | Sì | No | No |
+| Portfolio compiler | Sì | No | No |
+| Rule catalog e hard risk | No | Sì/No | No |
+| OMS | No | Solo dopo risk | Sì |
+| Broker adapter | No | No | Solo richieste OMS |
+| Ledger riconciliato | No | Fonte di stato | No |
 
-1. **Disaccordo Produttivo**: agenti con ciechi complementari — l'analista tecnico non vede i fondamentali e viceversa
-2. **Separazione Deterministico/LLM**: calcoli numerici in codice deterministico, LLM solo per sintesi e pattern recognition
-3. **Debate Strutturato**: team bull/bear dibattono prima di una decisione
-4. **Confidence Calibration**: LLM sono sistematicamente overconfident — necessaria calibrazione esterna
-5. **Walk-Forward Validation**: 50% haircut su Sharpe backtestati vs reali
+L'architettura corrente e il target sono descritti in
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
----
+## Stack tecnico
 
-## Sistema Multi-Agente: Design
+| Area | Scelta corrente | Ruolo e decisione |
+|---|---|---|
+| Runtime Python | Python 3.12 | Versione applicativa supportata |
+| API | FastAPI + Pydantic 2 | Control/read API; production auth deve diventare fail-closed |
+| Dashboard | React 18 + Vite 8 + TypeScript | UI operativa; Node 24 in CI |
+| Agent orchestration | LangGraph + LiteLLM | Intelligence plane, fuori dalla hot path esecutiva |
+| DataFrames | Polars, Pandas, NumPy | Polars preferito per nuovi path; conversioni esplicite |
+| Research store | Parquet; DuckDB/Polars | Dataset e feature research, non account authority |
+| Transactional state | SQLite oggi | PostgreSQL target per ledger/OMS production |
+| Event transport | NATS/JetStream | Integrazione e audit delivery; non source of truth |
+| Cache | In-memory; Redis previsto | Solo dati ricostruibili |
+| Backtest discovery | vectorbt | Research-only; portabilità/licenza sotto review |
+| Qualification engine | Nautilus candidate | Non certificato; PyBroker deprecato |
+| Genetic engine | DEAP | Research-only |
+| Broker | Paper, IBKR, CCXT, MT/MetaApi | Sperimentali; nessun live adapter certificato |
+| Time-series DB | QuestDB in Compose | Deferred: adozione solo dopo benchmark e use case |
+| Vector DB | Qdrant in Compose | Deferred: nessun requisito production provato |
 
-### Agenti di Analisi (paralleli, non vedono output altrui)
+Decisioni e supersessioni sono in [docs/ADR/README.md](docs/ADR/README.md).
 
-| Agente | Input | Output | Blind Spot |
-|--------|-------|--------|------------|
-| **Macro Analyst** | GDP, CPI, rates, yield curve, PMI | Regime macro, asset rotation | Ignora micro e price action |
-| **Technical Analyst** | OHLCV, order book, volume | Trend, S/R, momentum, vol regime | Ignora perché un asset vale X |
-| **Fundamental Analyst** | Bilanci, ratios, DCF, insider | Intrinsic value, margin of safety | Ignora timing di mercato |
-| **Sentiment Analyst** | News, social, earnings calls | Market mood, contrarian signals | Non distingue saggezza da panico |
-| **Alpha Researcher** | Tutti i dati, cross-asset, fattori | Statistical arb, pair trades | Overfitting |
+## Baseline verificata il 18 luglio 2026
 
-### Agenti di Controllo (in serie, vedono tutto)
+| Verifica | Risultato |
+|---|---|
+| Pytest | 1.605 passed, 2 skipped, 319 warning |
+| Ruff | Pass |
+| Ruff format | 397 file conformi |
+| mypy strict | 261 source file, con override espliciti per genetics/PyBroker |
+| uv lock --check | Pass |
+| Python dependency audit | Nessuna vulnerabilità nota nell'ambiente installato; gate CI/SBOM ancora assente |
+| Dashboard | 15 test passati; build Vite 8 riuscita |
+| Dashboard audit | 0 vulnerability dopo upgrade Vite |
+| Eliza bridge | Typecheck, build e 2 test passati |
+| Eliza audit | 5 low, 0 moderate/high/critical |
+| Clean install | uv sync --frozen riuscito in virtualenv temporanea |
 
-| Agente | Funzione |
-|--------|----------|
-| **Risk Manager** | Position sizing (Kelly), VaR/CVaR, drawdown limits, correlation check |
-| **Portfolio Manager** | Decisione finale BUY/SELL/HOLD, allocazione, rebalancing |
-| **Market Oracle** | Regime detection (HMM), volatilità, fase mercato, liquidità |
-| **Genetic Strategist** | Evolve nuove strategie via GA, backtest, walk-forward |
+Questi risultati dimostrano riproducibilità locale, non production readiness.
+La CI è stata aggiornata per usare uv.lock e auditare entrambe le applicazioni
+Node; serve ancora evidenza da un run remoto pulito.
 
----
+## Rischi bloccanti
 
-## Genetic Strategy Evolution
+1. Risk manager opzionale in più composition root.
+2. OMS, paper broker e account state in-memory.
+3. API authentication disabilitata quando la key è assente.
+4. ContractSpec, calendari futures e contract roll non certificati.
+5. Backtest con fallback silenziosi e motori non equivalenti.
+6. Docker/Compose non ancora production-grade.
+7. Dependency e license policy Python incompleta.
+8. Working tree con molte modifiche storiche non separate.
 
-### Genoma
-```python
-entry_conditions: List[Rule]       # Regole tecniche + fondamentali
-exit_conditions: List[Rule]        # TP, SL, trailing
-position_sizing: SizingRule        # Kelly, fixed, vol-adjusted
-filters: List[Filter]              # Market cap, volume, settore
-timeframe: Timeframe               # 1m → 1w
-asset_universe: Universe           # Asset screenati
-risk_params: RiskParams            # Max DD, posizione max
-```
+La review completa e le evidenze sono in
+[docs/reviews/2026-07-18-project-review.md](docs/reviews/2026-07-18-project-review.md).
 
-### Algoritmo
-- **Selezione**: Tournament (size 3) + elitismo (top 5%)
-- **Crossover**: Uniforme con swap a livello di regola
-- **Mutazione**: Perturbazione gaussiana, add/remove regole
-- **Island Model**: Popolazioni parallele con migrazione periodica
-- **Fitness Multi-Obiettivo**: Sharpe, Sortino, Calmar, MaxDD (NSGA-II)
-- **Walk-Forward**: Rolling window IS/OOS con penalità overfitting
+## Roadmap canonica
 
----
+| Gate | Risultato |
+|---|---|
+| G0 | Baseline veritiera e riproducibile |
+| G1 | Autorità, ambienti e confini applicativi |
+| G2 | Verità futures e point-in-time data |
+| G3 | Ledger, OMS e reconciliation durevoli |
+| G4 | Hard risk non bypassabile |
+| G5 | Research truth e strategy qualification |
+| G6 | Paper e shadow operations |
+| G7 | Certificazione di uno specifico programma |
+| G8 | Funded limited rollout |
+| G9 | Continuous operations |
 
-## Tech Stack (Attuale)
+Dettaglio e dipendenze:
+[docs/ORACLE_AUTOPILOT_MASTER_ROADMAP.md](docs/ORACLE_AUTOPILOT_MASTER_ROADMAP.md).
 
-| Layer | Tecnologia |
-|-------|-----------|
-| **Core Language** | Python 3.12+ |
-| **Agent Framework** | LangGraph 1.2.9 |
-| **Backtesting** | vectorbt + nautilus_trader (event-driven) |
-| **Genetic Algorithm** | DEAP 1.4 (NSGA-II, island model) |
-| **Experiment Registry** | SQLite (aiosqlite, pydantic) |
-| **Cache** | LRU in-memory + Redis (previsto) |
-| **Message Bus** | NATS (core.events) |
-| **Broker API** | ib_insync (IBKR), CCXT (100+ crypto) |
-| **LLM** | litellm (multi-provider: GPT-4, Claude, locale) |
-| **DataFrames** | Polars + NumPy |
-| **Indicatori** | TA-Lib + Polars-native |
-| **Dashboard** | Streamlit / Dash (Phase 6) |
+## Prop-firm policy
 
-### Data Sources (Integrati)
-| Fonte | Dati | API Key |
-|-------|------|---------|
-| **Yahoo Finance** | OHLCV US equities/ETF | No |
-| **CoinPaprika** | Crypto 7000+ | No |
-| **FRED** | Macro (GDP, CPI, rates) | Sì |
-| **Binance WS** | Crypto real-time | No |
+Oracle distingue:
 
----
-## Sistema Multi-Agente: Design
+- AUTO_SUPPORTED: automazione esplicitamente consentita e certificata;
+- ASSISTED_ONLY: analisi e controlli, ordine manuale;
+- RESEARCH_ONLY: regole modellate, nessuna execution;
+- UNSUPPORTED: dati o termini insufficienti; fail closed.
 
-### Agenti di Analisi (paralleli, non vedono output altrui)
+I profili sono versionati per firm, programma, stage, piattaforma, account,
+vintage ed effective date. Regole e fonti:
+[docs/PROP_FIRM_READINESS_ROADMAP.md](docs/PROP_FIRM_READINESS_ROADMAP.md).
 
-| Agente | Input | Output | Blind Spot |
-|--------|-------|--------|------------|
-| **Macro Analyst** | GDP, CPI, rates, yield curve, PMI | Regime macro, asset rotation | Ignora micro e price action |
-| **Technical Analyst** | OHLCV, order book, volume | Trend, S/R, momentum, vol regime | Ignora perché un asset vale X |
-| **Fundamental Analyst** | Bilanci, ratios, DCF, insider | Intrinsic value, margin of safety | Ignora timing di mercato |
-| **Sentiment Analyst** | News, social, earnings calls | Market mood, contrarian signals | Non distingue saggezza da panico |
-| **Alpha Researcher** | Tutti i dati, cross-asset, fattori | Statistical arb, pair trades | Overfitting |
+## Prossimo lavoro eseguibile
 
-### Agenti di Controllo (in serie, vedono tutto)
-
-| Agente | Funzione |
-|--------|----------|
-| **Risk Manager** | Position sizing (Kelly), VaR/CVaR, drawdown limits, correlation check |
-| **Portfolio Manager** | Decisione finale BUY/SELL/HOLD, allocazione, rebalancing |
-| **Market Oracle** | Regime detection (HMM), volatilità, fase mercato, liquidità |
-| **Genetic Strategist** | Evolve nuove strategie via GA, backtest, walk-forward |
-
----
-
-## Tech Stack (Attuale)
-
-| Layer | Tecnologia |
-|-------|-----------|
-| **Core Language** | Python 3.12+ |
-| **Agent Framework** | LangGraph 1.2.9 |
-| **Backtesting** | vectorbt + PyBroker (time-based WFA) |
-| **Genetic Algorithm** | DEAP 1.4 (NSGA-II, island model) |
-| **Experiment Registry** | SQLite (aiosqlite, pydantic) |
-| **Cache** | LRU in-memory (FitnessCache) |
-| **Message Bus** | NATS (core.events) |
-| **Broker API** | ib_insync (IBKR), CCXT (100+ crypto) |
-| **LLM** | litellm (multi-provider: GPT-4, Claude, locale) |
-| **DataFrames** | Polars + NumPy |
-| **Indicatori** | TA-Lib + Polars-native + Numpy-native (KNN) |
-| **Dashboard** | Streamlit (Phase 6) |
-
-### Data Sources (Integrati)
-| Fonte | Dati | API Key |
-|-------|------|---------|
-| **Yahoo Finance** | OHLCV US equities/ETF | No |
-| **CoinPaprika** | Crypto 7000+ | No |
-| **FRED** | Macro (GDP, CPI, rates) | Sì |
-| **Binance WS** | Crypto real-time | No |
-
----
-
-## Roadmap — Stato Attuale
-
-```
-Phase 0: Foundation          ✅  2c2b254   Config, errors, logging, plugins, CLI
-Phase 1: Analytics Engine    ✅  7b4e23c   Indicatori, regime, sentiment, feature store
-Phase 2: Backtesting         ✅  fc853e3   vectorbt, WFA, bias correction, portfolio opt
-Phase 3: Genetic Engine      ✅  aca4c75   DEAP, NSGA-II, island model, 50 alpha factors
-Phase 3.5: Signal Opt        🔧  IN CORSO  Heikin Ashi, KNN, alpha hybrid, PyBroker
-Phase 4: Multi-Agent System  ✅  8ed640d   LangGraph, 3 analyst, debate, risk/portfolio mgr
-Phase 5: Execution Engine    ✅  f6f8e88   OrderManager, IBKR, CCXT, 3 algos, CLI
-Phase 6: UI & Dashboard      ⬜  PROSSIMO  Streamlit, P&L analytics, risk monitor
-Phase 7: Autopilot            ⬜           Continual learning, meta-strategy, adaptive risk
-```
-
-**88 commit · 21 file doc · 19/19 showcase · ruff+mypy clean**
-
-### Phase 3.5: Signal Optimization (in corso)
-
-Obiettivo: produrre strategie che passano The5ers benchmark (PF > 1.67).
-
-| Task | Stato | Cosa |
-|------|-------|------|
-| T1: Heikin Ashi | ✅ | Conversione OHLCV → HA per segnali smooth |
-| T2: KNN balancing | ✅ | Class weighting + distance-weighted vote |
-| T3: Hybrid signal | ✅ | KNN + 50 alpha factors combinati (26 params) |
-| T4: GA ottimizzata | ✅ | PyBroker integrato, combined_metrics fixato |
-| T5: GA run produzione | 🔧 | pop=20, gen=50, 4 isole, 3 seed (in esecuzione) |
-
-**Metriche attuali (dopo fix combined_metrics):**
-| Metrica | Seed KNN WFA 5-fold | Target The5ers |
-|---------|-------------------|----------------|
-| Sharpe | **1.08** | > 0.8 ✅ |
-| Sortino | **1.55** | > 0.6 ✅ |
-| Calmar | **1.49** | > 0.3 ✅ |
-| MaxDD | **10.7%** | < 6% ⚠️ |
-| Profit Factor | **1.50** | > 1.67 🔴 |
-| CAGR | **14.9%** | > 10% ✅ |
-| PF miglior fold | **1.80** | > 1.67 ✅ |
-
-### GA Demo (pop=8, gen=8, 1 isola, 3-fold WFA)
-| Metrica | Pareto Front Best |
-|---------|------------------|
-| Sharpe | **2.317** |
-| Sortino | **3.515** |
-| Calmar | **3.977** |
-| MaxDD | **2.5-9.6%** |
-
-### Phase 6: UI & Dashboard (planning)
-
-Streamlit dashboard con:
-- P&L analytics, equity curve, drawdown
-- Risk monitor (VaR/CVaR, exposure)
-- Agent logs e decisioni MAS
-- Alert Telegram/webhook
-
-### Phase 7: Autopilot (future)
-
-- Continual learning su nuovi dati
-- Meta-strategy ensemble (top-N Pareto strategies)
-- Adaptive risk (regime-aware position sizing)
-- Anomaly detection su execution
-- Explainable AI per decisioni agenti
-
----
-
-## Prossimo Passo
-
-Completare GA run produzione (pop=20, gen=50, 4 isole, 3 seed) per validare
-PF > 1.67 in walkforward. Poi **Phase 6** (Dashboard Streamlit) per
-visualizzare risultati in tempo reale.
+1. consolidare la working tree e creare una baseline immutabile;
+2. chiudere G0 con CI remota, warning budget, secret scan e SBOM;
+3. eliminare i restanti bypass risk/API;
+4. definire ambienti replay/paper/shadow/evaluation/funded;
+5. implementare ContractSpec e calendari su un micro future;
+6. progettare ledger, OMS, outbox e reconciliation;
+7. certificare un motore event-driven prima di riaprire GA promotion.
