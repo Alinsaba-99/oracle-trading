@@ -301,8 +301,8 @@ decisione.
 **Dipendenze:** M05, M06.
 **Exit gate:** feed real-time monitorato, sequenziale e fail-closed.
 
-- [ ] `M07-001` Selezionare provider futures real-time.
-- [ ] `M07-002` Documentare licenza e limiti del provider.
+- [x] `M07-001` Selezionare provider futures real-time.
+- [x] `M07-002` Documentare licenza e limiti del provider.
 - [ ] `M07-003` Implementare adapter quote.
 - [ ] `M07-004` Implementare adapter trade.
 - [ ] `M07-005` Implementare adapter bar.
