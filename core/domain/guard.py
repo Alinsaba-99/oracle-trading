@@ -116,3 +116,58 @@ def current_mode(env: dict[str, str] | None = None) -> OracleMode:
         return OracleMode(mode_str)
     except ValueError:
         return OracleMode.RESEARCH
+
+
+# ── Cross-environment credential isolation ──────────────────────────
+# Each mode must only access credentials and endpoints appropriate to
+# its authority level.  The following rules prevent accidental or
+# malicious credential crossing.
+
+# Credential sets that belong to each mode.  Keys are env var names.
+_MODE_CREDENTIALS: dict[OracleMode, set[str]] = {
+    OracleMode.RESEARCH: set(),
+    OracleMode.REPLAY: set(),
+    OracleMode.PAPER: {"ORACLE_PAPER_API_KEY"},
+    OracleMode.SHADOW: {"ORACLE_SHADOW_API_KEY", "ORACLE_SHADOW_BROKER_TOKEN"},
+    OracleMode.EVALUATION: {"ORACLE_EVAL_API_KEY", "ORACLE_EVAL_BROKER_TOKEN"},
+    OracleMode.FUNDED: {"ORACLE_FUNDED_API_KEY", "ORACLE_FUNDED_BROKER_TOKEN"},
+}
+
+# Credential sets that MUST NOT be present when running in a given mode.
+# For example, when running in PAPER mode, funded credentials should not
+# be set — this prevents accidental paper→funded crossing.
+_FORBIDDEN_CREDENTIALS: dict[OracleMode, set[str]] = {
+    OracleMode.RESEARCH: set(),
+    OracleMode.REPLAY: set(),
+    OracleMode.PAPER: {"ORACLE_FUNDED_API_KEY", "ORACLE_FUNDED_BROKER_TOKEN"},
+    OracleMode.SHADOW: {"ORACLE_FUNDED_API_KEY", "ORACLE_FUNDED_BROKER_TOKEN"},
+    OracleMode.EVALUATION: {"ORACLE_FUNDED_API_KEY", "ORACLE_FUNDED_BROKER_TOKEN"},
+    OracleMode.FUNDED: set(),
+}
+
+
+def check_credential_isolation(env: dict[str, str] | None = None) -> list[str]:
+    """Verify cross-environment credential isolation.
+
+    Returns a list of violations (empty list = clean).  A violation is
+    raised when a credential from a higher-authority mode is present in
+    a lower-authority mode's environment.
+
+    Example::
+
+        violations = check_credential_isolation(os.environ)
+        if violations:
+            raise ModeGuardError(
+                "Environment crossing detected",
+                f"Found higher-mode credentials: {violations}",
+            )
+    """
+    env = env or dict(os.environ)
+    mode = current_mode(env)
+    violations: list[str] = []
+
+    for cred in _FORBIDDEN_CREDENTIALS.get(mode, set()):
+        if env.get(cred):
+            violations.append(f"{cred} is set but current mode is {mode.value}")
+
+    return violations

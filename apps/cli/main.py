@@ -14,7 +14,16 @@ if TYPE_CHECKING:
 
 
 def main() -> None:
-    """Oracle CLI entry point."""
+    """Oracle CLI entry point.
+
+    Starts with a mode guard: only RESEARCH and PAPER are allowed for
+    CLI operations today.  Set ``ORACLE_MODE`` env var explicitly.
+    """
+    from core.domain.guard import current_mode, guard
+    from core.domain.mode import OracleMode
+
+    mode = current_mode()
+    guard(mode)
     parser = argparse.ArgumentParser(
         prog="oracle", description="Systematic Trading Intelligence Platform"
     )
