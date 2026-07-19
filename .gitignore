@@ -31,7 +31,7 @@ docker/data/
 
 # Generated backtest results + cached FX data (Fase 3/4)
 results/
-data/ohlcv/
+# data/ohlcv/  # qualification tests need these
 
 # Experiment artifacts
 experiments/*/
