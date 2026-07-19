@@ -127,7 +127,15 @@ class Normalizer:
             msg = "Cannot aggregate empty tick list"
             raise ValueError(msg)
 
+        # Verify all ticks belong to the same instrument to prevent
+        # cross-contamination from multi-symbol sources.
         instrument_id = ticks[0].get("instrument_id", "")
+        for t in ticks[1:]:
+            other = t.get("instrument_id", "")
+            if other != instrument_id:
+                msg = f"Mixed instrument_ids in bar aggregation: '{instrument_id}' and '{other}'"
+                raise ValueError(msg)
+
         prices = [t["price"] for t in ticks]
         volumes = [t["volume"] for t in ticks]
 

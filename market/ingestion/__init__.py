@@ -8,6 +8,7 @@ normalized market data to ``market.tick`` and ``market.bar`` subjects.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 from typing import Any
 
@@ -19,6 +20,10 @@ from market.normalizer import Normalizer
 from market.sources.base import BaseSource
 
 logger = logging.getLogger(__name__)
+
+
+# Default bar aggregation interval in seconds.
+_BAR_INTERVAL_S = 60
 
 
 class IngestionPipeline:
@@ -118,39 +123,80 @@ class IngestionPipeline:
     async def _forward_events(self, source: BaseSource) -> None:
         """Read raw events from a source's queue, normalize, and publish.
 
-        Ticks are published as ``MarketTickEvent`` on ``market.tick``.
-        Every 60 ticks the pipeline aggregates a single bar and publishes
-        it as ``MarketBarEvent`` on ``market.bar``.
+        - **Tick events** (``event_type == "tick"`` or absent) are normalized,
+          published to ``market.tick``, and buffered per-symbol for bar
+          aggregation.
+        - **Bar events** (``event_type == "bar"``) are published directly to
+          ``market.bar`` *without* passing through the tick buffer, preserving
+          the original OHLCV values from the source (e.g. a Binance final
+          kline).
+
+        Bars are flushed at a fixed time interval (default 60 s), and each
+        symbol has its own buffer so multi-symbol sources cannot produce
+        cross-contaminated bars.
         """
-        tick_buffer: list[dict[str, Any]] = []
+        tick_buffers: dict[str, list[dict[str, Any]]] = {}
 
-        while self._running:
-            try:
-                raw = await source.events.get()
-            except asyncio.CancelledError:
-                break
+        async def _periodic_flush() -> None:
+            """Periodically flush all per-symbol buffers on a timer."""
+            while self._running:
+                await asyncio.sleep(_BAR_INTERVAL_S)
+                for _instr_id, buf in list(tick_buffers.items()):
+                    if buf:
+                        await self._flush_bar(source.name, buf)
+                        buf.clear()
 
-            try:
-                tick = self._normalizer.normalize_tick(raw)
-            except ValueError as exc:
-                logger.warning("Dropping invalid tick from %s: %s", source.name, exc)
-                continue
+        flush_task = asyncio.create_task(_periodic_flush())
 
-            # Publish tick event
-            try:
-                await self._publish_tick(tick)
-            except Exception:
-                logger.exception("Failed to publish tick from %s", source.name)
+        try:
+            while self._running:
+                try:
+                    raw = await source.events.get()
+                except asyncio.CancelledError:
+                    break
 
-            # Buffer for bar aggregation (every 60 ticks)
-            tick_buffer.append(tick)
-            if len(tick_buffer) >= 60:
-                await self._flush_bar(source.name, tick_buffer)
-                tick_buffer.clear()
+                event_type = raw.get("event_type", "tick")
 
-        # Flush any remaining ticks
-        if tick_buffer:
-            await self._flush_bar(source.name, tick_buffer)
+                if event_type == "bar":
+                    # Source already provides a complete OHLCV bar
+                    # (e.g. Binance final kline).  Publish directly as a
+                    # bar event, preserving the actual high/low/open
+                    # values, skipping tick re-aggregation.
+                    try:
+                        self._normalizer.validate_bar(raw)
+                        await self._publish_bar(source.name, raw)
+                    except ValueError as exc:
+                        logger.warning("Dropping invalid bar from %s: %s", source.name, exc)
+                    continue
+
+                # Normal tick processing
+                try:
+                    tick = self._normalizer.normalize_tick(raw)
+                except ValueError as exc:
+                    logger.warning("Dropping invalid tick from %s: %s", source.name, exc)
+                    continue
+
+                instr_id = tick["instrument_id"]
+                if instr_id not in tick_buffers:
+                    tick_buffers[instr_id] = []
+
+                # Publish tick event
+                try:
+                    await self._publish_tick(tick)
+                except Exception:
+                    logger.exception("Failed to publish tick from %s", source.name)
+
+                # Buffer per-symbol for bar aggregation
+                tick_buffers[instr_id].append(tick)
+        finally:
+            flush_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await flush_task
+
+            # Flush any remaining ticks
+            for _instr_id, buf in tick_buffers.items():
+                if buf:
+                    await self._flush_bar(source.name, buf)
 
     async def _publish_tick(self, tick: dict[str, Any]) -> None:
         """Publish a normalized tick as a MarketTickEvent."""
@@ -168,6 +214,31 @@ class IngestionPipeline:
             event.model_dump(mode="json"),
             source=f"oracle.market.{tick.get('source', 'unknown')}",
         )
+
+    async def _publish_bar(self, source_name: str, bar: dict[str, Any]) -> None:
+        """Publish a pre-computed OHLCV bar as a MarketBarEvent.
+
+        Used when the data source already provides a complete bar
+        (e.g. Binance final kline with ``event_type: "bar"``).
+        """
+        event = MarketBarEvent(
+            instrument_id=bar["instrument_id"],
+            asset_class="crypto",
+            exchange=source_name,
+            timeframe="1m",
+            open=bar["open"],
+            high=bar["high"],
+            low=bar["low"],
+            close=bar["close"],
+            volume=bar["volume"],
+            trades=bar.get("trades", 0),
+        )
+        try:
+            await self._event_bus.publish(
+                "market.bar", event.model_dump(mode="json"), source=f"oracle.market.{source_name}"
+            )
+        except Exception:
+            logger.exception("Failed to publish bar from %s", source_name)
 
     async def _flush_bar(self, source_name: str, ticks: list[dict[str, Any]]) -> None:
         """Aggregate buffered ticks into a bar and publish."""

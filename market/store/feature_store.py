@@ -132,7 +132,7 @@ class FeatureStore:
         Parquet files with Polars.  When *max_age* is provided stale
         entries are invalidated before returning.
         """
-        cache_key = self._make_cache_key(feature_set, version)
+        cache_key = self._make_cache_key(feature_set, version, instrument_ids)
 
         stale = (
             max_age is not None
@@ -181,8 +181,14 @@ class FeatureStore:
         return self._locks[feature_set]
 
     @staticmethod
-    def _make_cache_key(feature_set: str, version: str | None) -> str:
-        return f"{feature_set}:{version or 'latest'}"
+    def _make_cache_key(
+        feature_set: str, version: str | None, instrument_ids: list[str] | None = None
+    ) -> str:
+        key = f"{feature_set}:{version or 'latest'}"
+        if instrument_ids:
+            sorted_ids = ",".join(sorted(instrument_ids))
+            key = f"{key}:{sorted_ids}"
+        return key
 
     def _validate_df_columns(self, df: pl.DataFrame) -> None:
         missing = [c for c in self.REQUIRED_COLUMNS if c not in df.columns]
