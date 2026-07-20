@@ -262,10 +262,11 @@ class PolygonWebSocketFeed:
     WS_URL = "wss://socket.polygon.io/futures"
 
     # Map our root symbols to Polygon ticker format
-    # Polygon futures format: {ROOT}*{MULTIPLIER} where *5 = E-mini, *1 = Micro
-    TICKER_MAP: dict[str, str] = {
-        "ES": "ES*5",   # E-mini S&P 500 (multipler 50)
-        "MES": "ES",    # Micro E-mini (ticker ES with multiplier 1)
+    # WebSocket uses {ROOT}*{MULTIPLIER} (*5 = E-mini, *1 = Micro)
+    # REST API uses plain {ROOT} symbol
+    WS_TICKER_MAP: dict[str, str] = {
+        "ES": "ES*5",   # E-mini S&P 500
+        "MES": "ES",    # Micro E-mini
         "NQ": "NQ*5",   # E-mini Nasdaq 100
         "MNQ": "NQ",    # Micro E-mini Nasdaq
         "GC": "GC*5",   # Gold futures
@@ -273,6 +274,8 @@ class PolygonWebSocketFeed:
         "CL": "CL*5",   # Crude Oil
         "MCL": "CL",    # Micro Crude Oil
     }
+    # REST API uses plain symbol (no * suffix)
+    REST_SYMBOL: str | None = None  # set per-call
 
     def __init__(
         self,
@@ -380,7 +383,7 @@ class PolygonWebSocketFeed:
             return
 
         # Map symbol to Polygon ticker
-        poly_ticker = self.TICKER_MAP.get(symbol.upper(), symbol.upper())
+        poly_ticker = self.WS_TICKER_MAP.get(symbol.upper(), symbol.upper())
 
         # Subscribe to requested channels
         channels_to_sub = [f"{ch}.{poly_ticker}" for ch in self._channels]
@@ -448,7 +451,8 @@ class PolygonWebSocketFeed:
         """
         import httpx
 
-        poly_ticker = self.TICKER_MAP.get(symbol.upper(), symbol.upper())
+        # REST API uses plain symbol (e.g. ES, not ES*5)
+        rest_symbol = symbol.upper()  # Polygon REST uses plain symbol
         self._running = True
         last_tick: Tick | None = None
         backoff = interval_sec
@@ -457,7 +461,7 @@ class PolygonWebSocketFeed:
             try:
                 url = (
                     f"https://api.polygon.io/v2/aggs/ticker/"
-                    f"{poly_ticker}/prev?adjusted=true&apiKey={self._api_key}"
+                    f"{rest_symbol}/prev?adjusted=true&apiKey={self._api_key}"
                 )
                 async with httpx.AsyncClient(timeout=10) as client:
                     resp = await client.get(url)
