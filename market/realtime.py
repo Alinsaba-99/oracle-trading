@@ -427,6 +427,107 @@ class PolygonWebSocketFeed:
                         source="polygon",
                     )
 
+    async def rest_poll(
+        self,
+        symbol: str,
+        interval_sec: float = 12.0,
+        timespan: str = "minute",
+    ) -> AsyncIterator[Tick]:
+        """Fallback: poll Polygon REST API for latest prices.
+
+        Works with free Polygon plan (5 calls/min → 12s intervals).
+        Handles rate limiting (429) with exponential backoff.
+
+        Args:
+            symbol: Root symbol (ES, NQ, GC, CL).
+            interval_sec: Seconds between polls (min 12 for free plan).
+            timespan: Bar size (minute, hour, day).
+
+        Yields:
+            Tick objects with price from latest close.
+        """
+        import httpx
+
+        poly_ticker = self.TICKER_MAP.get(symbol.upper(), symbol.upper())
+        self._running = True
+        last_tick: Tick | None = None
+        backoff = interval_sec
+
+        while self._running:
+            try:
+                url = (
+                    f"https://api.polygon.io/v2/aggs/ticker/"
+                    f"{poly_ticker}/prev?adjusted=true&apiKey={self._api_key}"
+                )
+                async with httpx.AsyncClient(timeout=10) as client:
+                    resp = await client.get(url)
+
+                    if resp.status_code == 429:
+                        logger.warning(f"Polygon rate limited — backing off {backoff:.0f}s")
+                        await asyncio.sleep(backoff)
+                        backoff = min(backoff * 1.5, 60.0)  # exponential backoff, max 60s
+                        continue
+
+                    backoff = interval_sec  # reset on success
+
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        results = data.get("results", [])
+                        if results:
+                            bar = results[-1]
+                            tick = Tick(
+                                symbol=symbol.upper(),
+                                price=float(bar.get("c", 0)),
+                                volume=float(bar.get("v", 0)),
+                                timestamp=datetime.fromtimestamp(
+                                    bar["t"] / 1000, tz=timezone.utc
+                                ) if "t" in bar else None,
+                                bid=float(bar.get("l", 0)),
+                                ask=float(bar.get("h", 0)),
+                                source="polygon_rest",
+                            )
+                            # Only yield if price changed (avoid duplicate ticks)
+                            if last_tick is None or last_tick.price != tick.price:
+                                last_tick = tick
+                                yield tick
+            except Exception as exc:
+                logger.debug(f"Polygon REST poll error: {exc}")
+                await asyncio.sleep(backoff)
+                backoff = min(backoff * 1.5, 60.0)
+                continue
+
+            await asyncio.sleep(interval_sec)
+
+    async def stream_or_poll(
+        self,
+        symbol: str,
+        rest_interval: float = 12.0,
+        rest_timespan: str = "minute",
+    ) -> AsyncIterator[Tick]:
+        """Dual-mode feed: try WebSocket first, fall back to REST polling.
+
+        Usa WebSocket se disponibile (piano Basic+), altrimenti
+        REST polling ogni 12s (piano free, 5 call/min).
+
+        Args:
+            symbol: Root symbol (ES, NQ, GC, CL).
+            rest_interval: Secondi tra polling REST (default 12s).
+            rest_timespan: Bar size per REST (minute, hour, day).
+
+        Yields:
+            Tick objects dalla fonte disponibile.
+        """
+        # Try WebSocket first
+        ws_ok = await self.connect()
+        if ws_ok:
+            logger.info(f"Polygon WebSocket OK — streaming {symbol} live")
+            async for tick in self.stream(symbol):
+                yield tick
+        else:
+            logger.info(f"Polygon WebSocket unavailable — REST polling {symbol} every {rest_interval}s")
+            async for tick in self.rest_poll(symbol, rest_interval, rest_timespan):
+                yield tick
+
     async def disconnect(self) -> None:
         """Disconnect from Polygon WebSocket."""
         self._running = False

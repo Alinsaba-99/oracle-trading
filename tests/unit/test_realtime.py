@@ -185,6 +185,105 @@ class TestPolygonWebSocketFeed:
             ticks.append(tick)
         assert len(ticks) == 0
 
+    async def test_rest_poll(self) -> None:
+        """REST polling fallback works with mock HTTP response."""
+        from unittest.mock import MagicMock
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json = MagicMock(return_value={
+            "results": [{
+                "c": 5500.25,
+                "h": 5501.0,
+                "l": 5499.5,
+                "v": 10000,
+                "t": 1784545200000,
+            }]
+        })
+
+        async def fake_get(*args: object, **kwargs: object) -> MagicMock:
+            return mock_response
+
+        with patch("httpx.AsyncClient", autospec=True) as mock_client_cls:
+            mock_client = AsyncMock()
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=None)
+            mock_client.get = AsyncMock(side_effect=fake_get)
+            mock_client_cls.return_value = mock_client
+
+            feed = PolygonWebSocketFeed(api_key="test-key")
+            feed._running = True
+
+            ticks = []
+            async for tick in feed.rest_poll("ES", interval_sec=0.1):
+                ticks.append(tick)
+                if len(ticks) >= 1:
+                    feed._running = False
+
+            assert len(ticks) == 1
+            assert ticks[0].symbol == "ES"
+            assert ticks[0].price == 5500.25
+            assert ticks[0].source == "polygon_rest"
+            assert ticks[0].volume == 10000.0
+
+    async def test_stream_or_poll_websocket(self) -> None:
+        """stream_or_poll usa WebSocket quando disponibile."""
+        mock_ws = AsyncMock()
+        mock_ws.recv = AsyncMock(side_effect=[
+            json.dumps([{"ev": "status", "status": "connected"}]),
+            json.dumps([{"ev": "status", "status": "auth_success"}]),
+            json.dumps([{"ev": "T", "sym": "ES*5", "p": 5500.0, "s": 5, "t": 1784545200000}]),
+        ])
+        mock_ws.send = AsyncMock()
+
+        async def fake_connect(*args: object, **kwargs: object) -> AsyncMock:
+            return mock_ws
+
+        with patch("market.realtime.websockets.connect", side_effect=fake_connect):
+            feed = PolygonWebSocketFeed(api_key="test-key", channels=("T",))
+
+            ticks = []
+            async for tick in feed.stream_or_poll("ES", rest_interval=0.1):
+                ticks.append(tick)
+                if len(ticks) >= 1:
+                    break
+
+            assert len(ticks) == 1
+            assert ticks[0].source == "polygon"
+            await feed.disconnect()
+
+    async def test_stream_or_poll_rest_fallback(self) -> None:
+        """stream_or_poll usa REST polling quando WebSocket fallisce."""
+        from unittest.mock import MagicMock
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json = MagicMock(return_value={
+            "results": [{"c": 5500.25, "h": 5501.0, "l": 5499.5, "v": 10000, "t": 1784545200000}]
+        })
+
+        async def fake_get(*args: object, **kwargs: object) -> MagicMock:
+            return mock_response
+
+        with patch("market.realtime.websockets.connect", side_effect=Exception("no ws")):
+            with patch("httpx.AsyncClient", autospec=True) as mock_client_cls:
+                mock_client = AsyncMock()
+                mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+                mock_client.__aexit__ = AsyncMock(return_value=None)
+                mock_client.get = AsyncMock(side_effect=fake_get)
+                mock_client_cls.return_value = mock_client
+
+                feed = PolygonWebSocketFeed(api_key="test-key")
+
+                ticks = []
+                async for tick in feed.stream_or_poll("ES", rest_interval=0.1):
+                    ticks.append(tick)
+                    if len(ticks) >= 1:
+                        break
+
+                assert len(ticks) == 1
+                assert ticks[0].source == "polygon_rest"
+
     async def test_disconnect_noop(self) -> None:
         feed = PolygonWebSocketFeed(api_key="test-key")
         await feed.disconnect()
