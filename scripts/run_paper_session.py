@@ -55,6 +55,7 @@ async def run(args: argparse.Namespace) -> dict:
     from market.realtime import PolygonWebSocketFeed
     from execution.brokers.paper import PaperBroker
     from execution.brokers.types import BrokerOrder
+    from core.reconciliation import ReconciliationEngine
     from decimal import Decimal
 
     guard(OracleMode.PAPER)
@@ -68,6 +69,21 @@ async def run(args: argparse.Namespace) -> dict:
     print(f"\n{'='*50}")
     print(f"  PAPER SESSION: {symbol} SMA({args.fast}/{args.slow})")
     print(f"{'='*50}\n", flush=True)
+
+    # ── Startup reconciliation ───────────────────────────────────────
+    from core.ledger import InMemoryLedger
+    from core.oms import InMemoryOMS
+    ledger = InMemoryLedger()
+    oms = InMemoryOMS(ledger=ledger)
+    reconciler = ReconciliationEngine(broker=broker, oms=oms, ledger=ledger)
+    start_report = await reconciler.reconcile()
+    if start_report.is_clean:
+        print("  Startup reconciliation: CLEAN", flush=True)
+    else:
+        print(f"  Startup reconciliation: {start_report.recoverable_count} recoverable, {start_report.fatal_count} fatal", flush=True)
+        if start_report.has_fatal:
+            print("  ⛔ FATAL mismatch at startup — blocking orders", flush=True)
+    print(flush=True)
 
     feed._running = True
     count = 0

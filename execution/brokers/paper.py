@@ -105,6 +105,38 @@ class PaperBroker(BaseBroker):
         """Return all fills recorded by this broker (used by OrderManager reconciliation)."""
         return list(self._fills)
 
+    async def open_orders(self) -> list[BrokerOrder]:
+        """Return orders that are still open (not filled/cancelled)."""
+        return [
+            o for o in self._orders.values()
+            if o.status not in ("filled", "cancelled")
+        ]
+
+    async def account_summary(self) -> dict:
+        """Return a summary of cash / balance.
+
+        Paper broker tracks everything in-memory; return the last P&L
+        approximated from fill prices vs current synthetic price.
+        """
+        total_pnl = Decimal("0")
+        for fill in self._fills:
+            order = self._orders.get(fill.broker_order_id)
+            if order is None:
+                continue
+            entry_price = fill.price
+            current_price = Decimal(str(100))  # synthetic
+            if order.side == "buy":
+                pnl = (current_price - entry_price) * fill.quantity
+            else:
+                pnl = (entry_price - current_price) * fill.quantity
+            total_pnl += pnl
+
+        return {
+            "cash": float(total_pnl + Decimal("100000")),
+            "balance": float(total_pnl + Decimal("100000")),
+            "pnl": float(total_pnl),
+        }
+
     async def positions(self) -> list[BrokerPosition]:
         """Return current positions aggregated from fills."""
         from decimal import Decimal
