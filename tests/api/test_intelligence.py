@@ -4,8 +4,6 @@ from datetime import UTC, datetime
 
 from fastapi.testclient import TestClient
 
-from apps.api.main import app
-
 
 def _payload() -> dict[str, object]:
     now = datetime(2026, 7, 18, 12, tzinfo=UTC).isoformat()
@@ -33,13 +31,15 @@ def _payload() -> dict[str, object]:
     }
 
 
-def test_intelligence_gateway_accepts_without_execution_access(tmp_path, monkeypatch) -> None:
+def test_intelligence_gateway_accepts_without_execution_access(
+    client: TestClient, tmp_path, monkeypatch
+) -> None:
     from apps.api.routers import intelligence
 
     monkeypatch.setattr(
         intelligence, "inbox", intelligence.SQLiteIntelligenceInbox(tmp_path / "intelligence.db")
     )
-    response = TestClient(app).post("/api/v1/intelligence/observations", json=_payload())
+    response = client.post("/api/v1/intelligence/observations", json=_payload())
 
     assert response.status_code == 202
     assert response.json() == {

@@ -2,9 +2,26 @@
 
 from __future__ import annotations
 
+import os
 from unittest.mock import AsyncMock
 
 import pytest
+
+
+@pytest.fixture(autouse=True)
+def _isolate_oracle_environment() -> None:
+    """Keep tests independent from ambient and leaked Oracle settings."""
+    original = {key: value for key, value in os.environ.items() if key.startswith("ORACLE_")}
+
+    for key in original:
+        os.environ.pop(key, None)
+
+    yield
+
+    for key in tuple(os.environ):
+        if key.startswith("ORACLE_"):
+            os.environ.pop(key, None)
+    os.environ.update(original)
 
 
 class _FakeConnection:
