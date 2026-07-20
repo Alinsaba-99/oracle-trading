@@ -223,7 +223,7 @@ Una task è completa quando:
 - [x] `M32-003` Verificare broker clock (PaperBroker + Polygon timestamps)
 - [x] `M32-004` Verificare ledger bootstrap (InMemoryLedger testato)
 - [x] `M32-005` Verificare OMS bootstrap (InMemoryOMS via PaperBroker)
-- [ ] `M32-006` Verificare reconciliation startup
+- [x] `M32-006` Verificare reconciliation startup (`848d28b`, test broker/OMS/ledger)
 - [x] `M32-007` Eseguire prima sessione read-only (run_paper_session.py ✅)
 - [x] `M32-008` Eseguire prima sessione con segnali (SMA crossover ✅)
 - [x] `M32-009` Eseguire prima sessione con ordini paper (PaperBroker ✅)
@@ -274,8 +274,8 @@ Una task è completa quando:
 
 ### G6 Work package paralleli (completamento G3/G4 per persistenza)
 
-- [ ] `G6-101` PostgreSQL ledger writer persistente (da InMemoryLedger)
-- [ ] `G6-102` PostgreSQL OMS writer persistente (da InMemoryOMS)
+- [x] `G6-101` PostgreSQL ledger writer persistente (da InMemoryLedger, `de5b4cc`)
+- [x] `G6-102` PostgreSQL OMS writer persistente (da InMemoryOMS, `de5b4cc`)
 - [ ] `G6-103` Recovery: request idempotency dopo restart
 - [ ] `G6-104` Recovery: open orders dopo restart
 - [ ] `G6-105` Periodic reconciliation worker

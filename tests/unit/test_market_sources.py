@@ -72,6 +72,27 @@ class TestBinanceWebSocketSource:
         assert result["is_final"] is True
 
     @pytest.mark.asyncio
+    async def test_parse_kline_intermediate_is_tick(self) -> None:
+        """An open kline remains a tick and retains its non-final state."""
+        raw = {
+            "e": "kline",
+            "s": "ETHUSDT",
+            "k": {"t": 1234567890000, "c": "3500.25", "v": "12.5", "x": False},
+        }
+
+        result = BinanceWebSocketSource._parse_kline(raw)
+
+        assert result == {
+            "source": "binance",
+            "instrument_id": "ethusdt",
+            "event_type": "tick",
+            "timestamp": 1234567890000,
+            "price": 3500.25,
+            "volume": 12.5,
+            "is_final": False,
+        }
+
+    @pytest.mark.asyncio
     async def test_parse_kline_non_kline(self) -> None:
         """Non-kline messages return None."""
         raw = {"e": "trade", "s": "BTCUSDT", "p": "50000"}

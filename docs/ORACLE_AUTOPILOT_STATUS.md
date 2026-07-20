@@ -5,8 +5,8 @@
 ## 1. Identità del checkpoint
 
 - **Branch**: main
-- **Baseline HEAD**: (merged feat/m32-paper-trading)
-- **Working tree**: Paper session script, Polygon REST polling, WebSocket feed; M32 in corso
+- **Baseline HEAD**: `02ed1ee` (reconciliation startup e persistenza PostgreSQL integrate)
+- **Working tree**: riparazione baseline non-slow e sincronizzazione G6 in corso
 - **Gate attivo**: G6 — Paper e shadow operations (IN_PROGRESS)
 - **Gate precedente**: G5 — Research truth e qualification (✅ PASSED per M31)
 - **Modalità autorizzata**: RESEARCH, PAPER_TEST, PAPER
@@ -14,11 +14,11 @@
 - **Roadmap**: [ORACLE_AUTOPILOT_MASTER_ROADMAP.md](ORACLE_AUTOPILOT_MASTER_ROADMAP.md)
 - **Backlog v2**: [plans/oracle-autopilot-gate-backlog-v2.md](plans/oracle-autopilot-gate-backlog-v2.md)
 
-## 2. Baseline verificata (2026-07-19)
+## 2. Baseline verificata (2026-07-20)
 
 | Comando/prova | Esito |
 |---|---|
-| `uv run --frozen pytest tests/ -q` | **1.600+ passed** (stima, ~200 test aggiunti) |
+| `uv run --frozen pytest -m "not slow" -q` | Verifica completa aggiornata demandata al leader dopo la riparazione baseline |
 | `uv run --frozen ruff check .` | Pass |
 | `uv run --frozen ruff format --check .` | 400+ file conformi |
 | `uv run --frozen mypy --strict` | 261 source file, con override esistenti |
@@ -30,6 +30,7 @@
 | Dashboard npm audit | 0 vulnerability |
 | Eliza typecheck/test/build | Pass |
 | Test mirati M31 + OMS/ledger/reconciliation | **66 passed** |
+| Test mirati PostgreSQL ledger/OMS + reconciliation | **27 passed** su `02ed1ee` |
 | Ruff check/format sui file M31 | Pass |
 | Replay event-driven MES/ES proxy | **6 regimi, 48 osservazioni, APPROVED** |
 
@@ -60,6 +61,9 @@
 | `core/data/quality.py` | Duplicate/gap/outlier/leakage detection | G2 |
 | `core/ledger.py` | InMemoryLedger double-entry | G3 |
 | `core/oms.py` | InMemoryOMS idempotent + outbox | G3 |
+| `core/ledger_postgres.py` | PostgreSQL ledger writer persistente | G6-101 |
+| `core/oms_postgres.py` | PostgreSQL OMS writer persistente | G6-102 |
+| `core/reconciliation.py` | Reconciliation startup broker/OMS/ledger | M32-006 |
 | `db/schema.sql` | PostgreSQL schema (accounts, orders, fills, positions, outbox) | G3 |
 | `core/errors/base.py` | SafetyError + RiskGateError | G4 |
 | `core/kill.py` | KillSwitch emergency flatten | G6 |
@@ -80,7 +84,7 @@
 | G3 | ✅ **PASSED** | Ledger/OMS design, SQL schema, outbox |
 | G4 | ✅ **PASSED** | RiskManager obbligatorio, 35 property test, SafetyError |
 | G5 | ✅ **PASSED** | M31 APPROVED: 6 regimi, 48 slice (matrice 2x2x2), macro PIT hashata, profilo Topstep replay-only verificato, parity broker/ledger, 0 hard breach e soglie rispettate |
-| G6 | 🟡 **IN PROGRESS** | Paper fill realistico, feed realtime, Docker non-root, observability, audit, RBAC e runbook presenti. Mancano sessioni paper/shadow qualificate, recovery evidence e adapter futures certificato |
+| G6 | 🟡 **IN PROGRESS** | Reconciliation startup e writer PostgreSQL ledger/OMS completati. Mancano sessioni paper/shadow qualificate, recovery evidence e adapter futures certificato |
 | G7 | ⚪ NOT_STARTED | |
 | G8 | ⚪ NOT_STARTED | |
 | G9 | ⚪ NOT_STARTED | |
@@ -104,17 +108,17 @@
 7. ⚠️ Warning Python (319) e coverage scope ancora da definire
 8. ⚠️ NATS, QuestDB, Qdrant — descritti oltre l'uso reale (non bloccante)
 
-## 6. Test suite (2026-07-19)
+## 6. Test suite (2026-07-20)
 
 | Area | Test | Note |
 |------|:----:|------|
-| Unit test esistenti | 1.605 | Baseline invariata |
-| Nuovi unit test | ~200 | Mode, guard, ContractSpec, sessions, provenance, quality, ledger, OMS, parity, data quality, kill |
+| Baseline non-slow | Verifica leader pendente | Nessun conteggio aggregato pubblicato prima del run finale |
+| Persistenza + reconciliation | 27 | PostgreSQL ledger/OMS e startup reconciliation |
 | Integration test | 5 | Order→ledger, contract sizing, mode→OMS |
 | Chaos test | 5 | Kill switch, duplicate fill, out-of-order, broker errors |
 | Qualification test | 4 | SMA crossover ES con dati reali, vectorbt parity |
 | M31/control-plane mirati | 66 | Event-driven, regime, evaluator, Topstep replay gate, stop intrabar, parity |
-| **Totale** | **~1.800+** | |
+| **Totale** | **Verifica leader pendente** | Sarà aggiornato solo da un run completo fresco |
 
 ## 7. Prossimo lavoro eseguibile
 

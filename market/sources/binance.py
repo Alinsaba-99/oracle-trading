@@ -164,6 +164,7 @@ class BinanceWebSocketSource(BaseSource):
                 "trades": int(k.get("n", 0)),
                 "taker_buy_volume": float(k.get("V", 0)),
                 "taker_buy_quote_volume": float(k.get("Q", 0)),
+                "is_final": True,
             }
 
         # Intermediate update: publish as a thin price tick
@@ -174,4 +175,5 @@ class BinanceWebSocketSource(BaseSource):
             "timestamp": timestamp,
             "price": close,
             "volume": volume,
+            "is_final": False,
         }

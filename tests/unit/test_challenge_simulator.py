@@ -10,7 +10,13 @@ from __future__ import annotations
 from datetime import date, timedelta
 
 from analytics.backtest.challenge import ChallengeSimulator
-from policy.prop_firm import THE5ERS, ChallengeStatus, PropFirmProfile
+from policy.prop_firm import (
+    THE5ERS,
+    ChallengeStatus,
+    DrawdownMode,
+    PropFirmProfile,
+    SupportMode,
+)
 
 INITIAL = 100_000.0
 
@@ -65,10 +71,20 @@ class TestEdgeCases:
     def test_min_trading_days_blocks_premature_pass(self) -> None:
         # Hit target on day 1 but min_trading_days=5 -> must not pass yet.
         profile = PropFirmProfile(
-            name="t",
+            firm="Test",
+            program="Challenge",
+            stage="evaluation",
+            platform="paper",
+            account_size=int(INITIAL),
+            rule_version="1.0",
+            effective_from="2026-01-01",
+            source_url="https://example.com/test-profile",
+            source_checked_at="2026-07-20",
+            support_mode=SupportMode.RESEARCH_ONLY,
             profit_target_pct=0.10,
             max_daily_loss_pct=0.03,
             max_overall_loss_pct=0.06,
+            dd_mode=DrawdownMode.STATIC,
             min_trading_days=5,
             min_profitable_days=0,
         )
