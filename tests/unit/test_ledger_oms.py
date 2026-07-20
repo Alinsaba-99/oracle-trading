@@ -9,7 +9,6 @@ import pytest
 from core.ledger import InMemoryLedger
 from core.oms import Fill, InMemoryOMS, Order
 
-
 # =========================================================================
 # Ledger tests
 # =========================================================================
@@ -152,9 +151,7 @@ class TestInMemoryOMS:
         oms = InMemoryOMS()
         order = Order(account_id="acct-1", client_order_id="c1")
         created = oms.create_order(order)
-        updated = oms.update_order(Order(
-            **{**created.__dict__, "status": "submitted"}
-        ))
+        updated = oms.update_order(Order(**{**created.__dict__, "status": "submitted"}))
         assert updated.status == "submitted"
 
     def test_cannot_revert_status(self) -> None:
@@ -167,11 +164,7 @@ class TestInMemoryOMS:
 
     def test_record_fill_updates_order(self) -> None:
         oms = InMemoryOMS()
-        order = Order(
-            account_id="acct-1",
-            client_order_id="c1",
-            quantity=Decimal("10"),
-        )
+        order = Order(account_id="acct-1", client_order_id="c1", quantity=Decimal("10"))
         created = oms.create_order(order)
         fill = Fill(
             order_id=created.order_id,
@@ -187,35 +180,63 @@ class TestInMemoryOMS:
 
     def test_partial_fill(self) -> None:
         oms = InMemoryOMS()
-        order = Order(
-            account_id="acct-1",
-            client_order_id="c1",
-            quantity=Decimal("10"),
-        )
+        order = Order(account_id="acct-1", client_order_id="c1", quantity=Decimal("10"))
         created = oms.create_order(order)
-        fill1 = Fill(order_id=created.order_id, account_id="acct-1",
-                     quantity=Decimal("4"), price=Decimal("5000"))
+        fill1 = Fill(
+            order_id=created.order_id,
+            account_id="acct-1",
+            quantity=Decimal("4"),
+            price=Decimal("5000"),
+        )
         oms.record_fill(fill1)
         updated = oms.get_order(created.order_id)
         assert updated is not None
         assert updated.status == "partially_filled"
         assert updated.filled_quantity == Decimal("4")
 
+    def test_duplicate_broker_fill_is_idempotent(self) -> None:
+        ledger = InMemoryLedger()
+        account = ledger.create_account(initial_balance=Decimal("100000"))
+        oms = InMemoryOMS(ledger=ledger)
+        order = oms.create_order(
+            Order(
+                account_id=account.account_id,
+                client_order_id="duplicate-fill",
+                quantity=Decimal("1"),
+            )
+        )
+        fill = Fill(
+            order_id=order.order_id,
+            account_id=account.account_id,
+            broker_fill_id="broker-fill-1",
+            quantity=Decimal("1"),
+            price=Decimal("5000"),
+            commission=Decimal("2.50"),
+            realized_pnl=Decimal("100"),
+        )
+
+        first = oms.record_fill(fill)
+        second = oms.record_fill(fill)
+
+        assert second == first
+        updated = oms.get_order(order.order_id)
+        assert updated is not None
+        assert updated.filled_quantity == Decimal("1")
+        assert ledger.get_balance(account.account_id) == Decimal("100097.50")
+
     def test_multiple_fills_complete(self) -> None:
         oms = InMemoryOMS()
-        order = Order(
-            account_id="acct-1",
-            client_order_id="c1",
-            quantity=Decimal("10"),
-        )
+        order = Order(account_id="acct-1", client_order_id="c1", quantity=Decimal("10"))
         created = oms.create_order(order)
         for qty in [Decimal("3"), Decimal("3"), Decimal("4")]:
-            oms.record_fill(Fill(
-                order_id=created.order_id,
-                account_id="acct-1",
-                quantity=qty,
-                price=Decimal("5000"),
-            ))
+            oms.record_fill(
+                Fill(
+                    order_id=created.order_id,
+                    account_id="acct-1",
+                    quantity=qty,
+                    price=Decimal("5000"),
+                )
+            )
         updated = oms.get_order(created.order_id)
         assert updated is not None
         assert updated.status == "filled"
@@ -256,18 +277,16 @@ class TestOutbox:
 
     def test_account_snapshot(self) -> None:
         oms = InMemoryOMS()
-        order = Order(
-            account_id="acct-1",
-            client_order_id="c1",
-            quantity=Decimal("5"),
-        )
+        order = Order(account_id="acct-1", client_order_id="c1", quantity=Decimal("5"))
         created = oms.create_order(order)
-        oms.record_fill(Fill(
-            order_id=created.order_id,
-            account_id="acct-1",
-            quantity=Decimal("5"),
-            price=Decimal("5000"),
-        ))
+        oms.record_fill(
+            Fill(
+                order_id=created.order_id,
+                account_id="acct-1",
+                quantity=Decimal("5"),
+                price=Decimal("5000"),
+            )
+        )
         snap = oms.account_snapshot("acct-1")
         assert snap["account_id"] == "acct-1"
         assert len(snap["orders"]) == 1

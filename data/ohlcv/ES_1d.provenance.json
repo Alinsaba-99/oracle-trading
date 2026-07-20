@@ -1,0 +1,17 @@
+{
+  "schema_version": "oracle-ohlcv-provenance-v1",
+  "dataset": "data/ohlcv/ES_1d.parquet",
+  "sha256": "09a22268d2a7fa815beed6788917663771c7af7b347b7b49db6c2a1318f26b42",
+  "provider": "Yahoo Finance via yfinance",
+  "provider_symbol": "ES=F",
+  "rows": 250,
+  "first_timestamp": "2025-07-21T00:00:00Z",
+  "last_timestamp": "2026-07-17T00:00:00Z",
+  "retrieved_at": "2026-07-19T00:00:00Z",
+  "availability_policy": "Each daily bar is eligible only after its timestamp and is consumed causally by next-bar execution.",
+  "instrument_mapping": "MES replay uses the ES continuous price series as the same-index micro-contract price proxy and applies MES contract economics.",
+  "limitations": [
+    "Yahoo continuous futures may contain provider-specific roll and adjustment behavior.",
+    "This snapshot is suitable for historical replay qualification, not live market-data authority."
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "schema_version": "oracle-prop-profile-evidence-v1",
+  "profile_key": "TOPSTEP/Trading Combine/evaluation/TopstepX/50000/2026-07-01",
+  "checked_at": "2026-07-19T00:00:00Z",
+  "sources": [
+    {
+      "url": "https://help.topstep.com/en/articles/8284197-trading-combine-parameters",
+      "sha256": "f254222e97b1a36e2a98d35fd9e5ccd90e569eaf21e59d46c0929d131ad9dd8a"
+    },
+    {
+      "url": "https://help.topstep.com/en/articles/8284204-what-is-the-maximum-loss-limit",
+      "sha256": "d028a99c2e856ee2b81f4bfe84e4956560378d7727c4fdd2e59eaba5235e8c69"
+    },
+    {
+      "url": "https://help.topstep.com/en/articles/10490293-daily-loss-limit-in-the-trading-combine-and-express-funded-account",
+      "sha256": "14a3c2269d1555bfdf60ef39f6791659e558bf1b5c4a90b06f03f5afea8793ce"
+    }
+  ],
+  "rules": {
+    "account_size": 50000,
+    "profit_target": 5000,
+    "maximum_loss_limit": 2000,
+    "maximum_loss_mode": "trailing_eod",
+    "maximum_loss_locks_at_initial_balance": true,
+    "optional_daily_loss_limit": 1000,
+    "max_minis": 5,
+    "max_micros": 50
+  },
+  "authority_boundary": "RESEARCH_ONLY: evidence certifies historical rule replay only and grants no live automation authority."
+}

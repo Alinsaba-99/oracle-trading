@@ -21,17 +21,17 @@ Nessun rendimento, payout o superamento di challenge è garantibile.
 
 | Area | Stato verificato | Limite principale |
 |---|---|---|
-| Foundation e CI | Verde localmente | Working tree storica non consolidata |
+| Foundation e CI | Verde localmente | M31 chiusa con report riproducibile |
 | Analytics | Research-grade | Data quality e point-in-time coverage incompleti |
-| Backtesting | Research-only | Nessun motore event-driven certificato per qualification |
+| Backtesting | Discovery + replay event-driven M31 | M31 APPROVED per historical replay; non è production authority |
 | Genetic research | Research-only | Non riaprire promotion finché G5 non è chiuso |
 | Multi-Agent System | Prototipo avanzato | Confini e contratti ancora accoppiati al package agents |
 | ElizaOS | Bridge read-only | Plugin hardening e advisory low ancora aperti |
-| Prop policy | Modello e fixture iniziali | Enforcement live non ancora non-bypassabile |
-| OMS e ledger | Parziali/in-memory | Nessuna durabilità o source of truth account |
-| Broker | Adapter sperimentali | Nessun adapter futures certificato |
-| API e dashboard | Funzionanti | API auth production e osservabilità reale da chiudere |
-| Autopilot | Bloccato | Richiede i gate G0-G7 |
+| Prop policy | Profili versionati e fonti hashate | Topstep 50K certificato solo per replay storico; live resta RESEARCH_ONLY |
+| OMS e ledger | Contratti e implementazioni in-memory | Replay M31 unificato con parity broker/ledger; authority production non certificata |
+| Broker | Paper realistico + adapter sperimentali | Nessun adapter futures certificato |
+| API e dashboard | Funzionanti | Auth fail-closed; hardening production ancora da certificare |
+| Autopilot | Bloccato | M31/G5 chiuso; M32 paper e G6 restano prerequisiti |
 
 La CLI pubblica rifiuta ora l'invio a broker non-paper. Questo riduce un bypass,
 ma non sostituisce il lavoro necessario per rendere risk, OMS e ledger
@@ -88,7 +88,7 @@ L'architettura corrente e il target sono descritti in
 | Event transport | NATS/JetStream | Integrazione e audit delivery; non source of truth |
 | Cache | In-memory; Redis previsto | Solo dati ricostruibili |
 | Backtest discovery | vectorbt | Research-only; portabilità/licenza sotto review |
-| Qualification engine | Nautilus candidate | Non certificato; PyBroker deprecato |
+| Qualification engine | Oracle event-driven paper v1 | Auditabile localmente; Nautilus resta candidato parity |
 | Genetic engine | DEAP | Research-only |
 | Broker | Paper, IBKR, CCXT, MT/MetaApi | Sperimentali; nessun live adapter certificato |
 | Time-series DB | QuestDB in Compose | Deferred: adozione solo dopo benchmark e use case |
@@ -116,16 +116,14 @@ Questi risultati dimostrano riproducibilità locale, non production readiness.
 La CI è stata aggiornata per usare uv.lock e auditare entrambe le applicazioni
 Node; serve ancora evidenza da un run remoto pulito.
 
-## Rischi bloccanti
+## Rischi e limiti residui
 
-1. Risk manager opzionale in più composition root.
-2. OMS, paper broker e account state in-memory.
-3. API authentication disabilitata quando la key è assente.
-4. ContractSpec, calendari futures e contract roll non certificati.
-5. Backtest con fallback silenziosi e motori non equivalenti.
-6. Docker/Compose non ancora production-grade.
-7. Dependency e license policy Python incompleta.
-8. Working tree con molte modifiche storiche non separate.
+1. Il replay event-driven è certificato per M31 historical replay, non come authority production.
+2. PostgreSQL production authority e recovery non sono ancora certificati.
+3. Il profilo Topstep 50K è verificato per replay-only; nessuna autorizzazione live.
+4. Il dataset OHLCV usa ES continuous come proxy di prezzo per MES e documenta la limitazione.
+5. Gli artefatti intelligence sono offline, causali e a costo zero; non sono output di provider live.
+6. Nessun adapter futures è certificato per paper/shadow continuativo.
 
 La review completa e le evidenze sono in
 [docs/reviews/2026-07-18-project-review.md](docs/reviews/2026-07-18-project-review.md).
@@ -139,7 +137,7 @@ La review completa e le evidenze sono in
 | G2 | Verità futures e point-in-time data |
 | G3 | Ledger, OMS e reconciliation durevoli |
 | G4 | Hard risk non bypassabile |
-| G5 | Research truth e strategy qualification |
+| G5 | Research truth e strategy qualification — ✅ M31 APPROVED |
 | G6 | Paper e shadow operations |
 | G7 | Certificazione di uno specifico programma |
 | G8 | Funded limited rollout |
@@ -165,8 +163,7 @@ vintage ed effective date. Regole e fonti:
 
 1. consolidare la working tree e creare una baseline immutabile;
 2. chiudere G0 con CI remota, warning budget, secret scan e SBOM;
-3. eliminare i restanti bypass risk/API;
-4. definire ambienti replay/paper/shadow/evaluation/funded;
-5. implementare ContractSpec e calendari su un micro future;
-6. progettare ledger, OMS, outbox e reconciliation;
-7. certificare un motore event-driven prima di riaprire GA promotion.
+3. completare M32/G6 con almeno 60 sessioni paper e recovery evidence;
+4. completare M33 shadow read-only e reconciliation continuativa;
+5. certificare un adapter futures e il programma specifico prima di G7;
+6. mantenere live, evaluation e funded disabilitati fino a G7/G8.

@@ -1,0 +1,24 @@
+{
+  "schema_version": "m31-macro-events-v1",
+  "events": [
+    {
+      "event_time": "2026-04-10T12:30:00Z",
+      "available_at": "2026-04-10T12:30:00Z",
+      "indicator": "Initial Jobless Claims",
+      "actual": 219000.0,
+      "consensus": 210000.0,
+      "source": "https://api.nasdaq.com/api/calendar/economicevents?date=2026-04-10",
+      "source_sha256": "379503260efe98b282eefde218a3c0eab690460d8870b0aabb1c4ac87269a469",
+      "retrieved_at": "2026-07-19T00:00:00Z",
+      "raw_actual": "219K",
+      "raw_consensus": "210K",
+      "raw_previous": "203K"
+    }
+  ],
+  "normalization": {
+    "release_timezone": "America/New_York",
+    "raw_release_time": "08:30",
+    "utc_conversion": "2026-04-10T12:30:00Z",
+    "unit_multiplier": 1000
+  }
+}

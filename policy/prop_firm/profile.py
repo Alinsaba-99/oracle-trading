@@ -221,6 +221,9 @@ class FirmProgramProfile:
         profit_target_pct: float,
         max_daily_loss_pct: float,
         max_overall_loss_pct: float,
+        max_daily_loss_amount: float | None = None,
+        max_overall_loss_amount: float | None = None,
+        overall_loss_lock_at_initial: bool = False,
         dd_mode: DrawdownMode = DrawdownMode.STATIC,
         daily_loss_basis: str = "equity",
         daily_loss_reset_timezone: str = "America/Chicago",
@@ -251,6 +254,9 @@ class FirmProgramProfile:
         self.profit_target_pct = profit_target_pct
         self.max_daily_loss_pct = max_daily_loss_pct
         self.max_overall_loss_pct = max_overall_loss_pct
+        self.max_daily_loss_amount = max_daily_loss_amount
+        self.max_overall_loss_amount = max_overall_loss_amount
+        self.overall_loss_lock_at_initial = overall_loss_lock_at_initial
         self.dd_mode = dd_mode
         self.daily_loss_basis = daily_loss_basis
         self.daily_loss_reset_timezone = daily_loss_reset_timezone
@@ -280,7 +286,8 @@ class FirmProgramProfile:
         raw = (
             f"{self.version_key}|{self.effective_from}|{self.profit_target_pct}|"
             f"{self.max_daily_loss_pct}|{self.max_overall_loss_pct}|{self.dd_mode}|"
-            f"{self.daily_loss_basis}|{self.support_mode}"
+            f"{self.max_daily_loss_amount}|{self.max_overall_loss_amount}|"
+            f"{self.overall_loss_lock_at_initial}|{self.daily_loss_basis}|{self.support_mode}"
         )
         return sha256(raw.encode()).hexdigest()[:16]
 
@@ -312,6 +319,9 @@ class FirmProgramProfile:
             "profit_target_pct": self.profit_target_pct,
             "max_daily_loss_pct": self.max_daily_loss_pct,
             "max_overall_loss_pct": self.max_overall_loss_pct,
+            "max_daily_loss_amount": self.max_daily_loss_amount,
+            "max_overall_loss_amount": self.max_overall_loss_amount,
+            "overall_loss_lock_at_initial": self.overall_loss_lock_at_initial,
             "dd_mode": self.dd_mode.value,
             "daily_loss_basis": str(self.daily_loss_basis),
             "overall_loss_basis": str(self.overall_loss_basis),

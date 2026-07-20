@@ -6,6 +6,7 @@ decision codes specified by the prop firm's rule set.
 
 All scenarios are deterministic: no randomness, no external data.
 """
+# mypy: allow-untyped-defs
 
 from __future__ import annotations
 
@@ -27,7 +28,7 @@ from policy.prop_firm import (
 )
 
 
-def _make_gov(profile: FirmProgramProfile, balance: float | None = None) -> PropFirmRiskGovernor:  # type: ignore[no-untyped-def]
+def _make_gov(profile: FirmProgramProfile, balance: float | None = None) -> PropFirmRiskGovernor:
     """Helper to create a governor for a profile."""
     balance = balance or profile.account_size
     return PropFirmRiskGovernor(profile, initial_balance=float(balance))
@@ -45,42 +46,38 @@ class TestTOPSTEP_TC_50K:  # noqa: N801
         assert TOPSTEP_TC_50K.firm == "TOPSTEP"
         assert TOPSTEP_TC_50K.account_size == 50_000
         assert TOPSTEP_TC_50K.profit_target_pct == 0.10
-        assert TOPSTEP_TC_50K.max_daily_loss_pct == 0.05
-        assert TOPSTEP_TC_50K.max_overall_loss_pct == 0.12
+        assert TOPSTEP_TC_50K.max_daily_loss_pct == 0.02
+        assert TOPSTEP_TC_50K.max_overall_loss_pct == 0.04
+        assert TOPSTEP_TC_50K.max_daily_loss_amount == 1_000
+        assert TOPSTEP_TC_50K.max_overall_loss_amount == 2_000
 
-    def test_daily_breach_at_5_percent(self):
-        """Daily loss limit is 5% of day-start equity."""
+    def test_daily_breach_at_one_thousand_dollars(self):
+        """Optional 50K Daily Loss Limit is fixed at $1,000."""
         gov = _make_gov(TOPSTEP_TC_50K)
-        gov.update(balance=48_500, equity=47_501)  # 4.999% down -> under
+        gov.update(balance=49_001, equity=49_001)
         assert all(b.type != BreachType.DAILY_LOSS for b in gov.evaluate())
-        gov.update(balance=48_500, equity=47_499)  # 5.002% down -> breach
+        gov.update(balance=49_000, equity=49_000)
         breaches = gov.evaluate()
         assert any(b.type == BreachType.DAILY_LOSS for b in breaches)
         assert gov.status == ChallengeStatus.FAILED_DAILY
 
-    def test_overall_breach_at_12_percent(self):
-        """Overall max loss is 12% -> floor at 44,000.
-
-        Uses a 2-day scenario so the overall breach is distinct from
-        the daily loss limit (5%).
-        """
+    def test_overall_breach_at_two_thousand_dollars(self):
+        """50K MLL starts at $48,000 and trails at EOD."""
         gov = _make_gov(TOPSTEP_TC_50K)
-        assert gov.overall_floor() == pytest.approx(44_000)
-        # Day 1: lose 4% (within daily 5%)
-        gov.update(balance=48_000, equity=48_000)
-        gov.record_trade(100.0)
+        assert gov.overall_floor() == pytest.approx(48_000)
+        gov.update(balance=50_500, equity=50_500)
         gov.rollover()
-        # Day 2: lose another 9% -> overall 13% > 12%
-        # daily loss = 9% > 5% so this also triggers daily
-        gov.update(balance=43_500, equity=43_500)
+        assert gov.overall_floor() == pytest.approx(48_500)
+        gov.update(balance=48_499, equity=48_499)
         breaches = gov.evaluate()
         overall = [b for b in breaches if b.type == BreachType.OVERALL_LOSS]
         assert len(overall) >= 1, f"Expected OVERALL loss breach, got: {[b.type for b in breaches]}"
 
     def test_contract_cap(self):
-        """Max 10 mini-equivalents (e.g. 2 ES or 10 MES)."""
+        """Official 50K cap is 5 minis or 50 micros."""
         assert TOPSTEP_TC_50K.contract_cap is not None
-        assert TOPSTEP_TC_50K.contract_cap.max_mini_eq == 10
+        assert TOPSTEP_TC_50K.contract_cap.max_mini_eq == 5
+        assert TOPSTEP_TC_50K.contract_cap.per_product["MES"] == 50
 
     def test_pass_on_target(self):
         """Profit target 10% + any days -> passed."""

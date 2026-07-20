@@ -24,9 +24,12 @@ class PropFirmOrderRiskAdapter:
         self,
         governor: PropFirmRiskGovernor,
         market_inputs: dict[str, InstrumentRiskInput] | None = None,
+        *,
+        replay_only: bool = False,
     ) -> None:
         self._governor = governor
         self._market_inputs = market_inputs or {}
+        self._replay_only = replay_only
         self.last_check: OrderCheck | None = None
 
     def update_market(
@@ -48,15 +51,25 @@ class PropFirmOrderRiskAdapter:
         entry = request.price or market.entry_price
         quantity = float(request.quantity)
         contract_cap = self._governor.profile.contract_cap
-        if contract_cap is not None and quantity > contract_cap.max_mini_eq:
+        product_cap = (
+            contract_cap.per_product.get(request.instrument_id, contract_cap.max_mini_eq)
+            if contract_cap is not None
+            else None
+        )
+        if product_cap is not None and quantity > product_cap:
             self.last_check = OrderCheck(
                 False,
-                f"Requested quantity exceeds contract cap {contract_cap.max_mini_eq}",
-                max_lots=float(contract_cap.max_mini_eq),
+                f"Requested quantity exceeds contract cap {product_cap}",
+                max_lots=float(product_cap),
             )
             return False
 
-        self.last_check = self._governor.check_new_order(
+        checker = (
+            self._governor.check_replay_order
+            if self._replay_only
+            else self._governor.check_new_order
+        )
+        self.last_check = checker(
             entry=float(entry),
             stop=float(request.stop_price),
             lots=quantity,

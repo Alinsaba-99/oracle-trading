@@ -6,21 +6,21 @@ even across network retries and process restarts.
 
 Flow::
 
-    Intent → validate → idempotency check → persist → submit → 
+    Intent → validate → idempotency check → persist → submit →
     outbox event → broker → fill → outbox event → ledger update
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Any, Callable
+from typing import Any
 from uuid import uuid4
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 # ── Domain types ─────────────────────────────────────────────────────
@@ -106,6 +106,7 @@ class InMemoryOMS:
     def __init__(self, ledger: Any | None = None) -> None:
         self._orders: dict[str, Order] = {}
         self._fills: dict[str, Fill] = {}
+        self._broker_fill_index: dict[str, str] = {}
         self._outbox: list[OutboxEvent] = []
         self._idempotency: dict[str, str] = {}  # client_order_id → order_id
         self._ledger = ledger
@@ -125,12 +126,14 @@ class InMemoryOMS:
         self._orders[order.order_id] = order
         self._idempotency[order.client_order_id] = order.order_id
 
-        self._outbox.append(OutboxEvent(
-            aggregate_type="order",
-            aggregate_id=order.order_id,
-            event_type="order.created",
-            payload={"order_id": order.order_id, "status": order.status},
-        ))
+        self._outbox.append(
+            OutboxEvent(
+                aggregate_type="order",
+                aggregate_id=order.order_id,
+                event_type="order.created",
+                payload={"order_id": order.order_id, "status": order.status},
+            )
+        )
         return order
 
     def update_order(self, order: Order) -> Order:
@@ -142,27 +145,25 @@ class InMemoryOMS:
         # Prevent backward status transitions
         if order.status == "pending" and existing.status != "pending":
             raise ValueError(
-                f"Cannot revert order {order.order_id} from "
-                f"{existing.status} to {order.status}"
+                f"Cannot revert order {order.order_id} from {existing.status} to {order.status}"
             )
 
         self._orders[order.order_id] = order
-        self._outbox.append(OutboxEvent(
-            aggregate_type="order",
-            aggregate_id=order.order_id,
-            event_type=f"order.{order.status}",
-            payload={"order_id": order.order_id, "status": order.status},
-        ))
+        self._outbox.append(
+            OutboxEvent(
+                aggregate_type="order",
+                aggregate_id=order.order_id,
+                event_type=f"order.{order.status}",
+                payload={"order_id": order.order_id, "status": order.status},
+            )
+        )
         return order
 
     def get_order(self, order_id: str) -> Order | None:
         return self._orders.get(order_id)
 
     def get_orders_by_account(self, account_id: str) -> list[Order]:
-        return [
-            o for o in self._orders.values()
-            if o.account_id == account_id
-        ]
+        return [o for o in self._orders.values() if o.account_id == account_id]
 
     # ── Fill management ─────────────────────────────────────────────
 
@@ -173,10 +174,13 @@ class InMemoryOMS:
         """
         if fill.broker_fill_id:
             dup_key = f"{fill.order_id}:{fill.broker_fill_id}"
-            if dup_key in self._fills:
-                return self._fills[fill.broker_fill_id]  # type: ignore
+            existing_fill_id = self._broker_fill_index.get(dup_key)
+            if existing_fill_id is not None:
+                return self._fills[existing_fill_id]
 
         self._fills[fill.fill_id] = fill
+        if fill.broker_fill_id:
+            self._broker_fill_index[f"{fill.order_id}:{fill.broker_fill_id}"] = fill.fill_id
 
         # Update the order's filled quantity
         order = self._orders.get(fill.order_id)
@@ -184,27 +188,31 @@ class InMemoryOMS:
             new_filled = order.filled_quantity + fill.quantity
             new_status = "filled" if new_filled >= order.quantity else "partially_filled"
             updated = Order(
-                **{**order.__dict__,
-                   "filled_quantity": new_filled,
-                   "avg_fill_price": fill.price,
-                   "status": new_status,
-                   "version": order.version + 1,
-                   "updated_at": _utcnow()}
+                **{
+                    **order.__dict__,
+                    "filled_quantity": new_filled,
+                    "avg_fill_price": fill.price,
+                    "status": new_status,
+                    "version": order.version + 1,
+                    "updated_at": fill.fill_time,
+                }
             )
             self._orders[fill.order_id] = updated
 
             # Outbox
-            self._outbox.append(OutboxEvent(
-                aggregate_type="order",
-                aggregate_id=order.order_id,
-                event_type="order.filled",
-                payload={
-                    "order_id": order.order_id,
-                    "fill_id": fill.fill_id,
-                    "quantity": str(fill.quantity),
-                    "price": str(fill.price),
-                },
-            ))
+            self._outbox.append(
+                OutboxEvent(
+                    aggregate_type="order",
+                    aggregate_id=order.order_id,
+                    event_type="order.filled",
+                    payload={
+                        "order_id": order.order_id,
+                        "fill_id": fill.fill_id,
+                        "quantity": str(fill.quantity),
+                        "price": str(fill.price),
+                    },
+                )
+            )
 
             # Update ledger if attached
             if self._ledger and fill.account_id:
@@ -232,9 +240,7 @@ class InMemoryOMS:
         for evt in self._outbox:
             if evt.event_id == event_id:
                 self._outbox.remove(evt)
-                self._outbox.append(OutboxEvent(
-                    **{**evt.__dict__, "status": "published"}
-                ))
+                self._outbox.append(OutboxEvent(**{**evt.__dict__, "status": "published"}))
                 break
 
     # ── Snapshot / recovery ─────────────────────────────────────────
@@ -242,10 +248,7 @@ class InMemoryOMS:
     def account_snapshot(self, account_id: str) -> dict[str, Any]:
         """Return a snapshot of all orders and fills for an account."""
         orders = self.get_orders_by_account(account_id)
-        fills = [
-            f for o in orders
-            for f in self.get_fills(o.order_id)
-        ]
+        fills = [f for o in orders for f in self.get_fills(o.order_id)]
         return {
             "account_id": account_id,
             "orders": [o.__dict__ for o in orders],

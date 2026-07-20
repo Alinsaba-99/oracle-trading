@@ -70,7 +70,7 @@ def _infer_freq(index: pd.Index) -> str | None:
     if isinstance(index, pd.DatetimeIndex):
         inferred: str | None = pd.infer_freq(index)
         if inferred:
-            return inferred
+            return {"B": "1D", "C": "1D"}.get(inferred, inferred)
     if hasattr(index, "freq") and index.freq is not None:
         return str(index.freq)
     return None
@@ -83,9 +83,10 @@ class _SmaCrossoverSignal:
     on SPY 2015-2020 daily data is approximately 0.3-0.5.
     """
 
-    def __init__(self, fast: int = 50, slow: int = 200) -> None:
+    def __init__(self, fast: int = 50, slow: int = 200, *, long_short: bool = False) -> None:
         self.fast = fast
         self.slow = slow
+        self.long_short = long_short
 
     def compute(self, data: pl.DataFrame) -> pl.Series:
         close_col = "close" if "close" in data.columns else "Close"
@@ -116,7 +117,7 @@ class _SmaCrossoverSignal:
             if long_cond[i] and not np.isnan(fast_arr[i]):
                 pos = 1
             elif short_cond[i] and not np.isnan(fast_arr[i]):
-                pos = 0
+                pos = -1 if self.long_short else 0
             sig_vals[i] = pos
 
         return pl.Series("signal", sig_vals)
@@ -351,10 +352,12 @@ class VectorizedEngine:
         return result
 
 
-def sma_crossover_signal(fast: int = 50, slow: int = 200) -> BacktestSignal:
+def sma_crossover_signal(
+    fast: int = 50, slow: int = 200, *, long_short: bool = False
+) -> BacktestSignal:
     """Factory for the SMA crossover reference signal.
 
     Returns a :class:`BacktestSignal` instance that computes a
     -1 / 0 / 1 signal from fast/slow simple moving averages.
     """
-    return _SmaCrossoverSignal(fast=fast, slow=slow)
+    return _SmaCrossoverSignal(fast=fast, slow=slow, long_short=long_short)

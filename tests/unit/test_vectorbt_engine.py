@@ -260,6 +260,26 @@ class TestVectorizedEngineRun:
         result = engine.run(data, AlwaysLong())
         assert result.total_trades >= 0
 
+    def test_business_day_frequency_runs(self) -> None:
+        """Pandas business-day aliases are normalized for vectorbt."""
+        import pandas as pd
+
+        rows = 40
+        data = pl.DataFrame(
+            {
+                "timestamp": pd.bdate_range("2025-01-01", periods=rows),
+                "open": [100.0 + index for index in range(rows)],
+                "high": [101.0 + index for index in range(rows)],
+                "low": [99.0 + index for index in range(rows)],
+                "close": [100.5 + index for index in range(rows)],
+                "volume": [1_000_000] * rows,
+            }
+        )
+
+        result = VectorizedEngine().run(data, AlwaysLong())
+
+        assert result.total_trades > 0
+
 
 class TestSmaCrossoverSignal:
     """Unit tests for the bundled SMA crossover signal."""

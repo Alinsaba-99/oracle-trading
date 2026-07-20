@@ -272,6 +272,12 @@ reali.
 - stress costi e regime;
 - power analysis o numerosità adeguata.
 
+**M31 closeout (2026-07-19):** ✅ APPROVED per historical replay. Il report
+`reports/m31-historical-replay-qualification.{md,json}` registra 6 regimi, 48
+slice (matrice 2x2x2), macro/provenance hashate, profilo Topstep 50K replay-only,
+parity broker/ledger, 0 hard breach e tutte le soglie economiche rispettate.
+Questo non promuove il sistema a paper/live/funded: il prossimo gate è G6/M32.
+
 ## G6 — Paper e shadow operations
 
 **Dipendenze:** G3, G4, G5.
@@ -373,7 +379,7 @@ flowchart LR
 LLM, Eliza e GA possono essere rimossi senza rendere insicuro il control plane.
 Non vale il contrario.
 
-## 9. Stato al 18 luglio 2026
+## 9. Stato al 19 luglio 2026
 
 | Gate | Stato | Evidenza sintetica |
 |---|---|---|
@@ -382,8 +388,8 @@ Non vale il contrario.
 | G2 | IN_PROGRESS | Analytics e observation point-in-time parziali; ContractSpec futures assente |
 | G3 | NOT_STARTED | OMS, paper broker e stato ordine sono in-memory |
 | G4 | IN_PROGRESS | Governor/adapter esistono, ma non sono non-bypassabili |
-| G5 | BLOCKED | Motori research presenti; nessun motore di qualification certificato |
-| G6 | NOT_STARTED | Nessuna sequenza paper/shadow qualificata |
+| G5 | PASSED (M31) | Replay event-driven qualificato: 6 regimi, 48 slice, parity e soglie verdi |
+| G6 | IN_PROGRESS | M32 paper/shadow non ancora completati; nessuna promozione live |
 | G7 | NOT_STARTED | Nessun profilo AUTO_SUPPORTED certificato |
 | G8 | NOT_STARTED | Live/funded non autorizzato |
 | G9 | NOT_STARTED | Dipende da G8 |

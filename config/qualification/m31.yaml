@@ -1,0 +1,17 @@
+min_median_net_return: 0.0
+min_median_sharpe: 0.5
+min_median_sortino: 0.5
+min_median_calmar: 0.25
+max_worst_drawdown: 0.04
+max_hard_breaches: 0
+max_median_execution_cost_ratio: 0.01
+max_luck_p_value: 0.10
+max_decision_latency_ms_p95: 250.0
+required_regimes:
+  - bull
+  - bear
+  - sideways
+  - high_volatility
+  - liquidity_shock
+  - macro_surprise
+require_full_variant_matrix: true

@@ -20,7 +20,7 @@ from policy.prop_firm import (
     SupportMode,
 )
 
-INITIAL = 100_000.0
+INITIAL = 100_000
 
 
 def _make_profile(
@@ -120,7 +120,22 @@ class TestOverallLoss:
         )
         gov = PropFirmRiskGovernor(profile, initial_balance=INITIAL)
         gov.update(balance=110_000, equity=110_000)  # peak rises
+        assert gov.overall_floor() == pytest.approx(INITIAL * 0.94)
+        gov.rollover()
         assert gov.overall_floor() == pytest.approx(110_000 * 0.94)
+
+    def test_absolute_trailing_floor_locks_at_initial_balance(self) -> None:
+        profile = _make_profile(
+            max_daily_loss_pct=0.02, max_overall_loss_pct=0.04, dd_mode="trailing_eod"
+        )
+        profile.max_overall_loss_amount = 2_000
+        profile.overall_loss_lock_at_initial = True
+        gov = PropFirmRiskGovernor(profile, initial_balance=INITIAL)
+
+        assert gov.overall_floor() == pytest.approx(98_000)
+        gov.update(balance=105_000, equity=105_000)
+        gov.rollover()
+        assert gov.overall_floor() == pytest.approx(100_000)
 
     def test_overall_breach_below_floor(self) -> None:
         gov = _gov()
@@ -181,6 +196,15 @@ class TestPreTradeGate:
         check = gov.check_new_order(entry=1.10, stop=1.095, lots=1.0, contract_size=100_000)
         assert check.allowed is False
         assert "automation denied" in check.reason.lower()
+
+    def test_replay_gate_allows_research_profile_without_live_authority(self) -> None:
+        gov = _gov()  # THE5ERS is ASSISTED_ONLY
+        live_check = gov.check_new_order(entry=1.10, stop=1.095, lots=1.0, contract_size=100_000)
+        replay_check = gov.check_replay_order(
+            entry=1.10, stop=1.095, lots=1.0, contract_size=100_000
+        )
+        assert live_check.allowed is False
+        assert replay_check.allowed is True
 
     def test_allow_safe_order(self) -> None:
         gov = _auto_gov()

@@ -120,13 +120,16 @@ class PropFirmRiskGovernor:
     # ------------------------------------------------------------------
     def update(self, balance: float, equity: float) -> None:
         """Record the latest balance and equity (call every tick/fill)."""
+        from policy.prop_firm.profile import DrawdownMode
+
         s = self.state
         s.current_balance = balance
         s.current_equity = equity
-        if balance > s.peak_balance:
-            s.peak_balance = balance
-        if equity > s.peak_equity:
-            s.peak_equity = equity
+        if self.profile.dd_mode != DrawdownMode.TRAILING_EOD:
+            if balance > s.peak_balance:
+                s.peak_balance = balance
+            if equity > s.peak_equity:
+                s.peak_equity = equity
 
     def record_trade(self, realized_pnl: float) -> None:
         """Record a closed trade's realized P&L against the daily totals."""
@@ -189,14 +192,26 @@ class PropFirmRiskGovernor:
 
     def daily_loss_used_pct(self) -> float:
         """Daily loss as a fraction of the day's starting reference."""
-        base = self._daily_reference()
-        if base <= 0:
+        reference = self._daily_reference()
+        if reference <= 0:
             return 0.0
-        return self.daily_loss() / base
+        return self.daily_loss() / reference
+
+    def daily_loss_limit_cash(self) -> float:
+        """Configured daily loss ceiling in account currency."""
+        if self.profile.max_daily_loss_amount is not None:
+            return self.profile.max_daily_loss_amount
+        return self.profile.max_daily_loss_pct * self._daily_reference()
 
     def overall_floor(self) -> float:
         """Equity level below which the overall rule is breached."""
-        return self._overall_reference() * (1.0 - self.profile.max_overall_loss_pct)
+        reference = self._overall_reference()
+        if self.profile.max_overall_loss_amount is None:
+            return reference * (1.0 - self.profile.max_overall_loss_pct)
+        floor = reference - self.profile.max_overall_loss_amount
+        if self.profile.overall_loss_lock_at_initial:
+            floor = min(floor, self.state.initial_balance)
+        return floor
 
     def overall_loss(self) -> float:
         """Absolute drop from the overall reference to current equity."""
@@ -204,13 +219,16 @@ class PropFirmRiskGovernor:
 
     def overall_loss_used_pct(self) -> float:
         """Overall loss as a fraction of the allowed maximum."""
-        pct = self.profile.max_overall_loss_pct
-        if pct <= 0:
+        limit = self.overall_loss_limit_cash()
+        if limit <= 0:
             return 0.0
-        ref = self._overall_reference()
-        if ref <= 0:
-            return 0.0
-        return self.overall_loss() / (ref * pct)
+        return self.overall_loss() / limit
+
+    def overall_loss_limit_cash(self) -> float:
+        """Configured overall loss ceiling in account currency."""
+        if self.profile.max_overall_loss_amount is not None:
+            return self.profile.max_overall_loss_amount
+        return self.profile.max_overall_loss_pct * self._overall_reference()
 
     # ------------------------------------------------------------------
     # Position sizing
@@ -233,7 +251,7 @@ class PropFirmRiskGovernor:
         risk_per_lot = contract_size * abs(entry - stop)
         if risk_per_lot <= 0:
             return 0.0
-        daily_limit_cash = self.profile.max_daily_loss_pct * self._daily_reference()
+        daily_limit_cash = self.daily_loss_limit_cash()
         remaining_daily = max(0.0, daily_limit_cash - self.daily_loss())
         per_trade_cash = self.profile.risk_per_trade_pct * self.state.current_balance
         budget = min(remaining_daily, per_trade_cash)
@@ -255,7 +273,6 @@ class PropFirmRiskGovernor:
         Computes the projected loss if the stop is hit and refuses when
         it would push the account past the daily or overall ceiling.
         """
-        # Gate 0: Support mode check
         from policy.prop_firm.profile import SupportMode
 
         if self.profile.support_mode != SupportMode.AUTO_SUPPORTED:
@@ -264,6 +281,22 @@ class PropFirmRiskGovernor:
                 reason=f"Automation denied: support_mode={self.profile.support_mode.value}",
             )
 
+        return self._check_projected_order(entry, stop, lots, contract_size)
+
+    def check_replay_order(
+        self, entry: float, stop: float, lots: float, contract_size: float
+    ) -> OrderCheck:
+        """Evaluate an order for historical replay without execution authority.
+
+        ``RESEARCH_ONLY`` profiles remain blocked by :meth:`check_new_order`.
+        This explicit path permits deterministic historical rule replay while
+        preserving the live automation boundary.
+        """
+        return self._check_projected_order(entry, stop, lots, contract_size)
+
+    def _check_projected_order(
+        self, entry: float, stop: float, lots: float, contract_size: float
+    ) -> OrderCheck:
         if self.status != ChallengeStatus.IN_PROGRESS:
             return OrderCheck(allowed=False, reason=f"Challenge already {self.status.value}")
 
@@ -271,7 +304,7 @@ class PropFirmRiskGovernor:
         projected_loss = lots * risk_per_lot
         max_lots = self.max_position_size(entry, stop, contract_size)
 
-        daily_limit_cash = self.profile.max_daily_loss_pct * self._daily_reference()
+        daily_limit_cash = self.daily_loss_limit_cash()
         if self.daily_loss() + projected_loss >= daily_limit_cash:
             used = self.daily_loss_used_pct()
             return OrderCheck(
@@ -284,7 +317,7 @@ class PropFirmRiskGovernor:
                 max_lots=max_lots,
             )
 
-        overall_limit_cash = self.profile.max_overall_loss_pct * self._overall_reference()
+        overall_limit_cash = self.overall_loss_limit_cash()
         if self.overall_loss() + projected_loss >= overall_limit_cash:
             used = self.overall_loss_used_pct()
             return OrderCheck(
@@ -320,12 +353,15 @@ class PropFirmRiskGovernor:
 
         # Daily loss — hard
         daily_used = self.daily_loss_used_pct()
-        if daily_used >= p.max_daily_loss_pct:
+        if self.daily_loss() >= self.daily_loss_limit_cash():
             breaches.append(
                 Breach(
                     type=BreachType.DAILY_LOSS,
                     severity="hard",
-                    message=f"Daily loss {daily_used:.1%} >= limit {p.max_daily_loss_pct:.0%}",
+                    message=(
+                        f"Daily loss {self.daily_loss():.2f} >= limit "
+                        f"{self.daily_loss_limit_cash():.2f}"
+                    ),
                     used_pct=daily_used,
                 )
             )

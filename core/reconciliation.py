@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from enum import StrEnum
 from typing import Any
@@ -54,7 +54,7 @@ class Mismatch:
 class ReconciliationReport:
     """Complete reconciliation result."""
 
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     mismatches: list[Mismatch] = field(default_factory=list)
     broker_connected: bool = True
     oms_connected: bool = True
@@ -121,9 +121,7 @@ class ReconciliationEngine:
                 f"{report.fatal_count} fatal, {report.recoverable_count} recoverable"
             )
         elif not report.is_clean:
-            logger.warning(
-                f"🟡 Recoverable mismatches: {report.recoverable_count}"
-            )
+            logger.warning(f"🟡 Recoverable mismatches: {report.recoverable_count}")
         else:
             logger.info("✅ Reconciliation clean — broker ↔ OMS ↔ ledger in sync")
 
@@ -135,13 +133,12 @@ class ReconciliationEngine:
             broker_positions = {}
             if hasattr(self._broker, "positions"):
                 broker_positions = {
-                    p["instrument_id"]: p
-                    for p in await self._broker.positions()
+                    self._field(p, "instrument_id", ""): p for p in await self._broker.positions()
                 }
 
             oms_accounts = self._oms._orders if hasattr(self._oms, "_orders") else {}
             oms_positions: dict[str, Decimal] = {}
-            for order_id, order in oms_accounts.items():
+            for _order_id, order in oms_accounts.items():
                 if hasattr(order, "instrument_id") and hasattr(order, "filled_quantity"):
                     instr = order.instrument_id
                     qty = oms_positions.get(instr, Decimal("0"))
@@ -152,7 +149,7 @@ class ReconciliationEngine:
 
             # Check for broker positions not in OMS
             for instr, bpos in broker_positions.items():
-                b_qty = Decimal(str(bpos.get("quantity", 0)))
+                b_qty = Decimal(str(self._field(bpos, "quantity", 0)))
                 o_qty = oms_positions.get(instr, Decimal("0"))
                 if b_qty != o_qty:
                     severity = (
@@ -160,15 +157,17 @@ class ReconciliationEngine:
                         if abs(b_qty - o_qty) > Decimal("1")
                         else MismatchSeverity.RECOVERABLE
                     )
-                    report.mismatches.append(Mismatch(
-                        mismatch_type=MismatchType.POSITION,
-                        severity=severity,
-                        instrument_id=instr,
-                        description=f"Position mismatch broker vs OMS",
-                        broker_value=str(b_qty),
-                        oracle_value=str(o_qty),
-                        diff=str(b_qty - o_qty),
-                    ))
+                    report.mismatches.append(
+                        Mismatch(
+                            mismatch_type=MismatchType.POSITION,
+                            severity=severity,
+                            instrument_id=instr,
+                            description="Position mismatch broker vs OMS",
+                            broker_value=str(b_qty),
+                            oracle_value=str(o_qty),
+                            diff=str(b_qty - o_qty),
+                        )
+                    )
 
         except Exception as e:
             logger.warning(f"Position reconciliation error: {e}")
@@ -181,7 +180,7 @@ class ReconciliationEngine:
                 broker_orders = await self._broker.open_orders()
 
             broker_order_ids = {
-                getattr(o, "broker_order_id", getattr(o, "order_id", ""))
+                self._field(o, "broker_order_id", self._field(o, "order_id", ""))
                 for o in broker_orders
             }
 
@@ -190,20 +189,23 @@ class ReconciliationEngine:
                 oms_orders = list(self._oms._orders.values())
 
             oms_broker_ids = {
-                getattr(o, "broker_order_id", "") for o in oms_orders
-                if getattr(o, "broker_order_id", None)
+                self._field(o, "broker_order_id", "")
+                for o in oms_orders
+                if self._field(o, "broker_order_id", None)
             }
 
             # Orders in broker but not in OMS
             for bid in broker_order_ids:
                 if bid and bid not in oms_broker_ids:
-                    report.mismatches.append(Mismatch(
-                        mismatch_type=MismatchType.ORDER,
-                        severity=MismatchSeverity.RECOVERABLE,
-                        description=f"Broker order {bid} missing from OMS",
-                        broker_value=bid,
-                        oracle_value="",
-                    ))
+                    report.mismatches.append(
+                        Mismatch(
+                            mismatch_type=MismatchType.ORDER,
+                            severity=MismatchSeverity.RECOVERABLE,
+                            description=f"Broker order {bid} missing from OMS",
+                            broker_value=bid,
+                            oracle_value="",
+                        )
+                    )
 
         except Exception as e:
             logger.warning(f"Order reconciliation error: {e}")
@@ -229,17 +231,26 @@ class ReconciliationEngine:
                         if diff > Decimal("100")
                         else MismatchSeverity.RECOVERABLE
                     )
-                    report.mismatches.append(Mismatch(
-                        mismatch_type=MismatchType.CASH,
-                        severity=severity,
-                        description=f"Cash balance mismatch broker vs ledger",
-                        broker_value=str(broker_cash),
-                        oracle_value=str(ledger_balance),
-                        diff=str(diff),
-                    ))
+                    report.mismatches.append(
+                        Mismatch(
+                            mismatch_type=MismatchType.CASH,
+                            severity=severity,
+                            description="Cash balance mismatch broker vs ledger",
+                            broker_value=str(broker_cash),
+                            oracle_value=str(ledger_balance),
+                            diff=str(diff),
+                        )
+                    )
 
         except Exception as e:
             logger.warning(f"Cash reconciliation error: {e}")
+
+    @staticmethod
+    def _field(value: Any, name: str, default: Any = None) -> Any:
+        """Read a field from either a mapping or a typed broker model."""
+        if isinstance(value, dict):
+            return value.get(name, default)
+        return getattr(value, name, default)
 
     def is_blocked(self) -> bool:
         """Return True if new orders are blocked due to fatal mismatches."""

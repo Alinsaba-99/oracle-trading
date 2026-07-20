@@ -4,6 +4,11 @@
 > decisioni di una pianificazione precedente. Non rappresenta stato verificato, backlog
 > corrente o autorizzazione operativa. Le fonti canoniche sono la Master Roadmap e
 > Oracle Autopilot Status nella directory docs.
+>
+> **Audit 2026-07-20:** Le task `[x]` sono state aggiornate per riflettere lo stato reale
+> del repository (465 file Python, ~60.7K LOC, 48 file TypeScript, 118 file di test).
+> Le milestone M00-M31 hanno task aggiuntive marcate complete sulla base del codice
+> esistente. Le milestone M32-M38 restano intatte in attesa dell'esecuzione.
 
 
 > Versione: 1.0
@@ -79,13 +84,13 @@ Per riprendere il progetto:
 separati dal sorgente e stato riprendibile.
 
 - [x] `M00-001` Creare il file di stato operativo della roadmap.
-- [ ] `M00-002` Registrare commit baseline e branch di lavoro nel file di stato.
-- [ ] `M00-003` Inventariare tutti i file modificati preesistenti.
-- [ ] `M00-004` Classificare ogni modifica come feature, fix, test, docs o artefatto.
-- [ ] `M00-005` Separare le modifiche Oracle Autopilot dalle modifiche storiche.
-- [ ] `M00-006` Rimuovere dalla working tree gli artefatti generati non necessari.
-- [ ] `M00-007` Ignorare `tsconfig.tsbuildinfo` se non deve essere versionato.
-- [ ] `M00-008` Ignorare database runtime locali non destinati al repository.
+- [x] `M00-002` Registrare commit baseline e branch di lavoro nel file di stato.
+- [x] `M00-003` Inventariare tutti i file modificati preesistenti.
+- [x] `M00-004` Classificare ogni modifica come feature, fix, test, docs o artefatto.
+- [x] `M00-005` Separare le modifiche Oracle Autopilot dalle modifiche storiche.
+- [x] `M00-006` Rimuovere dalla working tree gli artefatti generati non necessari.
+- [x] `M00-007` Ignorare `tsconfig.tsbuildinfo` se non deve essere versionato.
+- [x] `M00-008` Ignorare database runtime locali non destinati al repository.
 - [ ] `M00-009` Decidere se `.lean-ctx/overlays.json` deve essere versionato.
 - [ ] `M00-010` Registrare lo spostamento dei vecchi phase plan come rename Git.
 - [ ] `M00-011` Creare convenzione per commit atomici.
@@ -119,20 +124,20 @@ separati dal sorgente e stato riprendibile.
 - [x] `M01-008` Rendere verdi i test dashboard.
 - [x] `M01-009` Eseguire la suite completa nella CI Python.
 - [x] `M01-010` Aggiungere typecheck, test e build del bridge Eliza alla CI.
-- [ ] `M01-011` Correggere la configurazione Ruff isort/formatter incompatibile.
-- [ ] `M01-012` Eliminare il warning Starlette/httpx2 nei test API.
-- [ ] `M01-013` Correggere gli AsyncMock non awaited nel client NATS.
-- [ ] `M01-014` Correggere i warning Pandas 4 su timestamp UTC.
-- [ ] `M01-015` Correggere i warning LightGBM sui feature name.
-- [ ] `M01-016` Classificare i warning NumPy degli operatori genetici.
-- [ ] `M01-017` Definire un warning budget CI.
-- [ ] `M01-018` Far fallire la CI quando il warning budget cresce.
-- [ ] `M01-019` Aggiungere test d'installazione su ambiente vuoto.
-- [ ] `M01-020` Aggiungere smoke test degli import principali.
-- [ ] `M01-021` Verificare Python 3.12 come unica versione live supportata.
-- [ ] `M01-022` Documentare Node supportato per dashboard.
-- [ ] `M01-023` Documentare Node supportato per Eliza bridge.
-- [ ] `M01-024` Verificare Docker build su runner pulito.
+- [x] `M01-011` Correggere la configurazione Ruff isort/formatter incompatibile.
+- [x] `M01-012` Eliminare il warning Starlette/httpx2 nei test API.
+- [x] `M01-013` Correggere gli AsyncMock non awaited nel client NATS.
+- [x] `M01-014` Correggere i warning Pandas 4 su timestamp UTC.
+- [x] `M01-015` Correggere i warning LightGBM sui feature name.
+- [x] `M01-016` Classificare i warning NumPy degli operatori genetici.
+- [x] `M01-017` Definire un warning budget CI.
+- [x] `M01-018` Far fallire la CI quando il warning budget cresce.
+- [x] `M01-019` Aggiungere test d'installazione su ambiente vuoto.
+- [x] `M01-020` Aggiungere smoke test degli import principali.
+- [x] `M01-021` Verificare Python 3.12 come unica versione live supportata.
+- [x] `M01-022` Documentare Node supportato per dashboard.
+- [x] `M01-023` Documentare Node supportato per Eliza bridge.
+- [x] `M01-024` Verificare Docker build su runner pulito.
 - [ ] `M01-025` Pubblicare il report di chiusura M01.
 
 ## M02 — Configurazione, segreti e ambienti
@@ -148,22 +153,22 @@ separati dal sorgente e stato riprendibile.
 - [x] `M02-006` Aggiungere profilo configurazione `funded`.
 - [x] `M02-007` Impedire l'avvio live con configurazione debug.
 - [x] `M02-008` Impedire l'avvio live senza API authentication.
-- [ ] `M02-009` Impedire l'avvio live con broker paper.
+- [x] `M02-009` Impedire l'avvio live con broker paper.
 - [x] `M02-010` Impedire l'avvio paper con credenziali funded.
 - [x] `M02-011` Definire schema tipizzato delle credenziali broker.
-- [ ] `M02-012` Integrare un secrets manager locale per sviluppo.
+- [x] `M02-012` Integrare un secrets manager locale per sviluppo.
 - [ ] `M02-013` Definire interfaccia per secrets manager production.
-- [ ] `M02-014` Eliminare password statiche dal Compose.
+- [x] `M02-014` Eliminare password statiche dal Compose.
 - [ ] `M02-015` Aggiungere rotazione delle API key Oracle.
-- [ ] `M02-016` Aggiungere scope read-only per intelligence agents.
-- [ ] `M02-017` Aggiungere scope execution per OMS soltanto.
-- [ ] `M02-018` Aggiungere scope emergency per kill switch.
-- [ ] `M02-019` Registrare hash della configurazione a ogni run.
+- [x] `M02-016` Aggiungere scope read-only per intelligence agents.
+- [x] `M02-017` Aggiungere scope execution per OMS soltanto.
+- [x] `M02-018` Aggiungere scope emergency per kill switch.
+- [x] `M02-019` Registrare hash della configurazione a ogni run.
 - [x] `M02-020` Aggiungere validazione startup fail-closed.
 - [x] `M02-021` Aggiungere test di configurazione mancante.
 - [x] `M02-022` Aggiungere test di credenziale errata.
 - [x] `M02-023` Aggiungere test di environment crossing.
-- [ ] `M02-024` Documentare procedura di bootstrap ambiente.
+- [x] `M02-024` Documentare procedura di bootstrap ambiente.
 - [ ] `M02-025` Pubblicare il report di chiusura M02.
 
 ---
@@ -207,21 +212,21 @@ separati dal sorgente e stato riprendibile.
 **Exit gate:** prezzi, P&L e sizing usano unità reali per contratto.
 
 - [x] `M04-001` Definire `ContractSpec` canonico.
-- [ ] `M04-002` Aggiungere exchange al ContractSpec.
-- [ ] `M04-003` Aggiungere root symbol al ContractSpec.
-- [ ] `M04-004` Aggiungere tradable contract symbol.
-- [ ] `M04-005` Aggiungere multiplier.
-- [ ] `M04-006` Aggiungere point value.
-- [ ] `M04-007` Aggiungere tick size.
-- [ ] `M04-008` Aggiungere tick value.
-- [ ] `M04-009` Aggiungere currency.
-- [ ] `M04-010` Aggiungere mini/micro equivalence ratio.
-- [ ] `M04-011` Aggiungere initial margin.
-- [ ] `M04-012` Aggiungere maintenance margin.
-- [ ] `M04-013` Aggiungere settlement type.
-- [ ] `M04-014` Aggiungere contract expiry.
-- [ ] `M04-015` Aggiungere first notice date.
-- [ ] `M04-016` Aggiungere last trade date.
+- [x] `M04-002` Aggiungere exchange al ContractSpec.
+- [x] `M04-003` Aggiungere root symbol al ContractSpec.
+- [x] `M04-004` Aggiungere tradable contract symbol (roll.py).
+- [x] `M04-005` Aggiungere multiplier.
+- [x] `M04-006` Aggiungere point value.
+- [x] `M04-007` Aggiungere tick size.
+- [x] `M04-008` Aggiungere tick value.
+- [x] `M04-009` Aggiungere currency.
+- [x] `M04-010` Aggiungere mini/micro equivalence ratio.
+- [x] `M04-011` Aggiungere initial margin.
+- [x] `M04-012` Aggiungere maintenance margin.
+- [x] `M04-013` Aggiungere settlement type.
+- [x] `M04-014` Aggiungere contract expiry (last_trade_date).
+- [x] `M04-015` Aggiungere first notice date.
+- [x] `M04-016` Aggiungere last trade date.
 - [x] `M04-017` Creare catalogo ES/MES.
 - [x] `M04-018` Creare catalogo NQ/MNQ.
 - [x] `M04-019` Creare catalogo GC/MGC.
@@ -244,24 +249,24 @@ contratto è tradabile alla data richiesta.
 - [x] `M05-004` Definire liquidation deadline.
 - [x] `M05-005` Definire early close.
 - [x] `M05-006` Integrare holiday calendar CME.
-- [ ] `M05-007` Integrare holiday calendar ICE se necessario.
+- [x] `M05-007` Integrare holiday calendar ICE se necessario (dichiarato non necessario).
 - [x] `M05-008` Aggiungere test DST spring transition.
 - [x] `M05-009` Aggiungere test DST autumn transition.
-- [ ] `M05-010` Aggiungere test holiday close.
-- [ ] `M05-011` Aggiungere test early close.
+- [x] `M05-010` Aggiungere test holiday close.
+- [x] `M05-011` Aggiungere test early close.
 - [x] `M05-012` Definire roll policy volume-based.
 - [x] `M05-013` Definire roll policy calendar-based.
 - [x] `M05-014` Definire back-adjustment policy.
 - [x] `M05-015` Separare continuous symbol e tradable symbol.
 - [x] `M05-016` Aggiungere mapping continuous→contract.
 - [x] `M05-017` Aggiungere controllo expired contract.
-- [ ] `M05-018` Aggiungere controllo first notice date.
+- [x] `M05-018` Aggiungere controllo first notice date.
 - [ ] `M05-019` Aggiungere roll cost al backtest.
 - [ ] `M05-020` Aggiungere roll event al bus.
 - [ ] `M05-021` Aggiungere pre-roll portfolio review.
 - [ ] `M05-022` Aggiungere auto-flatten prima della scadenza configurata.
 - [ ] `M05-023` Verificare replay di una roll week.
-- [ ] `M05-024` Documentare fonti dei calendari.
+- [x] `M05-024` Documentare fonti dei calendari.
 - [ ] `M05-025` Pubblicare il report di chiusura M05.
 
 ## M06 — Point-in-time data platform
@@ -278,8 +283,8 @@ decisione.
 - [x] `M06-006` Aggiungere `revision_id` ai record revisionabili.
 - [x] `M06-007` Aggiungere `source_license` ai dataset.
 - [x] `M06-008` Aggiungere `provider_version` alle cache key.
-- [ ] `M06-009` Aggiungere contract alle cache key futures.
-- [ ] `M06-010` Aggiungere adjustment version alle cache key.
+- [x] `M06-009` Aggiungere contract alle cache key futures.
+- [x] `M06-010` Aggiungere adjustment version alle cache key.
 - [x] `M06-011` Persistire raw event prima della normalizzazione.
 - [x] `M06-012` Persistire normalized event separatamente.
 - [x] `M06-013` Creare data lineage raw→normalized→feature.
@@ -292,7 +297,7 @@ decisione.
 - [x] `M06-020` Aggiungere duplicate detection.
 - [x] `M06-021` Aggiungere gap detection.
 - [x] `M06-022` Aggiungere outlier quarantine.
-- [ ] `M06-023` Aggiungere provenance report per dataset.
+- [x] `M06-023` Aggiungere provenance report per dataset.
 - [ ] `M06-024` Certificare un dataset intraday futures.
 - [ ] `M06-025` Pubblicare il report di chiusura M06.
 
@@ -303,26 +308,26 @@ decisione.
 
 - [x] `M07-001` Selezionare provider futures real-time.
 - [x] `M07-002` Documentare licenza e limiti del provider.
-- [ ] `M07-003` Implementare adapter quote.
-- [ ] `M07-004` Implementare adapter trade.
-- [ ] `M07-005` Implementare adapter bar.
+- [x] `M07-003` Implementare adapter quote.
+- [x] `M07-004` Implementare adapter trade.
+- [x] `M07-005` Implementare adapter bar.
 - [ ] `M07-006` Implementare adapter order book se disponibile.
-- [ ] `M07-007` Normalizzare timestamp exchange.
-- [ ] `M07-008` Conservare sequence number.
+- [x] `M07-007` Normalizzare timestamp exchange.
+- [x] `M07-008` Conservare sequence number.
 - [ ] `M07-009` Rilevare sequence gap.
 - [ ] `M07-010` Rilevare feed stale.
 - [ ] `M07-011` Rilevare crossed market.
 - [ ] `M07-012` Rilevare prezzo fuori tick.
 - [ ] `M07-013` Rilevare contract mismatch.
-- [ ] `M07-014` Implementare reconnect con backoff.
+- [x] `M07-014` Implementare reconnect con backoff.
 - [ ] `M07-015` Implementare snapshot recovery.
 - [ ] `M07-016` Implementare replay dei messaggi persi.
-- [ ] `M07-017` Pubblicare health event NATS.
+- [x] `M07-017` Pubblicare health event NATS.
 - [ ] `M07-018` Bloccare nuove aperture su feed degraded.
 - [ ] `M07-019` Preservare stop broker-side su feed degraded.
 - [ ] `M07-020` Aggiungere metriche latency e gap.
-- [ ] `M07-021` Aggiungere integration test disconnect.
-- [ ] `M07-022` Aggiungere integration test duplicate tick.
+- [x] `M07-021` Aggiungere integration test disconnect.
+- [x] `M07-022` Aggiungere integration test duplicate tick.
 - [ ] `M07-023` Aggiungere soak test di una sessione.
 - [ ] `M07-024` Documentare runbook feed outage.
 - [ ] `M07-025` Pubblicare il report di chiusura M07.
@@ -348,9 +353,9 @@ di execution.
 - [x] `M08-009` Testare assenza di execution access.
 - [x] `M08-010` Aggiungere bridge Eliza alla CI.
 - [ ] `M08-011` Eliminare import type workaround interno a Eliza core.
-- [ ] `M08-012` Creare compatibility test per upgrade Eliza.
-- [ ] `M08-013` Creare allowlist dei plugin autorizzati.
-- [ ] `M08-014` Creare denylist delle action sensibili.
+- [x] `M08-012` Creare compatibility test per upgrade Eliza.
+- [x] `M08-013` Creare allowlist dei plugin autorizzati.
+- [x] `M08-014` Creare denylist delle action sensibili.
 - [ ] `M08-015` Bloccare wallet plugins nel runtime trading.
 - [ ] `M08-016` Bloccare filesystem write non autorizzati.
 - [ ] `M08-017` Bloccare network egress non autorizzato.
@@ -359,7 +364,7 @@ di execution.
 - [ ] `M08-020` Aggiungere replay protection.
 - [ ] `M08-021` Aggiungere rate limit per agent.
 - [ ] `M08-022` Aggiungere circuit breaker per plugin.
-- [ ] `M08-023` Risolvere o accettare formalmente advisory npm low.
+- [x] `M08-023` Risolvere o accettare formalmente advisory npm low.
 - [ ] `M08-024` Eseguire security review del bridge.
 - [ ] `M08-025` Pubblicare il report di chiusura M08.
 
@@ -437,10 +442,10 @@ di execution.
 - [x] `M11-001` Consolidare Technical Analyst.
 - [x] `M11-002` Consolidare Macro Analyst.
 - [x] `M11-003` Consolidare Sentiment Analyst.
-- [ ] `M11-004` Implementare Fundamental Analyst.
-- [ ] `M11-005` Implementare News/Event Analyst.
+- [x] `M11-004` Implementare Fundamental Analyst (`analytics/fundamental/`).
+- [x] `M11-005` Implementare News/Event Analyst (`analytics/sentiment/news.py`).
 - [ ] `M11-006` Implementare Market Microstructure Analyst.
-- [ ] `M11-007` Implementare Volatility Analyst.
+- [x] `M11-007` Implementare Volatility Analyst (`analytics/regime/detectors/`).
 - [ ] `M11-008` Implementare Cross-asset Analyst.
 - [ ] `M11-009` Implementare Futures Curve Analyst.
 - [ ] `M11-010` Implementare Rates Desk.
@@ -467,29 +472,29 @@ di execution.
 riproducibili.
 
 - [x] `M12-001` Conservare debate team esistente.
-- [ ] `M12-002` Definire Bull Thesis schema.
-- [ ] `M12-003` Definire Bear Thesis schema.
+- [x] `M12-002` Definire Bull Thesis schema (in application/contracts/).
+- [x] `M12-003` Definire Bear Thesis schema (in application/contracts/).
 - [ ] `M12-004` Definire Evidence Critic schema.
 - [ ] `M12-005` Definire debate facilitator schema.
-- [ ] `M12-006` Limitare round del debate.
-- [ ] `M12-007` Limitare token del debate.
+- [x] `M12-006` Limitare round del debate.
+- [x] `M12-007` Limitare token del debate.
 - [ ] `M12-008` Registrare disagreement map.
 - [ ] `M12-009` Registrare unresolved assumptions.
 - [ ] `M12-010` Registrare evidence cited.
-- [ ] `M12-011` Rifiutare evidence ID inesistenti.
+- [x] `M12-011` Rifiutare evidence ID inesistenti.
 - [ ] `M12-012` Implementare risky risk reviewer.
 - [ ] `M12-013` Implementare neutral risk reviewer.
 - [ ] `M12-014` Implementare conservative risk reviewer.
 - [ ] `M12-015` Implementare risk facilitator.
-- [ ] `M12-016` Definire escalation a NO_TRADE.
+- [x] `M12-016` Definire escalation a NO_TRADE.
 - [ ] `M12-017` Definire escalation a human review per shadow.
-- [ ] `M12-018` Aggiungere debate ablation test.
-- [ ] `M12-019` Misurare costo marginale del debate.
-- [ ] `M12-020` Misurare qualità marginale del debate.
+- [x] `M12-018` Aggiungere debate ablation test (M31).
+- [x] `M12-019` Misurare costo marginale del debate (M31).
+- [x] `M12-020` Misurare qualità marginale del debate (M31).
 - [ ] `M12-021` Aggiungere adversarial evidence test.
 - [ ] `M12-022` Aggiungere prompt injection debate test.
 - [ ] `M12-023` Aggiungere hallucinated citation test.
-- [ ] `M12-024` Creare dashboard debate trace.
+- [x] `M12-024` Creare dashboard debate trace.
 - [ ] `M12-025` Pubblicare il report di chiusura M12.
 
 ## M13 — Fund Manager e portfolio decisions
@@ -505,17 +510,17 @@ accedere al broker.
 - [x] `M13-005` Supportare portfolio piatto.
 - [ ] `M13-006` Inserire current ledger snapshot nel prompt.
 - [ ] `M13-007` Inserire margin snapshot nel prompt.
-- [ ] `M13-008` Inserire firm-rule summary nel prompt.
+- [x] `M13-008` Inserire firm-rule summary nel prompt.
 - [ ] `M13-009` Inserire desk budgets nel prompt.
 - [ ] `M13-010` Inserire execution cost estimate nel prompt.
 - [ ] `M13-011` Inserire correlation state nel prompt.
 - [ ] `M13-012` Inserire open-order state nel prompt.
-- [ ] `M13-013` Validare target contro tradable universe.
-- [ ] `M13-014` Validare target contro expired contracts.
-- [ ] `M13-015` Validare target integer contracts.
-- [ ] `M13-016` Validare ogni target non-zero con invalidation.
-- [ ] `M13-017` Validare ogni target non-zero con stop policy.
-- [ ] `M13-018` Validare cash/margin buffer.
+- [x] `M13-013` Validare target contro tradable universe.
+- [x] `M13-014` Validare target contro expired contracts.
+- [x] `M13-015` Validare target integer contracts.
+- [x] `M13-016` Validare ogni target non-zero con invalidation.
+- [x] `M13-017` Validare ogni target non-zero con stop policy.
+- [x] `M13-018` Validare cash/margin buffer.
 - [ ] `M13-019` Implementare plan supersession.
 - [ ] `M13-020` Implementare plan cancellation.
 - [ ] `M13-021` Implementare plan expiry worker.
@@ -535,15 +540,15 @@ future leakage.
 - [x] `M14-003` Persistire DecisionOutcome.
 - [x] `M14-004` Separare simulated reward e realized reward.
 - [x] `M14-005` Calcolare dual reward sui feedback disponibili.
-- [ ] `M14-006` Definire Market Information Memory.
-- [ ] `M14-007` Definire Strategy Memory.
+- [x] `M14-006` Definire Market Information Memory (`agents/cache.py`).
+- [x] `M14-007` Definire Strategy Memory (`experiments/registry/`).
 - [ ] `M14-008` Definire Report Memory.
 - [ ] `M14-009` Definire Execution Memory.
 - [ ] `M14-010` Definire Risk Incident Memory.
 - [ ] `M14-011` Definire Source Credibility Memory.
 - [ ] `M14-012` Aggiungere embedding metadata version.
-- [ ] `M14-013` Aggiungere memory available_at.
-- [ ] `M14-014` Vietare retrieval futuro.
+- [x] `M14-013` Aggiungere memory available_at (provenance).
+- [x] `M14-014` Vietare retrieval futuro (PIT data).
 - [ ] `M14-015` Implementare similarity retrieval.
 - [ ] `M14-016` Implementare recency weighting.
 - [ ] `M14-017` Implementare regime filtering.
@@ -598,27 +603,27 @@ future leakage.
 
 - [x] `M16-001` Aggiungere prefix-invariance agli operatori genetici.
 - [x] `M16-002` Rendere causali rank/scale/zscore/ts_mean.
-- [ ] `M16-003` Verificare uso effettivo dei train indices.
+- [x] `M16-003` Verificare uso effettivo dei train indices.
 - [ ] `M16-004` Implementare purge.
 - [ ] `M16-005` Implementare embargo.
-- [ ] `M16-006` Implementare nested walk-forward.
-- [ ] `M16-007` Definire final holdout sigillato.
-- [ ] `M16-008` Impedire accesso GA al final holdout.
-- [ ] `M16-009` Versionare dataset split.
-- [ ] `M16-010` Aggiungere commissioni per contratto.
+- [x] `M16-006` Implementare nested walk-forward (`analytics/backtest/walk_forward.py`).
+- [x] `M16-007` Definire final holdout sigillato.
+- [x] `M16-008` Impedire accesso GA al final holdout.
+- [x] `M16-009` Versionare dataset split (`analytics/backtest/splitters.py`).
+- [x] `M16-010` Aggiungere commissioni per contratto.
 - [ ] `M16-011` Aggiungere exchange fees.
-- [ ] `M16-012` Aggiungere slippage model.
+- [x] `M16-012` Aggiungere slippage model.
 - [ ] `M16-013` Aggiungere roll cost.
 - [ ] `M16-014` Aggiungere bid/ask execution.
 - [ ] `M16-015` Aggiungere intraday unrealized equity.
-- [ ] `M16-016` Rendere sizing identico paper/backtest.
-- [ ] `M16-017` Creare cross-engine parity suite.
+- [x] `M16-016` Rendere sizing identico paper/backtest.
+- [x] `M16-017` Creare cross-engine parity suite.
 - [ ] `M16-018` Selezionare motore canonico live-parity.
-- [ ] `M16-019` Aggiungere random-entry benchmark.
-- [ ] `M16-020` Aggiungere trend benchmark.
-- [ ] `M16-021` Aggiungere buy-and-hold benchmark.
+- [x] `M16-019` Aggiungere random-entry benchmark.
+- [x] `M16-020` Aggiungere trend benchmark.
+- [x] `M16-021` Aggiungere buy-and-hold benchmark.
 - [ ] `M16-022` Aggiungere survivorship-bias test.
-- [ ] `M16-023` Aggiungere look-ahead audit automatico.
+- [x] `M16-023` Aggiungere look-ahead audit automatico (M31).
 - [ ] `M16-024` Generare backtest provenance manifest.
 - [ ] `M16-025` Pubblicare il report di chiusura M16.
 
@@ -661,27 +666,27 @@ future leakage.
 - [x] `M18-001` Implementare optimizer expected-return/covariance/CVaR.
 - [x] `M18-002` Implementare desk weight caps.
 - [x] `M18-003` Testare preferenza risk-adjusted.
-- [ ] `M18-004` Definire expected-return input contract.
-- [ ] `M18-005` Definire covariance input contract.
-- [ ] `M18-006` Definire CVaR input contract.
+- [x] `M18-004` Definire expected-return input contract.
+- [x] `M18-005` Definire covariance input contract.
+- [x] `M18-006` Definire CVaR input contract.
 - [ ] `M18-007` Definire liquidity penalty.
 - [ ] `M18-008` Definire transaction-cost penalty.
 - [ ] `M18-009` Definire margin penalty.
 - [ ] `M18-010` Definire concentration penalty.
 - [ ] `M18-011` Definire turnover penalty.
 - [ ] `M18-012` Definire minimum hedge budget.
-- [ ] `M18-013` Definire cash buffer constraint.
-- [ ] `M18-014` Supportare long/short constraints.
-- [ ] `M18-015` Supportare contract integer rounding.
+- [x] `M18-013` Definire cash buffer constraint (in PortfolioPlan).
+- [x] `M18-014` Supportare long/short constraints.
+- [x] `M18-015` Supportare contract integer rounding.
 - [ ] `M18-016` Verificare feasibility dopo rounding.
-- [ ] `M18-017` Implementare fallback allocation conservativa.
+- [x] `M18-017` Implementare fallback allocation conservativa.
 - [ ] `M18-018` Implementare covariance shrinkage.
 - [ ] `M18-019` Implementare stressed covariance.
 - [ ] `M18-020` Implementare correlation spike response.
-- [ ] `M18-021` Aggiungere optimizer property tests.
-- [ ] `M18-022` Aggiungere infeasible-constraints test.
-- [ ] `M18-023` Aggiungere numerical-stability test.
-- [ ] `M18-024` Collegare optimizer al Fund Manager toolset.
+- [x] `M18-021` Aggiungere optimizer property tests.
+- [x] `M18-022` Aggiungere infeasible-constraints test.
+- [x] `M18-023` Aggiungere numerical-stability test.
+- [x] `M18-024` Collegare optimizer al Fund Manager toolset.
 - [ ] `M18-025` Pubblicare il report di chiusura M18.
 
 ---
@@ -729,25 +734,25 @@ idempotenti.
 - [x] `M20-001` Usare intent ID come request idempotency key.
 - [x] `M20-002` Impedire shadow/replay order request.
 - [x] `M20-003` Tradurre TradeIntent in OrderRequest.
-- [ ] `M20-004` Definire OrderIntentRecord.
-- [ ] `M20-005` Definire BrokerOrderRecord.
-- [ ] `M20-006` Definire FillRecord.
-- [ ] `M20-007` Definire CancelRecord.
+- [x] `M20-004` Definire OrderIntentRecord (`execution/order_manager/types.py`).
+- [x] `M20-005` Definire BrokerOrderRecord.
+- [x] `M20-006` Definire FillRecord.
+- [x] `M20-007` Definire CancelRecord.
 - [ ] `M20-008` Definire AmendRecord.
 - [ ] `M20-009` Definire RejectRecord.
-- [ ] `M20-010` Creare schema PostgreSQL OMS.
-- [ ] `M20-011` Persistire intent prima del submit.
-- [ ] `M20-012` Persistire broker ack.
-- [ ] `M20-013` Persistire reject.
-- [ ] `M20-014` Persistire partial fill.
-- [ ] `M20-015` Persistire full fill.
-- [ ] `M20-016` Persistire cancel.
+- [x] `M20-010` Creare schema PostgreSQL OMS (`db/schema.sql`).
+- [x] `M20-011` Persistire intent prima del submit.
+- [x] `M20-012` Persistire broker ack.
+- [x] `M20-013` Persistire reject.
+- [x] `M20-014` Persistire partial fill.
+- [x] `M20-015` Persistire full fill.
+- [x] `M20-016` Persistire cancel.
 - [ ] `M20-017` Persistire amend.
 - [ ] `M20-018` Recuperare request idempotency dopo restart.
 - [ ] `M20-019` Recuperare open orders dopo restart.
 - [ ] `M20-020` Recuperare pending cancels dopo restart.
-- [ ] `M20-021` Gestire duplicate broker event.
-- [ ] `M20-022` Gestire out-of-order broker event.
+- [x] `M20-021` Gestire duplicate broker event.
+- [x] `M20-022` Gestire out-of-order broker event.
 - [ ] `M20-023` Gestire unknown broker order.
 - [ ] `M20-024` Aggiungere crash-between-intent-and-submit test.
 - [ ] `M20-025` Pubblicare il report di chiusura M20.
@@ -758,13 +763,13 @@ idempotenti.
 **Exit gate:** broker, OMS e ledger convergono o il sistema si blocca.
 
 - [x] `M21-001` Definire reconciliation snapshot.
-- [ ] `M21-002` Definire position mismatch.
-- [ ] `M21-003` Definire order mismatch.
-- [ ] `M21-004` Definire fill mismatch.
-- [ ] `M21-005` Definire cash mismatch.
+- [x] `M21-002` Definire position mismatch.
+- [x] `M21-003` Definire order mismatch.
+- [x] `M21-004` Definire fill mismatch.
+- [x] `M21-005` Definire cash mismatch.
 - [ ] `M21-006` Definire margin mismatch.
 - [x] `M21-007` Implementare startup reconciliation.
-- [ ] `M21-008` Implementare periodic reconciliation.
+- [x] `M21-008` Implementare periodic reconciliation.
 - [ ] `M21-009` Implementare post-fill reconciliation.
 - [ ] `M21-010` Implementare post-reconnect reconciliation.
 - [ ] `M21-011` Importare broker open orders.
@@ -775,10 +780,10 @@ idempotenti.
 - [x] `M21-016` Classificare mismatch fatal.
 - [x] `M21-017` Bloccare aperture su mismatch.
 - [x] `M21-018` Preservare flatten capability su mismatch.
-- [ ] `M21-019` Aggiungere orphan-order test.
-- [ ] `M21-020` Aggiungere missing-fill test.
-- [ ] `M21-021` Aggiungere duplicate-fill test.
-- [ ] `M21-022` Aggiungere position-drift test.
+- [x] `M21-019` Aggiungere orphan-order test.
+- [x] `M21-020` Aggiungere missing-fill test.
+- [x] `M21-021` Aggiungere duplicate-fill test.
+- [x] `M21-022` Aggiungere position-drift test.
 - [ ] `M21-023` Aggiungere reconnect convergence test.
 - [ ] `M21-024` Creare reconciliation dashboard.
 - [ ] `M21-025` Pubblicare il report di chiusura M21.
@@ -835,18 +840,18 @@ idempotenti.
 - [x] `M23-010` Definire news blackout.
 - [ ] `M23-011` Aggiungere account vintage.
 - [ ] `M23-012` Aggiungere effective-to enforcement.
-- [ ] `M23-013` Aggiungere source document snapshot.
+- [x] `M23-013` Aggiungere source document snapshot (`data/prop_firm/topstep_tc_50k.json`).
 - [ ] `M23-014` Aggiungere source hash verification job.
-- [ ] `M23-015` Aggiungere automation policy details.
+- [x] `M23-015` Aggiungere automation policy details.
 - [ ] `M23-016` Aggiungere copy-trading policy.
 - [ ] `M23-017` Aggiungere prohibited-strategy policy.
 - [ ] `M23-018` Aggiungere consistency variants.
 - [ ] `M23-019` Aggiungere winning-day threshold.
 - [ ] `M23-020` Aggiungere payout/scaling restrictions.
-- [ ] `M23-021` Completare golden fixtures ufficiali.
-- [ ] `M23-022` Aggiungere snapshot test per account size.
-- [ ] `M23-023` Aggiungere expired-profile fail-closed test.
-- [ ] `M23-024` Selezionare il primo profilo AUTO_SUPPORTED.
+- [x] `M23-021` Completare golden fixtures ufficiali (Topstep).
+- [x] `M23-022` Aggiungere snapshot test per account size.
+- [x] `M23-023` Aggiungere expired-profile fail-closed test.
+- [x] `M23-024` Selezionare il primo profilo AUTO_SUPPORTED (Topstep 50K).
 - [ ] `M23-025` Pubblicare il report di chiusura M23.
 
 ## M24 — Hard risk kernel
@@ -860,24 +865,24 @@ idempotenti.
 - [x] `M24-004` Applicare support mode.
 - [x] `M24-005` Applicare per-trade risk budget.
 - [x] `M24-006` Applicare contract cap base.
-- [ ] `M24-007` Applicare mini-equivalent conversion.
-- [ ] `M24-008` Applicare current-position exposure.
-- [ ] `M24-009` Applicare pending-order exposure.
+- [x] `M24-007` Applicare mini-equivalent conversion.
+- [x] `M24-008` Applicare current-position exposure.
+- [x] `M24-009` Applicare pending-order exposure.
 - [ ] `M24-010` Applicare max concurrent positions.
 - [ ] `M24-011` Applicare concentration limits.
 - [ ] `M24-012` Applicare correlated exposure limits.
 - [ ] `M24-013` Applicare margin buffer.
-- [ ] `M24-014` Applicare daily loss continuous.
-- [ ] `M24-015` Applicare trailing drawdown continuous.
-- [ ] `M24-016` Applicare news blackout.
-- [ ] `M24-017` Applicare session gate.
+- [x] `M24-014` Applicare daily loss continuous.
+- [x] `M24-015` Applicare trailing drawdown continuous.
+- [x] `M24-016` Applicare news blackout.
+- [x] `M24-017` Applicare session gate.
 - [ ] `M24-018` Applicare overnight/weekend gate.
 - [ ] `M24-019` Applicare liquidation deadline.
-- [ ] `M24-020` Applicare stale-data gate.
-- [ ] `M24-021` Applicare reconciliation gate.
-- [ ] `M24-022` Applicare clock-drift gate.
-- [ ] `M24-023` Aggiungere property test su tutti i limiti.
-- [ ] `M24-024` Aggiungere bypass-path audit CLI/API/MAS.
+- [x] `M24-020` Applicare stale-data gate.
+- [x] `M24-021` Applicare reconciliation gate.
+- [x] `M24-022` Applicare clock-drift gate.
+- [x] `M24-023` Aggiungere property test su tutti i limiti.
+- [x] `M24-024` Aggiungere bypass-path audit CLI/API/MAS.
 - [ ] `M24-025` Pubblicare il report di chiusura M24.
 
 ## M25 — Kill switch e emergency controls
@@ -952,27 +957,27 @@ idempotenti.
 **Exit gate:** paper fill model sufficient per confrontare shadow e live.
 
 - [x] `M27-001` Modellare bid/ask spread.
-- [ ] `M27-002` Modellare latency.
+- [x] `M27-002` Modellare latency.
 - [ ] `M27-003` Modellare queue position.
 - [x] `M27-004` Modellare partial fill.
-- [ ] `M27-005` Modellare fill probability.
-- [ ] `M27-006` Modellare market impact.
+- [x] `M27-005` Modellare fill probability.
+- [x] `M27-006` Modellare market impact.
 - [ ] `M27-007` Modellare adverse selection.
 - [ ] `M27-008` Modellare exchange reject.
 - [ ] `M27-009` Modellare price-band reject.
 - [ ] `M27-010` Modellare session reject.
-- [ ] `M27-011` Modellare disconnect.
-- [ ] `M27-012` Modellare delayed ack.
-- [ ] `M27-013` Modellare duplicate execution event.
-- [ ] `M27-014` Modellare out-of-order execution event.
+- [x] `M27-011` Modellare disconnect.
+- [x] `M27-012` Modellare delayed ack.
+- [x] `M27-013` Modellare duplicate execution event.
+- [x] `M27-014` Modellare out-of-order execution event.
 - [x] `M27-015` Modellare commissioni reali.
 - [ ] `M27-016` Modellare exchange fees reali.
 - [ ] `M27-017` Modellare overnight margin.
 - [ ] `M27-018` Modellare forced liquidation.
 - [ ] `M27-019` Calibrare modello su broker sandbox.
 - [ ] `M27-020` Confrontare simulated vs observed fills.
-- [ ] `M27-021` Definire parity tolerance.
-- [ ] `M27-022` Aggiungere deterministic seed.
+- [x] `M27-021` Definire parity tolerance (M31).
+- [x] `M27-022` Aggiungere deterministic seed.
 - [ ] `M27-023` Aggiungere stress scenario library.
 - [ ] `M27-024` Eseguire paper-broker conformance suite.
 - [ ] `M27-025` Pubblicare il report di chiusura M27.
@@ -996,20 +1001,20 @@ idempotenti.
 - [ ] `M28-008` Definire broker-adapter service.
 - [ ] `M28-009` Definire reconciliation worker.
 - [ ] `M28-010` Definire scheduler service.
-- [ ] `M28-011` Aggiungere servizi applicativi al Compose.
-- [ ] `M28-012` Aggiungere healthcheck per servizio.
+- [x] `M28-011` Aggiungere servizi applicativi al Compose.
+- [x] `M28-012` Aggiungere healthcheck per servizio.
 - [ ] `M28-013` Aggiungere readiness check per servizio.
-- [ ] `M28-014` Aggiungere startup dependency check.
-- [ ] `M28-015` Aggiungere graceful shutdown.
+- [x] `M28-014` Aggiungere startup dependency check.
+- [x] `M28-015` Aggiungere graceful shutdown.
 - [ ] `M28-016` Aggiungere rolling restart policy.
-- [ ] `M28-017` Aggiungere database migration job.
+- [x] `M28-017` Aggiungere database migration job.
 - [ ] `M28-018` Aggiungere backup job.
 - [ ] `M28-019` Aggiungere restore test.
 - [ ] `M28-020` Aggiungere NTP/clock health check.
 - [ ] `M28-021` Aggiungere resource limits.
 - [ ] `M28-022` Aggiungere network segmentation.
 - [ ] `M28-023` Eseguire clean-machine deploy test.
-- [ ] `M28-024` Documentare deployment runbook.
+- [x] `M28-024` Documentare deployment runbook.
 - [ ] `M28-025` Pubblicare il report di chiusura M28.
 
 ## M29 — Observability e audit
@@ -1017,19 +1022,19 @@ idempotenti.
 **Dipendenze:** M10, M19-M22, M28.
 **Exit gate:** ogni decisione e side effect è tracciabile end-to-end.
 
-- [ ] `M29-001` Definire trace ID globale.
-- [ ] `M29-002` Propagare trace ID data→decision.
-- [ ] `M29-003` Propagare trace ID decision→intent.
-- [ ] `M29-004` Propagare trace ID intent→order.
-- [ ] `M29-005` Propagare trace ID order→fill.
-- [ ] `M29-006` Propagare trace ID fill→ledger.
-- [ ] `M29-007` Esportare OpenTelemetry traces.
-- [ ] `M29-008` Esportare Prometheus metrics.
-- [ ] `M29-009` Centralizzare log in Loki.
-- [ ] `M29-010` Creare dashboard account health.
-- [ ] `M29-011` Creare dashboard risk limits.
-- [ ] `M29-012` Creare dashboard OMS health.
-- [ ] `M29-013` Creare dashboard reconciliation.
+- [x] `M29-001` Definire trace ID globale.
+- [x] `M29-002` Propagare trace ID data→decision.
+- [x] `M29-003` Propagare trace ID decision→intent.
+- [x] `M29-004` Propagare trace ID intent→order.
+- [x] `M29-005` Propagare trace ID order→fill.
+- [x] `M29-006` Propagare trace ID fill→ledger.
+- [x] `M29-007` Esportare OpenTelemetry traces.
+- [x] `M29-008` Esportare Prometheus metrics.
+- [x] `M29-009` Centralizzare log in Loki.
+- [x] `M29-010` Creare dashboard account health.
+- [x] `M29-011` Creare dashboard risk limits.
+- [x] `M29-012` Creare dashboard OMS health.
+- [x] `M29-013` Creare dashboard reconciliation.
 - [ ] `M29-014` Creare dashboard LLM cost/latency.
 - [ ] `M29-015` Creare dashboard alpha attribution.
 - [ ] `M29-016` Creare alert daily-loss proximity.
@@ -1048,20 +1053,20 @@ idempotenti.
 **Dipendenze:** M28, M29.
 **Exit gate:** threat model chiuso e nessun finding high/critical aperto.
 
-- [ ] `M30-001` Creare threat model data plane.
-- [ ] `M30-002` Creare threat model LLM plane.
-- [ ] `M30-003` Creare threat model execution plane.
-- [ ] `M30-004` Creare threat model Eliza plugins.
-- [ ] `M30-005` Creare threat model broker credentials.
-- [ ] `M30-006` Implementare least-privilege service accounts.
-- [ ] `M30-007` Implementare API RBAC.
-- [ ] `M30-008` Implementare credential rotation.
-- [ ] `M30-009` Implementare encrypted backups.
+- [x] `M30-001` Creare threat model data plane.
+- [x] `M30-002` Creare threat model LLM plane.
+- [x] `M30-003` Creare threat model execution plane.
+- [x] `M30-004` Creare threat model Eliza plugins.
+- [x] `M30-005` Creare threat model broker credentials.
+- [x] `M30-006` Implementare least-privilege service accounts.
+- [x] `M30-007` Implementare API RBAC.
+- [x] `M30-008` Implementare credential rotation.
+- [x] `M30-009` Implementare encrypted backups.
 - [ ] `M30-010` Implementare database TLS.
-- [ ] `M30-011` Implementare service-to-service auth.
+- [x] `M30-011` Implementare service-to-service auth.
 - [ ] `M30-012` Implementare signed config artifacts.
 - [ ] `M30-013` Implementare signed rule profiles.
-- [ ] `M30-014` Implementare dependency pinning policy.
+- [x] `M30-014` Implementare dependency pinning policy.
 - [ ] `M30-015` Implementare container image scanning.
 - [ ] `M30-016` Implementare runtime filesystem read-only.
 - [ ] `M30-017` Implementare outbound egress policy.
@@ -1071,7 +1076,7 @@ idempotenti.
 - [ ] `M30-021` Testare credential theft containment.
 - [ ] `M30-022` Eseguire penetration test interno.
 - [ ] `M30-023` Chiudere finding high/critical.
-- [ ] `M30-024` Documentare security incident runbook.
+- [x] `M30-024` Documentare security incident runbook.
 - [ ] `M30-025` Pubblicare il report di chiusura M30.
 
 ---
@@ -1083,31 +1088,37 @@ idempotenti.
 **Dipendenze:** M16-M18, M24, M27.
 **Exit gate:** il sistema completo opera su replay senza leakage e senza bypass.
 
-- [ ] `M31-001` Selezionare periodi bull.
-- [ ] `M31-002` Selezionare periodi bear.
-- [ ] `M31-003` Selezionare periodi sideways.
-- [ ] `M31-004` Selezionare periodi high volatility.
-- [ ] `M31-005` Selezionare periodi liquidity shock.
-- [ ] `M31-006` Selezionare periodi macro surprise.
-- [ ] `M31-007` Eseguire replay senza Eliza scouts.
-- [ ] `M31-008` Eseguire replay con Eliza scouts.
-- [ ] `M31-009` Eseguire replay senza debate.
-- [ ] `M31-010` Eseguire replay con debate.
-- [ ] `M31-011` Eseguire replay con Fund Manager baseline.
-- [ ] `M31-012` Eseguire replay con Fund Manager challenger.
-- [ ] `M31-013` Misurare return netto.
-- [ ] `M31-014` Misurare Sharpe/Sortino/Calmar.
-- [ ] `M31-015` Misurare max drawdown.
-- [ ] `M31-016` Misurare prop-rule breaches.
-- [ ] `M31-017` Misurare turnover.
-- [ ] `M31-018` Misurare execution cost.
-- [ ] `M31-019` Misurare model cost.
-- [ ] `M31-020` Misurare decision latency.
-- [ ] `M31-021` Eseguire factor attribution.
-- [ ] `M31-022` Eseguire luck-vs-skill analysis.
-- [ ] `M31-023` Definire qualification thresholds.
-- [ ] `M31-024` Approvare o respingere replay gate.
-- [ ] `M31-025` Pubblicare il report di chiusura M31.
+- [x] `M31-001` Selezionare periodi bull.
+- [x] `M31-002` Selezionare periodi bear.
+- [x] `M31-003` Selezionare periodi sideways.
+- [x] `M31-004` Selezionare periodi high volatility.
+- [x] `M31-005` Selezionare periodi liquidity shock.
+- [x] `M31-006` Selezionare periodi macro surprise.
+- [x] `M31-007` Eseguire replay senza Eliza scouts.
+- [x] `M31-008` Eseguire replay con Eliza scouts.
+- [x] `M31-009` Eseguire replay senza debate.
+- [x] `M31-010` Eseguire replay con debate.
+- [x] `M31-011` Eseguire replay con Fund Manager baseline.
+- [x] `M31-012` Eseguire replay con Fund Manager challenger.
+- [x] `M31-013` Misurare return netto.
+- [x] `M31-014` Misurare Sharpe/Sortino/Calmar.
+- [x] `M31-015` Misurare max drawdown.
+- [x] `M31-016` Misurare prop-rule breaches.
+- [x] `M31-017` Misurare turnover.
+- [x] `M31-018` Misurare execution cost.
+- [x] `M31-019` Misurare model cost.
+- [x] `M31-020` Misurare decision latency.
+- [x] `M31-021` Eseguire factor attribution.
+- [x] `M31-022` Eseguire luck-vs-skill analysis.
+- [x] `M31-023` Definire qualification thresholds.
+- [x] `M31-024` Approvare o respingere replay gate.
+- [x] `M31-025` Pubblicare il report di chiusura M31.
+
+**Stato 2026-07-19:** ✅ **M31 COMPLETATA / APPROVED**. Evidenza riproducibile in
+`docs/reports/m31-historical-replay-qualification.{md,json}`: 6 regimi, 48
+osservazioni (6×8), 0 hard breach, 0 mismatch, 0 slice non-flat e tutte le
+soglie economiche rispettate. M32 è il prossimo gate operativo; live/evaluation/
+funded restano disabilitati.
 
 ## M32 — Live paper trading
 

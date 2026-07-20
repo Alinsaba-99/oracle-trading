@@ -8,6 +8,7 @@ and returns a ``BacktestResult`` compatible with the vectorized engine.
 
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import cast
@@ -139,7 +140,9 @@ def _make_strategy_class() -> type:
                 acct = self.cache.account_for_venue(self._venue)
                 cash = float(acct.balance().free.as_double())
             except Exception:
-                logging.warning("Nautilus: failed to get account balance, using default", exc_info=True)
+                logging.warning(
+                    "Nautilus: failed to get account balance, using default", exc_info=True
+                )
                 cash = 100_000.0
 
             qty = max(1, int(cash * 0.95 / price)) if price > 0 else 1

@@ -1,17 +1,21 @@
 # Oracle Autopilot — Execution Status
 
-> Checkpoint operativo. Aggiornato: 2026-07-19.
+> Checkpoint operativo. Aggiornato: 2026-07-20.
 
 ## 1. Identità del checkpoint
 
 - **Branch**: main
-- **Baseline HEAD**: `e54ac46` → ora `c7faff5` (dopo consolidamento)
-- **Working tree**: ✅ Consolidata (13 branch mergiati, WP-001 completato)
+- **Baseline HEAD**: `M31 closeout + backlog revision + gate backlog v2` (dopo commit)
+- **Working tree**: M31 chiuso e committato; backlog atomico aggiornato; gate backlog v2 creato; M32 pronto
 - **Gate attivo**: G6 — Paper e shadow operations (IN_PROGRESS)
+- **Gate precedente**: G5 — Research truth e qualification (✅ PASSED per M31)
 - **Modalità autorizzata**: RESEARCH, PAPER_TEST
 - **Live, evaluation e funded**: DISABLED
 - **Roadmap**: [ORACLE_AUTOPILOT_MASTER_ROADMAP.md](ORACLE_AUTOPILOT_MASTER_ROADMAP.md)
-- **Review**: [reviews/2026-07-19-cross-agent-review.md](reviews/2026-07-19-cross-agent-review.md)
+- **Review**: [reviews/2026-07-18-project-review.md](reviews/2026-07-18-project-review.md)
+- **M31 report**: [reports/m31-historical-replay-qualification.md](reports/m31-historical-replay-qualification.md)
+- **Backlog**: [plans/oracle-autopilot-atomic-backlog-v1.md](plans/oracle-autopilot-atomic-backlog-v1.md) (auditato 36.6%)
+- **Gate backlog**: [plans/oracle-autopilot-gate-backlog-v2.md](plans/oracle-autopilot-gate-backlog-v2.md) (nuovo)
 
 ## 2. Baseline verificata (2026-07-19)
 
@@ -28,6 +32,9 @@
 | Dashboard test | 15/15 |
 | Dashboard npm audit | 0 vulnerability |
 | Eliza typecheck/test/build | Pass |
+| Test mirati M31 + OMS/ledger/reconciliation | **66 passed** |
+| Ruff check/format sui file M31 | Pass |
+| Replay event-driven MES/ES proxy | **6 regimi, 48 osservazioni, APPROVED** |
 
 ## 3. Progressi dalla review (2026-07-19)
 
@@ -60,6 +67,9 @@
 | `core/errors/base.py` | SafetyError + RiskGateError | G4 |
 | `core/kill.py` | KillSwitch emergency flatten | G6 |
 | `tests/qualification/` | Qualification test con dati reali ES | G5 |
+| `analytics/qualification/` | Period selection, replay event-driven, audit, gate e report M31 | G5 |
+| `config/qualification/m31.yaml` | Soglie M31 versionate | G5 |
+| `scripts/run_replay_qualification.py` | Replay event-driven fail-closed e report firmato da hash | G5 |
 | `tests/chaos/` | Chaos tests (duplicate fill, broker error) | G6 |
 | `tests/integration/` | Cross-component integration tests | G0 |
 
@@ -72,8 +82,8 @@
 | G2 | ✅ **PASSED** | ContractSpec, calendari CME, DST, roll, provenance, data quality |
 | G3 | ✅ **PASSED** | Ledger/OMS design, SQL schema, outbox |
 | G4 | ✅ **PASSED** | RiskManager obbligatorio, 35 property test, SafetyError |
-| G5 | 🟡 **BASE RAGGIUNTO** | Silent swallows fixati, parity test con dati reali ES. **Blocker**: certificazione motore event-driven Nautilus completa + feed dati continui |
-| G6 | 🟡 **IN PROGRESS** | Kill switch ✅, chaos test ✅, Docker non-root ✅. Manca: paper broker event-driven nativo, streaming real-time, runbook, 30 sessioni paper |
+| G5 | ✅ **PASSED** | M31 APPROVED: 6 regimi, 48 slice (matrice 2x2x2), macro PIT hashata, profilo Topstep replay-only verificato, parity broker/ledger, 0 hard breach e soglie rispettate |
+| G6 | 🟡 **IN PROGRESS** | Paper fill realistico, feed realtime, Docker non-root, observability, audit, RBAC e runbook presenti. Mancano sessioni paper/shadow qualificate, recovery evidence e adapter futures certificato |
 | G7 | ⚪ NOT_STARTED | |
 | G8 | ⚪ NOT_STARTED | |
 | G9 | ⚪ NOT_STARTED | |
@@ -88,10 +98,14 @@
 - ✅ Ledger/OMS design
 
 ### P1 residui
-1. ⚠️ Backtest Nautilus fallback risolti ma motore non ancora certificato full parity
-2. ⚠️ Docker/Compose non-root risolto ma non ancora production-grade locked
-3. ⚠️ Warning Python (319) e coverage scope ancora da definire
-4. ⚠️ NATS, QuestDB, Qdrant — descritti oltre l'uso reale (non bloccante)
+1. ✅ M31 ha certificato il motore locale per replay storico, non per produzione
+2. ✅ Macro actual-vs-consensus con `available_at` e hash PIT presente
+3. ✅ Matrice intelligence 2x2x2 eseguita con artefatti offline causali hashati
+4. ✅ Parity economica broker/ledger verificata su tutte le 48 slice
+5. ✅ Controllo MES con SMA 5/15 long-short e stop intrabar rispetta le soglie M31
+6. ⚠️ Docker/Compose non-root risolto ma non ancora production-grade locked
+7. ⚠️ Warning Python (319) e coverage scope ancora da definire
+8. ⚠️ NATS, QuestDB, Qdrant — descritti oltre l'uso reale (non bloccante)
 
 ## 6. Test suite (2026-07-19)
 
@@ -102,17 +116,13 @@
 | Integration test | 5 | Order→ledger, contract sizing, mode→OMS |
 | Chaos test | 5 | Kill switch, duplicate fill, out-of-order, broker errors |
 | Qualification test | 4 | SMA crossover ES con dati reali, vectorbt parity |
+| M31/control-plane mirati | 66 | Event-driven, regime, evaluator, Topstep replay gate, stop intrabar, parity |
 | **Totale** | **~1.800+** | |
 
 ## 7. Prossimo lavoro eseguibile
 
-Per sbloccare G6 → G7:
-1. **Feed dati continui**: setup script per fetch periodico dati futures via yfinance
-2. **Paper broker event-driven**: completare PaperBroker con quote reali
-3. **30 sessioni paper**: raccogliere evidenza di operatività continuativa
-4. **Runbook**: documentare incident response e recovery
-5. **Selezionare programma candidato**: valutare TopstepX (RESEARCH_ONLY) o altro per G7
-
-Per completare G5:
-6. **Nautilus parity test completo**: confronto vectorbt vs event-driven con costi reali
-7. **Experiment registry**: persistenza esperimenti con hash di codice/config/dati
+Per proseguire dopo M31:
+1. **M32 paper**: account paper dedicato, feed/clock, bootstrap OMS-ledger e 60 sessioni senza incidente hard
+2. **M33 shadow**: broker read-only, posizioni/ordini/account, fill e reconciliation shadow
+3. **M34 evaluation**: solo dopo paper e shadow completati, con approvazione umana esplicita
+4. **M35-G7**: certificare adapter futures e programma specifico; M31 non abilita live/funded
