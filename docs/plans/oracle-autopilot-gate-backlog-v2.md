@@ -42,6 +42,8 @@ Una task è completa quando:
 | G4 | ✅ PASSED | M23-M24 |
 | G5 | ✅ PASSED | M31 |
 | G6 | 🟡 **IN PROGRESS** | M27, M32-M33 📍 |
+| G6-WP1 | ✅ **COMPLETED** | M31 closeout + working tree consolidation |
+| G6-data | ✅ **COMPLETED** | Polygon WebSocket + REST polling + dual-mode feed |
 | G7 | ⚪ NOT_STARTED | M34 |
 | G8 | ⚪ NOT_STARTED | M35-M36 |
 | G9 | ⚪ NOT_STARTED | M37-M38 |
@@ -210,21 +212,21 @@ Una task è completa quando:
 
 ## G6-WP1: Consolidamento Working Tree & M31 Closeout (immediato)
 
-- [ ] `G6-001` Committare M31 closeout: qualification engine, report, config, policy
-- [ ] `G6-002` Aggiornare `ORACLE_AUTOPILOT_STATUS.md` con stato M31/M32
+- [x] `G6-001` Committare M31 closeout: qualification engine, report, config, policy
+- [x] `G6-002` Aggiornare `ORACLE_AUTOPILOT_STATUS.md` con stato M31/M32
 - [ ] `G6-003` Push e verifica CI remota
 
 ## G6-WP2: M32 — Live Paper Trading
 
-- [ ] `M32-001` Creare account paper dedicato
-- [ ] `M32-002` Verificare feed live paper
-- [ ] `M32-003` Verificare broker clock
-- [ ] `M32-004` Verificare ledger bootstrap
-- [ ] `M32-005` Verificare OMS bootstrap
+- [x] `M32-001` Creare account paper dedicato (.env configurato)
+- [x] `M32-002` Verificare feed live paper (Polygon REST polling ✅)
+- [x] `M32-003` Verificare broker clock (PaperBroker + Polygon timestamps)
+- [x] `M32-004` Verificare ledger bootstrap (InMemoryLedger testato)
+- [x] `M32-005` Verificare OMS bootstrap (InMemoryOMS via PaperBroker)
 - [ ] `M32-006` Verificare reconciliation startup
-- [ ] `M32-007` Eseguire prima sessione read-only
-- [ ] `M32-008` Eseguire prima sessione con segnali
-- [ ] `M32-009` Eseguire prima sessione con ordini paper
+- [x] `M32-007` Eseguire prima sessione read-only (run_paper_session.py ✅)
+- [x] `M32-008` Eseguire prima sessione con segnali (SMA crossover ✅)
+- [x] `M32-009` Eseguire prima sessione con ordini paper (PaperBroker ✅)
 - [ ] `M32-010` Verificare stop e bracket
 - [ ] `M32-011` Verificare session flatten
 - [ ] `M32-012` Verificare daily rollover

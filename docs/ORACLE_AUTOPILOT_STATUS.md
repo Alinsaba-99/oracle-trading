@@ -5,17 +5,14 @@
 ## 1. Identità del checkpoint
 
 - **Branch**: main
-- **Baseline HEAD**: `6106003` (M31 closeout + backlog revision)
-- **Working tree**: M31 chiuso e committato; backlog atomico aggiornato; gate backlog v2 creato; M32 pronto
+- **Baseline HEAD**: (merged feat/m32-paper-trading)
+- **Working tree**: Paper session script, Polygon REST polling, WebSocket feed; M32 in corso
 - **Gate attivo**: G6 — Paper e shadow operations (IN_PROGRESS)
 - **Gate precedente**: G5 — Research truth e qualification (✅ PASSED per M31)
-- **Modalità autorizzata**: RESEARCH, PAPER_TEST
+- **Modalità autorizzata**: RESEARCH, PAPER_TEST, PAPER
 - **Live, evaluation e funded**: DISABLED
 - **Roadmap**: [ORACLE_AUTOPILOT_MASTER_ROADMAP.md](ORACLE_AUTOPILOT_MASTER_ROADMAP.md)
-- **Review**: [reviews/2026-07-18-project-review.md](reviews/2026-07-18-project-review.md)
-- **M31 report**: [reports/m31-historical-replay-qualification.md](reports/m31-historical-replay-qualification.md)
-- **Backlog**: [plans/oracle-autopilot-atomic-backlog-v1.md](plans/oracle-autopilot-atomic-backlog-v1.md) (auditato 36.6%)
-- **Gate backlog**: [plans/oracle-autopilot-gate-backlog-v2.md](plans/oracle-autopilot-gate-backlog-v2.md) (nuovo)
+- **Backlog v2**: [plans/oracle-autopilot-gate-backlog-v2.md](plans/oracle-autopilot-gate-backlog-v2.md)
 
 ## 2. Baseline verificata (2026-07-19)
 
