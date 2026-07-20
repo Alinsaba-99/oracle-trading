@@ -5,7 +5,7 @@
 ## 1. Identità del checkpoint
 
 - **Branch**: main
-- **Baseline HEAD**: `M31 closeout + backlog revision + gate backlog v2` (dopo commit)
+- **Baseline HEAD**: `6106003` (M31 closeout + backlog revision)
 - **Working tree**: M31 chiuso e committato; backlog atomico aggiornato; gate backlog v2 creato; M32 pronto
 - **Gate attivo**: G6 — Paper e shadow operations (IN_PROGRESS)
 - **Gate precedente**: G5 — Research truth e qualification (✅ PASSED per M31)
