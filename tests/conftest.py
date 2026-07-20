@@ -95,9 +95,7 @@ def fake_pool() -> _FakePool:
 @pytest.fixture
 def fake_pg(fake_pool: _FakePool, request: pytest.FixtureRequest) -> _FakePool:
     """Fixture: patches asyncpg.create_pool to return fake_pool."""
-    import asyncio
-
-    async def _fake_create_pool(**kwargs: object) -> _FakePool:
+    async def _fake_create_pool(**_kwargs: object) -> _FakePool:
         return fake_pool
 
     from unittest.mock import patch
