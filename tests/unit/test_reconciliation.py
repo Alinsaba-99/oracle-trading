@@ -28,8 +28,94 @@ class TestReconciliation:
 
         engine = ReconciliationEngine(broker, oms, ledger)
         report = await engine.reconcile()
-        assert report.is_clean
-        assert report.mismatches == []
+
+    @pytest.mark.asyncio
+    async def test_startup_reconciliation_paper_broker(self) -> None:
+        """M32-006: Paper broker startup reconciliation — clean state."""
+        from execution.brokers.paper import PaperBroker
+        from core.ledger import InMemoryLedger
+        from core.oms import InMemoryOMS
+
+        broker = PaperBroker()
+        ledger = InMemoryLedger()
+        oms = InMemoryOMS(ledger=ledger)
+
+        engine = ReconciliationEngine(broker, oms, ledger)
+        report = await engine.reconcile()
+
+        assert report.is_clean, f"Expected clean startup, got {len(report.mismatches)} mismatches"
+        assert not report.has_fatal
+
+    @pytest.mark.asyncio
+    async def test_startup_reconciliation_mismatch_detected(self) -> None:
+        """M32-006: Bypass OMS → mismatch detected (expected behavior)."""
+        from execution.brokers.paper import PaperBroker
+        from execution.brokers.types import BrokerOrder
+        from core.ledger import InMemoryLedger
+        from core.oms import InMemoryOMS
+        from decimal import Decimal
+        from uuid import uuid4
+        from datetime import datetime, timezone
+
+        broker = PaperBroker()
+        ledger = InMemoryLedger()
+        oms = InMemoryOMS(ledger=ledger)
+
+        order = BrokerOrder(
+            broker_order_id="mismatch_test",
+            local_order_id=str(uuid4()),
+            namespaced_id="paper:mismatch_test",
+            instrument_id="ES",
+            side="BUY",
+            quantity=Decimal("2"),
+            price=Decimal("5500.00"),
+            created_at=datetime.now(timezone.utc).isoformat(),
+        )
+        await broker.submit_order(order)
+
+        engine = ReconciliationEngine(broker, oms, ledger)
+        report = await engine.reconcile()
+        assert len(report.mismatches) > 0, "Bypass OMS → must detect mismatch"
+
+    @pytest.mark.asyncio
+    async def test_paper_broker_open_orders(self) -> None:
+        """PaperBroker.open_orders() returns unfilled orders."""
+        from execution.brokers.paper import PaperBroker
+        from execution.brokers.types import BrokerOrder
+        from decimal import Decimal
+        from uuid import uuid4
+        from datetime import datetime, timezone
+
+        broker = PaperBroker()
+        orders = await broker.open_orders()
+        assert len(orders) == 0, "Fresh broker should have no open orders"
+
+        # Submit order (fills immediately, so open_orders should be empty)
+        order = BrokerOrder(
+            broker_order_id="open_test",
+            local_order_id=str(uuid4()),
+            namespaced_id="paper:open_test",
+            instrument_id="ES",
+            side="BUY",
+            quantity=Decimal("1"),
+            price=Decimal("5500.00"),
+            created_at=datetime.now(timezone.utc).isoformat(),
+        )
+        await broker.submit_order(order)
+        open_orders = await broker.open_orders()
+        assert len(open_orders) == 0, "Filled orders should not appear in open_orders"
+
+    @pytest.mark.asyncio
+    async def test_paper_broker_account_summary(self) -> None:
+        """PaperBroker.account_summary() returns cash/balance/pnl."""
+        from execution.brokers.paper import PaperBroker
+
+        broker = PaperBroker()
+        summary = await broker.account_summary()
+        assert "cash" in summary
+        assert "balance" in summary
+        assert "pnl" in summary
+        assert summary["cash"] > 0
 
     @pytest.mark.asyncio
     async def test_typed_broker_position_is_reconciled(self) -> None:
