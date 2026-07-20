@@ -92,3 +92,5 @@ vendor/
 .cache/
 tmp/
 logs/
+checkpoints/*.json
+data/ohlcv/*.parquet
