@@ -10,13 +10,7 @@ from __future__ import annotations
 from datetime import date, timedelta
 
 from analytics.backtest.challenge import ChallengeSimulator
-from policy.prop_firm import (
-    THE5ERS,
-    ChallengeStatus,
-    DrawdownMode,
-    PropFirmProfile,
-    SupportMode,
-)
+from policy.prop_firm import THE5ERS, ChallengeStatus, DrawdownMode, PropFirmProfile, SupportMode
 
 INITIAL = 100_000.0
 
