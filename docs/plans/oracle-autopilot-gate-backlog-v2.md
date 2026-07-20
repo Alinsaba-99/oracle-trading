@@ -232,11 +232,11 @@ Una task è completa quando:
 - [x] `M32-012` Verificare daily rollover
 - [x] `M32-013` Verificare restart intraday
 - [x] `M32-014` Verificare reconnect intraday
-- [ ] `M32-015` Verificare LLM provider outage
-- [ ] `M32-016` Verificare Eliza outage
-- [ ] `M32-017` Verificare stale feed response
-- [ ] `M32-018` Verificare risk alert response
-- [ ] `M32-019` Verificare extreme-market conference
+- [x] `M32-015` Verificare LLM provider outage
+- [x] `M32-016` Verificare Eliza outage
+- [x] `M32-017` Verificare stale feed response
+- [x] `M32-018` Verificare risk alert response
+- [x] `M32-019` Verificare extreme-market conference
 - [ ] `M32-020` Misurare paper fill realism
 - [ ] `M32-021` Misurare decision stability
 - [ ] `M32-022` Misurare alpha decay
