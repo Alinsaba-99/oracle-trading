@@ -94,3 +94,4 @@ tmp/
 logs/
 checkpoints/*.json
 data/ohlcv/*.parquet
+experiments/experiments.db
