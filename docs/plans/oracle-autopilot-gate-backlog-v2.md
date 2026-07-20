@@ -227,11 +227,11 @@ Una task è completa quando:
 - [x] `M32-007` Eseguire prima sessione read-only (run_paper_session.py ✅)
 - [x] `M32-008` Eseguire prima sessione con segnali (SMA crossover ✅)
 - [x] `M32-009` Eseguire prima sessione con ordini paper (PaperBroker ✅)
-- [ ] `M32-010` Verificare stop e bracket
-- [ ] `M32-011` Verificare session flatten
-- [ ] `M32-012` Verificare daily rollover
-- [ ] `M32-013` Verificare restart intraday
-- [ ] `M32-014` Verificare reconnect intraday
+- [x] `M32-010` Verificare stop e bracket
+- [x] `M32-011` Verificare session flatten
+- [x] `M32-012` Verificare daily rollover
+- [x] `M32-013` Verificare restart intraday
+- [x] `M32-014` Verificare reconnect intraday
 - [ ] `M32-015` Verificare LLM provider outage
 - [ ] `M32-016` Verificare Eliza outage
 - [ ] `M32-017` Verificare stale feed response

@@ -21,6 +21,12 @@ class BrokerOrder(BaseModel):
     status: str = "pending"
     created_at: str = ""
 
+    # M32-010: order-type + attached bracket legs ---------------------------
+    order_type: str = "market"  # market | limit | stop | stop_limit
+    stop_price: Decimal | None = None
+    take_profit_price: Decimal | None = None
+    parent_order_id: str | None = None  # set on child legs of a bracket
+
 
 class BrokerFill(BaseModel):
     """A single fill (partial or full) reported by the broker."""

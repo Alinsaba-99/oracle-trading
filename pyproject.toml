@@ -164,6 +164,12 @@ module = [
 ]
 ignore_errors = true
 
+# ibkr.py needs `# type: ignore[no-untyped-call]` for the untyped ib_insync
+# constructor; pre-commit mypy (without ib_insync stubs) flags it as unused.
+[[tool.mypy.overrides]]
+module = ["execution.brokers.ibkr"]
+disable_error_code = ["unused-ignore"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
