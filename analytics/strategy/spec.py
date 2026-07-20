@@ -17,6 +17,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from analytics.backtest.protocol import BacktestSignal
+from analytics.strategy.composite_signal import CompositeMTFSignal
 from analytics.strategy.signals import (
     BbandReversion,
     DonchianBreakout,
@@ -27,6 +28,8 @@ from analytics.strategy.signals import (
     TrendFilteredBreakout,
     ZscoreReversion,
 )
+from analytics.strategy.signals_r1 import AdxTrend, MacdTrend, Pullback, VolumeBreakout
+from analytics.strategy.timeframe import is_higher_tf
 
 #: yfinance tickers.  All validated to serve daily; 1h/15m serve shorter history.
 INSTRUMENTS: dict[str, str] = {
@@ -58,8 +61,8 @@ INSTRUMENTS: dict[str, str] = {
     "ETH": "ETH-USD",
 }
 
-#: Supported bar timeframes (yfinance). 1d/1h give the longest history.
-TIMEFRAMES: list[str] = ["1d", "1h", "15m"]
+#: Supported bar timeframes. Must match analytics.strategy.timeframe.TIMEFRAME_ORDER.
+TIMEFRAMES: list[str] = ["15m", "1h", "4h", "1d"]
 
 #: Entry-rule name -> signal builder.  The LLM picks a name + params; the
 #: machine constructs the signal deterministically.
@@ -72,7 +75,15 @@ ENTRY_TYPES: dict[str, type[BacktestSignal]] = {
     "roc_momentum": RocMomentum,
     "zscore_reversion": ZscoreReversion,
     "keltner_reversion": KeltnerReversion,
+    # R1 additions usable as filter legs (trend / momentum):
+    "adx_trend": AdxTrend,
+    "macd_trend": MacdTrend,
+    "pullback": Pullback,
+    "volume_breakout": VolumeBreakout,
 }
+
+#: Composite multi-TF combination rules (see CompositeMTFSignal).
+FILTER_MODES: list[str] = ["gate", "confirm", "size"]
 
 #: Backtest regimes. "fixed" = full notional (higher return, more DD);
 #: "sized" = volatility-scaled (lower DD, lower return).
@@ -88,7 +99,7 @@ class StrategySpec(BaseModel):
     entry_params: dict[str, int | float] = Field(
         default_factory=dict, description="Signal params, e.g. {'period': 20, 'ma_period': 200}"
     )
-    timeframe: str = Field(default="1d", description="Bar timeframe: 1d, 1h, or 15m")
+    timeframe: str = Field(default="1d", description="Primary bar timeframe (15m/1h/4h/1d)")
     regime: str = Field(
         default="sized",
         description="Backtest regime: 'fixed' (full notional) or 'sized' (vol-scaled)",
@@ -99,19 +110,78 @@ class StrategySpec(BaseModel):
     )
     rationale: str = Field(default="", description="Why the LLM expects this to work")
 
+    # R2: multi-TF composition (optional). When filter_tf is None the spec
+    # is single-TF and behaves exactly as pre-R2.
+    filter_tf: str | None = Field(
+        default=None,
+        description="Higher timeframe for the filter leg (must be > timeframe). None = single-TF.",
+    )
+    filter_entry: str | None = Field(
+        default=None, description="ENTRY_TYPES key for the filter signal"
+    )
+    filter_entry_params: dict[str, int | float] = Field(
+        default_factory=dict, description="Filter signal params"
+    )
+    filter_mode: str = Field(default="gate", description="Combination rule: gate / confirm / size")
+    filter_sign: int = Field(
+        default=1, description="+1 = filter allows long bias; -1 = short (gate mode only)"
+    )
+
     def ticker(self) -> str:
         """Resolve to the yfinance ticker."""
         return INSTRUMENTS.get(self.instrument.upper(), self.instrument)
 
+    @property
+    def is_multi_tf(self) -> bool:
+        """True when this spec composes a filter signal on a higher TF."""
+        return self.filter_tf is not None
+
     def build_signal(self) -> BacktestSignal:
-        """Construct the signal deterministically from the entry spec."""
+        """Construct the signal deterministically from the entry spec.
+
+        Single-TF spec → returns the entry signal directly.
+        Multi-TF spec  → returns a :class:`CompositeMTFSignal` wrapping the
+        primary entry + filter entry. Validation happens here, not at
+        compute time.
+        """
         cls = ENTRY_TYPES.get(self.entry)
         if cls is None:
             raise ValueError(f"Unknown entry type {self.entry!r}; choose from {list(ENTRY_TYPES)}")
         try:
-            return cls(**self.entry_params)
+            primary_signal = cls(**self.entry_params)
         except TypeError as exc:
             raise ValueError(f"Invalid entry_params for {self.entry}: {exc}") from exc
+
+        if not self.is_multi_tf:
+            return primary_signal
+
+        # Multi-TF: validate pair + filter leg.
+        assert self.filter_tf is not None  # for type-narrowing
+        if not is_higher_tf(self.timeframe, self.filter_tf):
+            raise ValueError(
+                f"filter_tf must be strictly higher than timeframe "
+                f"(got primary={self.timeframe!r}, filter={self.filter_tf!r})"
+            )
+        if self.filter_entry is None:
+            raise ValueError("multi-TF spec requires filter_entry")
+        filter_cls = ENTRY_TYPES.get(self.filter_entry)
+        if filter_cls is None:
+            raise ValueError(
+                f"Unknown filter_entry {self.filter_entry!r}; choose from {list(ENTRY_TYPES)}"
+            )
+        try:
+            filter_signal = filter_cls(**self.filter_entry_params)
+        except TypeError as exc:
+            raise ValueError(f"Invalid filter_entry_params for {self.filter_entry}: {exc}") from exc
+
+        return CompositeMTFSignal(
+            primary_signal,
+            filter_signal,
+            primary_tf=self.timeframe,
+            filter_tf=self.filter_tf,
+            mode=self.filter_mode,
+            filter_sign=self.filter_sign,
+        )
 
 
 def spec_summary(spec: StrategySpec, result: dict[str, Any] | None = None) -> str:
