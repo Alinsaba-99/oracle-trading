@@ -91,3 +91,4 @@ target/
 vendor/
 .cache/
 tmp/
+logs/
