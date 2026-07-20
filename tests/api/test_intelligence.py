@@ -1,8 +1,12 @@
 """API tests for the isolated ElizaOS intelligence gateway."""
 
 from datetime import UTC, datetime
+from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
+
+from apps.api.services.intelligence_service import SQLiteIntelligenceInbox
 
 
 def _payload() -> dict[str, object]:
@@ -32,12 +36,12 @@ def _payload() -> dict[str, object]:
 
 
 def test_intelligence_gateway_accepts_without_execution_access(
-    client: TestClient, tmp_path, monkeypatch
+    client: TestClient, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     from apps.api.routers import intelligence
 
     monkeypatch.setattr(
-        intelligence, "inbox", intelligence.SQLiteIntelligenceInbox(tmp_path / "intelligence.db")
+        intelligence, "inbox", SQLiteIntelligenceInbox(tmp_path / "intelligence.db")
     )
     response = client.post("/api/v1/intelligence/observations", json=_payload())
 

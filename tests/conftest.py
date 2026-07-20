@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Generator
+from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
 
 
 @pytest.fixture(autouse=True)
-def _isolate_oracle_environment() -> None:
+def _isolate_oracle_environment() -> Generator[None, None, None]:
     """Keep tests independent from ambient and leaked Oracle settings."""
     original = {key: value for key, value in os.environ.items() if key.startswith("ORACLE_")}
 
@@ -37,7 +39,7 @@ class _FakeConnection:
         self.fetch = AsyncMock(return_value=[])
         self.fetchrow = AsyncMock(return_value=None)
         # For stateful mock tests, override after fixture creation
-        self._row_data: dict[str, dict] = {}
+        self._row_data: dict[str, dict[str, object]] = {}
 
     async def __aenter__(self) -> _FakeConnection:
         return self
@@ -45,11 +47,11 @@ class _FakeConnection:
     async def __aexit__(self, *args: object) -> None:
         pass
 
-    def __await__(self):
+    def __await__(self) -> Generator[Any, None, _FakeConnection]:
         # Make awaitable: await conn → conn
         return self._await_impl().__await__()
 
-    async def _await_impl(self):
+    async def _await_impl(self) -> _FakeConnection:
         return self
 
 
@@ -95,6 +97,7 @@ def fake_pool() -> _FakePool:
 @pytest.fixture
 def fake_pg(fake_pool: _FakePool, request: pytest.FixtureRequest) -> _FakePool:
     """Fixture: patches asyncpg.create_pool to return fake_pool."""
+
     async def _fake_create_pool(**_kwargs: object) -> _FakePool:
         return fake_pool
 
