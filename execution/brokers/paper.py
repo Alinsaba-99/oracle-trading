@@ -18,6 +18,7 @@ Semantics (post M32-010):
 
 from __future__ import annotations
 
+import asyncio
 import random
 from collections.abc import AsyncGenerator
 from datetime import date
@@ -68,6 +69,11 @@ class PaperBroker(BaseBroker):
 
         Returns the list of fills produced by this tick (may be empty).
         """
+        # Simulated latency before the price update reaches the broker
+        if self._config.paper_latency_ms > 0:
+            jitter = random.uniform(0.5, 1.5) * self._config.paper_latency_ms
+            await asyncio.sleep(jitter / 1000)
+
         new_price = Decimal(str(price))
         self._current_price = new_price
         triggered: list[BrokerFill] = []
@@ -94,6 +100,11 @@ class PaperBroker(BaseBroker):
 
         Returns the broker-local order ID.
         """
+        # Simulated latency before the order reaches the broker
+        if self._config.paper_latency_ms > 0:
+            jitter = random.uniform(0.5, 1.5) * self._config.paper_latency_ms
+            await asyncio.sleep(jitter / 1000)
+
         self._order_counter += 1
         broker_id = f"paper_{self._order_counter}"
         local_id = str(getattr(order, "order_id", None) or uuid4())
@@ -384,25 +395,65 @@ class PaperBroker(BaseBroker):
     def _fill(self, order: BrokerOrder, trigger_price: Decimal) -> BrokerFill:
         """Mark an order filled at ``trigger_price`` with slippage; spawn
         bracket children if this is an entry; apply OCO if this is a child.
+
+        Realism features (config-gated):
+        - **Spread**: buy fills at ask (mid + half spread), sell at bid.
+        - **Partial fill**: with ``paper_partial_fill_prob``, only a fraction
+          of the order quantity is filled; the remainder stays submitted.
+        - **Commission**: per-contract fee from config.
         """
+        # -- Spread: buy at ask, sell at bid --------------------------------
+        half_spread = Decimal(str(self._config.paper_spread_bps)) / Decimal("20000")
+        if order.side == "buy":
+            base_price = trigger_price * (Decimal("1") + half_spread)
+        else:
+            base_price = trigger_price * (Decimal("1") - half_spread)
+
+        # -- Slippage: random component -------------------------------------
         slip = 1 + (random.uniform(-1, 1) * self._config.paper_slippage_bps / 10000)
-        fill_price = (trigger_price * Decimal(str(slip))).quantize(Decimal("0.01"))
+        fill_price = (base_price * Decimal(str(slip))).quantize(Decimal("0.01"))
 
-        fill = BrokerFill(
-            broker_order_id=order.broker_order_id,
-            fill_id=str(uuid4()),
-            quantity=order.quantity,
-            price=fill_price,
-            commission=Decimal("0"),
-        )
-        self._fills.append(fill)
-        order.filled_quantity = order.quantity
-        order.status = "filled"
+        # -- Determine fill quantity (partial fill support) -----------------
+        original_qty = order.quantity
+        fill_qty = original_qty
+        if (
+            self._config.paper_partial_fill_prob > 0
+            and random.random() < self._config.paper_partial_fill_prob
+            and original_qty > 1
+        ):
+            ratio = random.uniform(0.5, 0.99)
+            fill_qty = (original_qty * Decimal(str(ratio))).quantize(
+                Decimal("1"), rounding="ROUND_HALF_UP"
+            )
+            if fill_qty == Decimal("0"):
+                fill_qty = Decimal("1")
 
+        # -- Spawn bracket children BEFORE modifying quantity, so they
+        # -- inherit the original requested quantity.
         if order.parent_order_id is None and (
             order.stop_price is not None or order.take_profit_price is not None
         ):
             self._spawn_bracket(order)
+
+        # -- Commission -----------------------------------------------------
+        commission = Decimal(str(self._config.paper_commission_per_contract)) * fill_qty
+
+        fill = BrokerFill(
+            broker_order_id=order.broker_order_id,
+            fill_id=str(uuid4()),
+            quantity=fill_qty,
+            price=fill_price,
+            commission=commission,
+        )
+        self._fills.append(fill)
+        order.filled_quantity += fill_qty
+
+        if fill_qty < original_qty:
+            order.quantity = original_qty - fill_qty
+            # Remainder stays submitted for a future trigger
+        else:
+            order.quantity = Decimal("0")
+            order.status = "filled"
 
         if order.parent_order_id is not None:
             siblings = self._bracket_children.get(order.parent_order_id, {})

@@ -24,10 +24,11 @@ class BrokerConfig(BaseModel):
     ccxt_sandbox: bool = True
 
     # -- Paper trading (simulation) ----------------------------------------
-    paper_spread_bps: int = 100  # 1 %
+    paper_spread_bps: int = 0  # basis points (0 = no spread)
     paper_slippage_bps: int = 50  # 0.5 %
-    paper_partial_fill_prob: float = 0.5
-    paper_latency_ms: int = 50
+    paper_partial_fill_prob: float = 0.0  # 0 = always full fill
+    paper_latency_ms: int = 0  # 0 = no simulated latency
+    paper_commission_per_contract: float = 0.0  # e.g. 0.85 for ES
 
     # -- Reconnection (exponential back-off) -------------------------------
     reconnect_max_retries: int = 5

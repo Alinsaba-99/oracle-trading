@@ -297,10 +297,11 @@ class TestBrokerConfig:
 
     def test_default_paper_settings(self) -> None:
         cfg = BrokerConfig()
-        assert cfg.paper_spread_bps == 100
+        assert cfg.paper_spread_bps == 0
         assert cfg.paper_slippage_bps == 50
-        assert cfg.paper_partial_fill_prob == 0.5
-        assert cfg.paper_latency_ms == 50
+        assert cfg.paper_partial_fill_prob == 0.0
+        assert cfg.paper_latency_ms == 0
+        assert cfg.paper_commission_per_contract == 0.0
 
 
 # =========================================================================
