@@ -240,7 +240,7 @@ Una task è completa quando:
 - [x] `M32-020` Misurare paper fill realism
 - [x] `M32-021` Misurare decision stability
 - [x] `M32-022` Misurare alpha decay
-- [ ] `M32-023` Completare sessanta sessioni
+- [x] `M32-023` Completare sessanta sessioni
 - [ ] `M32-024` Approvare o respingere paper gate
 - [ ] `M32-025` Pubblicare il report di chiusura M32
 
