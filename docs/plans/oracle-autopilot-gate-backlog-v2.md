@@ -237,9 +237,9 @@ Una task è completa quando:
 - [x] `M32-017` Verificare stale feed response
 - [x] `M32-018` Verificare risk alert response
 - [x] `M32-019` Verificare extreme-market conference
-- [ ] `M32-020` Misurare paper fill realism
-- [ ] `M32-021` Misurare decision stability
-- [ ] `M32-022` Misurare alpha decay
+- [x] `M32-020` Misurare paper fill realism
+- [x] `M32-021` Misurare decision stability
+- [x] `M32-022` Misurare alpha decay
 - [ ] `M32-023` Completare sessanta sessioni
 - [ ] `M32-024` Approvare o respingere paper gate
 - [ ] `M32-025` Pubblicare il report di chiusura M32
