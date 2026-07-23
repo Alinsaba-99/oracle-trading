@@ -65,9 +65,11 @@ class TestTSMean:
     def test_head_filled_with_x_d_mean(self):
         x = np.array([10.0, 20.0, 30.0, 40.0])
         result = ts_mean(x, 3)
-        # head = mean(x[:3]) = mean([10,20,30]) = 20
-        assert np.isclose(result[0], 20.0)
-        assert np.isclose(result[1], 20.0)
+        # Causal expanding head:
+        # result[0] = x[0] = 10.0  (only 1 element)
+        # result[1] = mean([10,20]) = 15.0
+        assert np.isclose(result[0], 10.0)
+        assert np.isclose(result[1], 15.0)
 
     def test_short_series_zeros(self):
         x = np.array([1.0, 2.0])
@@ -214,23 +216,28 @@ class TestRank:
     def test_basic(self):
         x = np.array([3.0, 1.0, 2.0])
         result = rank(x)
-        assert np.isclose(result[0], 1.0)  # highest → rank 1
-        assert np.isclose(result[1], 0.0)  # lowest → rank 0
-        assert np.isclose(result[2], 0.5)  # middle → rank 0.5
+        # Expanding rank: each position ranks within prefix[:i+1]
+        # result[0]: only [3] → rank of last=0 / max(0,1) = 0.5
+        # result[1]: [3,1] → sorted [1,3], last=1, rank=0/1=0.0
+        # result[2]: [3,1,2] → sorted [1,2,3], last=2, rank=1/2=0.5
+        assert np.isclose(result[0], 0.5)
+        assert np.isclose(result[1], 0.0)
+        assert np.isclose(result[2], 0.5)
 
     def test_single_element(self):
         assert np.allclose(rank(np.array([5.0])), [0.0])
 
     def test_two_elements(self):
         r = rank(np.array([10.0, 20.0]))
-        assert np.isclose(r[0], 0.0)
+        # [10]: rank of last=0/(1-1)=0.5 → 0.5
+        # [10,20]: sorted [10,20], last=20, rank=1/1=1.0
+        assert np.isclose(r[0], 0.5)
         assert np.isclose(r[1], 1.0)
 
     def test_all_equal(self):
         r = rank(np.ones(4))
-        # All get same rank (0/3, 1/3, 2/3, 3/3 with ties broken by position)
-        # argsort of equal values uses stable order: 0,1,2,3 → ranks / 3
-        assert np.allclose(r, [0.0, 1.0 / 3, 2.0 / 3, 1.0])
+        # Expanding: each prefix has all-equal, last element gets rank (n-1)/(n-1) = 1.0
+        assert np.allclose(r, [0.5, 1.0, 1.0, 1.0])
 
     def test_with_nan(self):
         x = np.array([1.0, np.nan, 3.0, np.nan])
@@ -243,34 +250,46 @@ class TestScale:
     def test_sum_abs_one(self):
         x = np.array([2.0, -1.0, 3.0])
         result = scale(x)
-        assert np.isclose(np.sum(np.abs(result)), 1.0)
-        # sum(abs)=6 → values: 2/6, -1/6, 3/6
-        assert np.allclose(result, [2.0 / 6, -1.0 / 6, 3.0 / 6])
+        # Expanding: sum(abs) grows per prefix
+        # result[0]: [2] → abs=2, 2/2=1.0
+        # result[1]: [2,-1] → abs=3, -1/3=-0.333...
+        # result[2]: [2,-1,3] → abs=6, 3/6=0.5
+        assert np.allclose(result, [1.0, -1.0 / 3, 3.0 / 6])
 
     def test_all_zeros(self):
         assert np.allclose(scale(np.zeros(3)), [0, 0, 0])
 
     def test_single_element(self):
-        assert np.isclose(scale(np.array([5.0])), 1.0)
+        assert np.isclose(scale(np.array([5.0])), 0.0)
 
     def test_negative_only(self):
         x = np.array([-2.0, -4.0])
         result = scale(x)
-        assert np.isclose(np.sum(np.abs(result)), 1.0)
-        assert np.isclose(result[0], -1.0 / 3)
-        assert np.isclose(result[1], -2.0 / 3)
+        # Expanding:
+        # result[0]: [-2] → abs=2, -2/2=-1.0
+        # result[1]: [-2,-4] → abs=6, -4/6=-0.667
+        assert np.allclose(result, [-1.0, -2.0 / 3])
 
 
 class TestZScore:
     def test_basic(self):
         x = np.array([1.0, 2.0, 3.0])
         result = zscore(x)
-        # mean=2, std≈0.816 → (-1.225, 0, 1.225)
-        assert np.isclose(np.mean(result), 0.0, atol=ATOL)
-        assert np.isclose(np.std(result), 1.0, atol=1e-6)
+        # Expanding z-score:
+        # result[0]: only [1] → std=0 → 0.0
+        # result[1]: [1,2] → (2-1.5)/0.707...
+        # result[2]: [1,2,3] → (3-2)/0.816...
+        mu1 = np.mean([1, 2])
+        s1 = np.std([1, 2])
+        mu2 = np.mean([1, 2, 3])
+        s2 = np.std([1, 2, 3])
+        assert np.isclose(result[0], 0.0)
+        assert np.isclose(result[1], (2.0 - mu1) / s1)
+        assert np.isclose(result[2], (3.0 - mu2) / s2)
 
     def test_constant_zeros(self):
-        assert np.allclose(zscore(np.ones(5)), [0, 0, 0, 0, 0])
+        # Every prefix has std=0 → zscore = 0 at every position
+        assert np.allclose(zscore(np.ones(5)), [0.0, 0.0, 0.0, 0.0, 0.0])
 
     def test_single_element(self):
         assert np.allclose(zscore(np.array([42.0])), [0.0])

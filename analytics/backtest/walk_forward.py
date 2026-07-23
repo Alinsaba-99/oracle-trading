@@ -45,11 +45,14 @@ class WalkForwardEngine:
     """
 
     def __init__(
-        self, registry: ExperimentRegistry | None = None, parent_experiment_id: str | None = None
+        self,
+        registry: ExperimentRegistry | None = None,
+        parent_experiment_id: str | None = None,
+        engine: Any | None = None,
     ) -> None:
         self._registry = registry or ExperimentRegistry()
         self._parent_experiment_id = parent_experiment_id
-        self._engine = VectorizedEngine()
+        self._engine = engine or VectorizedEngine()
         self._fold_results: list[BacktestResult] = []
 
     # ------------------------------------------------------------------

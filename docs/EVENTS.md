@@ -1,8 +1,9 @@
 # Oracle Event Contracts
 
-> Tutta la comunicazione tra componenti avviene via eventi NATS.
-> Nessun componente chiama direttamente un altro.
-> ADR-001: NATS come Event Bus.
+> **FROZEN — Documento storico.** Descrive il modello NATS-onnicomprensivo
+> dell'ADR-001, ora SUPERSEDED da ADR-008. La comunicazione attuale è
+> prevalentemente in-process; NATS è integrato ma non universale.
+> Vedi [ADR/README.md](ADR/README.md) per l'indice normativo.
 
 ---
 

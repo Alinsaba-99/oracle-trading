@@ -1,0 +1,40 @@
+{
+  "report_type": "m32-025-diagnostic-closeout",
+  "decision": "rejected",
+  "generated_at": "2026-07-22T10:50:40Z",
+  "git_commit": "ae209f7",
+  "script_sha256": "b51d3bda36e6e72509e0e86b27675434960ce2a2e160b431ac7cd1be4fb983bc",
+  "data_sha256": "e74c01d36119cd44f632b8a9d91deab5d4e5d45785ad30a62644db4505428552",
+  "description": "M32 Diagnostic: rolling historical paper-replay on real ES 1h data",
+  "gate": {
+    "decision": "rejected",
+    "checks": {
+      "minimum_windows": true,
+      "zero_hard_incidents": false,
+      "minimum_pass_rate": false,
+      "minimum_average_sharpe": false,
+      "maximum_average_drawdown": false
+    },
+    "windows": 60,
+    "passed_windows": 9,
+    "failed_windows": 51,
+    "hard_incidents": 51,
+    "pass_rate": 0.15,
+    "average_sharpe": -0.9519,
+    "average_drawdown_pct": 8.2445
+  },
+  "summary": {
+    "windows": 60,
+    "passed": 9,
+    "failed": 51,
+    "hard_incidents": 51,
+    "net_pnl_total": -186237.7,
+    "mean_sharpe": -0.9519,
+    "mean_drawdown_pct": 8.2445
+  },
+  "limitations": [
+    "Rolling windows with ~75% overlap \u2014 not independent paper sessions",
+    "Historical Parquet replay, not live market feed",
+    "Diagnostic only \u2014 does not satisfy G6 paper exit criteria"
+  ]
+}

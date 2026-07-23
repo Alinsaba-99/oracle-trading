@@ -1,17 +1,20 @@
 #!/usr/bin/env -S uv run --frozen
-"""M32-023: Paper trading sessions — dati reali ES 1h.
+"""M32 diagnostic: rolling historical paper-replay windows on real ES 1h data.
 
-Ogni sessione = un giorno di trading su dati storici ES futures (1h).
+Each observation is a five-trading-day rolling window. Adjacent windows overlap
+and are not independent live paper sessions.
 Pipeline completa:
-  load data → reconciliation → signal → order → broker fill → P&L → flatten → report
+  load data → signal → order → broker fill → P&L → flatten → report
 """
 
 from __future__ import annotations
 
 import argparse
 import asyncio
+import hashlib
 import json
 import math
+import random
 import statistics
 import sys
 import time as _time
@@ -61,10 +64,11 @@ async def _run_one_session(
     capital: Decimal,
     realistic: bool,
 ) -> dict[str, Any]:
-    """Run one paper trading session on real ES 1h data for a single day."""
+    """Run one five-day paper replay window on real ES 1h data."""
     from execution.brokers.config import BrokerConfig
     from execution.brokers.paper import PaperBroker
     from execution.brokers.types import BrokerOrder
+    from market.contracts import ES
 
     # Broker config
     if realistic:
@@ -76,50 +80,68 @@ async def _run_one_session(
             paper_commission_per_contract=0.85,
         )
     else:
-        config = BrokerConfig()
+        config = BrokerConfig(
+            paper_spread_bps=0,
+            paper_slippage_bps=0,
+            paper_partial_fill_prob=0,
+            paper_latency_ms=0,
+            paper_commission_per_contract=0,
+        )
 
     broker = PaperBroker(config)
     await broker.on_price_update(Decimal(str(closes[0])))
 
-    position = 0
+    position = Decimal("0")
     trades: list[dict[str, Any]] = []
     equity = float(capital)
     equity_curve: list[float] = [equity]
     peak = equity
+    max_drawdown = 0.0
     hard_incidents: list[str] = []
     orders_submitted = 0
     fills_received = 0
-    total_commission = 0.0
+    quantity_submitted = Decimal("0")
+    quantity_filled = Decimal("0")
+    total_commission = Decimal("0")
+    realized_pnl = Decimal("0")
+    point_value = ES.point_value
 
     # Track entry for P&L
-    entry_price: float | None = None
+    entry_price: Decimal | None = None
     entry_bar: int | None = None
 
     for i in range(1, len(closes)):
         price = closes[i]
         sig = _signal(closes[: i + 1], fast, slow)
         ts = timestamps[i]
+        price_decimal = Decimal(str(price))
+
+        # The synthetic broker price must advance on every bar, not only when
+        # an order is submitted. Otherwise the end-of-window flatten uses a
+        # stale price and the resulting P&L is not economically meaningful.
+        await broker.on_price_update(price_decimal)
 
         # Trading logic: enter on signal, exit when signal reverses
-        contracts = 0
+        contracts = Decimal("0")
         target_pos = position
         if sig == "BUY" and position <= 0:
-            target_pos = 1
-            contracts = 1 if position == 0 else 2
+            target_pos = Decimal("1")
+            contracts = abs(target_pos - position)
         elif sig == "SELL" and position >= 0:
-            target_pos = -1
-            contracts = 1 if position == 0 else 2
+            target_pos = Decimal("-1")
+            contracts = abs(target_pos - position)
 
         # Execute order
-        if contracts > 0:
+        if contracts > Decimal("0"):
             side = "buy" if target_pos > 0 else "sell"
+            position_before = position
             order = BrokerOrder(
                 broker_order_id=f"s{session_id}_{i}",
                 local_order_id=str(uuid4()),
                 namespaced_id=f"session:{session_id}:{i}",
                 instrument_id="ES",
                 side=side,
-                quantity=Decimal(str(contracts)),
+                quantity=contracts,
                 price=Decimal(str(price)),
                 order_type="market",
                 created_at=str(ts),
@@ -127,64 +149,70 @@ async def _run_one_session(
             fills_before = len(broker._fills)
             await broker.submit_order(order)
             orders_submitted += 1
+            quantity_submitted += contracts
 
+            # A partial market fill leaves the remainder submitted. Replaying
+            # the same market tick consumes that remainder and lets us account
+            # for every fill produced by the order.
+            await broker.on_price_update(price_decimal)
             new_fills = broker._fills[fills_before:]
             fills_received += len(new_fills)
+            filled_qty = sum((fill.quantity for fill in new_fills), Decimal("0"))
+            quantity_filled += filled_qty
 
-            # Advance price for any resting orders
-            await broker.on_price_update(Decimal(str(price)))
-
-            # Get position
-            positions = await broker.positions()
-            pos_qty = sum(int(p.quantity) for p in positions)
-            position = pos_qty
+            order_realized = Decimal("0")
+            order_closed_qty = Decimal("0")
+            for fill in new_fills:
+                position, entry_price, fill_realized, fill_closed_qty = _apply_fill(
+                    position=position,
+                    entry_price=entry_price,
+                    side=side,
+                    quantity=fill.quantity,
+                    fill_price=fill.price,
+                    point_value=point_value,
+                )
+                order_realized += fill_realized
+                order_closed_qty += fill_closed_qty
+                total_commission += fill.commission
+            realized_pnl += order_realized
 
             # Record trade
             avg_fill = (
                 float(statistics.mean([float(f.price) for f in new_fills])) if new_fills else price
             )
-            comm = float(sum(float(f.commission) for f in new_fills))
-            total_commission += comm
+            comm = sum((fill.commission for fill in new_fills), Decimal("0"))
 
-            trades.append(
-                {
-                    "bar": i,
-                    "time": str(ts),
-                    "price": price,
-                    "side": side,
-                    "contracts": contracts,
-                    "fill_qty": sum(int(f.quantity) for f in new_fills),
-                    "fill_price": round(avg_fill, 2),
-                    "commission": round(comm, 4),
-                    "position_after": position,
-                }
-            )
+            trade: dict[str, Any] = {
+                "bar": i,
+                "time": str(ts),
+                "price": price,
+                "side": side,
+                "contracts": float(contracts),
+                "fill_qty": float(filled_qty),
+                "fill_price": round(avg_fill, 2),
+                "commission": round(float(comm), 4),
+                "position_after": float(position),
+            }
+            if order_closed_qty > Decimal("0"):
+                trade["trade_pnl"] = round(float(order_realized), 2)
+                trade["closed_qty"] = float(order_closed_qty)
+                trade["bars_held"] = i - (entry_bar if entry_bar is not None else i)
+            trades.append(trade)
 
-            if entry_price is None and position != 0:
-                entry_price = price
-                entry_bar = i
-            elif position == 0:
-                # Closed trade: record P&L
-                if entry_price is not None:
-                    trade_pnl = (price - entry_price) * (1 if target_pos > 0 else -1)
-                    trades[-1]["trade_pnl"] = round(trade_pnl, 2)
-                    trades[-1]["entry_price"] = round(entry_price, 2)
-                    trades[-1]["bars_held"] = i - (entry_bar or i)
-                entry_price = None
+            if position == Decimal("0"):
                 entry_bar = None
-            if position != 0 and entry_price is None:
-                entry_price = price
+            elif position_before == Decimal("0") or position_before * position < 0:
                 entry_bar = i
 
         # Track equity
-        if position != 0 and entry_price is not None:
-            unrealized = (price - entry_price) * position
-            equity = float(capital) + unrealized - total_commission
+        unrealized = _unrealized_pnl(position, entry_price, price_decimal, point_value)
+        equity = float(capital + realized_pnl + unrealized - total_commission)
         equity_curve.append(round(equity, 2))
         peak = max(peak, equity)
+        max_drawdown = max(max_drawdown, peak - equity)
 
     # Flatten at end of session
-    if position != 0:
+    if position != Decimal("0"):
         flat_side = "sell" if position > 0 else "buy"
         qty = abs(position)
         order = BrokerOrder(
@@ -193,43 +221,65 @@ async def _run_one_session(
             namespaced_id=f"session:{session_id}:flat",
             instrument_id="ES",
             side=flat_side,
-            quantity=Decimal(str(qty)),
+            quantity=qty,
             price=Decimal(str(closes[-1])),
             order_type="market",
             created_at=str(timestamps[-1]),
         )
         fills_before = len(broker._fills)
         await broker.submit_order(order)
+        orders_submitted += 1
+        quantity_submitted += qty
+        await broker.on_price_update(Decimal(str(closes[-1])))
         new_fills = broker._fills[fills_before:]
+        fills_received += len(new_fills)
+        filled_qty = sum((fill.quantity for fill in new_fills), Decimal("0"))
+        quantity_filled += filled_qty
         if new_fills:
             fill_price = float(statistics.mean([float(f.price) for f in new_fills]))
-            mult = -1 if flat_side == "sell" else 1
-            trade_pnl = (fill_price - entry_price) * mult * qty if entry_price else 0
+            flatten_realized = Decimal("0")
+            flatten_closed_qty = Decimal("0")
+            flatten_commission = Decimal("0")
+            for fill in new_fills:
+                position, entry_price, fill_realized, fill_closed_qty = _apply_fill(
+                    position=position,
+                    entry_price=entry_price,
+                    side=flat_side,
+                    quantity=fill.quantity,
+                    fill_price=fill.price,
+                    point_value=point_value,
+                )
+                flatten_realized += fill_realized
+                flatten_closed_qty += fill_closed_qty
+                flatten_commission += fill.commission
+            realized_pnl += flatten_realized
+            total_commission += flatten_commission
             trades.append(
                 {
                     "bar": len(closes) - 1,
                     "time": str(timestamps[-1]),
                     "price": float(closes[-1]),
                     "side": flat_side,
-                    "contracts": qty,
-                    "fill_qty": sum(int(f.quantity) for f in new_fills),
+                    "contracts": float(qty),
+                    "fill_qty": float(filled_qty),
                     "fill_price": round(fill_price, 2),
-                    "commission": round(float(sum(float(f.commission) for f in new_fills)), 4),
-                    "position_after": 0,
-                    "trade_pnl": round(trade_pnl, 2),
-                    "entry_price": round(entry_price, 2) if entry_price else 0,
+                    "commission": round(float(flatten_commission), 4),
+                    "position_after": float(position),
+                    "trade_pnl": round(float(flatten_realized), 2),
+                    "closed_qty": float(flatten_closed_qty),
                     "bars_held": len(closes) - (entry_bar or 0),
                     "flatten": True,
                 }
             )
-        position = 0
-        equity = float(capital) - total_commission
+        equity = float(capital + realized_pnl - total_commission)
         equity_curve.append(round(equity, 2))
+        peak = max(peak, equity)
+        max_drawdown = max(max_drawdown, peak - equity)
 
     # ── Compute metrics ──────────────────────────────────────────────
     final_equity = equity_curve[-1] if equity_curve else float(capital)
     total_pnl = final_equity - float(capital)
-    max_dd = max(0.0, max(peak - e for e in equity_curve)) if equity_curve else 0.0
+    max_dd = max_drawdown
 
     # Trade metrics (closed trades only)
     closed = [t for t in trades if t.get("trade_pnl") is not None]
@@ -260,8 +310,11 @@ async def _run_one_session(
         hard_incidents.append(f"max_dd_exceeded: {max_dd:.2f} > 5% capital")
     if fills_received == 0 and orders_submitted > 0:
         hard_incidents.append("zero_fills_with_orders")
-    if orders_submitted > 0 and fills_received / orders_submitted < 0.5:
-        hard_incidents.append(f"low_fill_rate: {fills_received}/{orders_submitted}")
+    fill_rate = quantity_filled / quantity_submitted if quantity_submitted > 0 else Decimal("1")
+    if fill_rate < Decimal("0.5"):
+        hard_incidents.append(f"low_fill_rate: {quantity_filled}/{quantity_submitted}")
+    if position != Decimal("0"):
+        hard_incidents.append(f"non_flat_end_state: {position}")
 
     return {
         "session_id": session_id,
@@ -273,9 +326,12 @@ async def _run_one_session(
         "price_max": round(max(closes), 2),
         "orders_submitted": orders_submitted,
         "fills_received": fills_received,
-        "fill_rate": round(fills_received / max(orders_submitted, 1), 4),
+        "quantity_submitted": float(quantity_submitted),
+        "quantity_filled": float(quantity_filled),
+        "fill_rate": round(float(fill_rate), 4),
         "n_trades": n_closed,
-        "total_commission": round(total_commission, 4),
+        "gross_realized_pnl": round(float(realized_pnl), 2),
+        "total_commission": round(float(total_commission), 4),
         "total_pnl": round(total_pnl, 2),
         "return_pct": round(total_pnl / float(capital) * 100, 4),
         "sharpe": round(sharpe, 4),
@@ -286,12 +342,64 @@ async def _run_one_session(
         "avg_win": round(avg_win, 2),
         "avg_loss": round(avg_loss, 2),
         "profit_factor": round(profit_factor, 4),
-        "final_position": position,
+        "final_position": float(position),
         "final_equity": round(final_equity, 2),
         "hard_incidents": hard_incidents,
         "passed": len(hard_incidents) == 0,
         "trades": trades,
     }
+
+
+def _apply_fill(
+    *,
+    position: Decimal,
+    entry_price: Decimal | None,
+    side: str,
+    quantity: Decimal,
+    fill_price: Decimal,
+    point_value: Decimal,
+) -> tuple[Decimal, Decimal | None, Decimal, Decimal]:
+    """Apply one fill to single-instrument position accounting.
+
+    Returns ``(new_position, new_entry_price, realized_pnl, closed_quantity)``.
+    The helper supports entry, scale-in, partial close and reversal.
+    """
+    if quantity <= 0:
+        return position, entry_price, Decimal("0"), Decimal("0")
+
+    signed_quantity = quantity if side == "buy" else -quantity
+    new_position = position + signed_quantity
+
+    if position == 0 or position * signed_quantity > 0:
+        previous_notional = (entry_price or fill_price) * abs(position)
+        combined_quantity = abs(position) + quantity
+        new_entry = (previous_notional + fill_price * quantity) / combined_quantity
+        return new_position, new_entry, Decimal("0"), Decimal("0")
+
+    if entry_price is None:
+        raise ValueError("entry_price is required when closing an open position")
+
+    closed_quantity = min(abs(position), quantity)
+    direction = Decimal("1") if position > 0 else Decimal("-1")
+    realized_pnl = (fill_price - entry_price) * direction * closed_quantity * point_value
+
+    if new_position == 0:
+        new_entry = None
+    elif position * new_position < 0:
+        new_entry = fill_price
+    else:
+        new_entry = entry_price
+    return new_position, new_entry, realized_pnl, closed_quantity
+
+
+def _unrealized_pnl(
+    position: Decimal, entry_price: Decimal | None, current_price: Decimal, point_value: Decimal
+) -> Decimal:
+    """Return mark-to-market P&L for the current ES position."""
+    if position == 0 or entry_price is None:
+        return Decimal("0")
+    direction = Decimal("1") if position > 0 else Decimal("-1")
+    return (current_price - entry_price) * direction * abs(position) * point_value
 
 
 # ---------------------------------------------------------------------------
@@ -348,16 +456,22 @@ def _split_into_sessions(
 
 
 async def run_sessions(
-    sessions_data: list[dict[str, Any]], fast: int, slow: int, capital: float, realistic: bool
+    sessions_data: list[dict[str, Any]],
+    fast: int,
+    slow: int,
+    capital: float,
+    realistic: bool,
+    seed: int,
 ) -> list[dict[str, Any]]:
     """Run paper sessions on real historical data."""
+    random.seed(seed)
     capital_dec = Decimal(str(capital))
     results: list[dict[str, Any]] = []
     n = min(len(sessions_data), 60) if realistic else min(len(sessions_data), 10)
     start_time = _time.monotonic()
 
     print(
-        f"\nPaper Trading Sessions — {n} sessioni su dati reali ES 1h\n"
+        f"\nPaper Replay Diagnostics — {n} finestre mobili su dati reali ES 1h\n"
         f"  Periodo: {sessions_data[0]['date_start']} → {sessions_data[n - 1]['date_start']}\n"
         f"  Strategia: SMA({fast}/{slow})\n"
         f"  Capitale: ${capital:,.0f}\n"
@@ -411,14 +525,44 @@ async def run_sessions(
 # ---------------------------------------------------------------------------
 
 
-def _print_summary(results: list[dict[str, Any]]) -> None:
+def _evaluate_gate(results: list[dict[str, Any]]) -> dict[str, Any]:
+    """Evaluate the M32 diagnostic gate across every replay window."""
+    n = len(results)
+    passed_windows = sum(bool(result["passed"]) for result in results)
+    hard_incidents = sum(len(result["hard_incidents"]) for result in results)
+    pass_rate = passed_windows / n if n else 0.0
+    average_sharpe = statistics.mean(result["sharpe"] for result in results) if results else 0.0
+    average_drawdown = (
+        statistics.mean(result["max_drawdown_pct"] for result in results) if results else 0.0
+    )
+    checks = {
+        "minimum_windows": n >= 60,
+        "zero_hard_incidents": hard_incidents == 0,
+        "minimum_pass_rate": pass_rate >= 0.90,
+        "minimum_average_sharpe": average_sharpe >= -0.5,
+        "maximum_average_drawdown": average_drawdown <= 3.0,
+    }
+    return {
+        "decision": "approved" if all(checks.values()) else "rejected",
+        "checks": checks,
+        "windows": n,
+        "passed_windows": passed_windows,
+        "failed_windows": n - passed_windows,
+        "hard_incidents": hard_incidents,
+        "pass_rate": round(pass_rate, 4),
+        "average_sharpe": round(average_sharpe, 4),
+        "average_drawdown_pct": round(average_drawdown, 4),
+    }
+
+
+def _print_summary(results: list[dict[str, Any]], gate: dict[str, Any]) -> None:
     """Print aggregate summary across all sessions."""
     n = len(results)
     passed = [r for r in results if r["passed"]]
     failed = [r for r in results if not r["passed"]]
 
     print("=" * 60)
-    print("SUMMARY — Paper Trading Sessions (ES 1h)")
+    print("SUMMARY — Rolling Historical Paper Replay (ES 1h)")
     print("=" * 60)
     print(f"\n  Sessioni totali:   {n}")
     print(f"  Passate:           {len(passed)} ({len(passed) / n:.0%})")
@@ -426,18 +570,18 @@ def _print_summary(results: list[dict[str, Any]]) -> None:
     if failed:
         print(f"  Incidenti hard:    {sum(len(r['hard_incidents']) for r in failed)}")
 
-    if passed:
-        pnls = [r["total_pnl"] for r in passed]
-        dds = [r["max_drawdown_pct"] for r in passed]
-        shs = [r["sharpe"] for r in passed]
-        sos = [r["sortino"] for r in passed]
-        wrs = [r["win_rate"] for r in passed]
-        pfs = [r["profit_factor"] for r in passed]
-        nts = [r["n_trades"] for r in passed]
-        rts = [r["return_pct"] for r in passed]
+    if results:
+        pnls = [r["total_pnl"] for r in results]
+        dds = [r["max_drawdown_pct"] for r in results]
+        shs = [r["sharpe"] for r in results]
+        sos = [r["sortino"] for r in results]
+        wrs = [r["win_rate"] for r in results]
+        pfs = [r["profit_factor"] for r in results]
+        nts = [r["n_trades"] for r in results]
+        rts = [r["return_pct"] for r in results]
 
         print("\n  ─── Performance ───")
-        print(f"  P&L totale:        ${sum(pnls):>+10.2f}")
+        print(f"  Somma P&L finestre:${sum(pnls):>+10.2f}  (non portfolio additivo)")
         print(
             f"  P&L medio:         ${statistics.mean(pnls):>+10.2f}  "
             f"(std=${statistics.stdev(pnls):.2f})"
@@ -458,60 +602,53 @@ def _print_summary(results: list[dict[str, Any]]) -> None:
         print("\n  ─── Distribuzione P&L ───")
         pos = sum(1 for p in pnls if p > 0)
         neg = sum(1 for p in pnls if p <= 0)
-        print(f"  Giorni positivi:   {pos} ({pos / len(pnls):.0%})")
-        print(f"  Giorni negativi:   {neg} ({neg / len(pnls):.0%})")
+        print(f"  Finestre positive: {pos} ({pos / len(pnls):.0%})")
+        print(f"  Finestre negative: {neg} ({neg / len(pnls):.0%})")
 
         # Best/worst days
         best = max(results, key=lambda r: r["total_pnl"])
         worst = min(results, key=lambda r: r["total_pnl"])
-        print("\n  ─── Miglior giornata ───")
+        print("\n  ─── Migliore finestra ───")
         print(
             f"  [{best['session_id']}] {best['date']}  "
             f"P&L=${best['total_pnl']:>+8.2f}  S={best['sharpe']:.2f}  "
             f"WR={best['win_rate']:.0%}  PF={best['profit_factor']:.2f}"
         )
-        print("  ─── Peggior giornata ───")
+        print("  ─── Peggiore finestra ───")
         print(
             f"  [{worst['session_id']}] {worst['date']}  "
             f"P&L=${worst['total_pnl']:>+8.2f}  S={worst['sharpe']:.2f}  "
             f"WR={worst['win_rate']:.0%}  PF={worst['profit_factor']:.2f}"
         )
 
-    # Gate check
+    # Gate check — all windows count, including failed windows.
     print("\n  ─── Gate Check M32 ───")
-    ok = True
-    if failed:
-        print(f"    ❌ {len(failed)} sessioni con incidenti hard")
-        ok = False
-    else:
+    if gate["checks"]["zero_hard_incidents"]:
         print("    ✅ 0 incidenti hard")
-
-    if len(passed) / max(n, 1) < 0.9:
-        print(f"    ❌ Pass rate {len(passed) / max(n, 1):.0%} < 90%")
-        ok = False
     else:
-        print(f"    ✅ Pass rate {len(passed) / max(n, 1):.0%}")
+        print(f"    ❌ {gate['hard_incidents']} incidenti hard")
 
-    if n < 60:
+    if gate["checks"]["minimum_pass_rate"]:
+        print(f"    ✅ Pass rate {gate['pass_rate']:.0%}")
+    else:
+        print(f"    ❌ Pass rate {gate['pass_rate']:.0%} < 90%")
+
+    if gate["checks"]["minimum_windows"]:
+        print(f"    ✅ {n}/60 finestre completate")
+    else:
         print(f"    ⚠️  Solo {n} sessioni (target: 60)")
-    else:
-        print(f"    ✅ {n}/60 sessioni completate")
 
-    avg_sharpe = statistics.mean([r["sharpe"] for r in passed]) if passed else 0
-    if avg_sharpe < -0.5:
-        print(f"    ❌ Sharpe medio {avg_sharpe:.2f} < -0.5")
-        ok = False
+    if gate["checks"]["minimum_average_sharpe"]:
+        print(f"    ✅ Sharpe medio {gate['average_sharpe']:.2f}")
     else:
-        print(f"    ✅ Sharpe medio {avg_sharpe:.2f}")
+        print(f"    ❌ Sharpe medio {gate['average_sharpe']:.2f} < -0.5")
 
-    avg_dd = statistics.mean([r["max_drawdown_pct"] for r in passed]) if passed else 0
-    if avg_dd > 3.0:
-        print(f"    ❌ Drawdown medio {avg_dd:.2f}% > 3%")
-        ok = False
+    if gate["checks"]["maximum_average_drawdown"]:
+        print(f"    ✅ Drawdown medio {gate['average_drawdown_pct']:.2f}%")
     else:
-        print(f"    ✅ Drawdown medio {avg_dd:.2f}%")
+        print(f"    ❌ Drawdown medio {gate['average_drawdown_pct']:.2f}% > 3%")
 
-    print(f"\n  Gate: {'✅ PASS' if ok else '❌ FAIL'}")
+    print(f"\n  Gate: {'✅ PASS' if gate['decision'] == 'approved' else '❌ FAIL'}")
     print("=" * 60)
 
 
@@ -521,12 +658,15 @@ def _print_summary(results: list[dict[str, Any]]) -> None:
 
 
 async def main() -> None:
-    parser = argparse.ArgumentParser(description="Paper trading sessions on real ES 1h data")
+    parser = argparse.ArgumentParser(
+        description="Rolling historical paper-replay diagnostics on real ES 1h data"
+    )
     parser.add_argument("--fast", type=int, default=5)
     parser.add_argument("--slow", type=int, default=20)
     parser.add_argument("--capital", type=float, default=100_000.0)
     parser.add_argument("--output", type=str, default="logs/paper_sessions_es1h.json")
     parser.add_argument("--data", type=str, default="data/ohlcv/ES_1h.parquet")
+    parser.add_argument("--seed", type=int, default=32023)
     parser.add_argument(
         "--realistic",
         action="store_true",
@@ -545,7 +685,7 @@ async def main() -> None:
     sessions_data = _split_into_sessions(df, window_days=5, slide_days=1)
     print(
         f"Caricati {len(df)} barre ES 1h | "
-        f"{len(sessions_data)} sessioni (finestra 5gg, slide 1gg) "
+        f"{len(sessions_data)} finestre mobili (5gg, slide 1gg) "
         f"da {sessions_data[0]['date_start']} "
         f"a {sessions_data[-1]['date_start']}"
     )
@@ -557,7 +697,9 @@ async def main() -> None:
         slow=args.slow,
         capital=args.capital,
         realistic=realistic,
+        seed=args.seed,
     )
+    gate = _evaluate_gate(results)
 
     # Save
     output_path = Path(args.output)
@@ -566,13 +708,24 @@ async def main() -> None:
         json.dump(
             {
                 "metadata": {
+                    "schema_version": "m32-paper-v2",
+                    "observation_kind": "rolling_historical_paper_replay_window",
+                    "live_market_data": False,
+                    "independent_sessions": False,
+                    "gate_scope": "diagnostic_only",
                     "data_source": args.data,
+                    "data_sha256": hashlib.sha256(Path(args.data).read_bytes()).hexdigest(),
+                    "script_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                     "sessions": len(sessions_data),
                     "sessions_run": len(results),
                     "fast": args.fast,
                     "slow": args.slow,
                     "capital": args.capital,
                     "realistic": realistic,
+                    "seed": args.seed,
+                    "window_days": 5,
+                    "slide_days": 1,
+                    "point_value": 50.0,
                     "timestamp": datetime.now(UTC).isoformat(),
                 },
                 "results": [
@@ -582,7 +735,16 @@ async def main() -> None:
                             "session_id",
                             "date",
                             "n_bars",
+                            "price_first",
+                            "price_last",
+                            "price_min",
+                            "price_max",
+                            "orders_submitted",
+                            "fills_received",
+                            "quantity_submitted",
+                            "quantity_filled",
                             "total_pnl",
+                            "gross_realized_pnl",
                             "return_pct",
                             "sharpe",
                             "sortino",
@@ -593,19 +755,23 @@ async def main() -> None:
                             "fill_rate",
                             "total_commission",
                             "final_position",
+                            "final_equity",
                             "passed",
                             "hard_incidents",
                         )
                     }
                     for r in results
                 ],
+                "gate": gate,
             },
             f,
             indent=2,
         )
     print(f"\nRisultati salvati in {output_path}")
 
-    _print_summary(results)
+    _print_summary(results, gate)
+    if gate["decision"] != "approved":
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

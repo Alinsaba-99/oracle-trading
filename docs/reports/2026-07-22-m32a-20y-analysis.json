@@ -1,0 +1,113 @@
+{
+  "analysis_type": "20y_annual_paper_replay_sma_5_20",
+  "data": "data/ohlcv/ES_1d.parquet",
+  "period": "2006-07-24 to 2026-07-22",
+  "years_independent": 20,
+  "strategy": "SMA(5/20) crossover — long/short 1 contract ES",
+  "broker": "realistic (spread 15bps, slippage 8bps, partial fill 20%, commission $0.85)",
+  "results": {
+    "years_total": 20,
+    "years_passed_gate": 0,
+    "years_positive_pnl": 7,
+    "years_negative_pnl": 13,
+    "net_pnl_20y": -8327.80,
+    "mean_pnl_per_year": -416.39,
+    "best_year": {"year": 2019, "pnl": 48058.65, "return_pct": 48.06},
+    "worst_year": {"year": 2024, "pnl": -35972.75, "return_pct": -35.97},
+    "mean_sharpe": -0.2151,
+    "mean_drawdown_pct": 24.77,
+    "max_drawdown_pct": 75.57,
+    "mean_commission_per_year": 23.29,
+    "total_trades_all_years": 0
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "BLOCKER",
+      "title": "Drawdown strutturale — 0/20 anni passano il 5% threshold",
+      "detail": "Ogni anno supera il 5% di drawdown. Medio 24.77%, massimo 75.57% (2024). La SMA tiene posizioni aperte per mesi, esponendo il capitale a oscillazioni enormi. Anche anni con P&L positivo (2019: +48%, 2022: +46.5%) hanno drawdown > 19%.",
+      "root_cause": "SMA crossover non ha stop loss. La posizione rimane aperta finché non c'è inversione del segnale — a volte per 6+ mesi."
+    },
+    {
+      "id": "F2",
+      "severity": "HIGH",
+      "title": "P&L netto ~zero in 20 anni",
+      "detail": "-$8,328 su 20 anni con capitale $100K = -0.4%/anno. La strategia non ha edge significativo. Guadagna in trend forti (2019, 2022) ma perde tutto nei laterali (2014: -29.5%, 2024: -36%).",
+      "root_cause": "SMA(5/20) è un trend-follower generico senza filtri di regime. Nei mercati laterali/range-bound produce falsi segnali."
+    },
+    {
+      "id": "F3",
+      "severity": "MEDIUM",
+      "title": "Costi trascurabili su daily, significativi su hourly",
+      "detail": "Commissioni medie $23/anno su daily (2-3 reversal/anno). Su hourly il costo sale a ~$500/sessione di 5gg. I costi non sono il problema principale — è il drawdown.",
+      "root_cause": "Su daily il numero di trade è bassissimo. Il problema è strutturale, non di execution cost."
+    }
+  ],
+  "improvement_plan": {
+    "phase_1_immediate": [
+      {
+        "id": "P1-1",
+        "title": "Stop loss percentuale",
+        "detail": "Chiudere la posizione se il drawdown da entry supera il 5%. Testare 3%, 5%, 8% su 20 anni.",
+        "expected_impact": "Riduce drawdown massimo dal 75% al 5-8%. Può ridurre il win rate ma migliora Calmar.",
+        "complexity": "2h — modifica del signal loop"
+      },
+      {
+        "id": "P1-2",
+        "title": "Time-based exit",
+        "detail": "Chiudere la posizione se tenuta aperta per N giorni senza inversione. Testare 20, 40, 60 giorni.",
+        "expected_impact": "Evita posizioni aperte per mesi. Riduce drawdown e volatilità dell'equity.",
+        "complexity": "1h — aggiunta contatore barre"
+      },
+      {
+        "id": "P1-3",
+        "title": "ATR-based stop dinamico",
+        "detail": "Stop loss posizionato a 2x o 3x ATR(14) dal prezzo di entry. Si adatta alla volatilità di mercato.",
+        "expected_impact": "Stop più largo in alta volatilità (evita falsi trigger) e più stretto in bassa volatilità.",
+        "complexity": "3h — calcolo ATR su daily"
+      }
+    ],
+    "phase_2_strategy_evolution": [
+      {
+        "id": "P2-1",
+        "title": "Regime filter — evitare laterali",
+        "detail": "Usare ADX(14) o range expansion index. Se ADX < 20, non fare trading (o solo long-term trend).",
+        "expected_impact": "Elimina i falsi segnali in mercati range-bound (2014, 2024). Migliora Sharpe e win rate."
+      },
+      {
+        "id": "P2-2",
+        "title": "Donchian Channel breakout",
+        "detail": "Compra sopra massimo 20gg, vendi sotto minimo 20gg. Trend-follower più robusto della SMA.",
+        "expected_impact": "Cattura meglio i trend forti, genera meno falsi segnali della SMA crossover."
+      },
+      {
+        "id": "P2-3",
+        "title": "Dual timeframe",
+        "detail": "Segnale su daily, conferma su weekly. Oppure SMA(5/20) su weekly per trend macro.",
+        "expected_impact": "Filtra il rumore giornaliero. Riduce drawdown e migliora qualità del segnale."
+      }
+    ],
+    "phase_3_ml_alpha": [
+      {
+        "id": "P3-1",
+        "title": "Feature-based signal con soglia",
+        "detail": "Creare feature semplici (ROC 5gg, volatilità 20gg, volume relativo, posizione rispetto a MA200). Eseguire LogisticRegression o XGBoost con walk-forward.",
+        "expected_impact": "Potenzialmente supera SMA in Sharpe di 0.2-0.4, ma richiede rigore OOS."
+      },
+      {
+        "id": "P3-2",
+        "title": "Genetic optimization dei parametri SMA",
+        "detail": "Usare GA per trovare fast/slow ottimali per ogni regime. Attenzione a overfitting.",
+        "expected_impact": "Miglioramento modesto (+0.1-0.2 Sharpe) ma rischio overfitting alto."
+      }
+    ]
+  },
+  "verdetto": "La SMA(5/20) su ES daily non è una strategia viable senza stop loss. Il drawdown strutturale la rende inutilizzabile per paper o live. Con stop loss + regime filter ha potenziale come componente di un portafoglio di strategie. L'approccio consigliato è P1-1 (stop loss) + P1-3 (ATR stop) come prima iterazione, poi P2-1 (ADX filter) come seconda.",
+  "next_steps": [
+    "1. Aggiungere stop loss percentuale (3%, 5%, 8%) al run annuale",
+    "2. Rilanciare 20 anni con stop loss e confrontare metriche",
+    "3. Aggiungere time-based exit (20, 40, 60 giorni)",
+    "4. Aggiungere ADX filter",
+    "5. Se i risultati migliorano, implementare su hourly per strategia più granulare"
+  ]
+}

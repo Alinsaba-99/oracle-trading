@@ -14,6 +14,8 @@ import pytest
 
 from core.kill import KillSwitch
 from core.oms import Fill, InMemoryOMS, Order
+from execution.brokers.paper import PaperBroker
+from execution.brokers.types import BrokerOrder
 
 
 class TestKillSwitch:
@@ -36,10 +38,12 @@ class TestKillSwitch:
         """Kill switch flattens all positions."""
         broker = MagicMock()
         broker.cancel_all_orders = AsyncMock(return_value=0)
-        broker.positions = AsyncMock(return_value=[
-            {"instrument_id": "ES", "side": "long", "quantity": 2},
-            {"instrument_id": "NQ", "side": "short", "quantity": 1},
-        ])
+        broker.positions = AsyncMock(
+            return_value=[
+                {"instrument_id": "ES", "side": "long", "quantity": 2},
+                {"instrument_id": "NQ", "side": "short", "quantity": 1},
+            ]
+        )
         broker.submit_order = AsyncMock(return_value={"order_id": "test"})
 
         kill = KillSwitch(broker)
@@ -58,6 +62,26 @@ class TestKillSwitch:
         result = await kill.flatten_all()
         assert isinstance(result, dict)
         assert "errors" in result
+
+    @pytest.mark.asyncio
+    async def test_real_paper_broker_is_verified_flat(self) -> None:
+        broker = PaperBroker()
+        await broker.submit_order(
+            BrokerOrder(
+                broker_order_id="entry",
+                local_order_id="entry",
+                namespaced_id="test:entry",
+                instrument_id="ES",
+                side="buy",
+                quantity=Decimal("1"),
+                order_type="market",
+            )
+        )
+
+        result = await KillSwitch(broker).flatten_all()
+
+        assert result["success"] is True
+        assert await broker.positions() == []
 
 
 class TestDuplicateFill:
@@ -92,12 +116,14 @@ class TestDuplicateFill:
         created = oms.create_order(order)
 
         # Fill comes in before order is submitted
-        oms.record_fill(Fill(
-            order_id=created.order_id,
-            account_id="a1",
-            quantity=Decimal("5"),
-            price=Decimal("5000"),
-        ))
+        oms.record_fill(
+            Fill(
+                order_id=created.order_id,
+                account_id="a1",
+                quantity=Decimal("5"),
+                price=Decimal("5000"),
+            )
+        )
         # Partial recorded
         updated = oms.get_order(created.order_id)
         assert updated is not None

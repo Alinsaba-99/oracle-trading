@@ -1,7 +1,6 @@
-# Oracle Trading Platform — Docker Compose
-# Services: API, dashboard, scheduler, reconciliation worker
-# Database: PostgreSQL (ledger/OMS)
-# Cache: Redis (recoverable, non-authoritative)
+# Oracle Trading Platform — local research/development scaffold.
+# PostgreSQL and Redis are available infrastructure, not yet wired as the
+# authoritative runtime used by the public CLI/API execution path.
 
 services:
   # ── PostgreSQL (authoritative ledger/OMS store) ────────────────────
@@ -11,7 +10,7 @@ services:
     restart: unless-stopped
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ../../db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     environment:
       POSTGRES_DB: oracle
       POSTGRES_USER: oracle
@@ -56,20 +55,13 @@ services:
   # ── FastAPI (control/read API) ───────────────────────────────────
   api:
     build:
-      context: .
+      context: ../..
       dockerfile: infra/docker/Dockerfile
     container_name: oracle-api
     restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
     environment:
       ORACLE_MODE: ${ORACLE_MODE:-research}
-      ORACLE_API_KEY: ${ORACLE_API_KEY:-dev-key-change-me}
-      ORACLE_DB_URL: postgresql+psycopg2://oracle:${ORACLE_DB_PASSWORD:-oracle_dev}@postgres:5432/oracle
-      ORACLE_REDIS_URL: redis://redis:6379/0
+      ORACLE_API_KEY: ${ORACLE_API_KEY:-}
       ORACLE_DEBUG: "${ORACLE_DEBUG:-true}"
     ports:
       - "127.0.0.1:8000:8000"  # Localhost only
@@ -90,7 +82,7 @@ services:
   # ── Dashboard (React static served by API) ───────────────────────
   dashboard:
     build:
-      context: apps/dashboard
+      context: ../../apps/dashboard
       dockerfile: Dockerfile
     container_name: oracle-dashboard
     restart: unless-stopped
@@ -105,36 +97,6 @@ services:
         limits:
           memory: 128M
           cpus: "0.2"
-
-  # ── Scheduler (cron jobs: data refresh, reconciliation) ──────────
-  scheduler:
-    build:
-      context: .
-      dockerfile: infra/docker/Dockerfile
-    container_name: oracle-scheduler
-    restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      ORACLE_MODE: ${ORACLE_MODE:-research}
-      ORACLE_API_KEY: ${ORACLE_API_KEY:-dev-key-change-me}
-      ORACLE_DB_URL: postgresql+psycopg2://oracle:${ORACLE_DB_PASSWORD:-oracle_dev}@postgres:5432/oracle
-    command: >
-      sh -c "
-      while true; do
-        echo 'Running scheduled reconciliation...';
-        uv run --frozen python -c 'from core.reconciliation import ReconciliationEngine; print(\"Reconciliation OK\")' 2>/dev/null || true;
-        sleep 3600;
-      done
-      "
-    networks:
-      - oracle_net
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: "0.3"
 
 volumes:
   postgres_data:

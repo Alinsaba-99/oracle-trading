@@ -1,9 +1,11 @@
 # Oracle Autopilot — Capability-Gated Master Roadmap
 
-> Versione: 2.0
-> Baseline verificata: 2026-07-18
+> Versione: 2.1
+> Ultimo aggiornamento: 2026-07-22
 > Stato: roadmap canonica
 > Modello di avanzamento: capability gate con evidenza, non phase temporali
+> Gerarchia fonti: ROADMAP (perché) → STATUS (cosa) → BACKLOG (come) → ADR (decisioni) → report (evidenza).
+> La matrice gate/stato fresca è in ORACLE_AUTOPILOT_STATUS.md.
 
 ## 1. Risultato atteso
 
@@ -33,15 +35,17 @@ Non sono obiettivi validi:
 
 | Documento | Autorità |
 |---|---|
-| [PROJECT.md](../PROJECT.md) | Perimetro, stato sintetico e stack realmente in uso |
+| [PROJECT.md](../PROJECT.md) | Perimetro e stack (informale) |
 | [ORACLE_AUTOPILOT_MASTER_ROADMAP.md](ORACLE_AUTOPILOT_MASTER_ROADMAP.md) | Sequenza dei capability gate |
-| [ORACLE_AUTOPILOT_STATUS.md](ORACLE_AUTOPILOT_STATUS.md) | Checkpoint operativo ed evidenza fresca |
-| [PROP_FIRM_READINESS_ROADMAP.md](PROP_FIRM_READINESS_ROADMAP.md) | Regole di supporto e certificazione prop-firm |
+| [ORACLE_AUTOPILOT_STATUS.md](ORACLE_AUTOPILOT_STATUS.md) | **Checkpoint operativo e matrice gate/stato** |
+| [ORACLE_AUTOPILOT_BACKLOG.md](ORACLE_AUTOPILOT_BACKLOG.md) | **Task atomiche per gate** |
+| [GOVERNANCE.md](GOVERNANCE.md) | **Gerarchia documentale e regole** |
+| [PROP_FIRM_READINESS_POLICY.md](PROP_FIRM_READINESS_POLICY.md) | Regole di supporto e certificazione prop-firm |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Architettura corrente, target e confini di autorità |
 | [ADR/README.md](ADR/README.md) | Decisioni architetturali e relativo lifecycle |
 | [plans/README.md](plans/README.md) | Archivio dei vecchi piani Phase, non eseguibile |
 
-I vecchi piani Phase e il precedente backlog atomico v1 sono solo archivio.
+I vecchi piani Phase, il backlog atomico v1 e il backlog v2 sono solo archivio.
 Non possono cambiare stato, architettura o priorità del programma.
 
 ## 3. Regole di avanzamento
@@ -119,6 +123,9 @@ API, dashboard, deployment, observability, incident response e runbook.
 La UI osserva lo stato autorevole; non lo ricostruisce da artefatti ad hoc.
 
 ## 6. Capability gate
+
+I gate sono descritti nei deliverable e exit evidence sottostanti.
+**Lo stato attuale di ogni gate è in [ORACLE_AUTOPILOT_STATUS.md](ORACLE_AUTOPILOT_STATUS.md).**
 
 ## G0 — Baseline veritiera e riproducibile
 
@@ -272,11 +279,8 @@ reali.
 - stress costi e regime;
 - power analysis o numerosità adeguata.
 
-**M31 closeout (2026-07-19):** ✅ APPROVED per historical replay. Il report
-`reports/m31-historical-replay-qualification.{md,json}` registra 6 regimi, 48
-slice (matrice 2x2x2), macro/provenance hashate, profilo Topstep 50K replay-only,
-parity broker/ledger, 0 hard breach e tutte le soglie economiche rispettate.
-Questo non promuove il sistema a paper/live/funded: il prossimo gate è G6/M32.
+**Nota:** M31 è stato APPROVED per historical replay il 2026-07-19. Lo stato in STATUS può
+essere REGRESSED se dataset, motore o configurazione non sono più riproducibili.
 
 ## G6 — Paper e shadow operations
 
@@ -296,17 +300,20 @@ Questo non promuove il sistema a paper/live/funded: il prossimo gate è G6/M32.
 - emergency stop indipendente dal processo principale;
 - runbook e incident response.
 
-**Exit evidence:**
+**Exit evidence (G6 completo):**
 
-- almeno 30 sessioni paper senza policy breach;
+- almeno 30 sessioni paper indipendenti (non sovrapposte) senza policy breach;
 - almeno 20 sessioni shadow riconciliate;
 - recovery da restart di processo, rete e broker;
 - kill-to-flat entro SLO;
 - nessuna credenziale statica o porta dati pubblica.
 
+**Nota:** M32 "rolling paper replay" (60 finestre sovrapposte su storico) è diagnostico,
+non costituisce le 30 sessioni paper indipendenti richieste da G6.
+
 ## G7 — Certificazione di uno specifico programma
 
-**Dipendenze:** G6 e policy di [PROP_FIRM_READINESS_ROADMAP.md](PROP_FIRM_READINESS_ROADMAP.md).
+**Dipendenze:** G6 e policy di [PROP_FIRM_READINESS_POLICY.md](PROP_FIRM_READINESS_POLICY.md).
 
 **Obiettivo:** promuovere un solo firm/program/stage/platform/account profile.
 
@@ -362,65 +369,25 @@ Le lane seguenti non possono bloccare G2-G4 e non acquisiscono autorità:
 
 ## 8. Sequenza minima
 
-~~~mermaid
-flowchart LR
-    G0 --> G1 --> G2 --> G3 --> G4
-    G2 --> G5
-    G3 --> G6
-    G4 --> G6
-    G5 --> G6 --> G7 --> G8 --> G9
+```
+G0 → G1 → G2 → G3 → G4
+G2 → G5
+G3 → G6
+G4 → G6
+G5 → G6 → G7 → G8 → G9
 
-    G1 --> I[LLM ed Eliza read-only]
-    G5 --> R[GA e research avanzata]
-    I --> G6
-    R --> G7
-~~~
+G1 → I[LLM ed Eliza read-only]
+G5 → R[GA e research avanzata]
+I → G6
+R → G7
+```
 
 LLM, Eliza e GA possono essere rimossi senza rendere insicuro il control plane.
 Non vale il contrario.
 
-## 9. Stato al 19 luglio 2026
+## 9. Stop condition
 
-| Gate | Stato | Evidenza sintetica |
-|---|---|---|
-| G0 | IN_PROGRESS | Test e static check verdi; working tree non consolidata; warning e governance CI da chiudere |
-| G1 | BLOCKED | CLI live ora fail-closed, ma risk opzionale, API auth fail-open e ambienti non separati |
-| G2 | IN_PROGRESS | Analytics e observation point-in-time parziali; ContractSpec futures assente |
-| G3 | NOT_STARTED | OMS, paper broker e stato ordine sono in-memory |
-| G4 | IN_PROGRESS | Governor/adapter esistono, ma non sono non-bypassabili |
-| G5 | PASSED (M31) | Replay event-driven qualificato: 6 regimi, 48 slice, parity e soglie verdi |
-| G6 | IN_PROGRESS | M32 paper/shadow non ancora completati; nessuna promozione live |
-| G7 | NOT_STARTED | Nessun profilo AUTO_SUPPORTED certificato |
-| G8 | NOT_STARTED | Live/funded non autorizzato |
-| G9 | NOT_STARTED | Dipende da G8 |
-
-## 10. Work package immediati
-
-Ordine raccomandato:
-
-1. **WP-001 — Consolidare la working tree:** inventario, split commit, artefatti e
-   baseline immutabile.
-2. **WP-002 — Chiudere G0:** clean-environment CI, warning budget, SBOM, secret
-   scan e dependency review.
-3. **WP-003 — Eliminare i bypass pubblici:** risk obbligatorio, API production
-   fail-closed, matrice CLI/API/MAS.
-4. **WP-004 — Definire ambienti e credenziali:** replay/paper/shadow/evaluation/
-   funded con startup guard.
-5. **WP-005 — Stabilire i contratti inward:** spostare PortfolioPlan e
-   TradeIntent fuori dal package agents e rompere i cicli di dipendenza.
-6. **WP-006 — Implementare ContractSpec e calendari:** prima verticale su un
-   micro future.
-7. **WP-007 — Progettare ledger/OMS:** schema, idempotenza, outbox e
-   reconciliation.
-8. **WP-008 — Rendere il risk kernel non opzionale:** property e bypass tests.
-9. **WP-009 — Certificare il motore di qualification:** rimuovere fallback
-   silenziosi e chiudere parity/costi.
-10. **WP-010 — Selezionare il primo programma candidato:** solo dopo verifica
-    ufficiale di automazione, API, device/VPS e piattaforma.
-
-## 11. Stop condition
-
-L'Autopilot non è completo quando “funziona una demo”. È completo per un
+L'Autopilot non è completo quando "funziona una demo". È completo per un
 programma soltanto quando G7 è PASSED e la smallest evaluation autorizzata è
 stata completata senza policy breach. Il funded rollout richiede inoltre G8.
 

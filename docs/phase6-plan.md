@@ -1,4 +1,10 @@
-# Phase 6 — Oracle Dashboard: Piano di Sviluppo (rev. 2)
+> **ARCHIVIO STORICO.** Questo documento era parte del modello Phase,
+> deprecato da ADR-012 e sostituito dai capability gate G0-G9.
+> Vedi [docs/ORACLE_AUTOPILOT_MASTER_ROADMAP.md](docs/ORACLE_AUTOPILOT_MASTER_ROADMAP.md)
+> per la roadmap canonica e [docs/ORACLE_AUTOPILOT_STATUS.md](docs/ORACLE_AUTOPILOT_STATUS.md)
+> per lo stato corrente. Non aggiornare — solo git archaeology.
+
+ 6 — Oracle Dashboard: Piano di Sviluppo (rev. 2)
 
 > WebUI custom per il monitoraggio e controllo del sistema Oracle.
 > Trading terminal professionale, self-hosted, dark mode.
@@ -72,68 +78,68 @@ apps/
     __init__.py
     main.py                     ← FastAPI app + CORS + auth middleware + static mount
     config.py                   ← Settings from env (API key, broker config)
-    
+
     routers/
       __init__.py
       performance.py            ← GET /api/v1/performance/summary, /equity
       trades.py                 ← GET /api/v1/trades (paginato + filtri), /positions
       ga.py                     ← GET /api/v1/ga/runs, /ga/runs/{id}
       stream.py                 ← GET /api/v1/stream/positions (SSE)
-    
+
     services/
       __init__.py
       equity_service.py         ← Legge equity curve da checkpoint/BacktestResult
       trade_service.py          ← Legge trade log da OrderManager/DB
       checkpoint_reader.py      ← Legge checkpoint GA JSON
-    
+
     models.py                   ← Pydantic response models
-    
+
     ws.py                       ← SSE manager (asyncio.Queue + broadcast)
 
   dashboard/                    ← Frontend React (nuovo)
     package.json
     tsconfig.json
     vite.config.ts               ← proxy /api → localhost:8000 in dev
-    
+
     index.html
     public/
       favicon.svg
-    
+
     src/
       main.tsx
       App.tsx
-      
+
       routes/
         index.tsx                ← createBrowserRouter
         layout.tsx               ← Root layout (sidebar + header + <Outlet/>)
         dashboard-page.tsx       ← / (dashboard principale)
         trades-page.tsx          ← /trades
         ga-page.tsx              ← /ga
-      
+
       components/
         layout/
           sidebar.tsx            ← Navigation (Dashboard, Trades, GA)
           header.tsx             ← Status, clock, connection indicator
-          
+
         charts/
           equity-chart.tsx       ← TradingView line chart (equity curve)
           drawdown-chart.tsx     ← TradingView area chart (drawdown)
           pareto-scatter.tsx     ← Plotly scatter 4D (Sharpe, Sortino, Calmar, MaxDD)
           convergence-chart.tsx  ← Plotly line chart (per-generation metrics)
           risk-gauge.tsx         ← D3 gauge (semplice, SVG)
-          
+
         data/
           metrics-grid.tsx       ← Metric cards (Sharpe, PF, MaxDD...)
           trade-table.tsx        ← Trade log con paginazione
           positions-table.tsx    ← Open positions (SSE update)
-          
+
         ui/
           page-shell.tsx         ← Titolo + descrizione + children
           empty-state.tsx        ← "No data yet" con azione
           error-boundary.tsx     ← Catch error + retry
           loading-skeleton.tsx   ← Skeleton loader
           connection-badge.tsx   ← Connected/disconnected indicator
-      
+
       hooks/
         use-equity.ts            ← React Query: GET /api/v1/performance/equity (30s polling)
         use-summary.ts           ← React Query: GET /api/v1/performance/summary (30s)
@@ -141,7 +147,7 @@ apps/
         use-ga-runs.ts           ← React Query: GET /api/v1/ga/runs
         use-sse.ts               ← EventSource connection per SSE
         use-positions.ts         ← Zustand store aggiornato via SSE
-      
+
       lib/
         api.ts                   ← Fetch wrapper con auth header
         types.ts                 ← TypeScript interfaces (Trade, Position, GARun, ...)

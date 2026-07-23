@@ -14,12 +14,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy project files and install deps
-COPY pyproject.toml .python-version ./
-RUN pip install --no-cache-dir -e ".[dev]" polars
+# Copy the locked manifest and source required by the API/research dashboard.
+COPY pyproject.toml uv.lock .python-version ./
+COPY application/ application/
+COPY agents/ agents/
+COPY analytics/ analytics/
+COPY apps/ apps/
+COPY audit/ audit/
+COPY core/ core/
+COPY execution/ execution/
+COPY genetics/ genetics/
+COPY market/ market/
+COPY orchestration/ orchestration/
+COPY policy/ policy/
+COPY research/ research/
+COPY checkpoints/ checkpoints/
+COPY experiments/ experiments/
 
-# Copy source
-COPY agents/ analytics/ apps/ core/ execution/ genetics/ market/ policy/ ./
+RUN pip install --no-cache-dir ".[analytics,execution]" \
+    && chown -R oracle:oracle /app
 
 # Non-root user from here on
 USER oracle

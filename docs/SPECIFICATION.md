@@ -1,5 +1,13 @@
 # Oracle Architecture Specification v1.0
 
+> **FROZEN — Documento storico.** Questa specifica descrive un'architettura
+> precedente alla roadmap capability-gate (ADR-012). La living architecture è in
+> [ARCHITECTURE.md](ARCHITECTURE.md); la roadmap è
+> [ORACLE_AUTOPILOT_MASTER_ROADMAP.md](ORACLE_AUTOPILOT_MASTER_ROADMAP.md).
+> ADR-008 (modular monolith), ADR-009 (storage strategy) e ADR-010 (execution safety)
+> supersedono i principi NATS universali, plugin-first e services/libraries/plugins.
+> Modifiche solo tramite ADR.
+
 > Piattaforma di Ricerca Quantitativa — Motore Decisionale Deterministico con Consulenza LLM
 > Data: 2026-07-06 | Status: **FROZEN** (modifiche via ADR)
 

@@ -14,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 
 from apps.api.config import APISettings
 from apps.api.routers import router
+from core.domain.guard import current_mode, guard
 
 
 class SafeJSONEncoder:
@@ -36,8 +37,6 @@ settings = APISettings()
 
 # ── Mode guard ──────────────────────────────────────────────────────
 # Every entry point verifies the operating mode at startup.
-from core.domain.guard import current_mode, guard
-
 guard(current_mode())
 
 # ── Production fail-closed guard ────────────────────────────────────
@@ -97,6 +96,7 @@ async def auth_middleware(
 ) -> Response:
     if (
         request.url.path.startswith("/api/")
+        and request.url.path not in {"/api/health", "/api/ready"}
         and request.method != "OPTIONS"
         and settings.auth_enabled
     ):
