@@ -232,15 +232,14 @@ class PostgresOMS:
 
             # Record in ledger if available
             if self._ledger:
-                direction = order["side"]
-                self._ledger.record_fill(
+                await self._ledger.record_fill(
                     account_id=order["account_id"],
                     fill_id=fill_id,
                     order_id=order_id,
                     quantity=quantity,
                     price=price,
                     commission=commission,
-                    direction=direction,
+                    side=order["side"],
                 )
 
         logger.info(f"Fill {fill_id}: {quantity} @ {price} for order {order_id}")

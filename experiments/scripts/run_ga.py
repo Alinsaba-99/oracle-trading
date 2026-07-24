@@ -23,14 +23,13 @@ Flags:
     --seed N             Random seed (default: 42)
     --resume PATH        Resume from checkpoint file
     --checkpoint-interval N  Save checkpoint every N gens (default: 5)
-    --no-log             Dry run — skip Experiment Registry persistence
     --n-jobs N           Parallel worker processes (default: CPU count)
 """
+
 from __future__ import annotations
 
 import argparse
 import asyncio
-import json
 import logging
 import sys
 from datetime import UTC, datetime
@@ -42,18 +41,13 @@ import yfinance as yf
 from analytics.backtest.config import BacktestConfig
 from genetics.config import GAConfig, GenomeConfig, WalkForwardConfig
 from genetics.engine import GeneticEngine
-from genetics.fitness.cache import FitnessCache
-from genetics.genome.parameters import (
-    CategoricalParameter,
-    ContinuousParameter,
-    IntParameter,
-)
+from genetics.genome.parameters import CategoricalParameter, ContinuousParameter, IntParameter
 
 logger = logging.getLogger(__name__)
 
 # ── default parameter definitions ────────────────────────────────────
 
-_DEFAULT_PARAMS = [
+_DEFAULT_PARAMS: list[ContinuousParameter | IntParameter | CategoricalParameter] = [
     # Momentum
     ContinuousParameter("momentum_weight", low=0.0, high=5.0),
     ContinuousParameter("momentum_decay", low=0.5, high=1.0),
@@ -79,13 +73,8 @@ _DEFAULT_PARAMS = [
     ContinuousParameter("stop_loss_pct", low=0.0, high=0.1),
     ContinuousParameter("take_profit_pct", low=0.0, high=0.2),
     # Category switches
-    CategoricalParameter(
-        "entry_logic",
-        categories=["trend", "mean_rev", "breakout", "hybrid"],
-    ),
-    CategoricalParameter(
-        "exit_logic", categories=["trailing_stop", "fixed_target", "time_stop"]
-    ),
+    CategoricalParameter("entry_logic", categories=["trend", "mean_rev", "breakout", "hybrid"]),
+    CategoricalParameter("exit_logic", categories=["trailing_stop", "fixed_target", "time_stop"]),
 ]
 
 
@@ -97,8 +86,7 @@ def _fetch_data(symbol: str, start: str, end: str) -> pl.DataFrame:
     df = pl.DataFrame(
         {
             "timestamp": [
-                datetime.strptime(str(d)[:10], "%Y-%m-%d").replace(tzinfo=UTC)
-                for d in hist.index
+                datetime.strptime(str(d)[:10], "%Y-%m-%d").replace(tzinfo=UTC) for d in hist.index
             ],
             "open": hist["Open"].values,
             "high": hist["High"].values,
@@ -113,11 +101,8 @@ def _fetch_data(symbol: str, start: str, end: str) -> pl.DataFrame:
 
 def _build_config(args: argparse.Namespace) -> GAConfig:
     """Build GAConfig from CLI args."""
-    param_defs: list[object] = list(_DEFAULT_PARAMS)
-    genome_config = GenomeConfig(
-        n_params=len(param_defs),
-        param_defs=param_defs,
-    )
+    param_defs = _DEFAULT_PARAMS
+    genome_config = GenomeConfig(n_params=len(param_defs), param_defs=param_defs)
 
     return GAConfig(
         genome_config=genome_config,
@@ -148,8 +133,6 @@ async def _run(args: argparse.Namespace) -> int:
         engine.config.resume_from = args.resume
         engine.config.generations = config.generations
 
-    cache = FitnessCache(max_size=10000) if not args.no_log else None
-
     logger.info(
         "Starting GA run: pop=%d, gens=%d, islands=%d, seed=%d",
         config.pop_size,
@@ -162,12 +145,12 @@ async def _run(args: argparse.Namespace) -> int:
         data=data,
         backtest_config=backtest_config,
         walk_forward_config=walk_config,
-        registry=None if args.no_log else None,  # TODO: wire real registry
+        registry=None,  # registry logging not yet wired
     )
 
     # Print summary
     print(f"\n{'=' * 60}")
-    print(f"  GA Run Complete")
+    print("  GA Run Complete")
     print(f"  Generations: {config.generations}")
     print(f"  Wall time:   {result.timing:.1f}s")
     print(f"  Pareto size: {len(result.pareto_front)}")
@@ -198,7 +181,6 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     parser.add_argument("--resume", type=str, help="Resume from checkpoint path")
     parser.add_argument("--checkpoint-interval", type=int, default=5, help="Checkpoint interval")
-    parser.add_argument("--no-log", action="store_true", help="Skip Experiment Registry")
     parser.add_argument("--n-jobs", type=int, default=None, help="Parallel workers")
 
     args = parser.parse_args()

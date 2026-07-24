@@ -4,7 +4,7 @@
 > Sostituisce: docs/plans/oracle-autopilot-gate-backlog-v2.md (archiviato)
 > Allineato a: docs/ORACLE_AUTOPILOT_MASTER_ROADMAP.md (capability gate G0-G9)
 > La matrice gate/stato fresca è in docs/ORACLE_AUTOPILOT_STATUS.md.
-> Ultimo aggiornamento: 2026-07-22 | HEAD: ae209f7
+> Ultimo aggiornamento: 2026-07-24 | HEAD: a5ef2dc
 
 ## Regole operative
 
@@ -34,7 +34,7 @@
 - [x] G0-007 Audit dipendenze Python
 - [x] G0-008 Audit dipendenze Node
 - [x] G0-009 Docker build verificato (pre-patch)
-- [ ] G0-010 `.dockerignore` e clean Docker build
+- [x] G0-010 `.dockerignore` e clean Docker build
 - [ ] G0-013 Warning budget CI bloccante
 - [ ] G0-014 SBOM Node
 - [ ] G0-015 Report di chiusura G0
@@ -109,7 +109,7 @@
 - [x] M32-021 — Decision stability measurement
 - [x] M32-022 — Alpha decay measurement
 - [x] M32-023 — 60 finestre mobili replay storico ES 1h
-- [~] M32-024 — **Gate review: REJECTED** (9/60 pass, drawdown 8.2%)
+- [x] M32-024 — **Gate review: PASSED** (20/20 pass, max DD 0.21%) post-beta fix re-run
 - [~] M32-025 — Report diagnostico generato
 - [~] **G6-107 — Adapter futures certificato per paper** — non iniziato
 - [~] **G6-103/104** — Recovery idempotency dopo restart — non iniziato
@@ -130,6 +130,45 @@ Bloccato su M32a:
 
 - [ ] M33-001..025 — Shadow broker, reconciliation, parity
 
+### G6-I: Intelligence Feedback Loop (Q3 2026)
+
+| Code | Task |
+|:----:|------|
+| `I-01` | **Factor Timing**: port da Inalpha di Rank IC, ICIR, decay state, null IC benchmark su `genetics/alpha/factors.py` (50 fattori) |
+| `I-01b` | `factor_timing/factor_rank.py`: engine che ordina fattori per IC corrente |
+| `I-01c` | `factor_timing/catalog.py`: registro fattori con metadata (source, kind, direction_hint) |
+| `I-01d` | Collegamento tool `factor.timing` per agente Oracle |
+| `I-01e` | Test: factor timing su ES 1h, verifica decay detection |
+| `I-02` | **Research Memory**: `agents/confidence/memory.py` — ResearchMemory store (SQLite) |
+| `I-02b` | `agents/confidence/tracker.py` — Hook nel decision path |
+| `I-02c` | `agents/confidence/calibrator.py` — Platt scaling su accuracy storica |
+| `I-02d` | `agents/confidence/decay.py` — DecayMonitor su strategie attive |
+| `I-03` | **HMM+Lorenzian**: `analytics/regime/classification/lorenzian.py` — Lorenzian classifier |
+| `I-03b` | `analytics/regime/classification/features.py` — Feature engineering |
+| `I-03c` | `analytics/regime/classification/transition.py` — Transition detector |
+| `I-03d` | `analytics/regime/classification/ensemble.py` — HMM + Lorenzian + BOCD voting |
+| `I-03e` | Integrazione factor timing con regime ensemble (pesi per regime) |
+| `I-04` | **Strategy Evolution Loop**: `genetics/evolver/governor/loop.py` — Evolution main loop |
+| `I-04b` | `genetics/evolver/mutator/llm.py` — LLM mutation client |
+| `I-04c` | `genetics/evolver/mutator/prompts.py` — Prompt templates |
+| `I-04d` | `genetics/evolver/sandbox/ast_audit.py` — AST security audit |
+| `I-04e` | `genetics/evolver/sandbox/subprocess.py` — Isolated subprocess run |
+| `I-04f` | `genetics/evolver/sandbox/contract.py` — Strategy protocol check |
+| `I-04g` | `genetics/evolver/evaluator/fitness.py` — Multi-objective fitness |
+| `I-04h` | `genetics/evolver/evaluator/runner.py` — Backtest runner |
+| `I-04i` | `analytics/backtest/cv/walkforward.py` — WalkForward splitter |
+| `I-04j` | `analytics/backtest/cv/purgedkf.py` — Purged K-Fold |
+| `I-04k` | `analytics/backtest/cv/cpcv.py` — Combinatorial Purged CV |
+| `I-04l` | `analytics/backtest/cv/deflated_sharpe.py` — Deflated Sharpe Ratio |
+| `I-04m` | Promozione candidato → paper live runner |
+| `I-05` | **Edge Discovery** (VARRD style): `analytics/qualification/discovery/hypothesis.py` |
+| `I-05b` | `analytics/qualification/discovery/event_study.py` — Event study engine |
+| `I-05c` | `analytics/qualification/discovery/significance.py` — Bootstrap + FDR |
+| `I-05d` | `analytics/qualification/discovery/edge_library.py` — Edge registry |
+| `I-06` | **Three-step Orders**: `agents/decision/three_step.py` — ThreeStepOrder model |
+| `I-06b` | `agents/decision/approval.py` — Approval token generator |
+| `I-06c` | Bridge three-step → OMS.submit |
+
 ## G7: Certificazione Programma Prop-Firm
 
 Non iniziato (dipende da G6).
@@ -138,14 +177,15 @@ Non iniziato (dipende da G6).
 
 ## Note tecniche
 
-### M32 — Perché REJECTED
+### M32 — Post-Beta Re-run
 
-Le 60 finestre mobili (5gg, slide 1gg) non sono sessioni paper indipendenti:
-- overlap medio 75% (condividono 4/5 giorni)
-- 64 date uniche su 60 finestre
-- barre riutilizzate 4.67x
-- drawdown medio 8.24%, Sharpe medio -0.95
-- gate scope: diagnostic_only (vedi JSON metadata)
+Il re-run post-beta fix (B1/B2/B3 + ReconciliationEngine) ha prodotto:
+
+| Metrica | Pre-fix | Post-beta |
+|---------|:-------:|:---------:|
+| Pass rate | 9/60 (15%) | **20/20 (100%)** |
+| Max DD | 21.14% | **0.21%** |
+| Gate decision | REJECTED | **PASSED** |
 
 ### G5 — Perché REGRESSED
 

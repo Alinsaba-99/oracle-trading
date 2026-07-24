@@ -69,8 +69,9 @@ class TestOrderToLedgerFlow:
         assert final_order.status == "filled"
         assert final_order.filled_quantity == Decimal("2")
 
-        # Verify ledger: 100000 - 2.50 - 2.50 = 99995
-        assert ledger.get_balance(acct.account_id) == Decimal("99995")
+        # Verify ledger: 100000 - 5500 - 2.50 - 5510 - 2.50 = 88985
+        # Ledger deducts both notional (price × quantity) and commission.
+        assert ledger.get_balance(acct.account_id) == Decimal("88985")
 
         # Verify outbox events
         events = oms.pending_events()

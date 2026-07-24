@@ -1,7 +1,7 @@
 # Oracle Autopilot — Capability-Gated Master Roadmap
 
-> Versione: 2.1
-> Ultimo aggiornamento: 2026-07-22
+> Versione: 2.2
+> Ultimo aggiornamento: 2026-07-24
 > Stato: roadmap canonica
 > Modello di avanzamento: capability gate con evidenza, non phase temporali
 > Gerarchia fonti: ROADMAP (perché) → STATUS (cosa) → BACKLOG (come) → ADR (decisioni) → report (evidenza).
@@ -111,11 +111,27 @@ security e audit. È il percorso critico.
 Contract data, point-in-time lineage, backtest, costi, WFA, holdout, stress ed
 economics.
 
-### I — Intelligence, non bloccante per la prima verticale sicura
+### I — Intelligence con feedback loop, non bloccante per la prima verticale sicura
 
 Investment Committee, LLM gateway, Eliza scouts, memoria, debate e GA.
 Questi moduli possono migliorare decision quality soltanto dopo aver rispettato
 i confini S e D.
+
+**Novità: AI Feedback Loop** (Q3 2026). I moduli I vengono potenziati con
+un ciclo chiuso che permette all'agente di imparare dai propri errori:
+
+- **Factor Timing**: i fattori alpha (50+) vengono classificati per Rank IC
+  corrente, con decay detection. L'agente vede quelli che funzionano *ora*.
+- **Strategy Evolution Loop**: l'agente scrive strategie Python, passano 3
+  sandbox, vengono cross-validate (WalkForward / CPCV / Deflated Sharpe),
+  e se superiori al baseline vengono promosse a paper live.
+- **Research Memory**: ogni decisione è registrata con esito, regime e
+  confidence. L'agente calibra la propria confidence sull'accuratezza storica.
+- **Regime Ensemble**: HMM + Lorenzian classification + BOCD per rilevare
+  transizioni di regime non-lineari e pesare i fattori di conseguenza.
+- **Edge Discovery**: l'agente scopre nuovi pattern statisticamente validati
+  tramite event study, seguendo il modello VARRD. I nuovi edge entrano
+  automaticamente nel factor timing.
 
 ### O — Operations e UI, trasversale
 
@@ -307,6 +323,20 @@ essere REGRESSED se dataset, motore o configurazione non sono più riproducibili
 - recovery da restart di processo, rete e broker;
 - kill-to-flat entro SLO;
 - nessuna credenziale statica o porta dati pubblica.
+
+**G6-I — Intelligence Feedback Loop** (parallelo, non bloccante per G6 ops).
+
+Obiettivo: chiudere il loop tra agenti, backtest e paper trading creando
+un sistema che impara e migliora autonomamente.
+
+| Milestone | Cosa | Riferimento |
+|:---------:|------|:-----------:|
+| I-01 | Factor Timing — 50 fattori classificati per Rank IC corrente | `plan-integration-inalpha-varrd.md §3` |
+| I-02 | Research Memory — decisioni registrate, confidence calibrata | `plan-integration-inalpha-varrd.md §5` |
+| I-03 | HMM + Lorenzian Ensemble — regime detection ibrida | `plan-integration-inalpha-varrd.md §6` |
+| I-04 | Strategy Evolution Loop — LLM scrive strategie, 3 sandbox, cross-val | `plan-integration-inalpha-varrd.md §4` |
+| I-05 | Edge Discovery — event study per nuovi pattern (VARRD) | `plan-integration-inalpha-varrd.md §7` |
+| I-06 | Three-step Orders — propose→approve→execute con token | `plan-integration-inalpha-varrd.md §4` |
 
 **Nota:** M32 "rolling paper replay" (60 finestre sovrapposte su storico) è diagnostico,
 non costituisce le 30 sessioni paper indipendenti richieste da G6.

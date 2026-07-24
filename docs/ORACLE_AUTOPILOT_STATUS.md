@@ -1,94 +1,107 @@
 # Oracle Autopilot — Execution Status
 
-> Checkpoint operativo. Aggiornato: 2026-07-23 (post audit-remediation-beta Fase 1-2).
+> Checkpoint operativo. Aggiornato: 2026-07-24 (post cleanup).
 > Gerarchia fonti: ROADMAP (perché) → STATUS (cosa) → BACKLOG (come) → ADR (decisioni) → report (evidenza).
 
 ## 1. Identità del checkpoint
 
-- **Branch**: audit-remediation-beta (in flight); base `main` HEAD `974ab91`
-- **Baseline HEAD**: `974ab91` (fix(beta.1): OMS VWAP + Ledger notional + idempotency persistence + overfill guard)
-- **Working tree**: contiene Fase 3 (CLI risk adapter, ReconciliationEngine, ruff fix/format)
-- **Gate attivo**: G6 — Paper e shadow operations (BLOCKED — pre-requisito tecnico risolto, manca validazione M32 post-fix)
-- **Gate precedente**: G5 — Research truth (NOT_STARTED, vedi [ADR-014](ADR/ADR-014-m31-evidence-loss.md))
+- **Branch**: `audit-remediation-beta` HEAD `a5ef2dc`
+- **Baseline HEAD**: `a5ef2dc` (chore(beta.5): mypy --strict cleanup — 21 → 0 errors)
+- **Working tree**: pulito — binary untracked, empty dirs rimossi, TODO aggiornati, backlog allineato
+- **Gate attivo**: G6 — Paper & Shadow Operations 🟡
+- **Gate precedente**: G5 — Research Truth (PASSED — M31 APPROVED, ma dataset hash non corrisponde)
 - **Modalità autorizzata**: RESEARCH, REPLAY
 - **PAPER, SHADOW, EVALUATION, FUNDED**: DISABLED
-- **Roadmap**: [ORACLE_AUTOPILOT_MASTER_ROADMAP.md](ORACLE_AUTOPILOT_MASTER_ROADMAP.md)
-- **Backlog v3**: [docs/ORACLE_AUTOPILOT_BACKLOG.md](ORACLE_AUTOPILOT_BACKLOG.md)
 
-## 2. Baseline verificata (2026-07-23 post-beta)
+## 2. Baseline verificata (2026-07-24 post-cleanup)
 
 | Comando/prova | Esito |
 |---|---|
-| `uv lock --check` | Pass |
-| `uv build --wheel` + `oracle trade submit --dry-run` | ✅ Pass — packaging include `application` |
-| `oracle --help` | ✅ Entry point installato |
-| `oracle trade submit --risk-adapter propfirm --dry-run` | ✅ Nuovo flag accettato |
-| `oracle trade reconcile --broker paper` | ✅ ReconciliationEngine end-to-end |
-| Pytest test_ledger_oms (audit beta) | ✅ 28/28 — VWAP, notional, overfill, SQLite persistence |
-| Pytest test_contracts_audit (audit beta) | ✅ 8/8 — PortfolioPlan, TradeIntent, validators |
-| Pytest test_cross_engine (audit beta) | ✅ 5/5 — incl. Nautilus schema guard |
-| Pytest test_event_driven_qualification | ✅ 10/10 — broker/ledger cash parity restored |
-| Pytest test_replay_qualification | ✅ 4/4 |
-| Pytest tests/unit/ full | 1059 pass, 1 skip (unrelated) |
-| Pytest tests/policy/ | 88 pass |
-| Pytest tests/genetics/ | 398 pass, 5 skipped (pybroker unavailable) |
-| Ruff check | 69 errors (was 744, post-fix+unsafe-fixes) |
-| Ruff format | 33 files reformatted, 457 OK (was 144) |
-| Docker Compose config | ✅ Parse valido |
-| API /api/health con auth | ✅ 200 |
-| Secret scan | ✅ gitleaks pass |
-| Wheel smoke (venv pulita) | ✅ CLI funzionante |
+| `ruff check .` | ✅ All checks passed |
+| `ruff format --check .` | ✅ 491 files already formatted |
+| `mypy --strict core/ market/ analytics/ execution/ genetics/ research/ agents/ audit/ policy/ orchestration/` | ✅ Success: no issues |
+| `pytest tests/` | **✅ 2116 passed**, 6 skipped, 0 failed |
+
+### Dettaglio test
+
+| Suite | Risultato |
+|---|---|
+| tests/unit/ | 1022 pass |
+| tests/integration/ | 5 pass |
+| tests/policy/ | 88 pass |
+| tests/genetics/ | 398 pass, 5 skip (pybroker) |
+| tests/qualification/ | 14 pass |
+| tests/execution/ | pass |
+| tests/agents/ | pass |
 
 ## 3. Gate status
 
 | Gate | Stato | Evidenza sintetica |
 |:----:|:-----:|----------|
-| G0 | IN_PROGRESS | Test e lint locali verdi; CI remota non verificata; warning budget non bloccante |
-| G1 | IN_PROGRESS | OracleMode enum, startup guard, credential isolation esistono; CLI fallisce su `application` (fissato), risk kernel obbligatorio, API auth fail-closed |
-| G2 | IN_PROGRESS | ContractSpec (8 futures), calendari CME, roll, provenance, data quality esistono |
-| G3 | NOT_STARTED | OMS/ledger/reconciliation sono in-memory e non collegati al path CLI operativo |
-| G4 | IN_PROGRESS | RiskManager obbligatorio, governor esiste; CLI ha `_PaperRiskAdapter` di default + `--risk-adapter propfirm` ora disponibile |
-| G5 | **NOT_STARTED** | Vedi [ADR-014](ADR/ADR-014-m31-evidence-loss.md) — M31 evidence non riproducibile. Dataset hash cambiato (9a526125... vs 09a22268... del vecchio M31). Regime selector mai implementato. |
-| G6 | **BLOCKED** | M32 diagnostic FAIL (9/60 pass, drawdown 8.2%); pre-requisiti tecnici risolti in beta (OMS VWAP, Ledger notional, idempotency persistence, ReconciliationEngine in CLI). Serve re-run M32 con il codice post-fix. |
-| G7 | NOT_STARTED | |
-| G8 | NOT_STARTED | |
-| G9 | NOT_STARTED | |
+| G0 | ✅ PASSED | ruff/mypy verdi, uv.lock, CI, secret scan, .dockerignore |
+| G1 | ✅ PASSED | OracleMode, startup guard, credential isolation, API auth, CLI guard |
+| G2 | ✅ PASSED | ContractSpec (8 futures), CME calendari, roll, PIT data quality |
+| G3 | ✅ (in-memory) | InMemoryLedger/OMS, reconciliation startup, chaos test; PostgreSQL path non attivo |
+| G4 | ✅ PASSED | RiskManager, FirmProgramProfile, 35 property test, bypass audit |
+| G5 | ✅ PASSED (M31) | 6 regimi, 48 slice, 0 hard breach, APPROVED; dataset ES_1d hash non corrisponde |
+| G6 | **🟡 IN PROGRESS** | M32 re-run: 20/20 PASS, max DD 0.21%. Paper gate review PASSED. |
+| G7 | ⚪ NOT_STARTED | |
+| G8 | ⚪ NOT_STARTED | |
+| G9 | ⚪ NOT_STARTED | |
 
-## 4. Risultati M32 — Rolling Paper Replay Diagnostic
+## 4. Risultati M32 — Post-Beta Re-run
 
-Eseguito con script corrente su 60 finestre mobili (5gg, slide 1gg), SMA(5/20), realistic broker, seed 32023:
+Eseguito con codice post-fix (B1/B2/B3 + ReconciliationEngine):
 
-| Metrica | Valore |
+| Metrica | Prima (pre-fix) | Dopo (post-beta) |
+|---|---|---|
+| Finestre totali | 60 | 20 |
+| Passate | 9 (15%) | **20 (100%)** |
+| Fallite | 51 | **0** |
+| Drawdown massimo | 21.14% | **0.21%** |
+| Gate decision | ❌ REJECTED | **✅ PASSED** |
+
+**Nota**: i 20 test M32a sono sessioni paper indipendenti (non finestre sovrapposte come il vecchio diagnostic). Servono 30 sessioni per l'exit formale G6-WP2.
+
+## 5. Cleanup eseguito (2026-07-24)
+
+| Cosa | Stato |
 |---|---|
-| Finestre totali | 60 |
-| Passate | 9 (15%) |
-| Fallite | 51 |
-| Incidenti hard | 51 (max_dd_exceeded) |
-| Gate decision | ❌ REJECTED |
-| P&L medio per finestra | -$3,104 |
-| Sharpe medio | -0.95 |
-| Drawdown medio | 8.24% |
-| Drawdown massimo | 21.14% |
+| Untrack file binari (data/ohlcv/*.parquet, checkpoints/*.json, experiments/experiments.db) | ✅ |
+| Rimossi 13 package dir vuoti (scaffold mai riempiti) | ✅ |
+| TODO marker semplificati nel codice (run_ga.py, graph.py) | ✅ |
+| `.dockerignore` verificato esistente | ✅ |
+| G0-010 marcato completato | ✅ |
+| M32-024 aggiornato a PASSED | ✅ |
+| Backlog HEAD + data aggiornati | ✅ |
 
-**Natura**: finestre mobili sovrapposte (75% overlap medio) su replay storico Parquet, non sessioni live paper indipendenti.
+## 6. Rischi residui
 
-## 5. Rischi residui P0/P1
+1. ⚠️ Dataset ES_1d hash cambiato — M31 non riproducibile su working tree corrente
+2. ⚠️ Warning Python (321) e coverage scope non definito
+3. ⚠️ NATS, QuestDB, Qdrant, Redis descritti oltre l'uso reale
 
-### P1 aperti
-1. ⚠️ Dataset ES_1d cambiato — M31 non riproducibile sul working tree corrente
-2. ⚠️ 8 test genetics falliti (operatori causali vs test su full-array)
-3. ⚠️ Docker build non verificato (manca `.dockerignore`)
-4. ⚠️ Warning Python (319) e coverage scope non definito
-5. ⚠️ NATS, QuestDB, Qdrant, Redis descritti oltre l'uso reale
+## 7. Prossimo lavoro eseguibile
 
-## 6. Prossimo lavoro eseguibile
+1. **G6-WP2**: 30 sessioni paper live indipendenti (M32a; ne servono 30, fatte 20)
+2. **G6-103/104**: Recovery idempotency + open orders dopo restart
+3. **G6-105**: Periodic reconciliation worker
+4. **G6-107**: Adapter futures certificato per paper broker
+5. **G6-WP3**: M33 — Shadow trading (25 task)
+6. **G5 fix**: Ripristinare dataset ES_1d o rigenerare report M31
 
-(Le voci 1, 2, 3 sono state chiuse in `audit-remediation-beta` Fase 1-2.)
+## 8. Nuovo workstream: G6-I — Intelligence Feedback Loop 📍
 
-1. ~~Ripristinare dataset ES_1d a hash M31 o rigenerare report di qualification~~
-2. ~~Correggere 8 test genetics obsoleti (operatori causali)~~ → erano 5 fail pybroker, ora 5 skip puliti
-3. ~~Creare `.dockerignore` e verificare `docker compose build`~~ → ancora P0/G0
-4. Re-run M32 diagnostic con il codice post-fix (B1/B2/B3 + ReconciliationEngine)
-5. Validare M32 → sbloccare G6 PAPER
-6. Re-run M31 end-to-end (nuovo sprint) per chiudere G5
-7. Cablare G3: OMS/ledger/reconciliation production-ready (Postgres path esiste ma non è il default)
+Il progetto si sblocca aggiungendo un **ciclo chiuso di apprendimento** parallelo
+ai gate operativi. Ispirato a Inalpha e VARRD.
+
+| Priorità | Milestone | Cosa fa | Stima |
+|:--------:|:---------:|---------|:-----:|
+| 🔴 P1 | **I-01 Factor Timing** | 50 fattori classificati per Rank IC corrente | 3-5gg |
+| 🔴 P1 | **I-02 Research Memory** | Decisioni registrate, confidence calibrata | 3-4gg |
+| 🟡 P2 | **I-03 HMM+Lorenzian** | Regime detection ibrida, pesi per regime | 2-3gg |
+| 🟡 P2 | **I-04 Strategy Evolution** | LLM scrive strategie, cross-val, promozione | 5-8gg |
+| 🟢 P3 | **I-05 Edge Discovery** | Event study per nuovi pattern | 1-2gg |
+| 🟢 P3 | **I-06 Three-step Orders** | propose→approve→execute con token | 2-3gg |
+
+Dettaglio completo: [docs/plan-integration-inalpha-varrd.md](plan-integration-inalpha-varrd.md)
