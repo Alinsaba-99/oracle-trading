@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 
-class DataQualityWarning(Exception):
+class DataQualityError(Exception):
     """Warning about a data quality issue."""
 
 

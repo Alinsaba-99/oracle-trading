@@ -28,7 +28,7 @@ import json
 import logging
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, ClassVar
 
 import websockets
 
@@ -248,7 +248,7 @@ class PolygonWebSocketFeed:
     # Map our root symbols to Polygon ticker format
     # WebSocket uses {ROOT}*{MULTIPLIER} (*5 = E-mini, *1 = Micro)
     # REST API uses plain {ROOT} symbol
-    WS_TICKER_MAP: dict[str, str] = {
+    WS_TICKER_MAP: ClassVar[dict[str, str]] = {
         "ES": "ES*5",  # E-mini S&P 500
         "MES": "ES",  # Micro E-mini
         "NQ": "NQ*5",  # E-mini Nasdaq 100
@@ -411,7 +411,10 @@ class PolygonWebSocketFeed:
                     )
 
     async def rest_poll(
-        self, symbol: str, interval_sec: float = 12.0, timespan: str = "minute"
+        self,
+        symbol: str,
+        interval_sec: float = 12.0,
+        timespan: str = "minute",  # noqa: ARG002 — accepted for API stability, reserved for future use
     ) -> AsyncIterator[Tick]:
         """Fallback: poll Polygon REST API for latest prices.
 
@@ -421,7 +424,9 @@ class PolygonWebSocketFeed:
         Args:
             symbol: Root symbol (ES, NQ, GC, CL).
             interval_sec: Seconds between polls (min 12 for free plan).
-            timespan: Bar size (minute, hour, day).
+            timespan: Bar size (minute, hour, day) — accepted for
+                forward-compatibility, not yet wired to the REST
+                query (currently always uses per-minute close).
 
         Yields:
             Tick objects with price from latest close.

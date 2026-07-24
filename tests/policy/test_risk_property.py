@@ -162,9 +162,13 @@ class TestCheckNewOrder:
         gov.state.realized_pnl_today = -max_loss * 0.5
         check2 = gov.check_new_order(entry=100.0, stop=99.0, lots=1.0, contract_size=100_000)
         # Either both allowed, or check2 has smaller max_lots
-        if check1.allowed and check2.allowed:
-            if check1.max_lots is not None and check2.max_lots is not None:
-                assert check2.max_lots <= check1.max_lots
+        if (
+            check1.allowed
+            and check2.allowed
+            and check1.max_lots is not None
+            and check2.max_lots is not None
+        ):
+            assert check2.max_lots <= check1.max_lots
 
 
 # =========================================================================

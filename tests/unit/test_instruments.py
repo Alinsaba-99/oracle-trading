@@ -80,9 +80,11 @@ def test_duplicate_register_raises() -> None:
 
 
 def test_instrument_is_frozen() -> None:
+    from dataclasses import FrozenInstanceError
+
     reg = default_registry()
     gold = reg.get("XAUUSD")
-    with pytest.raises(Exception):
+    with pytest.raises(FrozenInstanceError):
         gold.name = "mutated"  # type: ignore[misc]
 
 

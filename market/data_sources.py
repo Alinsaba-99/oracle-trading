@@ -28,10 +28,9 @@ from pathlib import Path
 import pandas as pd
 import structlog
 
-logger = structlog.get_logger("oracle.data.sources")
-
-
 from market.data_config import DataConfig
+
+logger = structlog.get_logger("oracle.data.sources")
 
 
 class DataFetcher:

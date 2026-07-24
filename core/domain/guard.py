@@ -55,12 +55,12 @@ def guard(
     if mode_str:
         try:
             configured_mode = OracleMode(mode_str)
-        except ValueError:
+        except ValueError as exc:
             raise ModeGuardError(
                 f"Invalid ORACLE_MODE={mode_str!r}. "
                 f"Valid modes: {', '.join(m.value for m in OracleMode)}",
                 MODE_MISMATCH,
-            )
+            ) from exc
         if configured_mode != mode:
             raise ModeGuardError(
                 f"ORACLE_MODE={configured_mode!r} does not match requested mode={mode!r}",

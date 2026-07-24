@@ -15,7 +15,6 @@ import pytest
 
 from analytics.backtest.metrics import MetricsCalculator
 
-
 FREQ_TO_PERIODS = {
     "1d": 252,
     "1h": 252 * 24,

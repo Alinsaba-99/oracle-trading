@@ -32,7 +32,7 @@ def run_simulation(
     period: str = "1y",
     interval: str = "1d",
     initial_capital: Decimal = Decimal("100000"),
-    commission_per_contract: Decimal = Decimal("2.50"),
+    commission_per_contract: Decimal = Decimal("2.50"),  # noqa: ARG001 — accepted for API stability, reserved for future use
     verbose: bool = True,
 ) -> dict:
     """Run a complete trading simulation.

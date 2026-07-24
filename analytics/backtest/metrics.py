@@ -6,7 +6,6 @@ from typing import Any
 
 import polars as pl
 
-
 # Canonical mapping from bar frequency to periods-per-year, used to
 # annualize Sharpe / Sortino / volatility.  Audit finding B13:
 # MetricsCalculator accepts ``annualization_factor`` as a parameter, so

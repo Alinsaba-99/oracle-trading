@@ -185,9 +185,7 @@ class ExchangeCalendar:
         """Return True if the exchange is open on this date."""
         if dt in self.holidays:
             return False
-        if dt.isoweekday() >= 6:  # Saturday=6, Sunday=7
-            return False
-        return True
+        return dt.isoweekday() < 6  # Saturday=6, Sunday=7
 
     def is_early_close(self, dt: date) -> bool:
         return dt in self.early_closes
