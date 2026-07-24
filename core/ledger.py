@@ -14,14 +14,13 @@ In the trading context:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Any
 from uuid import uuid4
 
 
 def _utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 @dataclass(frozen=True)
@@ -109,37 +108,63 @@ class InMemoryLedger:
         price: Decimal,
         commission: Decimal = Decimal("0"),
         realized_pnl: Decimal = Decimal("0"),
-    ) -> LedgerEntry:
+        side: str = "buy",
+    ) -> list[LedgerEntry]:
         """Record a fill and update the account balance.
 
-        The fill creates two entries:
-        1. P&L entry (realized_pnl, can be positive or negative)
-        2. Commission entry (always negative/debit)
+        The fill creates up to three entries that together preserve the
+        accounting invariant ``current_balance + unrealized_pnl = equity``:
 
-        Both are applied atomically to the account balance.
+        1. **Notional entry** (always): ``-price * quantity`` for BUY
+           (cash decreases by the asset value) or ``+price * quantity``
+           for SELL (cash increases).  This models the cash side of the
+           trade.
+        2. **P&L entry** (if ``realized_pnl != 0``): records realized
+           profit/loss from closing (part of) a position.
+        3. **Commission entry** (if ``commission > 0``): always a debit.
+
+        All entries are applied atomically to the account balance.
+
+        Returns the list of entries written (new API: list, not single
+        entry).
         """
         account = self._accounts.get(account_id)
         if account is None:
             raise ValueError(f"Account {account_id} not found")
 
-        # Calculate net cash impact
-        # For a buy: cash decreases by (price * quantity)
-        # For a sell: cash increases by (price * quantity)
-        # Simplified: we track realized P&L directly
-        total_impact = realized_pnl - commission
+        # Calculate net cash impact:
+        # notional + realized_pnl - commission
+        notional_amount = -(price * quantity) if side == "buy" else (price * quantity)
+        total_impact = notional_amount + realized_pnl - commission
 
-        # Create P&L entry
-        pnl_entry = LedgerEntry(
+        written: list[LedgerEntry] = []
+
+        # 1. Notional entry (always)
+        notional_entry = LedgerEntry(
             account_id=account_id,
             order_id=order_id,
             fill_id=fill_id,
-            amount=realized_pnl,
-            entry_type="trade",
-            description=f"Fill P&L: {quantity} @ {price}",
+            amount=notional_amount,
+            entry_type="notional",
+            description=f"Notional {side}: {quantity} @ {price}",
         )
-        self._entries.append(pnl_entry)
+        self._entries.append(notional_entry)
+        written.append(notional_entry)
 
-        # Create commission entry
+        # 2. P&L entry (only if non-zero)
+        if realized_pnl != 0:
+            pnl_entry = LedgerEntry(
+                account_id=account_id,
+                order_id=order_id,
+                fill_id=fill_id,
+                amount=realized_pnl,
+                entry_type="trade",
+                description=f"Fill P&L: {quantity} @ {price}",
+            )
+            self._entries.append(pnl_entry)
+            written.append(pnl_entry)
+
+        # 3. Commission entry (only if positive)
         if commission > 0:
             comm_entry = LedgerEntry(
                 account_id=account_id,
@@ -150,21 +175,19 @@ class InMemoryLedger:
                 description=f"Commission: {commission}",
             )
             self._entries.append(comm_entry)
+            written.append(comm_entry)
 
         # Update balance (immutable update via dataclass replace)
         new_balance = account.current_balance + total_impact
         if new_balance < 0:
             raise ValueError(
-                f"Insufficient balance: {account.current_balance} + "
-                f"{total_impact} = {new_balance}"
+                f"Insufficient balance: {account.current_balance} + {total_impact} = {new_balance}"
             )
         self._accounts[account_id] = AccountEntry(
-            **{**account.__dict__,
-               "current_balance": new_balance,
-               "version": account.version + 1}
+            **{**account.__dict__, "current_balance": new_balance, "version": account.version + 1}
         )
 
-        return pnl_entry
+        return written
 
     def get_balance(self, account_id: str) -> Decimal:
         account = self._accounts.get(account_id)

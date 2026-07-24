@@ -131,7 +131,14 @@ class QualificationPaperBroker:
         else:
             average = result.fill_price
         self._positions[order.instrument_id] = _Position(new_quantity, average)
-        self._cash += realized_pnl - result.commission
+        # Mirror the corrected ledger model: cash = realized_pnl - commission
+        # ± notional (debited on buy, credited on sell).
+        notional_delta = (
+            -result.fill_price * abs(result.fill_quantity)
+            if order.side == "buy"
+            else result.fill_price * abs(result.fill_quantity)
+        )
+        self._cash += realized_pnl - result.commission + notional_delta
         self._open_orders.pop(str(order.broker_order_id), None)
 
     async def positions(self) -> list[BrokerPosition]:
@@ -597,6 +604,13 @@ class EventDrivenQualificationRunner:
             return None
 
         realized_pnl = _realized_pnl(closing_position, result, self._contract.point_value)
+        # The Fill's ``side`` is the side of the order that generated
+        # this fill, which equals the side of the order just submitted
+        # to the broker.  This matches what the broker does in
+        # ``QualificationPaperBroker.apply_fill`` (which uses
+        # ``order.side`` to determine cash direction).  Without
+        # explicitly forwarding ``side`` here, the OMS/ledger would
+        # default to "buy" and the broker/ledger cash would diverge.
         fill = Fill(
             order_id=submitted.order_id,
             account_id=account_id,
@@ -605,6 +619,7 @@ class EventDrivenQualificationRunner:
             price=result.fill_price,
             commission=result.commission,
             realized_pnl=realized_pnl,
+            side=submitted.side,
             fill_time=event_time,
             idempotency_key=f"{broker_order_id}-fill-1",
         )
