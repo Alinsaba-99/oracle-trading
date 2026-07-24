@@ -10,7 +10,6 @@ Run with: ``pytest tests/integration/ -v``
 from __future__ import annotations
 
 from decimal import Decimal
-from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -25,9 +24,7 @@ class TestOrderToLedgerFlow:
         """Submit order, record fills, verify ledger balance."""
         ledger = InMemoryLedger()
         oms = InMemoryOMS(ledger=ledger)
-        acct = ledger.create_account(
-            account_type="paper", initial_balance=Decimal("100000")
-        )
+        acct = ledger.create_account(account_type="paper", initial_balance=Decimal("100000"))
 
         # Create order
         order = Order(
@@ -41,9 +38,7 @@ class TestOrderToLedgerFlow:
         assert created.status == "pending"
 
         # Submit (simulate)
-        submitted = oms.update_order(Order(
-            **{**created.__dict__, "status": "submitted"}
-        ))
+        submitted = oms.update_order(Order(**{**created.__dict__, "status": "submitted"}))
         assert submitted.status == "submitted"
 
         # Partial fill 1
@@ -116,9 +111,7 @@ class TestModeToOMS:
         # Research mode must not have broker credentials
         from core.domain.guard import check_credential_isolation
 
-        violations = check_credential_isolation({
-            "ORACLE_MODE": "research",
-        })
+        violations = check_credential_isolation({"ORACLE_MODE": "research"})
         assert violations == []
 
     def test_paper_mode_requires_api_key(self) -> None:

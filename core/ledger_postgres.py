@@ -15,14 +15,11 @@ Usage::
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
 from decimal import Decimal
-from typing import Any
-from uuid import uuid4
 
 import asyncpg
 
-from core.ledger import AccountEntry, LedgerEntry, _utcnow
+from core.ledger import AccountEntry, LedgerEntry
 
 logger = logging.getLogger("oracle.ledger.postgres")
 
@@ -42,10 +39,7 @@ class PostgresLedger:
 
     @classmethod
     async def create(
-        cls,
-        dsn: str = "postgresql://localhost:5432/oracle",
-        min_size: int = 1,
-        max_size: int = 5,
+        cls, dsn: str = "postgresql://localhost:5432/oracle", min_size: int = 1, max_size: int = 5
     ) -> PostgresLedger:
         """Create and initialize a PostgresLedger with connection pool.
 
@@ -281,7 +275,11 @@ class PostgresLedger:
 
     def get_entries(self, account_id: str) -> list[LedgerEntry]:
         """Get all entries for an account (from in-memory cache)."""
-        return [e for e in self._accounts.values() if hasattr(e, "account_id") and e.account_id == account_id]
+        return [
+            e
+            for e in self._accounts.values()
+            if hasattr(e, "account_id") and e.account_id == account_id
+        ]
 
     async def get_all_entries(self) -> list[LedgerEntry]:
         """Get all ledger entries from PostgreSQL."""

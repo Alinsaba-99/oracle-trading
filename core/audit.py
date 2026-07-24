@@ -10,7 +10,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 
@@ -22,20 +22,24 @@ class AuditEntry:
     trace_id: str = ""
     event_type: str = ""
     payload: dict[str, Any] = field(default_factory=dict)
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now(UTC).isoformat())
     previous_hash: str = ""
     hash: str = ""
 
     def compute_hash(self) -> str:
         """Compute SHA-256 hash of this entry (including previous_hash)."""
-        content = json.dumps({
-            "entry_id": self.entry_id,
-            "trace_id": self.trace_id,
-            "event_type": self.event_type,
-            "payload": self.payload,
-            "timestamp": self.timestamp,
-            "previous_hash": self.previous_hash,
-        }, sort_keys=True, default=str)
+        content = json.dumps(
+            {
+                "entry_id": self.entry_id,
+                "trace_id": self.trace_id,
+                "event_type": self.event_type,
+                "payload": self.payload,
+                "timestamp": self.timestamp,
+                "previous_hash": self.previous_hash,
+            },
+            sort_keys=True,
+            default=str,
+        )
         return hashlib.sha256(content.encode()).hexdigest()
 
     def verify(self) -> bool:
@@ -59,11 +63,7 @@ class AuditTrail:
         self._last_hash: str = ""
 
     def record(
-        self,
-        event_type: str,
-        payload: dict[str, Any],
-        trace_id: str = "",
-        entry_id: str = "",
+        self, event_type: str, payload: dict[str, Any], trace_id: str = "", entry_id: str = ""
     ) -> AuditEntry:
         """Record an audit entry.
 
@@ -119,15 +119,17 @@ class AuditTrail:
 
         data = []
         for entry in self._entries:
-            data.append({
-                "entry_id": entry.entry_id,
-                "trace_id": entry.trace_id,
-                "event_type": entry.event_type,
-                "payload": entry.payload,
-                "timestamp": entry.timestamp,
-                "previous_hash": entry.previous_hash,
-                "hash": entry.hash,
-            })
+            data.append(
+                {
+                    "entry_id": entry.entry_id,
+                    "trace_id": entry.trace_id,
+                    "event_type": entry.event_type,
+                    "payload": entry.payload,
+                    "timestamp": entry.timestamp,
+                    "previous_hash": entry.previous_hash,
+                    "hash": entry.hash,
+                }
+            )
 
         with open(path, "w") as f:
             json.dump(data, f, indent=2, default=str)

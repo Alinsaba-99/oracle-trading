@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import argparse
 import sys
-from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 
@@ -53,21 +52,22 @@ def run_simulation(
     """
     import pandas as pd
     import yfinance as yf
-    from market.contracts import get_contract
+
     from core.ledger import InMemoryLedger
     from execution.brokers.paper_engine import RealisticPaperFillEngine
+    from market.contracts import get_contract
 
     # 1. Fetch real data
     ticker = f"{symbol}=F"
     if verbose:
-        print(f"\n{'='*60}")
-        print(f"📊 ORACLE TRADING SIMULATION")
-        print(f"{'='*60}")
+        print(f"\n{'=' * 60}")
+        print("📊 ORACLE TRADING SIMULATION")
+        print(f"{'=' * 60}")
         print(f"Symbol:    {symbol} ({ticker})")
         print(f"Strategy:  SMA({fast_ma}/{slow_ma}) crossover")
         print(f"Period:    {period} ({interval})")
         print(f"Capital:   ${initial_capital:,.2f}")
-        print(f"{'='*60}\n")
+        print(f"{'=' * 60}\n")
 
     print(f"🔄 Downloading {ticker} data...")
     df = yf.download(ticker, period=period, interval=interval)
@@ -83,10 +83,7 @@ def run_simulation(
     # 3. Setup paper engine + ledger
     engine = RealisticPaperFillEngine(seed=42)
     ledger = InMemoryLedger()
-    acct = ledger.create_account(
-        account_type="paper",
-        initial_balance=initial_capital,
-    )
+    acct = ledger.create_account(account_type="paper", initial_balance=initial_capital)
 
     # 4. Run strategy
     close = df["Close"]
@@ -120,7 +117,10 @@ def run_simulation(
             # Close existing position
             if position != 0:
                 result = engine.simulate_fill(
-                    symbol, price_val, abs(position), "market",
+                    symbol,
+                    price_val,
+                    abs(position),
+                    "market",
                     side="sell" if position > 0 else "buy",
                 )
                 if result.filled:
@@ -135,55 +135,59 @@ def run_simulation(
                         commission=result.commission,
                         realized_pnl=net_pnl,
                     )
-                    trades.append({
-                        "date": date_val,
-                        "action": "close",
-                        "side": "short" if position > 0 else "cover",
-                        "qty": abs(position),
-                        "price": float(result.fill_price),
-                        "pnl": float(net_pnl),
-                        "commission": float(result.commission),
-                    })
+                    trades.append(
+                        {
+                            "date": date_val,
+                            "action": "close",
+                            "side": "short" if position > 0 else "cover",
+                            "qty": abs(position),
+                            "price": float(result.fill_price),
+                            "pnl": float(net_pnl),
+                            "commission": float(result.commission),
+                        }
+                    )
 
             # Open new position
             qty = 2  # Fixed 2 contracts for simplicity
             result = engine.simulate_fill(
-                symbol, price_val, qty, "market",
-                side="buy" if signal > 0 else "sell",
+                symbol, price_val, qty, "market", side="buy" if signal > 0 else "sell"
             )
             if result.filled:
                 position = signal * qty
                 entry_price = result.fill_price
-                trades.append({
-                    "date": date_val,
-                    "action": "open",
-                    "side": "long" if signal > 0 else "short",
-                    "qty": qty,
-                    "price": float(result.fill_price),
-                    "pnl": 0,
-                    "commission": float(result.commission),
-                })
+                trades.append(
+                    {
+                        "date": date_val,
+                        "action": "open",
+                        "side": "long" if signal > 0 else "short",
+                        "qty": qty,
+                        "price": float(result.fill_price),
+                        "pnl": 0,
+                        "commission": float(result.commission),
+                    }
+                )
 
         # Record equity
         open_pnl = 0
         if position != 0:
             open_pnl = float((price_dec - entry_price) * spec.point_value * Decimal(str(position)))
-        equity_curve.append({
-            "date": date_val,
-            "balance": float(ledger.get_balance(acct.account_id)),
-            "open_pnl": open_pnl,
-            "equity": float(ledger.get_balance(acct.account_id)) + open_pnl,
-            "position": position,
-            "price": price_val,
-        })
+        equity_curve.append(
+            {
+                "date": date_val,
+                "balance": float(ledger.get_balance(acct.account_id)),
+                "open_pnl": open_pnl,
+                "equity": float(ledger.get_balance(acct.account_id)) + open_pnl,
+                "position": position,
+                "price": price_val,
+            }
+        )
 
     # Close any remaining position
     if position != 0:
         price_val = float(close.iloc[-1])
         price_dec = Decimal(str(round(price_val, 2)))
         result = engine.simulate_fill(
-            symbol, price_val, abs(position), "market",
-            side="sell" if position > 0 else "buy",
+            symbol, price_val, abs(position), "market", side="sell" if position > 0 else "buy"
         )
         if result.filled:
             pnl = (price_dec - entry_price) * spec.point_value * Decimal(str(position))
@@ -197,15 +201,17 @@ def run_simulation(
                 commission=result.commission,
                 realized_pnl=net_pnl,
             )
-            trades.append({
-                "date": df.index[-1],
-                "action": "close",
-                "side": "short" if position > 0 else "cover",
-                "qty": abs(position),
-                "price": float(result.fill_price),
-                "pnl": float(net_pnl),
-                "commission": float(result.commission),
-            })
+            trades.append(
+                {
+                    "date": df.index[-1],
+                    "action": "close",
+                    "side": "short" if position > 0 else "cover",
+                    "qty": abs(position),
+                    "price": float(result.fill_price),
+                    "pnl": float(net_pnl),
+                    "commission": float(result.commission),
+                }
+            )
             position = 0
 
     # 5. Compute results
@@ -216,23 +222,23 @@ def run_simulation(
     winning_trades = [t for t in trades if t.get("pnl", 0) > 0]
     losing_trades = [t for t in trades if t.get("pnl", 0) < 0]
     closed_trades = [t for t in trades if t["action"] == "close"]
-    total_closed_pnl = sum(t["pnl"] for t in closed_trades)
+    sum(t["pnl"] for t in closed_trades)
     total_commission = sum(t["commission"] for t in trades)
 
     # Compute Sharpe (simplified, using daily returns)
     if len(equity_curve) > 1:
         eq_df = pd.DataFrame(equity_curve).set_index("date")
         returns = eq_df["equity"].pct_change().dropna()
-        sharpe = float(returns.mean() / returns.std() * (252 ** 0.5)) if returns.std() > 0 else 0
+        sharpe = float(returns.mean() / returns.std() * (252**0.5)) if returns.std() > 0 else 0
         max_dd = _max_drawdown(eq_df["equity"].values)
     else:
         sharpe = 0
         max_dd = 0
 
     # 6. Print results
-    print(f"\n{'='*60}")
-    print(f"📈 RESULTS")
-    print(f"{'='*60}")
+    print(f"\n{'=' * 60}")
+    print("📈 RESULTS")
+    print(f"{'=' * 60}")
     print(f"Initial capital:  ${float(initial_capital):,.2f}")
     print(f"Final balance:    ${final_balance:,.2f}")
     print(f"Total P&L:        ${total_pnl:,.2f} ({total_return_pct:+.2f}%)")
@@ -245,7 +251,7 @@ def run_simulation(
     print(f"Sharpe (daily):   {sharpe:.2f}")
     print(f"Max drawdown:     {max_dd:.1f}%")
     print(f"Contract:         {symbol} (${spec.tick_value}/tick)")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     return {
         "symbol": symbol,

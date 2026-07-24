@@ -15,14 +15,14 @@ after the consumer's decision time.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
 
 def _now() -> datetime:
     """Current UTC timestamp."""
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 @dataclass(frozen=True)
@@ -123,13 +123,15 @@ class DataLineage:
         transform_params: dict[str, Any] | None = None,
     ) -> None:
         """Record a transformation step in the lineage."""
-        self._steps.append({
-            "step": step_name,
-            "input_id": input_record_id,
-            "output_id": output_record_id,
-            "params": transform_params or {},
-            "timestamp": _now().isoformat(),
-        })
+        self._steps.append(
+            {
+                "step": step_name,
+                "input_id": input_record_id,
+                "output_id": output_record_id,
+                "params": transform_params or {},
+                "timestamp": _now().isoformat(),
+            }
+        )
 
     def to_dict(self) -> list[dict[str, Any]]:
         return list(self._steps)

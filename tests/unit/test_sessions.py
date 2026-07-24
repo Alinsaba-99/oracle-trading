@@ -2,17 +2,9 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, timedelta
 
-import pytest
-
-from market.roll import (
-    MONTH_CODES,
-    continuous_symbol,
-    next_contract,
-    tradable_contract,
-    default_roll_date,
-)
+from market.roll import MONTH_CODES, continuous_symbol, default_roll_date, tradable_contract
 from market.sessions import (
     CME_2026_CALENDAR,
     CME_2026_EARLY_CLOSES,
@@ -22,7 +14,6 @@ from market.sessions import (
     _cme_offset,
     is_dst_transition_day,
 )
-
 
 # =========================================================================
 # Session tests
@@ -70,10 +61,10 @@ class TestDSTTransitions:
     """Daylight saving time edge cases."""
 
     def test_dst_spring_date(self) -> None:
-        assert DST_SPRING_2026 == date(2026, 3, 8)
+        assert date(2026, 3, 8) == DST_SPRING_2026
 
     def test_dst_fall_date(self) -> None:
-        assert DST_FALL_2026 == date(2026, 11, 1)
+        assert date(2026, 11, 1) == DST_FALL_2026
 
     def test_dst_transition_detected(self) -> None:
         assert is_dst_transition_day(DST_SPRING_2026)

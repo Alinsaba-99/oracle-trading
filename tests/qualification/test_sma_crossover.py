@@ -61,7 +61,6 @@ class TestQualification:
         sma_slow = close.rolling(50).mean()
 
         # Generate signals
-        signal = 0
         position = 0
         trades = []
         entry_price = 0.0
@@ -78,11 +77,10 @@ class TestQualification:
                     position = 1
                     entry_price = close.iloc[i]
             # Cross below
-            elif prev_fast >= prev_slow and cur_fast < cur_slow:
-                if position == 1:
-                    pnl = (close.iloc[i] - entry_price) * 50  # ES point value
-                    trades.append(pnl)
-                    position = 0
+            elif prev_fast >= prev_slow and cur_fast < cur_slow and position == 1:
+                pnl = (close.iloc[i] - entry_price) * 50  # ES point value
+                trades.append(pnl)
+                position = 0
 
         # Close any open position
         if position == 1:
@@ -92,7 +90,7 @@ class TestQualification:
         total_pnl = sum(trades)
         num_trades = len(trades)
 
-        print(f"\n📊 SMA Crossover (20/50) on ES daily:")
+        print("\n📊 SMA Crossover (20/50) on ES daily:")
         print(f"   Trades: {num_trades}")
         print(f"   Total P&L: ${total_pnl:,.2f}")
         print(f"   Win rate: {sum(1 for t in trades if t > 0) / max(num_trades, 1) * 100:.0f}%")
@@ -105,8 +103,8 @@ class TestQualification:
     def test_vectorized_parity(self) -> None:
         """Vectorbt backtest should produce the same results as pandas."""
         pytest.importorskip("vectorbt")
-        import vectorbt as vbt
         import pandas as pd
+        import vectorbt as vbt
 
         df = pd.read_parquet("data/ohlcv/ES_daily.parquet")
         close = df["Close"] if "Close" in df.columns else df.iloc[:, 0]
@@ -120,7 +118,7 @@ class TestQualification:
         pf = vbt.Portfolio.from_signals(close, entries, exits, freq="D")
         total_return = pf.total_return()
 
-        print(f"\n📊 Vectorbt SMA Crossover (20/50):")
+        print("\n📊 Vectorbt SMA Crossover (20/50):")
         print(f"   Total return: {total_return:.2%}")
         print(f"   Sharpe: {pf.sharpe_ratio():.2f}")
         print(f"   Max DD: {pf.max_drawdown():.2%}")

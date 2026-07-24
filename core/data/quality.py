@@ -6,7 +6,7 @@ feeds before they reach the backtest or qualification engine.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Any
 
 
@@ -15,9 +15,7 @@ class DataQualityWarning(Exception):
 
 
 def find_duplicates(
-    records: list[dict[str, Any]],
-    timestamp_key: str = "timestamp",
-    id_key: str | None = None,
+    records: list[dict[str, Any]], timestamp_key: str = "timestamp", id_key: str | None = None
 ) -> list[int]:
     """Find duplicate records in a list of dictionaries.
 
@@ -39,9 +37,7 @@ def find_duplicates(
         else:
             # Use timestamp + sorted fields as composite key
             ts = rec.get(timestamp_key, "")
-            fields = tuple(sorted(
-                (k, v) for k, v in rec.items() if k != timestamp_key
-            ))
+            fields = tuple(sorted((k, v) for k, v in rec.items() if k != timestamp_key))
             key = (ts, fields)
 
         if key in seen:
@@ -83,11 +79,7 @@ def find_gaps(
 
 
 def find_outliers(
-    values: list[float],
-    *,
-    method: str = "zscore",
-    threshold: float = 3.0,
-    window: int = 20,
+    values: list[float], *, method: str = "zscore", threshold: float = 3.0, window: int = 20
 ) -> list[int]:
     """Find outlier values using z-score or IQR method.
 
@@ -110,7 +102,7 @@ def find_outliers(
             window_vals = values[i - window : i]
             mean = sum(window_vals) / len(window_vals)
             variance = sum((x - mean) ** 2 for x in window_vals) / len(window_vals)
-            std = variance ** 0.5
+            std = variance**0.5
             if std > 0 and abs(values[i] - mean) / std > threshold:
                 outliers.append(i)
             elif std == 0 and abs(values[i] - mean) > 0:

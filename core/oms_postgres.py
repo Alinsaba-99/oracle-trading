@@ -14,7 +14,6 @@ Usage::
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any
 from uuid import uuid4
@@ -138,7 +137,8 @@ class PostgresOMS:
             # Check idempotency
             existing = await conn.fetchrow(
                 "SELECT order_id, status FROM oms_orders WHERE account_id=$1 AND client_order_id=$2",
-                account_id, client_order_id,
+                account_id,
+                client_order_id,
             )
             if existing:
                 return existing["order_id"]
@@ -150,8 +150,12 @@ class PostgresOMS:
                     instrument_id, side, quantity, price, status)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, 'submitted')
                 """,
-                order_id, account_id, client_order_id,
-                instrument_id, side, str(quantity),
+                order_id,
+                account_id,
+                client_order_id,
+                instrument_id,
+                side,
+                str(quantity),
                 str(price) if price else None,
             )
 
@@ -185,15 +189,15 @@ class PostgresOMS:
 
         async with self._pool.acquire() as conn:
             # Get current order
-            order = await conn.fetchrow(
-                "SELECT * FROM oms_orders WHERE order_id=$1", order_id
-            )
+            order = await conn.fetchrow("SELECT * FROM oms_orders WHERE order_id=$1", order_id)
             if order is None:
                 logger.warning(f"Order {order_id} not found")
                 return False
 
             new_filled = Decimal(str(order["filled_quantity"])) + quantity
-            new_status = "filled" if new_filled >= Decimal(str(order["quantity"])) else "partially_filled"
+            new_status = (
+                "filled" if new_filled >= Decimal(str(order["quantity"])) else "partially_filled"
+            )
 
             # Insert fill
             await conn.execute(
@@ -202,8 +206,12 @@ class PostgresOMS:
                 VALUES ($1, $2, $3, $4, $5, $6)
                 ON CONFLICT (fill_id) DO NOTHING
                 """,
-                fill_id, order_id, order["account_id"],
-                str(quantity), str(price), str(commission),
+                fill_id,
+                order_id,
+                order["account_id"],
+                str(quantity),
+                str(price),
+                str(commission),
             )
 
             # Update order
@@ -217,7 +225,9 @@ class PostgresOMS:
                     version = version + 1
                 WHERE order_id = $1
                 """,
-                order_id, str(new_filled), new_status,
+                order_id,
+                str(new_filled),
+                new_status,
             )
 
             # Record in ledger if available
@@ -258,7 +268,8 @@ class PostgresOMS:
             if account_id and status:
                 rows = await conn.fetch(
                     "SELECT * FROM oms_orders WHERE account_id=$1 AND status=$2 ORDER BY created_at DESC",
-                    account_id, status,
+                    account_id,
+                    status,
                 )
             elif account_id:
                 rows = await conn.fetch(
@@ -269,17 +280,14 @@ class PostgresOMS:
                 rows = await conn.fetch("SELECT * FROM oms_orders ORDER BY created_at DESC")
             return [dict(r) for r in rows]
 
-    async def get_fills(
-        self, order_id: str | None = None
-    ) -> list[dict[str, Any]]:
+    async def get_fills(self, order_id: str | None = None) -> list[dict[str, Any]]:
         """Get fills, optionally filtered by order."""
         if self._pool is None:
             return []
         async with self._pool.acquire() as conn:
             if order_id:
                 rows = await conn.fetch(
-                    "SELECT * FROM oms_fills WHERE order_id=$1 ORDER BY fill_time",
-                    order_id,
+                    "SELECT * FROM oms_fills WHERE order_id=$1 ORDER BY fill_time", order_id
                 )
             else:
                 rows = await conn.fetch("SELECT * FROM oms_fills ORDER BY fill_time")

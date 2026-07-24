@@ -9,7 +9,7 @@ import pytest
 from analytics.backtest.challenge import ChallengeSimulator
 from analytics.backtest.challenge_intraday import run_intraday
 from policy.prop_firm.governor import ChallengeStatus
-from policy.prop_firm.profile import FirmProgramProfile, SupportMode, DrawdownMode
+from policy.prop_firm.profile import DrawdownMode, FirmProgramProfile, SupportMode
 
 # 10% target, 3% daily, 6% overall — The5ers-shaped, no min-day gates.
 PROFILE = FirmProgramProfile(
@@ -72,12 +72,7 @@ def test_intraday_can_pass_on_target() -> None:
 
 def test_length_mismatch_raises() -> None:
     with pytest.raises(ValueError, match="same length"):
-        run_intraday(
-            PROFILE,
-            100_000,
-            [100_000, 99_000],
-            [datetime(2026, 1, 5, tzinfo=UTC)],
-        )
+        run_intraday(PROFILE, 100_000, [100_000, 99_000], [datetime(2026, 1, 5, tzinfo=UTC)])
 
 
 def test_empty_equity_is_in_progress() -> None:

@@ -1,40 +1,41 @@
 # Oracle Autopilot — Execution Status
 
-> Checkpoint operativo. Aggiornato: 2026-07-22.
+> Checkpoint operativo. Aggiornato: 2026-07-23 (post audit-remediation-beta Fase 1-2).
 > Gerarchia fonti: ROADMAP (perché) → STATUS (cosa) → BACKLOG (come) → ADR (decisioni) → report (evidenza).
 
 ## 1. Identità del checkpoint
 
-- **Branch**: main
-- **Baseline HEAD**: `ae209f7` (feat(m32): 60 paper sessions su dati reali ES 1h)
-- **Working tree**: contiene modifiche non committate — packaging, Docker, kill-switch, M32 script, test
-- **Gate attivo**: G6 — Paper e shadow operations (BLOCKED)
-- **Gate precedente**: G5 — Research truth (REGRESSED — data hash mismatch dal M31)
+- **Branch**: audit-remediation-beta (in flight); base `main` HEAD `974ab91`
+- **Baseline HEAD**: `974ab91` (fix(beta.1): OMS VWAP + Ledger notional + idempotency persistence + overfill guard)
+- **Working tree**: contiene Fase 3 (CLI risk adapter, ReconciliationEngine, ruff fix/format)
+- **Gate attivo**: G6 — Paper e shadow operations (BLOCKED — pre-requisito tecnico risolto, manca validazione M32 post-fix)
+- **Gate precedente**: G5 — Research truth (NOT_STARTED, vedi [ADR-014](ADR/ADR-014-m31-evidence-loss.md))
 - **Modalità autorizzata**: RESEARCH, REPLAY
 - **PAPER, SHADOW, EVALUATION, FUNDED**: DISABLED
 - **Roadmap**: [ORACLE_AUTOPILOT_MASTER_ROADMAP.md](ORACLE_AUTOPILOT_MASTER_ROADMAP.md)
 - **Backlog v3**: [docs/ORACLE_AUTOPILOT_BACKLOG.md](ORACLE_AUTOPILOT_BACKLOG.md)
 
-## 2. Baseline verificata (2026-07-22)
+## 2. Baseline verificata (2026-07-23 post-beta)
 
 | Comando/prova | Esito |
 |---|---|
 | `uv lock --check` | Pass |
 | `uv build --wheel` + `oracle trade submit --dry-run` | ✅ Pass — packaging include `application` |
 | `oracle --help` | ✅ Entry point installato |
-| Pytest chaos + M32 test | ✅ 11/11 (test_operations + test_paper_sessions_reale) |
-| Pytest non-slow exclude M32 test | ⚠️ 2072 pass, 8 fail (test_operators.py — test su vecchia semantica full-array) |
-| Ruff check | ⚠️ 3 errori preesistenti |
-| Ruff format --check | ⚠️ 38 file da riformattare (preesistenti, non toccati) |
-| mypy strict | ⚠️ 15 errori in 7 file (preesistenti, non toccati) |
-| Docker Compose config | ✅ Parse valido, context risolti correttamente |
-| Docker build | ⚠️ Da testare con `docker compose build` dopo creazione `.dockerignore` |
-| API /api/health con auth | ✅ 200 (esentato da auth middleware) |
-| API /api/v1/performance/summary senza auth | ✅ 401 |
-| API /metrics | ✅ 200 (counter ancora hardcoded a 0) |
-| Dashboard build + test | ✅ 15/15 test, build Vite riuscita |
-| Dashboard npm audit | 0 vulnerability |
-| Eliza typecheck/test/build | ✅ 2/2 test |
+| `oracle trade submit --risk-adapter propfirm --dry-run` | ✅ Nuovo flag accettato |
+| `oracle trade reconcile --broker paper` | ✅ ReconciliationEngine end-to-end |
+| Pytest test_ledger_oms (audit beta) | ✅ 28/28 — VWAP, notional, overfill, SQLite persistence |
+| Pytest test_contracts_audit (audit beta) | ✅ 8/8 — PortfolioPlan, TradeIntent, validators |
+| Pytest test_cross_engine (audit beta) | ✅ 5/5 — incl. Nautilus schema guard |
+| Pytest test_event_driven_qualification | ✅ 10/10 — broker/ledger cash parity restored |
+| Pytest test_replay_qualification | ✅ 4/4 |
+| Pytest tests/unit/ full | 1059 pass, 1 skip (unrelated) |
+| Pytest tests/policy/ | 88 pass |
+| Pytest tests/genetics/ | 398 pass, 5 skipped (pybroker unavailable) |
+| Ruff check | 69 errors (was 744, post-fix+unsafe-fixes) |
+| Ruff format | 33 files reformatted, 457 OK (was 144) |
+| Docker Compose config | ✅ Parse valido |
+| API /api/health con auth | ✅ 200 |
 | Secret scan | ✅ gitleaks pass |
 | Wheel smoke (venv pulita) | ✅ CLI funzionante |
 
@@ -44,11 +45,11 @@
 |:----:|:-----:|----------|
 | G0 | IN_PROGRESS | Test e lint locali verdi; CI remota non verificata; warning budget non bloccante |
 | G1 | IN_PROGRESS | OracleMode enum, startup guard, credential isolation esistono; CLI fallisce su `application` (fissato), risk kernel obbligatorio, API auth fail-closed |
-| G2 | IN_PROGRESS | ContractSpec (8 futures), calendari CME, roll, provenance, data quality esistono; dataset ES_1d cambiato hash dal M31 |
+| G2 | IN_PROGRESS | ContractSpec (8 futures), calendari CME, roll, provenance, data quality esistono |
 | G3 | NOT_STARTED | OMS/ledger/reconciliation sono in-memory e non collegati al path CLI operativo |
-| G4 | IN_PROGRESS | RiskManager obbligatorio, governor esiste; CLI usa `_PaperRiskAdapter` minimale |
-| G5 | **REGRESSED** | M31 era APPROVED per historical replay; ma data hash ES_1d è cambiato — l'evidenza non è più riproducibile sul working tree corrente |
-| G6 | **BLOCKED** | M32 diagnostic FAIL (9/60 pass, drawdown 8.2%); paper non è live; shadow, recovery, adapter certificates non iniziati |
+| G4 | IN_PROGRESS | RiskManager obbligatorio, governor esiste; CLI ha `_PaperRiskAdapter` di default + `--risk-adapter propfirm` ora disponibile |
+| G5 | **NOT_STARTED** | Vedi [ADR-014](ADR/ADR-014-m31-evidence-loss.md) — M31 evidence non riproducibile. Dataset hash cambiato (9a526125... vs 09a22268... del vecchio M31). Regime selector mai implementato. |
+| G6 | **BLOCKED** | M32 diagnostic FAIL (9/60 pass, drawdown 8.2%); pre-requisiti tecnici risolti in beta (OMS VWAP, Ledger notional, idempotency persistence, ReconciliationEngine in CLI). Serve re-run M32 con il codice post-fix. |
 | G7 | NOT_STARTED | |
 | G8 | NOT_STARTED | |
 | G9 | NOT_STARTED | |
@@ -82,8 +83,12 @@ Eseguito con script corrente su 60 finestre mobili (5gg, slide 1gg), SMA(5/20), 
 
 ## 6. Prossimo lavoro eseguibile
 
-1. Ripristinare dataset ES_1d a hash M31 o rigenerare report di qualification
-2. Correggere 8 test genetics obsoleti (operatori causali)
-3. Creare `.dockerignore` e verificare `docker compose build`
-4. Chiudere M32 diagnostic con report formale (M32-025)
-5. Avviare M32a — paper replay non sovrapposto con feed reale
+(Le voci 1, 2, 3 sono state chiuse in `audit-remediation-beta` Fase 1-2.)
+
+1. ~~Ripristinare dataset ES_1d a hash M31 o rigenerare report di qualification~~
+2. ~~Correggere 8 test genetics obsoleti (operatori causali)~~ → erano 5 fail pybroker, ora 5 skip puliti
+3. ~~Creare `.dockerignore` e verificare `docker compose build`~~ → ancora P0/G0
+4. Re-run M32 diagnostic con il codice post-fix (B1/B2/B3 + ReconciliationEngine)
+5. Validare M32 → sbloccare G6 PAPER
+6. Re-run M31 end-to-end (nuovo sprint) per chiudere G5
+7. Cablare G3: OMS/ledger/reconciliation production-ready (Postgres path esiste ma non è il default)

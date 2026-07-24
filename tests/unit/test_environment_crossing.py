@@ -4,12 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from core.domain.guard import (
-    ModeGuardError,
-    check_credential_isolation,
-    current_mode,
-    guard,
-)
+from core.domain.guard import ModeGuardError, check_credential_isolation, current_mode, guard
 from core.domain.mode import OracleMode
 
 
@@ -18,51 +13,51 @@ class TestCredentialIsolation:
 
     def test_paper_without_funded_creds_ok(self) -> None:
         """Paper mode without funded credentials should pass."""
-        violations = check_credential_isolation({
-            "ORACLE_MODE": "paper",
-            "ORACLE_FUNDED_API_KEY": "",
-        })
+        violations = check_credential_isolation(
+            {"ORACLE_MODE": "paper", "ORACLE_FUNDED_API_KEY": ""}
+        )
         assert violations == []
 
     def test_paper_with_funded_creds_fails(self) -> None:
         """Paper mode with funded credentials should flag violation."""
-        violations = check_credential_isolation({
-            "ORACLE_MODE": "paper",
-            "ORACLE_FUNDED_API_KEY": "should-not-be-here",
-        })
+        violations = check_credential_isolation(
+            {"ORACLE_MODE": "paper", "ORACLE_FUNDED_API_KEY": "should-not-be-here"}
+        )
         assert len(violations) == 1
         assert "ORACLE_FUNDED_API_KEY" in violations[0]
         assert "paper" in violations[0]
 
     def test_shadow_with_funded_creds_fails(self) -> None:
-        violations = check_credential_isolation({
-            "ORACLE_MODE": "shadow",
-            "ORACLE_FUNDED_API_KEY": "leaked",
-            "ORACLE_FUNDED_BROKER_TOKEN": "leaked",
-        })
+        violations = check_credential_isolation(
+            {
+                "ORACLE_MODE": "shadow",
+                "ORACLE_FUNDED_API_KEY": "leaked",
+                "ORACLE_FUNDED_BROKER_TOKEN": "leaked",
+            }
+        )
         assert len(violations) == 2
 
     def test_funded_mode_has_no_forbidden_creds(self) -> None:
         """Funded mode should not forbid any credentials."""
-        violations = check_credential_isolation({
-            "ORACLE_MODE": "funded",
-            "ORACLE_FUNDED_API_KEY": "key",
-            "ORACLE_FUNDED_BROKER_TOKEN": "token",
-        })
+        violations = check_credential_isolation(
+            {
+                "ORACLE_MODE": "funded",
+                "ORACLE_FUNDED_API_KEY": "key",
+                "ORACLE_FUNDED_BROKER_TOKEN": "token",
+            }
+        )
         assert violations == []
 
     def test_research_has_no_restrictions(self) -> None:
-        violations = check_credential_isolation({
-            "ORACLE_MODE": "research",
-            "ORACLE_FUNDED_API_KEY": "whatever",
-        })
+        violations = check_credential_isolation(
+            {"ORACLE_MODE": "research", "ORACLE_FUNDED_API_KEY": "whatever"}
+        )
         assert violations == []
 
     def test_evaluation_with_funded_fails(self) -> None:
-        violations = check_credential_isolation({
-            "ORACLE_MODE": "evaluation",
-            "ORACLE_FUNDED_BROKER_TOKEN": "leaked",
-        })
+        violations = check_credential_isolation(
+            {"ORACLE_MODE": "evaluation", "ORACLE_FUNDED_BROKER_TOKEN": "leaked"}
+        )
         assert len(violations) == 1
 
 
@@ -81,13 +76,7 @@ class TestModeWiringCLI:
     def test_cli_funded_blocked(self) -> None:
         """Funded mode in CLI should require broker token."""
         with pytest.raises(ModeGuardError, match="ORACLE_FUNDED_BROKER_TOKEN"):
-            guard(
-                OracleMode.FUNDED,
-                env={
-                    "ORACLE_MODE": "funded",
-                    "ORACLE_FUNDED_API_KEY": "key",
-                },
-            )
+            guard(OracleMode.FUNDED, env={"ORACLE_MODE": "funded", "ORACLE_FUNDED_API_KEY": "key"})
 
 
 class TestModeWiringAPI:
@@ -97,10 +86,11 @@ class TestModeWiringAPI:
         """Research mode should start without credentials."""
         import os
         import subprocess
+
         result = subprocess.run(
-            ["uv", "run", "--frozen", "python", "-c",
-             "from apps.api.main import app; print('ok')"],
-            capture_output=True, text=True,
+            ["uv", "run", "--frozen", "python", "-c", "from apps.api.main import app; print('ok')"],
+            capture_output=True,
+            text=True,
             cwd="/home/alin/_repos/oracle-trading",
             env={"ORACLE_MODE": "research", "PATH": os.environ.get("PATH", "")},
         )
@@ -110,15 +100,13 @@ class TestModeWiringAPI:
         """Funded mode API should refuse to start without broker token."""
         import os
         import subprocess
+
         result = subprocess.run(
-            ["uv", "run", "--frozen", "python", "-c",
-             "from apps.api.main import app; print('ok')"],
-            capture_output=True, text=True,
+            ["uv", "run", "--frozen", "python", "-c", "from apps.api.main import app; print('ok')"],
+            capture_output=True,
+            text=True,
             cwd="/home/alin/_repos/oracle-trading",
-            env={
-                "ORACLE_MODE": "funded",
-                "PATH": os.environ.get("PATH", ""),
-            },
+            env={"ORACLE_MODE": "funded", "PATH": os.environ.get("PATH", "")},
         )
         assert result.returncode != 0
         assert "ORACLE_FUNDED_BROKER_TOKEN" in result.stderr
@@ -135,9 +123,11 @@ class TestModeDetection:
 
     def test_oracle_mode_funded_with_prefix(self) -> None:
         """Mode with prefix env vars should set correct mode."""
-        mode = current_mode({
-            "ORACLE_MODE": "evaluation",
-            "ORACLE_EVAL_API_KEY": "test-key",
-            "ORACLE_EVAL_BROKER_TOKEN": "test-token",
-        })
+        mode = current_mode(
+            {
+                "ORACLE_MODE": "evaluation",
+                "ORACLE_EVAL_API_KEY": "test-key",
+                "ORACLE_EVAL_BROKER_TOKEN": "test-token",
+            }
+        )
         assert mode == OracleMode.EVALUATION

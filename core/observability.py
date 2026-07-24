@@ -112,7 +112,8 @@ def setup_logging(level: str = "INFO") -> None:
             structlog.processors.format_exc_info,
             structlog.processors.UnicodeDecoder(),
             _add_trace_context,
-            structlog.dev.ConsoleRenderer() if level == "DEBUG"
+            structlog.dev.ConsoleRenderer()
+            if level == "DEBUG"
             else structlog.processors.JSONRenderer(),
         ],
         wrapper_class=structlog.stdlib.BoundLogger,

@@ -2,15 +2,9 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime
 
-from core.data.provenance import (
-    DataLineage,
-    DataNotAvailableError,
-    DataProvenance,
-    ProvenancedRecord,
-    require_cutoff,
-)
+from core.data.provenance import DataLineage, DataProvenance, ProvenancedRecord, require_cutoff
 
 
 class TestDataProvenance:
@@ -19,7 +13,7 @@ class TestDataProvenance:
     def test_auto_ingested_at(self) -> None:
         p = DataProvenance()
         assert p.ingested_at is not None
-        assert p.ingested_at.tzinfo == timezone.utc
+        assert p.ingested_at.tzinfo == UTC
 
     def test_auto_record_id(self) -> None:
         p1 = DataProvenance()
@@ -31,28 +25,28 @@ class TestDataProvenance:
         assert p.revision_id is None
 
     def test_available_at_defaults_to_published(self) -> None:
-        pub = datetime(2026, 6, 1, 12, 0, tzinfo=timezone.utc)
+        pub = datetime(2026, 6, 1, 12, 0, tzinfo=UTC)
         p = DataProvenance(published_at=pub)
         assert p.available_at is None  # Doesn't auto-default
         # But is_available_at uses published_at as fallback
-        assert p.is_available_at(datetime(2026, 6, 1, 12, 0, tzinfo=timezone.utc))
+        assert p.is_available_at(datetime(2026, 6, 1, 12, 0, tzinfo=UTC))
 
     def test_is_available_before_published(self) -> None:
-        pub = datetime(2026, 6, 1, 12, 0, tzinfo=timezone.utc)
+        pub = datetime(2026, 6, 1, 12, 0, tzinfo=UTC)
         p = DataProvenance(published_at=pub)
-        assert not p.is_available_at(datetime(2026, 6, 1, 11, 0, tzinfo=timezone.utc))
+        assert not p.is_available_at(datetime(2026, 6, 1, 11, 0, tzinfo=UTC))
 
     def test_is_available_after_published(self) -> None:
-        pub = datetime(2026, 6, 1, 12, 0, tzinfo=timezone.utc)
+        pub = datetime(2026, 6, 1, 12, 0, tzinfo=UTC)
         p = DataProvenance(published_at=pub)
-        assert p.is_available_at(datetime(2026, 6, 1, 13, 0, tzinfo=timezone.utc))
+        assert p.is_available_at(datetime(2026, 6, 1, 13, 0, tzinfo=UTC))
 
     def test_available_at_overrides_published(self) -> None:
-        pub = datetime(2026, 6, 1, 12, 0, tzinfo=timezone.utc)
-        avail = datetime(2026, 6, 1, 14, 0, tzinfo=timezone.utc)
+        pub = datetime(2026, 6, 1, 12, 0, tzinfo=UTC)
+        avail = datetime(2026, 6, 1, 14, 0, tzinfo=UTC)
         p = DataProvenance(published_at=pub, available_at=avail)
-        assert not p.is_available_at(datetime(2026, 6, 1, 13, 0, tzinfo=timezone.utc))
-        assert p.is_available_at(datetime(2026, 6, 1, 14, 0, tzinfo=timezone.utc))
+        assert not p.is_available_at(datetime(2026, 6, 1, 13, 0, tzinfo=UTC))
+        assert p.is_available_at(datetime(2026, 6, 1, 14, 0, tzinfo=UTC))
 
     def test_to_dict_contains_timestamps(self) -> None:
         p = DataProvenance(source="yfinance")
@@ -108,10 +102,10 @@ class TestCutoff:
     """Cutoff enforcement."""
 
     def test_cutoff_returns_cutoff(self) -> None:
-        cutoff = datetime(2026, 6, 1, tzinfo=timezone.utc)
+        cutoff = datetime(2026, 6, 1, tzinfo=UTC)
         assert require_cutoff(cutoff) == cutoff
 
     def test_cutoff_none_returns_now(self) -> None:
         result = require_cutoff()
         assert result is not None
-        assert result.tzinfo == timezone.utc
+        assert result.tzinfo == UTC

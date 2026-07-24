@@ -7,6 +7,29 @@ from typing import Any
 import polars as pl
 
 
+# Canonical mapping from bar frequency to periods-per-year, used to
+# annualize Sharpe / Sortino / volatility.  Audit finding B13:
+# MetricsCalculator accepts ``annualization_factor`` as a parameter, so
+# engines and scripts can pick the right one.  This table is the
+# single source of truth for the mapping.
+FREQ_TO_PERIODS_PER_YEAR: dict[str, int] = {
+    "1d": 252,
+    "1h": 252 * 24,
+    "30m": 252 * 24 * 2,
+    "15m": 252 * 24 * 4,
+    "5m": 252 * 24 * 12,
+    "1m": 252 * 24 * 60,
+}
+
+
+def periods_per_year_for_freq(freq: str) -> int:
+    """Look up periods-per-year for a bar-frequency label.
+
+    Raises KeyError if the frequency is not in the canonical table.
+    """
+    return FREQ_TO_PERIODS_PER_YEAR[freq]
+
+
 def _to_float(val: Any) -> float:
     """Safely cast a Polars scalar return value to float."""
     if val is None:

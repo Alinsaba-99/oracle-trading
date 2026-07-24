@@ -20,9 +20,7 @@ class SentimentFetcher:
     def __init__(self, api_key: str = "") -> None:
         self.api_key = api_key
 
-    def alphai_news(
-        self, ticker: str, limit: int = 10
-    ) -> list[dict]:
+    def alphai_news(self, ticker: str, limit: int = 10) -> list[dict]:
         """Fetch relevance-scored financial news for a ticker via AlphaAI.
 
         Args:
@@ -41,20 +39,11 @@ class SentimentFetcher:
             headers["X-API-Key"] = self.api_key
 
         try:
-            resp = httpx.get(
-                f"{ALPHAI_BASE}/news",
-                params=params,
-                headers=headers,
-                timeout=10,
-            )
+            resp = httpx.get(f"{ALPHAI_BASE}/news", params=params, headers=headers, timeout=10)
             resp.raise_for_status()
             data = resp.json()
             articles = data.get("articles", data.get("data", []))
-            logger.info(
-                "AlphaAI news fetched",
-                ticker=ticker,
-                count=len(articles),
-            )
+            logger.info("AlphaAI news fetched", ticker=ticker, count=len(articles))
             return articles
         except Exception as e:
             logger.warning("AlphaAI news fetch failed", error=str(e))
@@ -70,11 +59,7 @@ class SentimentFetcher:
 
         params = {"ticker": ticker}
         try:
-            resp = httpx.get(
-                f"{ALPHAI_BASE}/sentiment",
-                params=params,
-                timeout=10,
-            )
+            resp = httpx.get(f"{ALPHAI_BASE}/sentiment", params=params, timeout=10)
             resp.raise_for_status()
             return resp.json()
         except Exception as e:

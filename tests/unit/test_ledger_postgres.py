@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -11,7 +10,6 @@ from core.ledger_postgres import PostgresLedger
 
 
 class TestPostgresLedger:
-
     @pytest.mark.asyncio
     async def test_create(self, fake_pg: object) -> None:
         ledger = await PostgresLedger.create("postgresql://test:5432/oracle")
@@ -32,9 +30,12 @@ class TestPostgresLedger:
         ledger = await PostgresLedger.create()
         account = ledger.create_account("paper", Decimal("100000"))
         entry = ledger.record_fill(
-            account_id=account.account_id, fill_id="f1",
-            order_id="o1", quantity=Decimal("2"),
-            price=Decimal("5000"), commission=Decimal("5"),
+            account_id=account.account_id,
+            fill_id="f1",
+            order_id="o1",
+            quantity=Decimal("2"),
+            price=Decimal("5000"),
+            commission=Decimal("5"),
             direction="buy",
         )
         assert entry is not None
@@ -47,9 +48,12 @@ class TestPostgresLedger:
         ledger = await PostgresLedger.create()
         account = ledger.create_account("paper", Decimal("1000"))
         entry = ledger.record_fill(
-            account_id=account.account_id, fill_id="f_bad",
-            order_id="o_bad", quantity=Decimal("10"),
-            price=Decimal("200"), direction="buy",
+            account_id=account.account_id,
+            fill_id="f_bad",
+            order_id="o_bad",
+            quantity=Decimal("10"),
+            price=Decimal("200"),
+            direction="buy",
         )
         assert entry is None
 

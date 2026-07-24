@@ -8,8 +8,7 @@ Provides:
 
 from __future__ import annotations
 
-import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx
@@ -38,6 +37,7 @@ class MacroEventFetcher:
     def _rate_limit(self) -> None:
         """Ensure at least 1.5 seconds between requests (GDELT rate limit)."""
         import time
+
         elapsed = time.time() - self._last_request
         if elapsed < 1.5:
             time.sleep(1.5 - elapsed)
@@ -84,14 +84,16 @@ class MacroEventFetcher:
 
             result = []
             for art in articles:
-                result.append({
-                    "title": art.get("title", ""),
-                    "url": art.get("url", ""),
-                    "date": art.get("seendate", art.get("date", "")),
-                    "tone": art.get("tone", ""),
-                    "source": art.get("domain", ""),
-                    "categories": art.get("categories", []),
-                })
+                result.append(
+                    {
+                        "title": art.get("title", ""),
+                        "url": art.get("url", ""),
+                        "date": art.get("seendate", art.get("date", "")),
+                        "tone": art.get("tone", ""),
+                        "source": art.get("domain", ""),
+                        "categories": art.get("categories", []),
+                    }
+                )
             return result
         except Exception as e:
             logger.warning("GDELT fetch failed", error=str(e))
@@ -101,7 +103,7 @@ class MacroEventFetcher:
         """Fetch recent macro-economic events (inflation, GDP, central bank)."""
         from datetime import timedelta
 
-        start = (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%d")
+        start = (datetime.now(UTC) - timedelta(days=days)).strftime("%Y-%m-%d")
         return self.gdelt_events(
             query="(inflation OR GDP OR unemployment OR 'central bank' OR 'interest rate' OR CPI) AND (economy OR financial OR market)",
             start_date=start,
@@ -112,12 +114,8 @@ class MacroEventFetcher:
         """Fetch news about a specific ticker/company."""
         from datetime import timedelta
 
-        start = (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%d")
-        return self.gdelt_events(
-            query=ticker,
-            start_date=start,
-            max_records=50,
-        )
+        start = (datetime.now(UTC) - timedelta(days=days)).strftime("%Y-%m-%d")
+        return self.gdelt_events(query=ticker, start_date=start, max_records=50)
 
     # ── Central bank calendar ──────────────────────────────────────
 

@@ -8,24 +8,22 @@ Supports:
 Usage::
 
     from market.data_sources import DataFetcher
-    
+
     fetcher = DataFetcher()
-    
+
     # ES futures daily via yfinance
     df = fetcher.yfinance_futures("ES", period="6mo")
-    
+
     # BTC/USDT 1h via ccxt
     df = fetcher.ccxt_ohlcv("binance", "BTC/USDT", "1h", limit=500)
-    
+
     # SPY daily via OpenBB
     df = fetcher.openbb_equity("SPY")
 """
 
 from __future__ import annotations
 
-from datetime import datetime
 from pathlib import Path
-from typing import Any
 
 import pandas as pd
 import structlog
@@ -119,9 +117,7 @@ class DataFetcher:
         logger.info("Fetching CCXT", exchange=exchange_id, symbol=symbol)
 
         ohlcv = exchange.fetch_ohlcv(symbol, timeframe=timeframe, limit=limit)
-        df = pd.DataFrame(
-            ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"]
-        )
+        df = pd.DataFrame(ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"])
         df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
         df.set_index("timestamp", inplace=True)
 
@@ -151,11 +147,7 @@ class DataFetcher:
     # ── Unified fetch ───────────────────────────────────────────────────
 
     def fetch(
-        self,
-        symbol: str,
-        source: str = "auto",
-        period: str = "6mo",
-        interval: str = "1d",
+        self, symbol: str, source: str = "auto", period: str = "6mo", interval: str = "1d"
     ) -> pd.DataFrame:
         """Unified fetch — auto-selects the best source for the symbol.
 
@@ -178,10 +170,11 @@ class DataFetcher:
                 return self.yfinance_equity(symbol, period, interval)
 
         sources = {
-            "yfinance": lambda: self.yfinance_futures(symbol, period, interval)
-            if symbol.upper()
-            in ("ES", "NQ", "GC", "CL", "6E", "ZS", "ZM", "ZW")
-            else self.yfinance_equity(symbol, period, interval),
+            "yfinance": lambda: (
+                self.yfinance_futures(symbol, period, interval)
+                if symbol.upper() in ("ES", "NQ", "GC", "CL", "6E", "ZS", "ZM", "ZW")
+                else self.yfinance_equity(symbol, period, interval)
+            ),
             "ccxt": lambda: self.ccxt_ohlcv("binance", symbol),
             "openbb": lambda: self.openbb_equity(symbol),
         }
@@ -237,10 +230,17 @@ class DataFetcher:
         df = pd.DataFrame(results)
         df["timestamp"] = pd.to_datetime(df["t"], unit="ms")
         df.set_index("timestamp", inplace=True)
-        df.rename(columns={
-            "o": "open", "h": "high", "l": "low",
-            "c": "close", "v": "volume", "n": "trades",
-        }, inplace=True)
+        df.rename(
+            columns={
+                "o": "open",
+                "h": "high",
+                "l": "low",
+                "c": "close",
+                "v": "volume",
+                "n": "trades",
+            },
+            inplace=True,
+        )
 
         path = self.DATA_DIR / f"{symbol}_{timespan}.parquet"
         df.to_parquet(path)
@@ -275,11 +275,9 @@ class DataFetcher:
         exchange_class = getattr(ccxt, exchange_id)
         exchange = exchange_class({"options": {"defaultType": "future"}})
 
-        logger.info(f"Fetching CCXT futures", exchange=exchange_id, symbol=symbol)
+        logger.info("Fetching CCXT futures", exchange=exchange_id, symbol=symbol)
         ohlcv = exchange.fetch_ohlcv(symbol, timeframe=timeframe, limit=limit)
-        df = pd.DataFrame(
-            ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"]
-        )
+        df = pd.DataFrame(ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"])
         df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
         df.set_index("timestamp", inplace=True)
 
@@ -300,8 +298,7 @@ class DataFetcher:
     # ── FRED macro data ──────────────────────────────────────────────
 
     def fred_series(
-        self, series_id: str = "GDP",
-        start: str = "2020-01-01", end: str | None = None
+        self, series_id: str = "GDP", start: str = "2020-01-01", end: str | None = None
     ) -> pd.DataFrame:
         """Fetch macro-economic data from FRED (Federal Reserve).
 
@@ -319,24 +316,21 @@ class DataFetcher:
         """
         import httpx
 
-        params = {
-            "id": series_id,
-            "cosd": start,
-        }
+        params = {"id": series_id, "cosd": start}
         if end:
             params["coed"] = end
         if self.config.has_fred:
             params["api_key"] = self.config.fred_key
 
         resp = httpx.get(
-            "https://fred.stlouisfed.org/graph/fredgraph.csv",
-            params=params, timeout=15,
+            "https://fred.stlouisfed.org/graph/fredgraph.csv", params=params, timeout=15
         )
         if resp.status_code != 200:
             logger.warning(f"FRED error: {resp.status_code} for {series_id}")
             return pd.DataFrame()
 
         from io import StringIO
+
         df = pd.read_csv(StringIO(resp.text), parse_dates=["observation_date"])
         df.set_index("observation_date", inplace=True)
         df.columns = [series_id]

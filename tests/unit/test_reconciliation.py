@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import UTC
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock
 
@@ -27,14 +28,14 @@ class TestReconciliation:
         ledger._accounts = {}
 
         engine = ReconciliationEngine(broker, oms, ledger)
-        report = await engine.reconcile()
+        await engine.reconcile()
 
     @pytest.mark.asyncio
     async def test_startup_reconciliation_paper_broker(self) -> None:
         """M32-006: Paper broker startup reconciliation — clean state."""
-        from execution.brokers.paper import PaperBroker
         from core.ledger import InMemoryLedger
         from core.oms import InMemoryOMS
+        from execution.brokers.paper import PaperBroker
 
         broker = PaperBroker()
         ledger = InMemoryLedger()
@@ -49,13 +50,14 @@ class TestReconciliation:
     @pytest.mark.asyncio
     async def test_startup_reconciliation_mismatch_detected(self) -> None:
         """M32-006: Bypass OMS → mismatch detected (expected behavior)."""
-        from execution.brokers.paper import PaperBroker
-        from execution.brokers.types import BrokerOrder
-        from core.ledger import InMemoryLedger
-        from core.oms import InMemoryOMS
+        from datetime import datetime
         from decimal import Decimal
         from uuid import uuid4
-        from datetime import datetime, timezone
+
+        from core.ledger import InMemoryLedger
+        from core.oms import InMemoryOMS
+        from execution.brokers.paper import PaperBroker
+        from execution.brokers.types import BrokerOrder
 
         broker = PaperBroker()
         ledger = InMemoryLedger()
@@ -69,7 +71,7 @@ class TestReconciliation:
             side="BUY",
             quantity=Decimal("2"),
             price=Decimal("5500.00"),
-            created_at=datetime.now(timezone.utc).isoformat(),
+            created_at=datetime.now(UTC).isoformat(),
         )
         await broker.submit_order(order)
 
@@ -80,11 +82,12 @@ class TestReconciliation:
     @pytest.mark.asyncio
     async def test_paper_broker_open_orders(self) -> None:
         """PaperBroker.open_orders() returns unfilled orders."""
-        from execution.brokers.paper import PaperBroker
-        from execution.brokers.types import BrokerOrder
+        from datetime import datetime
         from decimal import Decimal
         from uuid import uuid4
-        from datetime import datetime, timezone
+
+        from execution.brokers.paper import PaperBroker
+        from execution.brokers.types import BrokerOrder
 
         broker = PaperBroker()
         orders = await broker.open_orders()
@@ -99,7 +102,7 @@ class TestReconciliation:
             side="BUY",
             quantity=Decimal("1"),
             price=Decimal("5500.00"),
-            created_at=datetime.now(timezone.utc).isoformat(),
+            created_at=datetime.now(UTC).isoformat(),
         )
         await broker.submit_order(order)
         open_orders = await broker.open_orders()

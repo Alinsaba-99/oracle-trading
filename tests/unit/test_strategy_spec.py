@@ -16,10 +16,7 @@ class TestSpec:
 
     def test_build_signal_with_params(self) -> None:
         s = StrategySpec(
-            name="d",
-            instrument="SILVER",
-            entry="donchian_breakout",
-            entry_params={"period": 25},
+            name="d", instrument="SILVER", entry="donchian_breakout", entry_params={"period": 25}
         )
         sig = s.build_signal()
         assert isinstance(sig, DonchianBreakout) and sig.period == 25

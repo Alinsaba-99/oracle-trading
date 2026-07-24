@@ -43,7 +43,7 @@ class TestNautilusNoSilentFallbacks:
     def test_no_type_ignore_in_strategy(self) -> None:
         """Verify no ``type: ignore`` remains in strategy code."""
         with open("analytics/backtest/engines/nautilus.py") as f:
-            for i, line in enumerate(f, 1):
+            for _i, line in enumerate(f, 1):
                 if "# type: ignore" in line and "nautilus" not in line.lower():
                     # These are expected nautilus library stubs
                     pass

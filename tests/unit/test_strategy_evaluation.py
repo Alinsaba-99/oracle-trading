@@ -16,9 +16,7 @@ from policy.prop_firm import THE5ERS
 
 def _result(equity: list[float]) -> BacktestResult:
     return BacktestResult(
-        run_id="t",
-        total_return=(equity[-1] - equity[0]) / equity[0],
-        equity_curve=equity,
+        run_id="t", total_return=(equity[-1] - equity[0]) / equity[0], equity_curve=equity
     )
 
 

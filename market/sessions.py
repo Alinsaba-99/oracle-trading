@@ -12,7 +12,7 @@ Sources:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timedelta
 from enum import StrEnum
 
 # ── Timezone offsets (fixed for CME calendar purposes) ───────────────
@@ -21,8 +21,8 @@ from enum import StrEnum
 # use zoneinfo.ZoneInfo("America/Chicago") for full DST-aware arithmetic.
 # The constants below give standard/UTC offsets for CME session bounds.
 
-CHICAGO_UTC_WINTER = timedelta(hours=-6)   # CST (November → March)
-CHICAGO_UTC_SUMMER = timedelta(hours=-5)   # CDT (March → November)
+CHICAGO_UTC_WINTER = timedelta(hours=-6)  # CST (November → March)
+CHICAGO_UTC_SUMMER = timedelta(hours=-5)  # CDT (March → November)
 
 
 def _second_sunday_of_march(year: int) -> int:
@@ -61,13 +61,14 @@ def _cme_offset(dt: date) -> timedelta:
 
 
 class SessionType(StrEnum):
-    REGULAR = "regular"          # Regular trading hours (RTH)
-    ELECTRONIC = "electronic"    # Electronic trading hours (ETH)
-    HOLIDAY = "holiday"          # Holiday schedule (early close / late open)
-    CLOSED = "closed"            # Exchange closed
+    REGULAR = "regular"  # Regular trading hours (RTH)
+    ELECTRONIC = "electronic"  # Electronic trading hours (ETH)
+    HOLIDAY = "holiday"  # Holiday schedule (early close / late open)
+    CLOSED = "closed"  # Exchange closed
 
 
 # ── CME regular sessions ─────────────────────────────────────────────
+
 
 @dataclass(frozen=True)
 class TradingSession:
@@ -158,6 +159,7 @@ CME_METAL_RTH = TradingSession(
 # ── CME holiday calendar (2026) ──────────────────────────────────────
 # Source: https://www.cmegroup.com/tools-information/holiday-calendar
 
+
 @dataclass
 class ExchangeCalendar:
     """Calendar of trading days, holidays, and early closes.
@@ -203,26 +205,26 @@ class ExchangeCalendar:
 # ── CME 2026 calendar ────────────────────────────────────────────────
 
 CME_2026_HOLIDAYS: set[date] = {
-    date(2026, 1, 1),   # New Year's Day
+    date(2026, 1, 1),  # New Year's Day
     date(2026, 1, 19),  # Martin Luther King Jr. Day
     date(2026, 2, 16),  # Presidents' Day
     date(2026, 4, 18),  # Good Friday (observed)
     date(2026, 5, 25),  # Memorial Day
     date(2026, 6, 19),  # Juneteenth
-    date(2026, 7, 3),   # Independence Day (observed)
-    date(2026, 9, 7),   # Labor Day
-    date(2026, 11, 26), # Thanksgiving Day
-    date(2026, 12, 25), # Christmas Day
+    date(2026, 7, 3),  # Independence Day (observed)
+    date(2026, 9, 7),  # Labor Day
+    date(2026, 11, 26),  # Thanksgiving Day
+    date(2026, 12, 25),  # Christmas Day
 }
 
 CME_2026_EARLY_CLOSES: dict[date, str] = {
-    date(2026, 7, 3):   "12:00",  # Independence Day (observed) — early close
+    date(2026, 7, 3): "12:00",  # Independence Day (observed) — early close
     date(2026, 11, 27): "12:00",  # Day after Thanksgiving — early close
     date(2026, 12, 24): "12:00",  # Christmas Eve — early close
 }
 
 CME_2026_LATE_OPENS: dict[date, str] = {
-    date(2026, 1, 1):  "17:00",  # New Year's Day — electronic open at 17:00
+    date(2026, 1, 1): "17:00"  # New Year's Day — electronic open at 17:00
 }
 
 CME_2026_CALENDAR = ExchangeCalendar(
@@ -233,15 +235,15 @@ CME_2026_CALENDAR = ExchangeCalendar(
     late_opens=CME_2026_LATE_OPENS,
     maintenance_breaks={
         # CME maintenance window: typically Sat 08:00–12:00 CT
-        date(2026, 1, 3):  ("08:00", "12:00"),
-        date(2026, 2, 7):  ("08:00", "12:00"),
-        date(2026, 3, 7):  ("08:00", "12:00"),
-        date(2026, 4, 4):  ("08:00", "12:00"),
-        date(2026, 5, 2):  ("08:00", "12:00"),
-        date(2026, 6, 6):  ("08:00", "12:00"),
-        date(2026, 7, 4):  ("08:00", "12:00"),
-        date(2026, 8, 1):  ("08:00", "12:00"),
-        date(2026, 9, 5):  ("08:00", "12:00"),
+        date(2026, 1, 3): ("08:00", "12:00"),
+        date(2026, 2, 7): ("08:00", "12:00"),
+        date(2026, 3, 7): ("08:00", "12:00"),
+        date(2026, 4, 4): ("08:00", "12:00"),
+        date(2026, 5, 2): ("08:00", "12:00"),
+        date(2026, 6, 6): ("08:00", "12:00"),
+        date(2026, 7, 4): ("08:00", "12:00"),
+        date(2026, 8, 1): ("08:00", "12:00"),
+        date(2026, 9, 5): ("08:00", "12:00"),
         date(2026, 10, 3): ("08:00", "12:00"),
         date(2026, 11, 7): ("08:00", "12:00"),
         date(2026, 12, 5): ("08:00", "12:00"),
@@ -266,6 +268,7 @@ def is_dst_transition_day(dt: date) -> bool:
 
 # ── Liquidation deadline ─────────────────────────────────────────────
 
+
 @dataclass(frozen=True)
 class LiquidationDeadline:
     """Latest time before expiry when a position must be flattened."""
@@ -278,15 +281,9 @@ class LiquidationDeadline:
 
 
 CME_EQUITY_LIQUIDATION = LiquidationDeadline(
-    exchange="CME",
-    product_group="equity_index",
-    deadline_time="12:00",
-    days_before_expiry=1,
+    exchange="CME", product_group="equity_index", deadline_time="12:00", days_before_expiry=1
 )
 
 CME_ENERGY_LIQUIDATION = LiquidationDeadline(
-    exchange="CME",
-    product_group="energy",
-    deadline_time="12:00",
-    days_before_expiry=1,
+    exchange="CME", product_group="energy", deadline_time="12:00", days_before_expiry=1
 )

@@ -3,16 +3,11 @@
 from __future__ import annotations
 
 import json
-from unittest.mock import ANY, AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from market.realtime import (
-    CCXTWebSocketFeed,
-    IBKRFeed,
-    PolygonWebSocketFeed,
-    Tick,
-)
+from market.realtime import CCXTWebSocketFeed, IBKRFeed, PolygonWebSocketFeed, Tick
 
 
 class TestTick:
@@ -103,10 +98,14 @@ class TestPolygonWebSocketFeed:
     async def test_do_connect_auth_success(self) -> None:
         """Test the actual WebSocket auth flow with a mock socket."""
         mock_ws = AsyncMock()
-        mock_ws.recv = AsyncMock(side_effect=[
-            json.dumps([{"ev": "status", "status": "connected", "message": "Connected"}]),
-            json.dumps([{"ev": "status", "status": "auth_success", "message": "Authenticated"}]),
-        ])
+        mock_ws.recv = AsyncMock(
+            side_effect=[
+                json.dumps([{"ev": "status", "status": "connected", "message": "Connected"}]),
+                json.dumps(
+                    [{"ev": "status", "status": "auth_success", "message": "Authenticated"}]
+                ),
+            ]
+        )
         mock_ws.send = AsyncMock()
 
         async def fake_connect(*args: object, **kwargs: object) -> AsyncMock:
@@ -125,13 +124,20 @@ class TestPolygonWebSocketFeed:
     async def test_do_connect_auth_failed(self) -> None:
         """Free plan auth failure is handled gracefully."""
         mock_ws = AsyncMock()
-        mock_ws.recv = AsyncMock(side_effect=[
-            json.dumps([{"ev": "status", "status": "connected"}]),
-            json.dumps([{
-                "ev": "status", "status": "auth_failed",
-                "message": "WebSocket not in your plan",
-            }]),
-        ])
+        mock_ws.recv = AsyncMock(
+            side_effect=[
+                json.dumps([{"ev": "status", "status": "connected"}]),
+                json.dumps(
+                    [
+                        {
+                            "ev": "status",
+                            "status": "auth_failed",
+                            "message": "WebSocket not in your plan",
+                        }
+                    ]
+                ),
+            ]
+        )
         mock_ws.send = AsyncMock()
 
         async def fake_connect(*args: object, **kwargs: object) -> AsyncMock:
@@ -147,12 +153,14 @@ class TestPolygonWebSocketFeed:
     async def test_stream_ticks(self) -> None:
         """Stream parses Polygon messages into Tick objects."""
         mock_ws = AsyncMock()
-        mock_ws.recv = AsyncMock(side_effect=[
-            json.dumps([{"ev": "status", "status": "connected"}]),
-            json.dumps([{"ev": "status", "status": "auth_success"}]),
-            json.dumps([{"ev": "T", "sym": "ES*5", "p": 5500.25, "s": 10, "t": 1784545200000}]),
-            json.dumps([{"ev": "Q", "sym": "ES*5", "bp": 5500.0, "ap": 5500.5}]),
-        ])
+        mock_ws.recv = AsyncMock(
+            side_effect=[
+                json.dumps([{"ev": "status", "status": "connected"}]),
+                json.dumps([{"ev": "status", "status": "auth_success"}]),
+                json.dumps([{"ev": "T", "sym": "ES*5", "p": 5500.25, "s": 10, "t": 1784545200000}]),
+                json.dumps([{"ev": "Q", "sym": "ES*5", "bp": 5500.0, "ap": 5500.5}]),
+            ]
+        )
         mock_ws.send = AsyncMock()
 
         async def fake_connect(*args: object, **kwargs: object) -> AsyncMock:
@@ -191,15 +199,13 @@ class TestPolygonWebSocketFeed:
 
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.json = MagicMock(return_value={
-            "results": [{
-                "c": 5500.25,
-                "h": 5501.0,
-                "l": 5499.5,
-                "v": 10000,
-                "t": 1784545200000,
-            }]
-        })
+        mock_response.json = MagicMock(
+            return_value={
+                "results": [
+                    {"c": 5500.25, "h": 5501.0, "l": 5499.5, "v": 10000, "t": 1784545200000}
+                ]
+            }
+        )
 
         async def fake_get(*args: object, **kwargs: object) -> MagicMock:
             return mock_response
@@ -229,11 +235,13 @@ class TestPolygonWebSocketFeed:
     async def test_stream_or_poll_websocket(self) -> None:
         """stream_or_poll usa WebSocket quando disponibile."""
         mock_ws = AsyncMock()
-        mock_ws.recv = AsyncMock(side_effect=[
-            json.dumps([{"ev": "status", "status": "connected"}]),
-            json.dumps([{"ev": "status", "status": "auth_success"}]),
-            json.dumps([{"ev": "T", "sym": "ES*5", "p": 5500.0, "s": 5, "t": 1784545200000}]),
-        ])
+        mock_ws.recv = AsyncMock(
+            side_effect=[
+                json.dumps([{"ev": "status", "status": "connected"}]),
+                json.dumps([{"ev": "status", "status": "auth_success"}]),
+                json.dumps([{"ev": "T", "sym": "ES*5", "p": 5500.0, "s": 5, "t": 1784545200000}]),
+            ]
+        )
         mock_ws.send = AsyncMock()
 
         async def fake_connect(*args: object, **kwargs: object) -> AsyncMock:
@@ -258,9 +266,13 @@ class TestPolygonWebSocketFeed:
 
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.json = MagicMock(return_value={
-            "results": [{"c": 5500.25, "h": 5501.0, "l": 5499.5, "v": 10000, "t": 1784545200000}]
-        })
+        mock_response.json = MagicMock(
+            return_value={
+                "results": [
+                    {"c": 5500.25, "h": 5501.0, "l": 5499.5, "v": 10000, "t": 1784545200000}
+                ]
+            }
+        )
 
         async def fake_get(*args: object, **kwargs: object) -> MagicMock:
             return mock_response

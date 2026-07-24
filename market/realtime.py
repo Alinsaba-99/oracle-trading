@@ -12,7 +12,7 @@ Usage::
     await feed.connect()
     async for tick in feed.stream("ES"):
         print(tick.price, tick.time)
-    
+
     # CCXT WebSocket (crypto)
     feed = CCXTWebSocketFeed("binance")
     await feed.connect()
@@ -23,10 +23,12 @@ Usage::
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
-from datetime import datetime, timezone
-from typing import Any, AsyncIterator
+from collections.abc import AsyncIterator
+from datetime import UTC, datetime
+from typing import Any
 
 import websockets
 
@@ -52,16 +54,13 @@ class Tick:
         self.symbol = symbol
         self.price = price
         self.volume = volume
-        self.timestamp = timestamp or datetime.now(timezone.utc)
+        self.timestamp = timestamp or datetime.now(UTC)
         self.bid = bid
         self.ask = ask
         self.source = source
 
     def __repr__(self) -> str:
-        return (
-            f"Tick(symbol={self.symbol}, price={self.price}, "
-            f"time={self.timestamp.isoformat()})"
-        )
+        return f"Tick(symbol={self.symbol}, price={self.price}, time={self.timestamp.isoformat()})"
 
 
 # ── IBKR Feed (ib_insync) ───────────────────────────────────────────
@@ -94,8 +93,7 @@ class IBKRFeed:
 
             self._ib = IB()
             await asyncio.get_event_loop().run_in_executor(
-                None,
-                lambda: self._ib.connect(self.host, self.port, clientId=self.client_id),
+                None, lambda: self._ib.connect(self.host, self.port, clientId=self.client_id)
             )
             self._connected = True
             logger.info(f"IBKR connected: {self.host}:{self.port}")
@@ -122,19 +120,9 @@ class IBKRFeed:
 
             # Create contract
             if symbol.upper() in ("ES", "NQ", "GC", "CL"):
-                contract = Contract(
-                    symbol=symbol,
-                    secType="FUT",
-                    exchange="CME",
-                    currency="USD",
-                )
+                contract = Contract(symbol=symbol, secType="FUT", exchange="CME", currency="USD")
             else:
-                contract = Contract(
-                    symbol=symbol,
-                    secType="STK",
-                    exchange="SMART",
-                    currency="USD",
-                )
+                contract = Contract(symbol=symbol, secType="STK", exchange="SMART", currency="USD")
 
             # Qualify contract
             qualified = await asyncio.get_event_loop().run_in_executor(
@@ -171,10 +159,8 @@ class IBKRFeed:
         """Disconnect from TWS/Gateway."""
         self._connected = False
         if self._ib:
-            try:
+            with contextlib.suppress(Exception):
                 self._ib.disconnect()
-            except Exception:
-                pass
 
 
 # ── CCXT WebSocket Feed (crypto) ────────────────────────────────────
@@ -223,9 +209,9 @@ class CCXTWebSocketFeed:
                         symbol=symbol,
                         price=float(t["price"]),
                         volume=float(t["amount"]),
-                        timestamp=datetime.fromtimestamp(
-                            t["timestamp"] / 1000, tz=timezone.utc
-                        ) if t.get("timestamp") else None,
+                        timestamp=datetime.fromtimestamp(t["timestamp"] / 1000, tz=UTC)
+                        if t.get("timestamp")
+                        else None,
                         source=f"ccxt:{self.exchange_id}",
                     )
         except Exception as e:
@@ -233,10 +219,8 @@ class CCXTWebSocketFeed:
 
     async def disconnect(self) -> None:
         if self._ws:
-            try:
+            with contextlib.suppress(Exception):
                 await self._ws.close()
-            except Exception:
-                pass
 
 
 # ── Polygon.io WebSocket Feed (futures) ──────────────────────────────
@@ -265,22 +249,20 @@ class PolygonWebSocketFeed:
     # WebSocket uses {ROOT}*{MULTIPLIER} (*5 = E-mini, *1 = Micro)
     # REST API uses plain {ROOT} symbol
     WS_TICKER_MAP: dict[str, str] = {
-        "ES": "ES*5",   # E-mini S&P 500
-        "MES": "ES",    # Micro E-mini
-        "NQ": "NQ*5",   # E-mini Nasdaq 100
-        "MNQ": "NQ",    # Micro E-mini Nasdaq
-        "GC": "GC*5",   # Gold futures
-        "MGC": "GC",    # Micro Gold
-        "CL": "CL*5",   # Crude Oil
-        "MCL": "CL",    # Micro Crude Oil
+        "ES": "ES*5",  # E-mini S&P 500
+        "MES": "ES",  # Micro E-mini
+        "NQ": "NQ*5",  # E-mini Nasdaq 100
+        "MNQ": "NQ",  # Micro E-mini Nasdaq
+        "GC": "GC*5",  # Gold futures
+        "MGC": "GC",  # Micro Gold
+        "CL": "CL*5",  # Crude Oil
+        "MCL": "CL",  # Micro Crude Oil
     }
     # REST API uses plain symbol (no * suffix)
     REST_SYMBOL: str | None = None  # set per-call
 
     def __init__(
-        self,
-        api_key: str | None = None,
-        channels: tuple[str, ...] = ("T", "Q", "A"),
+        self, api_key: str | None = None, channels: tuple[str, ...] = ("T", "Q", "A")
     ) -> None:
         """Initialize the Polygon WebSocket feed.
 
@@ -310,10 +292,7 @@ class PolygonWebSocketFeed:
         """
         try:
             self._ws = await websockets.connect(
-                self.WS_URL,
-                ping_interval=20,
-                ping_timeout=10,
-                close_timeout=5,
+                self.WS_URL, ping_interval=20, ping_timeout=10, close_timeout=5
             )
 
             # Polygon sends a "connected" status immediately on connect.
@@ -325,7 +304,7 @@ class PolygonWebSocketFeed:
                 init_data = _json.loads(init_resp)
                 if isinstance(init_data, list) and init_data[0].get("status") == "connected":
                     logger.info(f"Polygon WebSocket: {init_data[0].get('message', 'connected')}")
-            except (asyncio.TimeoutError, _json.JSONDecodeError):
+            except (TimeoutError, _json.JSONDecodeError):
                 pass
 
             # Send authentication
@@ -337,7 +316,7 @@ class PolygonWebSocketFeed:
             while asyncio.get_event_loop().time() < deadline:
                 try:
                     resp = await asyncio.wait_for(self._ws.recv(), timeout=5)
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     logger.warning("Polygon auth timed out")
                     break
 
@@ -399,7 +378,7 @@ class PolygonWebSocketFeed:
         while self._running and self._connected:
             try:
                 raw = await asyncio.wait_for(self._ws.recv(), timeout=30)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.debug("Polygon: keepalive (no data for 30s)")
                 continue
             except Exception as e:
@@ -422,19 +401,17 @@ class PolygonWebSocketFeed:
                         price=float(msg.get("p", 0) or msg.get("c", 0) or 0),
                         volume=float(msg.get("s", 0) or 0),
                         timestamp=datetime.fromtimestamp(
-                            msg.get("t", msg.get("start", 0)) / 1000,
-                            tz=timezone.utc,
-                        ) if msg.get("t") or msg.get("start") else None,
+                            msg.get("t", msg.get("start", 0)) / 1000, tz=UTC
+                        )
+                        if msg.get("t") or msg.get("start")
+                        else None,
                         bid=float(msg.get("bp", 0)) if msg.get("bp") else None,
                         ask=float(msg.get("ap", 0)) if msg.get("ap") else None,
                         source="polygon",
                     )
 
     async def rest_poll(
-        self,
-        symbol: str,
-        interval_sec: float = 12.0,
-        timespan: str = "minute",
+        self, symbol: str, interval_sec: float = 12.0, timespan: str = "minute"
     ) -> AsyncIterator[Tick]:
         """Fallback: poll Polygon REST API for latest prices.
 
@@ -483,9 +460,9 @@ class PolygonWebSocketFeed:
                                 symbol=symbol.upper(),
                                 price=float(bar.get("c", 0)),
                                 volume=float(bar.get("v", 0)),
-                                timestamp=datetime.fromtimestamp(
-                                    bar["t"] / 1000, tz=timezone.utc
-                                ) if "t" in bar else None,
+                                timestamp=datetime.fromtimestamp(bar["t"] / 1000, tz=UTC)
+                                if "t" in bar
+                                else None,
                                 bid=float(bar.get("l", 0)),
                                 ask=float(bar.get("h", 0)),
                                 source="polygon_rest",
@@ -503,10 +480,7 @@ class PolygonWebSocketFeed:
             await asyncio.sleep(interval_sec)
 
     async def stream_or_poll(
-        self,
-        symbol: str,
-        rest_interval: float = 12.0,
-        rest_timespan: str = "minute",
+        self, symbol: str, rest_interval: float = 12.0, rest_timespan: str = "minute"
     ) -> AsyncIterator[Tick]:
         """Dual-mode feed: try WebSocket first, fall back to REST polling.
 
@@ -528,7 +502,9 @@ class PolygonWebSocketFeed:
             async for tick in self.stream(symbol):
                 yield tick
         else:
-            logger.info(f"Polygon WebSocket unavailable — REST polling {symbol} every {rest_interval}s")
+            logger.info(
+                f"Polygon WebSocket unavailable — REST polling {symbol} every {rest_interval}s"
+            )
             async for tick in self.rest_poll(symbol, rest_interval, rest_timespan):
                 yield tick
 
@@ -537,7 +513,5 @@ class PolygonWebSocketFeed:
         self._running = False
         self._connected = False
         if self._ws:
-            try:
+            with contextlib.suppress(Exception):
                 await self._ws.close()
-            except Exception:
-                pass
