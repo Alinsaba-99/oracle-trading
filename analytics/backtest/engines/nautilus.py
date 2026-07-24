@@ -383,6 +383,20 @@ class NautilusEngine:
         if len(data) == 0:
             raise ValueError("DataFrame is empty — cannot run backtest.")
 
+        # Schema check: NautilusEngine requires an explicit ``timestamp``
+        # column (datetime).  VectorizedEngine does not require it
+        # (its synthetic index is the row position).  Failing fast here
+        # gives a clear error instead of a mid-run ColumnNotFoundError.
+        # Callers that don't carry a timestamp can either:
+        #   1) add ``data.with_columns(pl.datetime_range(...).alias("timestamp"))``, or
+        #   2) use VectorizedEngine.
+        if "timestamp" not in data.columns:
+            raise ValueError(
+                "NautilusEngine.run requires a 'timestamp' column of dtype "
+                "Datetime.  Use VectorizedEngine if you don't have one, or "
+                "add 'timestamp' to your DataFrame before calling run()."
+            )
+
         # ── compute signal ─────────────────────────────────────────────
         signal_series = signal.compute(data)
         raw = np.asarray(signal_series, dtype=np.int64)

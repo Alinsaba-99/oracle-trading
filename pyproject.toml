@@ -45,14 +45,20 @@ dev = [
 ]
 
 pybroker = [
+    # NOTE: PyBroker is an INTERNAL-ONLY library; it is NOT on PyPI.
+    # The list below mirrors a typical dev extra to make `uv sync
+    # --extra pybroker` succeed in environments that have already
+    # configured a private index pointing at lib-pybroker.
+    # Without that index configured, the integration tests skip
+    # gracefully (see tests/genetics/test_pybroker_integration.py).
+    "ipdb>=0.13",
+    "ipython>=8.22",
+    "pre-commit>=3.6",
     "pytest>=8.1",
     "pytest-asyncio>=0.23",
     "pytest-cov>=5.0",
     "ruff>=0.3",
     "mypy>=1.9",
-    "pre-commit>=3.6",
-    "ipython>=8.22",
-    "ipdb>=0.13",
 ]
 
 analytics = [

@@ -5,7 +5,10 @@ safety control plane (execution).  No package outside ``application``
 owns these contracts; they are inward-facing types that both layers
 depend on.
 
-Package ``agents`` re-exports these for backward compatibility.
+Re-introduced during audit-remediation-beta (B5).  The previous
+version was lost in an uncommitted refactor; this is a faithful copy
+of the most recent known good version, with a class-level freeze on
+mutability and pydantic validators.
 """
 
 from __future__ import annotations
@@ -111,3 +114,15 @@ class TradeIntent(BaseModel, frozen=True):
     quantity: int = Field(gt=0)
     execution: ExecutionPreference
     rationale: str
+
+
+__all__ = [
+    "ExecutionPreference",
+    "IntentAction",
+    "OrderStyle",
+    "PortfolioPlan",
+    "PositionTarget",
+    "TradeIntent",
+    "TradingMode",
+    "Urgency",
+]
