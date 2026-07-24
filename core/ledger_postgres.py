@@ -273,12 +273,17 @@ class PostgresLedger:
         account = self._accounts.get(account_id)
         return account.current_balance if account else Decimal("0")
 
-    def get_entries(self, account_id: str) -> list[LedgerEntry]:
-        """Get all entries for an account (from in-memory cache)."""
+    def get_entries(self, account_id: str) -> list[AccountEntry]:
+        """Get all account records matching the given account_id.
+
+        Note: despite the name, this returns :class:`AccountEntry` records
+        (the in-memory cache of accounts), not ledger entries.  For
+        ledger entries use :meth:`InMemoryLedger.get_entries`.
+        """
         return [
-            e
-            for e in self._accounts.values()
-            if hasattr(e, "account_id") and e.account_id == account_id
+            acct
+            for acct in self._accounts.values()
+            if hasattr(acct, "account_id") and acct.account_id == account_id
         ]
 
     async def get_all_entries(self) -> list[LedgerEntry]:

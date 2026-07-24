@@ -208,6 +208,14 @@ ignore_errors = true
 module = ["execution.brokers.ibkr"]
 disable_error_code = ["unused-ignore"]
 
+# market/realtime.py uses ib_insync (no type stubs available).  Without
+# stubs mypy reports "IB has no attribute MarketDataType" and other
+# untyped-call errors.  The runtime code works; we acknowledge the
+# type-annotation gap and skip these errors until stubs ship.
+[[tool.mypy.overrides]]
+module = ["market.realtime"]
+disable_error_code = ["no-untyped-call", "attr-defined", "assignment"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]

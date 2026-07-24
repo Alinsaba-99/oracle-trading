@@ -67,6 +67,7 @@ def _get_order_manager(
 
     broker = _get_broker(broker_type, **(broker_kwargs or {}))
 
+    risk: Any
     if risk_adapter == "propfirm":
         from policy.prop_firm.fixtures import TOPSTEP_TC_50K
         from policy.prop_firm.governor import PropFirmRiskGovernor

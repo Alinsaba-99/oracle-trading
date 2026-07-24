@@ -7,6 +7,8 @@ Integrates:
 
 from __future__ import annotations
 
+from typing import Any
+
 import structlog
 
 logger = structlog.get_logger("oracle.data.sentiment")
@@ -20,7 +22,7 @@ class SentimentFetcher:
     def __init__(self, api_key: str = "") -> None:
         self.api_key = api_key
 
-    def alphai_news(self, ticker: str, limit: int = 10) -> list[dict]:
+    def alphai_news(self, ticker: str, limit: int = 10) -> list[dict[str, Any]]:
         """Fetch relevance-scored financial news for a ticker via AlphaAI.
 
         Args:
@@ -33,23 +35,23 @@ class SentimentFetcher:
         """
         import httpx
 
-        params = {"ticker": ticker, "limit": limit}
-        headers = {}
+        params: dict[str, Any] = {"ticker": ticker, "limit": limit}
+        headers: dict[str, str] = {}
         if self.api_key:
             headers["X-API-Key"] = self.api_key
 
         try:
             resp = httpx.get(f"{ALPHAI_BASE}/news", params=params, headers=headers, timeout=10)
             resp.raise_for_status()
-            data = resp.json()
-            articles = data.get("articles", data.get("data", []))
+            data: dict[str, Any] = resp.json()
+            articles: list[dict[str, Any]] = data.get("articles", data.get("data", []))
             logger.info("AlphaAI news fetched", ticker=ticker, count=len(articles))
             return articles
         except Exception as e:
             logger.warning("AlphaAI news fetch failed", error=str(e))
             return []
 
-    def alphai_sentiment(self, ticker: str) -> dict:
+    def alphai_sentiment(self, ticker: str) -> dict[str, Any]:
         """Fetch aggregate sentiment score for a ticker.
 
         Returns:
@@ -57,11 +59,12 @@ class SentimentFetcher:
         """
         import httpx
 
-        params = {"ticker": ticker}
+        params: dict[str, Any] = {"ticker": ticker}
         try:
             resp = httpx.get(f"{ALPHAI_BASE}/sentiment", params=params, timeout=10)
             resp.raise_for_status()
-            return resp.json()
+            result: dict[str, Any] = resp.json()
+            return result
         except Exception as e:
             logger.warning("AlphaAI sentiment fetch failed", error=str(e))
             return {"score": 0, "buzz_rank": 0, "article_count": 0}

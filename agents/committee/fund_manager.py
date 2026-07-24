@@ -85,7 +85,6 @@ class LLMFundManager:
             created_at=created_at,
             expires_at=created_at + valid_for,
             mode=mode,
-            trigger=trigger,
             objective=response.objective,
             portfolio_thesis=response.portfolio_thesis,
             targets=response.targets,

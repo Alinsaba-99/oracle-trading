@@ -14,6 +14,7 @@ from __future__ import annotations
 import contextvars
 import logging
 import uuid
+from collections.abc import MutableMapping
 from typing import Any
 
 import structlog
@@ -126,7 +127,9 @@ def setup_logging(level: str = "INFO") -> None:
     logging.basicConfig(level=getattr(logging, level))
 
 
-def _add_trace_context(logger: Any, method_name: str, event_dict: dict) -> dict:
+def _add_trace_context(
+    logger: Any, method_name: str, event_dict: MutableMapping[str, Any]
+) -> MutableMapping[str, Any]:
     """Processor that injects trace_id/span_id into every log entry."""
     trace_id = get_trace_id()
     span_id = get_span_id()

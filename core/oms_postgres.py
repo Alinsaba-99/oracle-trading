@@ -141,7 +141,7 @@ class PostgresOMS:
                 client_order_id,
             )
             if existing:
-                return existing["order_id"]
+                return str(existing["order_id"])
 
             # Insert order
             await conn.execute(
