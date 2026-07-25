@@ -89,6 +89,28 @@
 - [ ] **BL-021** P1 — **MES-aware sizing per prop-firm**. AC: nuovo flag `--instrument=MES` (default su account 50K) e sizing derivato da `account_risk / stop_distance_in_points` con stop 8pt = $80/contract; test che su ES 50K il sizing = 0 contratti (sotto minimo MES) ma su MES = 1 contract. ~2h.
 - [ ] **BL-022** P1 — 100 sessioni paper indipendenti (non 30): finestre 95-bar su 10 anni di dati intraday ES 1h. AC: nuovo script `scripts/run_g6_wp2_100_sessions.py` con blocchi 95-bar × 100 ≈ 9.5y di 1h, output in `logs/g6_wp2_100.json`. Gate target stesso di BL-020. ~3h.
 
+## Edge Portfolio (BL-200..202) — NUOVO dopo audit 25-lug
+
+> 4 strategie battono la baseline RSI mean-rev (mc_pass=27.7%). Edge serio
+> richiede **ensemble multi-segnale** e/o **cross-asset factor timing**.
+> Vedi [`docs/reports/edge-portfolio/edge-portfolio.md`](docs/reports/edge-portfolio/edge-portfolio.md).
+
+- [x] **BL-200** P1 — **Edge Portfolio Sperimentale** ✅ completato 25-lug
+  Report: `docs/reports/edge-portfolio/edge-portfolio.md`. Risultato: 4
+  edge > baseline: roc_momentum_12 (mc=41%, DD=3.47%), bollinger_20_2
+  (mc=35.5%, DD=4.53%), bollinger_30_2.5 (mc=33%, DD=4.53%),
+  donchian_breakout_10 (mc=32%, DD=3.57%).
+- [ ] **BL-201** P1 — **Ensemble multi-segnale v2** (roc_momentum_12 +
+  bollinger_20_2 + donchian_breakout_10) con hysteresys su
+  `RegimeAwareEnsemble`. AC: nuovo script `scripts/run_edge_ensemble.py`;
+  `mc_pass_rate > 0.45` su 200 sim; DD < 3% (MES sizing). Report in
+  `docs/reports/edge-portfolio/ensemble.md`. ~1 sessione.
+- [ ] **BL-202** P2 — **Cross-asset factor timing** (factor catalog port
+  da ES a BTC/USDT, EURUSD, GC via `DataRegistry`). AC:
+  `FactorTimingEngine` con `instrument` parameter, test su almeno 2
+  strumenti, edge verificato per ogni strumento con `run_edge_portfolio.py
+  --data <path>`. ~3gg.
+
 ### G6-WP3 (M33 shadow) — blocca su G6-WP2
 
 - [ ] M33-001..025 da fare
