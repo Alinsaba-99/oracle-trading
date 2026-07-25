@@ -45,7 +45,12 @@ class DataFetcher:
     # ── yfinance ────────────────────────────────────────────────────────
 
     def yfinance_futures(
-        self, symbol: str, period: str = "6mo", interval: str = "1d"
+        self,
+        symbol: str,
+        period: str = "6mo",
+        interval: str = "1d",
+        *,
+        allow_overwrite: bool = False,
     ) -> pd.DataFrame:
         """Fetch futures data via yfinance.
 
@@ -53,6 +58,8 @@ class DataFetcher:
             symbol: Root symbol (e.g. ES, NQ, GC, CL).
             period: Data period (1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, 10y, ytd, max).
             interval: Data interval (1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, 1d, 5d, 1wk, 1mo).
+            allow_overwrite: if False (default), refuse to overwrite an existing
+                pinned dataset. Set to True only when intentionally refreshing.
 
         Returns:
             DataFrame with OHLCV data.
@@ -60,6 +67,23 @@ class DataFetcher:
         import yfinance as yf
 
         ticker = f"{symbol}=F"
+        path = self.DATA_DIR / f"{symbol}_{interval}.parquet"
+        if path.exists() and not allow_overwrite:
+            import hashlib
+
+            existing_hash = hashlib.sha256(path.read_bytes()).hexdigest()
+            pinned_paths = list(self.DATA_DIR.parent.glob(f"pinned/{symbol}_{interval}_*.parquet"))
+            for pinned in pinned_paths:
+                pinned_hash = hashlib.sha256(pinned.read_bytes()).hexdigest()
+                if pinned_hash == existing_hash:
+                    logger.info(
+                        "STALE_DATASET_PINNED",
+                        path=str(path),
+                        sha256=existing_hash,
+                        pinned=str(pinned),
+                    )
+                    return pd.read_parquet(path)
+
         logger.info("Fetching yfinance futures", ticker=ticker, period=period)
         df = yf.download(ticker, period=period, interval=interval)
 

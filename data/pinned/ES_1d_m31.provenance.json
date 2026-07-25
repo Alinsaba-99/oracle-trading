@@ -1,0 +1,29 @@
+{
+  "schema_version": "oracle-dataset-pin-v1",
+  "dataset": "ES_1d.parquet",
+  "source_file": "data/ohlcv/ES_1d.parquet",
+  "pinned_file": "data/pinned/ES_1d_m31.parquet",
+  "sha256": "09a22268d2a7fa815beed6788917663771c7af7b347b7b49db6c2a1318f26b42",
+  "rows": 250,
+  "first_timestamp": "2025-07-21T00:00:00Z",
+  "last_timestamp": "2026-07-17T00:00:00Z",
+  "provider": "Yahoo Finance via yfinance",
+  "provider_symbol": "ES=F",
+  "retrieved_at": "2026-07-19T00:00:00Z",
+  "pinned_at": "2026-07-25T13:42:00Z",
+  "pinned_by": "BL-001",
+  "rationale": "M31 historical replay qualification baseline; dataset was overwritten by scripts/refresh_data.py without fail-closed. Pin to ensure reproducibility of M31 and downstream paper sessions.",
+  "uses": [
+    "scripts/run_g6_wp2_paper_sessions.py",
+    "scripts/run_edge_portfolio.py",
+    "scripts/run_regime_paper_smoke.py",
+    "scripts/run_replay_qualification.py",
+    "scripts/run_annual_paper_replay.py",
+    "scripts/run_backtest_evaluation.py",
+    "scripts/run_rolling_challenge.py",
+    "scripts/run_risk_sized_eval.py",
+    "scripts/run_lorentzian_test.py",
+    "scripts/run_lorentzian_v2.py"
+  ],
+  "consumer_instructions": "If you need to refresh the dataset, regenerate M31 qualification and update this pin. Do NOT overwrite data/ohlcv/ES_1d.parquet in-place."
+}

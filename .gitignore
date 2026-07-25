@@ -95,3 +95,6 @@ logs/
 checkpoints/*.json
 data/ohlcv/*.parquet
 experiments/experiments.db
+
+# Pinned datasets (track for reproducibility — see data/pinned/*provenance.json)
+!data/pinned/
