@@ -9,8 +9,21 @@
 
 ## 1. Risultato atteso
 
-Oracle deve evolvere da piattaforma di ricerca a sistema capace di gestire in
-sicurezza un portafoglio futures per uno specifico programma prop-firm.
+Oracle deve evolvere da piattaforma di ricerca a sistema capace di gestire un
+portafoglio futures su **un singolo programma prop-firm** scelto e
+certificato. Al 25-lug-2026, la scelta del programma non è ancora stata fatta
+e dipende dai gate G5 e G6 (vedi [STATUS.md §3](docs/ORACLE_AUTOPILOT_STATUS.md)).
+I candidati noti sono in [PROP_FIRM_READINESS_ROADMAP.md §9](PROP_FIRM_READINESS_ROADMAP.md);
+Topstep TC 50K in modalità `RESEARCH_ONLY` è il fallback se nessun altro
+programma viene certificato.
+
+L'edge su cui ci si basa è **regime-conditional mean-reversion su RSI in
+choppy daily ES**, verificato in 23/30 sessioni paper indipendenti
+([logs/g6_wp2_paper_sessions.json](logs/g6_wp2_paper_sessions.json), commit
+`ffe91b4`). È un edge di piccola taglia — pass_rate 77%, mean_sharpe -0.31
+borderline — sufficiente forse per 1 ciclo prop-firm evaluation su MES, non
+per 10 consecutive. Vedi [docs/AUDIT_FINDINGS.md](docs/AUDIT_FINDINGS.md) §3.3
+per il sizing corretto e i limiti reali.
 
 Il risultato finale richiede contemporaneamente:
 
@@ -35,18 +48,22 @@ Non sono obiettivi validi:
 
 | Documento | Autorità |
 |---|---|
-| [PROJECT.md](../PROJECT.md) | Perimetro e stack (informale) |
-| [ORACLE_AUTOPILOT_MASTER_ROADMAP.md](ORACLE_AUTOPILOT_MASTER_ROADMAP.md) | Sequenza dei capability gate |
-| [ORACLE_AUTOPILOT_STATUS.md](ORACLE_AUTOPILOT_STATUS.md) | **Checkpoint operativo e matrice gate/stato** |
-| [ORACLE_AUTOPILOT_BACKLOG.md](ORACLE_AUTOPILOT_BACKLOG.md) | **Task atomiche per gate** |
-| [GOVERNANCE.md](GOVERNANCE.md) | **Gerarchia documentale e regole** |
-| [PROP_FIRM_READINESS_POLICY.md](PROP_FIRM_READINESS_POLICY.md) | Regole di supporto e certificazione prop-firm |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Architettura corrente, target e confini di autorità |
-| [ADR/README.md](ADR/README.md) | Decisioni architetturali e relativo lifecycle |
-| [plans/README.md](plans/README.md) | Archivio dei vecchi piani Phase, non eseguibile |
+| [`PROJECT.md`](PROJECT.md) | Perimetro e stack (informale, single source of truth delle scelte di massima) |
+| [`ROADMAP.md`](ROADMAP.md) | Sequenza dei capability gate, principi non negoziabili |
+| [`docs/ORACLE_AUTOPILOT_STATUS.md`](docs/ORACLE_AUTOPILOT_STATUS.md) | **Checkpoint operativo e matrice gate/stato** (unica tabella gate/stato autoritativa) |
+| [`BACKLOG.md`](BACKLOG.md) | **Task atomiche per gate** (ID stabile BL-NNN) |
+| [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md) | Gerarchia documentale e regole |
+| [`docs/AUDIT_FINDINGS.md`](docs/AUDIT_FINDINGS.md) | Audit secco 25-lug, gap e stato reale vs dichiarato |
+| [`docs/PROP_FIRM_READINESS_ROADMAP.md`](PROP_FIRM_READINESS_ROADMAP.md) | Regole di supporto e certificazione prop-firm (da rinominare) |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Architettura corrente, target e confini di autorità |
+| [`docs/RUNBOOK.md`](docs/RUNBOOK.md) | Operatività (dev + paper) |
+| [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md) | Coverage matrix per asset class / TF |
+| [`docs/ADR/`](docs/ADR/) | Decisioni normative immutabili |
+| [`docs/plans/`](docs/plans/) | Archivio dei vecchi piani Phase, **non eseguibile** |
 
-I vecchi piani Phase, il backlog atomico v1 e il backlog v2 sono solo archivio.
-Non possono cambiare stato, architettura o priorità del programma.
+I file `phase*-plan.md` in root, `docs/phase6-plan.md`, e i vecchi backlog
+(`docs/plans/oracle-autopilot-*-backlog-*.md`) sono solo archivio. Non
+possono cambiare stato, architettura o priorità del programma.
 
 ## 3. Regole di avanzamento
 

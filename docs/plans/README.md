@@ -2,10 +2,9 @@
 
 > Tutti i documenti in questa directory sono **storici e non eseguibili**.
 
-La roadmap canonica è
-[../ORACLE_AUTOPILOT_MASTER_ROADMAP.md](../ORACLE_AUTOPILOT_MASTER_ROADMAP.md);
-il checkpoint corrente è
-[../ORACLE_AUTOPILOT_STATUS.md](../ORACLE_AUTOPILOT_STATUS.md).
+La roadmap canonica è [`../../ROADMAP.md`](../../ROADMAP.md); il checkpoint
+corrente è [`../ORACLE_AUTOPILOT_STATUS.md`](../ORACLE_AUTOPILOT_STATUS.md);
+il backlog eseguibile è [`../../BACKLOG.md`](../../BACKLOG.md).
 
 ## Perché sono deprecati
 
@@ -41,10 +40,14 @@ ADR-012 sostituisce questo modello con capability gate G0-G9.
 | Phase 6 Dashboard | Lane operations |
 | Phase 7 Autopilot | G6-G9 |
 | Expression Alpha plan | Lane research dopo G5 |
-| Atomic backlog v1 | Archivio della roadmap precedente, non backlog |
+| Atomic backlog v1/v2 | Archivio dei vecchi backlog, non eseguibile |
 
-## File fuori dalla directory
+## File in root (anch'essi archiviati)
 
-Anche [../phase6-plan.md](../phase6-plan.md) e
-[../plan-expression-alpha.md](../plan-expression-alpha.md) sono deprecati e
-mantengono il percorso storico per non rompere link esterni.
+- `phase0-plan.md` … `phase5-plan.md` (spostati qui il 25-lug)
+- `phase3.5-plan.md`, `phase3.5.1-plan.md` (spostati qui)
+- `phase4-tasks.md` (spostato qui)
+- `docs/phase6-plan.md` — dashboard v1, superato
+- `docs/plan-expression-alpha.md` — expression plan deprecato
+- `docs/plan-integration-inalpha-varrd.md` — G6-I source plan (alcune parti
+  rimaste valide, vedi [BACKLOG.md G6-I](../../BACKLOG.md))

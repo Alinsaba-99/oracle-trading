@@ -1,13 +1,16 @@
 # Project Oracle — Systematic Trading Intelligence Platform
 
-> Piattaforma di ricerca quantitativa e trading automation safety-first.
-> Stato corrente: **research-grade con paper test; live/funded non autorizzato**.
+> **Stato 2026-07-25**: research-grade con paper test parziali. Live/funded
+> non autorizzato. Per lo stato gate-per-gate autorevole vedi
+> **[STATUS.md](docs/ORACLE_AUTOPILOT_STATUS.md)**. Per il backlog eseguibile
+> vedi **[BACKLOG.md](BACKLOG.md)**. Per la roadmap canonica vedi
+> **[ROADMAP.md](ROADMAP.md)**.
 
 ## Visione
 
-Oracle combina analytics, ricerca alpha, sistemi multi-agente e infrastruttura
-di esecuzione. L'obiettivo non è delegare il broker a un LLM, ma costruire un
-sistema in cui:
+Oracle combina analytics, ricerca alpha, sistemi multi-agente e
+infrastruttura di esecuzione. L'obiettivo non è delegare il broker a un
+LLM, ma costruire un sistema in cui:
 
 - LLM e agenti propongono analisi e target di portafoglio;
 - dati, contract math, risk e execution restano deterministici;
@@ -17,29 +20,25 @@ sistema in cui:
 
 Nessun rendimento, payout o superamento di challenge è garantibile.
 
-## Stato operativo
+## Tabella operativa (sintesi — fonte autorevole: STATUS.md)
 
-| Area | Stato verificato | Limite principale |
+| Area | Stato | Limite |
 |---|---|---|
-| Foundation e CI | Verde localmente | M31 chiusa con report riproducibile |
-| Analytics | Research-grade | Data quality e point-in-time coverage incompleti |
-| Backtesting | Discovery + replay event-driven M31 | M31 APPROVED per historical replay; non è production authority |
-| Genetic research | Research-only | Non riaprire promotion finché G5 non è chiuso |
-| Multi-Agent System | Prototipo avanzato | Confini e contratti ancora accoppiati al package agents |
-| ElizaOS | Bridge read-only | Plugin hardening e advisory low ancora aperti |
-| Prop policy | Profili versionati e fonti hashate | Topstep 50K certificato solo per replay storico; live resta RESEARCH_ONLY |
-| OMS e ledger | Contratti e implementazioni in-memory | Replay M31 unificato con parity broker/ledger; authority production non certificata |
-| Broker | Paper realistico + adapter sperimentali | Nessun adapter futures certificato |
-| API e dashboard | Funzionanti | Auth fail-closed; hardening production ancora da certificare |
-| Autopilot | Bloccato | M31/G5 chiuso; M32 paper e G6 restano prerequisiti |
-
-La CLI pubblica rifiuta ora l'invio a broker non-paper. Questo riduce un bypass,
-ma non sostituisce il lavoro necessario per rendere risk, OMS e ledger
-obbligatori in ogni composition root.
+| Foundation e CI | ✅ verde locale | 321 warnings; CI remota e SBOM ancora da cablare |
+| Analytics | research-grade | Point-in-time OK; intraday futures non disponibile |
+| Backtesting | discovery + replay v1 | G5 REGRESSED — M31 da rifare post-BL-022 |
+| Factor timing | v1 (26 test verdi) | port cross-asset non ancora |
+| Genetic research | research-only | nessuna promotion in attesa di G5 |
+| Multi-Agent / ElizaOS | read-only | LLM mai in hot path esecutiva |
+| Prop policy | versioned fixtures | Topstep TC 50K certificato solo per replay storico; **scegliere una firm per G7 ancora da fare** (BL-100) |
+| OMS e ledger | PostgreSQL path attivo | Postgres obbligatorio per production; memoria ancora default |
+| Broker | Paper realistico + adattori sperimentali | Nessuno certificato per live |
+| API + dashboard | funzionanti in DEV | hardening prod ancora da certificare |
+| Autopilot | gate G6 REJECTED | blocca su [BL-020..024](BACKLOG.md) (regime rebalance + 100 sessioni paper) |
 
 ## Architettura sintetica
 
-~~~text
+```text
 Intelligence plane
   Analyst / LLM / Eliza / GA
            |
@@ -58,7 +57,7 @@ Execution adapters
            v
 Authoritative state
   Ledger -> reconciliation -> audit
-~~~
+```
 
 ### Regola di autorità
 
@@ -74,96 +73,71 @@ Authoritative state
 L'architettura corrente e il target sono descritti in
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-## Stack tecnico
+## Stack tecnico (essenziale — vedi ADR per le decisioni)
 
-| Area | Scelta corrente | Ruolo e decisione |
+| Area | Scelta | Ruolo |
 |---|---|---|
-| Runtime Python | Python 3.12 | Versione applicativa supportata |
-| API | FastAPI + Pydantic 2 | Control/read API; production auth deve diventare fail-closed |
-| Dashboard | React 18 + Vite 8 + TypeScript | UI operativa; Node 24 in CI |
-| Agent orchestration | LangGraph + LiteLLM | Intelligence plane, fuori dalla hot path esecutiva |
-| DataFrames | Polars, Pandas, NumPy | Polars preferito per nuovi path; conversioni esplicite |
-| Research store | Parquet; DuckDB/Polars | Dataset e feature research, non account authority |
-| Transactional state | SQLite oggi | PostgreSQL target per ledger/OMS production |
-| Event transport | NATS/JetStream | Integrazione e audit delivery; non source of truth |
-| Cache | In-memory; Redis previsto | Solo dati ricostruibili |
-| Backtest discovery | vectorbt | Research-only; portabilità/licenza sotto review |
-| Qualification engine | Oracle event-driven paper v1 | Auditabile localmente; Nautilus resta candidato parity |
-| Genetic engine | DEAP | Research-only |
-| Broker | Paper, IBKR, CCXT, MT/MetaApi | Sperimentali; nessun live adapter certificato |
-| Time-series DB | QuestDB in Compose | Deferred: adozione solo dopo benchmark e use case |
-| Vector DB | Qdrant in Compose | Deferred: nessun requisito production provato |
+| Runtime | Python 3.12 | versione applicativa |
+| API | FastAPI + Pydantic 2 | control/read API; prod auth fail-closed |
+| Dashboard | React 18 + Vite 8 + TS | UI operativa; Node 24 |
+| Agent orchestration | LangGraph + LiteLLM | intelligence plane, fuori hot path |
+| DataFrames | Polars (preferito), Pandas, NumPy | — |
+| Research store | Parquet + DuckDB/Polars | dataset research, non account authority |
+| Transactional state | PostgreSQL production; SQLite dev/test | ADR-009 |
+| Event transport | NATS/JetStream | integrazione e audit, non source of truth |
+| Backtest discovery | vectorbt | research-only |
+| Qualification engine | Oracle event-driven paper v1 | unico engine certificato; Nautilus candidato non ancora |
+| Genetic engine | DEAP | research-only |
+| Broker | Paper, IBKR, CCXT, MT5/MetaApi | sperimentali; nessun live adapter |
+| TSDB | QuestDB | DEFERRED (ADR-009) |
+| Vector DB | Qdrant | DEFERRED (ADR-009) |
 
-Decisioni e supersessioni sono in [docs/ADR/README.md](docs/ADR/README.md).
-
-## Baseline verificata il 18 luglio 2026
-
-| Verifica | Risultato |
-|---|---|
-| Pytest | 1.605 passed, 2 skipped, 319 warning |
-| Ruff | Pass |
-| Ruff format | 397 file conformi |
-| mypy strict | 261 source file, con override espliciti per genetics/PyBroker |
-| uv lock --check | Pass |
-| Python dependency audit | Nessuna vulnerabilità nota nell'ambiente installato; gate CI/SBOM ancora assente |
-| Dashboard | 15 test passati; build Vite 8 riuscita |
-| Dashboard audit | 0 vulnerability dopo upgrade Vite |
-| Eliza bridge | Typecheck, build e 2 test passati |
-| Eliza audit | 5 low, 0 moderate/high/critical |
-| Clean install | uv sync --frozen riuscito in virtualenv temporanea |
-
-Questi risultati dimostrano riproducibilità locale, non production readiness.
-La CI è stata aggiornata per usare uv.lock e auditare entrambe le applicazioni
-Node; serve ancora evidenza da un run remoto pulito.
-
-## Rischi e limiti residui
-
-1. Il replay event-driven è certificato per M31 historical replay, non come authority production.
-2. PostgreSQL production authority e recovery non sono ancora certificati.
-3. Il profilo Topstep 50K è verificato per replay-only; nessuna autorizzazione live.
-4. Il dataset OHLCV usa ES continuous come proxy di prezzo per MES e documenta la limitazione.
-5. Gli artefatti intelligence sono offline, causali e a costo zero; non sono output di provider live.
-6. Nessun adapter futures è certificato per paper/shadow continuativo.
-
-La review completa e le evidenze sono in
-[docs/reviews/2026-07-18-project-review.md](docs/reviews/2026-07-18-project-review.md).
+Decisioni e supersessioni: [docs/ADR/README.md](docs/ADR/README.md).
 
 ## Roadmap canonica
 
-| Gate | Risultato |
-|---|---|
-| G0 | Baseline veritiera e riproducibile |
-| G1 | Autorità, ambienti e confini applicativi |
-| G2 | Verità futures e point-in-time data |
-| G3 | Ledger, OMS e reconciliation durevoli |
-| G4 | Hard risk non bypassabile |
-| G5 | Research truth e strategy qualification — ✅ M31 APPROVED |
-| G6 | Paper e shadow operations |
-| G7 | Certificazione di uno specifico programma |
-| G8 | Funded limited rollout |
-| G9 | Continuous operations |
+| Gate | Nome | Stato corrente |
+|---|---|---|
+| G0 | Baseline veritiera e riproducibile | ✅ PASSED |
+| G1 | Autorità, ambienti e confini | ✅ PASSED |
+| G2 | Verità futures e PIT data | 🟡 PARTIAL |
+| G3 | Ledger, OMS e reconciliation durevoli | ✅ PASSED |
+| G4 | Hard risk non bypassabile | ✅ PASSED |
+| G5 | Research truth e strategy qualification | ❌ REGRESSED |
+| G6 | Paper e shadow operations | 🟡 REJECTED |
+| G7 | Certificazione programma prop-firm | ⚪ NOT_STARTED |
+| G8 | Funded limited rollout | ⚪ NOT_STARTED |
+| G9 | Continuous operations | ⚪ NOT_STARTED |
 
-Dettaglio e dipendenze:
-[docs/ORACLE_AUTOPILOT_MASTER_ROADMAP.md](docs/ORACLE_AUTOPILOT_MASTER_ROADMAP.md).
+Stato autorevole, evidenza e rischi residui:
+[docs/ORACLE_AUTOPILOT_STATUS.md](docs/ORACLE_AUTOPILOT_STATUS.md).
 
 ## Prop-firm policy
 
 Oracle distingue:
 
-- AUTO_SUPPORTED: automazione esplicitamente consentita e certificata;
-- ASSISTED_ONLY: analisi e controlli, ordine manuale;
-- RESEARCH_ONLY: regole modellate, nessuna execution;
-- UNSUPPORTED: dati o termini insufficienti; fail closed.
+- `AUTO_SUPPORTED`: automazione esplicitamente consentita e certificata;
+- `ASSISTED_ONLY`: analisi e controlli, ordine manuale;
+- `RESEARCH_ONLY`: regole modellate, nessuna execution;
+- `UNSUPPORTED`: dati o termini insufficienti; fail closed.
 
-I profili sono versionati per firm, programma, stage, piattaforma, account,
+Profili sono versionati per firm, programma, stage, piattaforma, account,
 vintage ed effective date. Regole e fonti:
 [docs/PROP_FIRM_READINESS_ROADMAP.md](docs/PROP_FIRM_READINESS_ROADMAP.md).
 
-## Prossimo lavoro eseguibile
+## Per partire da qui
 
-1. consolidare la working tree e creare una baseline immutabile;
-2. chiudere G0 con CI remota, warning budget, secret scan e SBOM;
-3. completare M32/G6 con almeno 60 sessioni paper e recovery evidence;
-4. completare M33 shadow read-only e reconciliation continuativa;
-5. certificare un adapter futures e il programma specifico prima di G7;
-6. mantenere live, evaluation e funded disabilitati fino a G7/G8.
+1. Leggi [STATUS.md](docs/ORACLE_AUTOPILOT_STATUS.md) per lo stato gate-by-gate.
+2. Apri [BACKLOG.md](BACKLOG.md), prendi il primo BL-001 (pin ES_1d).
+3. Per cambiare il piano settimanale, parti dagli ADR rilevanti prima di toccare il codice.
+4. Per operare, vedi [docs/RUNBOOK.md](docs/RUNBOOK.md).
+
+## Cose che NON vanno fatte senza approval
+
+- Modificare il profilo versionato di una prop-firm senza ADR.
+- Inviare ordini live senza G7 PASSED.
+- Cambiare regole del risk kernel senza ADR-010.
+- Aggiungere servizi (NATS, Qdrant, …) senza ADR che dimostri il bisogno.
+- Trattare l'edge osservato (RSI mean-rev in choppy) come universalmente
+  valido: è **regime-conditional** (vedi
+  [docs/AUDIT_FINDINGS.md](docs/AUDIT_FINDINGS.md) §3.3).

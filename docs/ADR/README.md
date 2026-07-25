@@ -31,6 +31,8 @@ supersede e l'indice viene aggiornato.
 | [011](ADR-011-backtest-discovery-qualification.md) | Discovery vs qualification backtest | ACCEPTED | PyBroker deprecated; Nautilus candidate |
 | [012](ADR-012-capability-gates-replace-phases.md) | Capability gate al posto delle Phase | ACCEPTED | Depreca i piani Phase |
 | [013](ADR-013-versioned-prop-firm-rule-catalog.md) | Rule catalog prop-firm versionato | ACCEPTED | Support mode fail-closed |
+| [014](ADR-014-m31-evidence-loss.md) | M31 replay/regime evidence loss | ACCEPTED | G5 dichiarato REGRESSED, dataset lineage GAP |
+| [015 - proposto](template.md) | Topstep automation / VPS policy | PROPOSED | vedi [BACKLOG.md BL-071](../../BACKLOG.md) |
 
 ## Come creare un ADR
 
@@ -48,3 +50,14 @@ supersede e l'indice viene aggiornato.
 - source of truth e ownership sono definite;
 - security, failure e rollback sono considerati;
 - esiste un test o un gate che rende la decisione verificabile.
+
+## ADR proposti (PROPOSED → da accettare o rigettare)
+
+Chi prende in mano il backlog deve:
+
+1. Per ogni "MUST BE ADR" nel [BACKLOG.md](../../BACKLOG.md), scrivere un
+   nuovo file `ADR-NNN-titolo.md` da `template.md` e aggiungerlo qui con
+   stato PROPOSED.
+2. Ottenuto il consenso (reviewer + approver nel log), promuovere a
+   ACCEPTED con `git mv`-style update dell'indice (commit + CHANGELOG
+   header).

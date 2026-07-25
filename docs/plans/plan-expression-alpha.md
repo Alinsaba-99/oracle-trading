@@ -60,7 +60,7 @@ ExpressionNode:
 
 Parser da stringa → AST:
 ```
-"sma(close, 20) / ts_std(close, 20)"  
+"sma(close, 20) / ts_std(close, 20)"
   → Div(Sma(Leaf("close"), 20), TsStd(Leaf("close"), 20))
 ```
 
