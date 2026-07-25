@@ -32,7 +32,8 @@ supersede e l'indice viene aggiornato.
 | [012](ADR-012-capability-gates-replace-phases.md) | Capability gate al posto delle Phase | ACCEPTED | Depreca i piani Phase |
 | [013](ADR-013-versioned-prop-firm-rule-catalog.md) | Rule catalog prop-firm versionato | ACCEPTED | Support mode fail-closed |
 | [014](ADR-014-m31-evidence-loss.md) | M31 replay/regime evidence loss | ACCEPTED | G5 dichiarato REGRESSED, dataset lineage GAP |
-| [015 - proposto](template.md) | Topstep automation / VPS policy | PROPOSED | vedi [BACKLOG.md BL-071](../../BACKLOG.md) |
+| [015](ADR-015-topstep-automation-policy.md) | Topstep automation / VPS / device policy | ACCEPTED | Local-only deployment; vedi BL-071 |
+| [015 - proposto](template.md) | (placeholder) | — | superseded dalla riga precedente |
 
 ## Come creare un ADR
 
