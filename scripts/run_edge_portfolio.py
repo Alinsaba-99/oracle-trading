@@ -19,7 +19,6 @@ import polars as pl
 from analytics.backtest.challenge import ChallengeSimulator
 from analytics.backtest.config import BacktestConfig
 from analytics.backtest.engines.vectorized import VectorizedEngine
-from analytics.backtest.metrics import MetricsCalculator
 from analytics.strategy.signals import (
     BbandReversion,
     DonchianBreakout,
@@ -146,11 +145,10 @@ def main() -> int:
         initial_capital=Decimal(str(args.initial_capital)), slippage_bps=3.0, commission_pct=0.0005
     )
     engine = VectorizedEngine()
-    mc = MetricsCalculator()
-    results = []
-
+    results = []  # placeholder for results aggregation
     print(
-        f"\n{'strategy':<32s} {'sharpe':>8s} {'dd%':>8s} {'pf':>6s} {'wr%':>6s} {'train_pass':>12s} {'test_pass':>11s} {'mc_pass%':>10s}"
+        f"\n{'strategy':<32s} {'sharpe':>8s} {'dd%':>8s} {'pf':>6s} {'wr%':>6s} "
+        f"{'train_pass':>12s} {'test_pass':>11s} {'mc_pass%':>10s}"
     )
     print("-" * 110)
     for name, (cls, params) in CANDIDATES.items():
@@ -220,7 +218,8 @@ def main() -> int:
         reverse=True,
     )
     print(
-        f"\n{'strategy':<32s} {'test_pass':>10s} {'mc_pass%':>10s} {'test_sharpe':>12s} {'test_dd%':>10s}"
+        f"\n{'strategy':<32s} {'test_pass':>10s} {'mc_pass%':>10s} "
+        f"{'test_sharpe':>12s} {'test_dd%':>10s}"
     )
     print("-" * 80)
     for r in scored:

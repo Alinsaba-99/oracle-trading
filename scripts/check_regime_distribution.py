@@ -14,26 +14,15 @@ import json
 import statistics
 import sys
 from collections import Counter
-from decimal import Decimal
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import polars as pl
 
-from analytics.backtest.config import BacktestConfig
-from analytics.backtest.engines.vectorized import VectorizedEngine
 from analytics.strategy.lorentzian import LorentzianKNN
-from analytics.strategy.regime_ensemble import (
-    RegimeAwareEnsemble,
-    RegimeLabel,
-    SpecialistId,
-)
-from analytics.strategy.signals import (
-    DonchianBreakout,
-    EmaTrend,
-    RsiReversion,
-)
+from analytics.strategy.regime_ensemble import RegimeAwareEnsemble, RegimeLabel, SpecialistId
+from analytics.strategy.signals import DonchianBreakout, EmaTrend, RsiReversion
 
 
 def _build_ensemble() -> RegimeAwareEnsemble:
@@ -57,7 +46,9 @@ def main() -> int:
     p.add_argument("--output", default="logs/regime_distribution.json")
     args = p.parse_args()
 
-    df = pl.read_parquet(args.data).rename({c: c.lower() for c in pl.read_parquet(args.data).columns})
+    raw = pl.read_parquet(args.data)
+    rename = {c: c.lower() for c in raw.columns}
+    df = raw.rename(rename)
     n = len(df)
     win_size = n // args.windows
     if win_size < 30:
@@ -118,7 +109,7 @@ def main() -> int:
     print(f"Regime distribution ({total} windows on {n} bar dataset):")
     for r, c in sorted(counts.items(), key=lambda kv: -kv[1]):
         print(f"  {r.value:<10} {c:>3d}/{total} ({c / total * 100:>5.1f}%)")
-    print(f"\nSpecialist distribution:")
+    print("\nSpecialist distribution:")
     for s, c in sorted(specialist_counts.items(), key=lambda kv: -kv[1]):
         print(f"  {s.value:<15} {c:>3d}/{total} ({c / total * 100:>5.1f}%)")
     print(f"\nMean confidence: {statistics.mean(confidences):.3f}")
