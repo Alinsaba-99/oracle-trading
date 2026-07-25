@@ -26,6 +26,37 @@ from analytics.backtest.instruments import Instrument, InstrumentRegistry, defau
 
 SUPPORTED_TIMEFRAMES = ("15m", "1h", "4h", "1d")
 
+LAKE_ROOT = Path("data/lake")
+NORM_ROOT = LAKE_ROOT / "normalized"
+LEGACY_ROOT = Path("data/ohlcv")
+
+
+def _lake_path(symbol, tf):
+    if not NORM_ROOT.exists():
+        return []
+    base = NORM_ROOT / f"symbol={symbol}" / f"tf={tf}"
+    if not base.exists():
+        return []
+    return sorted(base.glob("year=*/month=*.parquet"))
+
+
+def read_from_lake(symbol, tf, *, start=None, end=None):
+    parts = _lake_path(symbol, tf)
+    if not parts:
+        return None
+    try:
+        df = pl.read_parquet(parts)
+    except Exception:
+        return None
+    if df.is_empty():
+        return None
+    df = df.unique(subset=["timestamp"]).sort("timestamp")
+    if start is not None:
+        df = df.filter(pl.col("timestamp") >= start)
+    if end is not None:
+        df = df.filter(pl.col("timestamp") <= end)
+    return df if not df.is_empty() else None
+
 # interval codes per backend. yfinance has no native 4h -> resample from 60m.
 _YF_INTERVAL = {"15m": "15m", "1h": "60m", "4h": "60m", "1d": "1d"}
 _YF_PERIOD = {"15m": "60d", "1h": "730d", "4h": "730d", "1d": "2y"}
@@ -202,13 +233,23 @@ class DataRegistry:
         """Return OHLCV for ``instrument_id`` at ``tf`` (cached on first fetch)."""
         if tf not in SUPPORTED_TIMEFRAMES:
             raise ValueError(f"unsupported timeframe {tf!r}; choose from {SUPPORTED_TIMEFRAMES}")
+        if not force:
+            cached = self._cache_path(instrument_id, tf)
+            if cached.exists():
+                df = pl.read_parquet(cached)
+                if start is not None:
+                    df = df.filter(pl.col("timestamp") >= start)
+                if end is not None:
+                    df = df.filter(pl.col("timestamp") <= end)
+                return df
+            lake_df = read_from_lake(instrument_id, tf, start=start, end=end)
+            if lake_df is not None:
+                return lake_df
         inst = self.registry.get(instrument_id)
-        cache = self._cache_path(instrument_id, tf)
-        if cache.exists() and not force:
-            return pl.read_parquet(cache)
         df = _dispatch(inst, tf, period=period, start=start, end=end)
         if df.is_empty():
             return df
+        cache = self._cache_path(instrument_id, tf)
         cache.parent.mkdir(parents=True, exist_ok=True)
         df.write_parquet(cache)
         return df

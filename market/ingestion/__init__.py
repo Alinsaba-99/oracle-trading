@@ -1,8 +1,20 @@
 """Market data ingestion pipeline.
 
-The :class:`IngestionPipeline` manages multiple :class:`BaseSource`
-instances, connects to NATS via :class:`EventBusClient`, and routes
-normalized market data to ``market.tick`` and ``market.bar`` subjects.
+Two layers:
+
+1. **IngestionPipeline** (legacy, NATS-based): reads ticks from sources,
+   publishes to NATS for live trading. Kept for live mode.
+
+2. **DataLake pipeline** (BL-301, file-based): incremental fetch from
+   5 external sources, normalize to canonical schema, partitioned parquet
+   for offline backtesting. New default for offline mode.
+
+Components:
+  market.ingestion.sources     — adapters to 5 zero-cost providers
+  market.ingestion.normalize   — canonical schema + quality checks
+  market.ingestion.pipeline    — incremental fetch/merge/audit orchestrator
+  market.ingestion.orchestrator — multi-source backfill coordinator
+  market.ingestion.types       — shared types (OHLCVBar, RateLimit, etc.)
 """
 
 from __future__ import annotations
