@@ -14,7 +14,7 @@ import pytest
 
 
 @pytest.fixture
-def fake_data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+def fake_data_dir(tmp_path: Path) -> Path:
     """Create a fake data/ohlcv dir with a pinned dataset that should NOT be touched."""
     fake = tmp_path / "data"
     ohlcv = fake / "ohlcv"
