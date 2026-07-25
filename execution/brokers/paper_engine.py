@@ -17,9 +17,8 @@ from __future__ import annotations
 import logging
 import random
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Any
 
 logger = logging.getLogger("oracle.execution.paper")
 
@@ -168,7 +167,7 @@ class PaperFillResult:
     rejection_reason: str = ""
     partial: bool = False
     remaining: Decimal = Decimal("0")
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 # ── Paper fill engine ───────────────────────────────────────────────
@@ -228,16 +227,14 @@ class RealisticPaperFillEngine:
                 "Market order too large",
             ]
             return PaperFillResult(
-                filled=False,
-                rejection_reason=self._rng.choice(reject_reasons),
-                latency_ms=latency,
+                filled=False, rejection_reason=self._rng.choice(reject_reasons), latency_ms=latency
             )
 
         # 3. Compute spread and bid/ask
         half_spread = mid_price * config.spread_bps / 10_000
         bid = mid_price - half_spread
         ask = mid_price + half_spread
-        spread = ask - bid
+        ask - bid
 
         # 4. Determine fill price and probability
         fill_price = mid_price
@@ -269,10 +266,9 @@ class RealisticPaperFillEngine:
         elif order_type == "limit":
             # Limit order fills only if price is at or better than limit
             if limit_price is not None:
-                if side == "buy" and limit_price >= ask:
-                    fill_prob = config.limit_fill_base_prob
-                    fill_price = limit_price
-                elif side == "sell" and limit_price <= bid:
+                if (side == "buy" and limit_price >= ask) or (
+                    side == "sell" and limit_price <= bid
+                ):
                     fill_prob = config.limit_fill_base_prob
                     fill_price = limit_price
                 else:
@@ -282,11 +278,7 @@ class RealisticPaperFillEngine:
 
         # 5. Roll for fill
         if self._rng.random() >= fill_prob:
-            return PaperFillResult(
-                filled=False,
-                rejection_reason="No fill",
-                latency_ms=latency,
-            )
+            return PaperFillResult(filled=False, rejection_reason="No fill", latency_ms=latency)
 
         # 6. Partial fill?
         partial = self._rng.random() < config.partial_fill_prob
@@ -297,10 +289,7 @@ class RealisticPaperFillEngine:
             fill_qty = max(1, int(quantity * pct))
 
         # 7. Compute commission
-        commission = max(
-            config.commission_min,
-            config.commission_per_contract * fill_qty,
-        )
+        commission = max(config.commission_min, config.commission_per_contract * fill_qty)
 
         return PaperFillResult(
             filled=True,

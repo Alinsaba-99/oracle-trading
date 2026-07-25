@@ -347,14 +347,20 @@ async def main() -> None:
     guard(OracleMode.PAPER)
 
     fetcher = DataFetcher()
-    print(f"\nFetching market data for {args.symbol} via {args.source}...")
-    df = fetcher.fetch(args.symbol, source=args.source)
+    # Fetch market data
+    if args.source == "ccxt":
+        needed_bars = args.sessions * args.session_bars + 100
+        df = fetcher.ccxt_ohlcv("binance", args.symbol, limit=needed_bars)
+    else:
+        df = fetcher.fetch(args.symbol, source=args.source)
     if df.empty:
         print("ERROR: Failed to fetch market data")
         sys.exit(1)
 
     # Convert DataFrame to list of bar dicts
     bars: list[dict[str, Any]] = []
+    # Normalize column names to lowercase
+    df.columns = [c.lower() for c in df.columns]
     for ts, row in df.iterrows():
         bars.append(
             {
@@ -371,15 +377,18 @@ async def main() -> None:
     session_length = args.session_bars
     total_needed = args.sessions * session_length
     if len(bars) < total_needed:
-        print(f"Warning: Only {len(bars)} bars available, scaling down session length")
         session_length = len(bars) // args.sessions
+        print(
+            f"Warning: Only {len(bars)} bars available, "
+            f"scaling down session length to {session_length}"
+        )
 
     sessions_bars: list[list[dict[str, Any]]] = []
     for s in range(args.sessions):
         start_idx = s * session_length
         end_idx = start_idx + session_length
         sess_slice = bars[start_idx:end_idx]
-        if len(sess_slice) >= args.slow + 5:
+        if len(sess_slice) >= args.slow + 2:
             sessions_bars.append(sess_slice)
 
     print(f"\n{'=' * 60}")

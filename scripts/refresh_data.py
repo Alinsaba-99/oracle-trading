@@ -90,8 +90,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Refresh Oracle market data")
     parser.add_argument("--futures-only", action="store_true", help="Only refresh futures")
     parser.add_argument(
-        "--multi-timeframe", type=str, default=None,
-        help="Fetch multi-timeframe data for a symbol (e.g. ES, BTC/USDT)"
+        "--multi-timeframe",
+        type=str,
+        default=None,
+        help="Fetch multi-timeframe data for a symbol (e.g. ES, BTC/USDT)",
     )
     args = parser.parse_args()
 

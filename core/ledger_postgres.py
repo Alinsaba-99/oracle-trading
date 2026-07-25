@@ -15,14 +15,11 @@ Usage::
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
 from decimal import Decimal
-from typing import Any
-from uuid import uuid4
 
 import asyncpg
 
-from core.ledger import AccountEntry, LedgerEntry, _utcnow
+from core.ledger import AccountEntry, LedgerEntry
 
 logger = logging.getLogger("oracle.ledger.postgres")
 
@@ -31,21 +28,19 @@ class PostgresLedger:
     """PostgreSQL-backed ledger with double-entry accounting.
 
     Connection pooling via ``asyncpg.create_pool``.
-    Schema is defined in ``db/schema.sql`` (accounts + fills + positions tables).
+    Schema is defined in ``db/schema.sql`` (accounts + ledger_entries tables).
     """
 
     def __init__(self) -> None:
         self._pool: asyncpg.Pool | None = None
-        self._accounts: dict[str, AccountEntry] = {}  # local cache
+        self._accounts: dict[str, AccountEntry] = {}
+        self._entries: list[LedgerEntry] = []
 
     # ── Factory ─────────────────────────────────────────────────────────
 
     @classmethod
     async def create(
-        cls,
-        dsn: str = "postgresql://localhost:5432/oracle",
-        min_size: int = 1,
-        max_size: int = 5,
+        cls, dsn: str = "postgresql://localhost:5432/oracle", min_size: int = 1, max_size: int = 5
     ) -> PostgresLedger:
         """Create and initialize a PostgresLedger with connection pool.
 
@@ -65,15 +60,22 @@ class PostgresLedger:
         return self
 
     async def _ensure_schema(self) -> None:
-        """Ensure the ledger schema exists."""
+        """Ensure the ledger schema exists — compatible with ``db/schema.sql``.
+
+        Uses ``UUID`` for ``account_id`` to match the canonical schema's
+        ``accounts`` table.  The ``ledger_entries`` table is managed here
+        (not in ``db/schema.sql``) because it's ledger-specific state.
+        """
         if self._pool is None:
             raise RuntimeError("Not connected")
         conn = await self._pool.acquire()
         try:
-            # Create accounts table if not exists
+            # Note: accounts table is created by db/schema.sql, but we
+            # include CREATE IF NOT EXISTS here for test environments
+            # where schema.sql may not have been pre-loaded.
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS accounts (
-                    account_id          TEXT PRIMARY KEY,
+                    account_id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                     account_type        TEXT NOT NULL DEFAULT 'paper',
                     mode                TEXT NOT NULL DEFAULT 'research',
                     status              TEXT NOT NULL DEFAULT 'active',
@@ -88,7 +90,7 @@ class PostgresLedger:
             await conn.execute("""
                 CREATE TABLE IF NOT EXISTS ledger_entries (
                     entry_id            TEXT PRIMARY KEY,
-                    account_id          TEXT NOT NULL REFERENCES accounts(account_id),
+                    account_id          UUID NOT NULL REFERENCES accounts(account_id),
                     order_id            TEXT,
                     fill_id             TEXT,
                     amount              NUMERIC(20,8) NOT NULL,
@@ -109,8 +111,9 @@ class PostgresLedger:
         try:
             rows = await conn.fetch("SELECT * FROM accounts")
             for row in rows:
-                self._accounts[row["account_id"]] = AccountEntry(
-                    account_id=row["account_id"],
+                aid = str(row["account_id"])  # UUID → str for cache key
+                self._accounts[aid] = AccountEntry(
+                    account_id=aid,
                     account_type=row["account_type"],
                     mode=row["mode"],
                     initial_balance=Decimal(str(row["initial_balance"])),
@@ -124,18 +127,14 @@ class PostgresLedger:
 
     # ── Account management ──────────────────────────────────────────────
 
-    def create_account(
+    async def create_account(
         self,
         account_type: str = "paper",
         initial_balance: Decimal = Decimal("0"),
         currency: str = "USD",
         mode: str = "research",
     ) -> AccountEntry:
-        """Create a new account (in-memory + persist to DB).
-
-        Returns:
-            The created AccountEntry.
-        """
+        """Create a new account (in-memory + persist to DB)."""
         account = AccountEntry(
             account_type=account_type,
             initial_balance=initial_balance,
@@ -144,175 +143,137 @@ class PostgresLedger:
             mode=mode,
         )
         self._accounts[account.account_id] = account
-        # Async persist — fire-and-forget in-memory first
-        import asyncio
-
-        asyncio.ensure_future(self._persist_account(account))
+        # Persist to PostgreSQL
+        if self._pool:
+            async with self._pool.acquire() as conn:
+                await conn.execute(
+                    """INSERT INTO accounts (account_id, account_type, mode, status,
+                        initial_balance, current_balance, currency, version)
+                       VALUES ($1, $2, $3, 'active', $4, $5, $6, 1)""",
+                    account.account_id,
+                    account.account_type,
+                    account.mode,
+                    str(account.initial_balance),
+                    str(account.current_balance),
+                    account.currency,
+                )
         return account
 
-    async def _persist_account(self, account: AccountEntry) -> None:
-        """Persist account to PostgreSQL."""
-        if self._pool is None:
-            return
-        conn = await self._pool.acquire()
-        try:
-            await conn.execute(
-                """
-                INSERT INTO accounts (account_id, account_type, mode, status,
-                    initial_balance, current_balance, currency, version, created_at, updated_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9)
-                ON CONFLICT (account_id) DO UPDATE SET
-                    current_balance = EXCLUDED.current_balance,
-                    version = EXCLUDED.version,
-                    updated_at = EXCLUDED.updated_at
-                """,
-                account.account_id,
-                account.account_type,
-                account.mode,
-                account.status,
-                str(account.initial_balance),
-                str(account.current_balance),
-                account.currency,
-                account.version,
-                account.created_at,
-            )
-        finally:
-            await self._pool.release(conn)
-
     def get_account(self, account_id: str) -> AccountEntry | None:
-        """Get account from local cache."""
         return self._accounts.get(account_id)
 
     # ── Ledger entries ──────────────────────────────────────────────────
 
-    def record_fill(
+    async def record_fill(
         self,
         account_id: str,
-        fill_id: str,
         order_id: str,
+        fill_id: str,
         quantity: Decimal,
         price: Decimal,
         commission: Decimal = Decimal("0"),
-        direction: str = "buy",
-    ) -> LedgerEntry | None:
-        """Record a fill and update account balance.
-
-        Returns the created LedgerEntry, or None if account not found.
-        """
-        account = self._accounts.get(account_id)
+        realized_pnl: Decimal = Decimal("0"),
+        side: str = "buy",
+    ) -> list[LedgerEntry]:
+        """Record a fill — update balance in-memory and persist to PostgreSQL."""
+        account = self.get_account(account_id)
         if account is None:
-            logger.warning(f"Account {account_id} not found")
-            return None
+            raise ValueError(f"Account {account_id} not found")
 
-        # Calculate trade value (debit for buy, credit for sell)
-        trade_value = price * quantity
-        if direction == "buy":
-            trade_value = -trade_value  # buying: money leaves the account
-        # else sell: money comes in
+        notional_amount = -(price * quantity) if side == "buy" else (price * quantity)
+        total_impact = notional_amount + realized_pnl - commission
 
-        # Update balance
-        new_balance = account.current_balance + trade_value - commission
-        if new_balance < 0:
-            logger.warning(f"Negative balance {new_balance} for account {account_id}")
-            return None
+        written: list[LedgerEntry] = []
 
-        entry = LedgerEntry(
+        notional_entry = LedgerEntry(
+            account_id=account_id,
             order_id=order_id,
             fill_id=fill_id,
-            account_id=account_id,
-            amount=trade_value,
-            entry_type="trade",
-            description=f"{direction} {quantity} @ {price}",
+            amount=notional_amount,
+            entry_type="notional",
+            description=f"Notional {side}: {quantity} @ {price}",
         )
+        self._entries.append(notional_entry)
+        written.append(notional_entry)
 
-        # Update in-memory state
-        self._accounts[account_id] = AccountEntry(
-            account_id=account.account_id,
-            account_type=account.account_type,
-            mode=account.mode,
-            initial_balance=account.initial_balance,
-            current_balance=new_balance,
-            currency=account.currency,
-            status=account.status,
-            version=account.version + 1,
-            created_at=account.created_at,
-        )
-
-        # Async persist
-        import asyncio
-
-        asyncio.ensure_future(self._persist_entry(entry))
-        asyncio.ensure_future(self._persist_account(self._accounts[account_id]))
-
-        return entry
-
-    async def _persist_entry(self, entry: LedgerEntry) -> None:
-        """Persist a ledger entry to PostgreSQL."""
-        if self._pool is None:
-            return
-        conn = await self._pool.acquire()
-        try:
-            await conn.execute(
-                """
-                INSERT INTO ledger_entries (entry_id, account_id, order_id, fill_id,
-                    amount, currency, entry_type, description, created_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-                ON CONFLICT (entry_id) DO NOTHING
-                """,
-                entry.entry_id,
-                entry.account_id,
-                entry.order_id,
-                entry.fill_id,
-                str(entry.amount),
-                entry.currency,
-                entry.entry_type,
-                entry.description,
-                entry.created_at,
+        if realized_pnl != 0:
+            pnl_entry = LedgerEntry(
+                account_id=account_id,
+                order_id=order_id,
+                fill_id=fill_id,
+                amount=realized_pnl,
+                entry_type="trade",
+                description=f"Fill P&L: {quantity} @ {price}",
             )
-        finally:
-            await self._pool.release(conn)
+            self._entries.append(pnl_entry)
+            written.append(pnl_entry)
 
-    # ── Query methods ───────────────────────────────────────────────────
+        if commission > 0:
+            comm_entry = LedgerEntry(
+                account_id=account_id,
+                order_id=order_id,
+                fill_id=fill_id,
+                amount=-commission,
+                entry_type="commission",
+                description=f"Commission: {commission}",
+            )
+            self._entries.append(comm_entry)
+            written.append(comm_entry)
+
+        # Update in-memory balance
+        new_balance = account.current_balance + total_impact
+        if new_balance < 0:
+            raise ValueError(
+                f"Insufficient balance: {account.current_balance} + {total_impact} = {new_balance}"
+            )
+        self._accounts[account_id] = AccountEntry(
+            **{**account.__dict__, "current_balance": new_balance, "version": account.version + 1}
+        )
+
+        # Persist to PostgreSQL
+        if self._pool:
+            async with self._pool.acquire() as conn:
+                for entry in written:
+                    await conn.execute(
+                        "INSERT INTO ledger_entries "
+                        "(entry_id, account_id, order_id, fill_id, "
+                        "amount, currency, entry_type, description) "
+                        "VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+                        entry.entry_id,
+                        account_id,
+                        entry.order_id,
+                        entry.fill_id,
+                        str(entry.amount),
+                        entry.currency,
+                        entry.entry_type,
+                        entry.description,
+                    )
+                # Update account balance in DB
+                await conn.execute(
+                    "UPDATE accounts SET current_balance = $1, version = version + 1 "
+                    "WHERE account_id = $2",
+                    str(new_balance),
+                    account_id,
+                )
+
+        return written
 
     def get_balance(self, account_id: str) -> Decimal:
-        """Get current balance for an account."""
         account = self._accounts.get(account_id)
-        return account.current_balance if account else Decimal("0")
+        if account is None:
+            raise ValueError(f"Account {account_id} not found")
+        return account.current_balance
 
     def get_entries(self, account_id: str) -> list[LedgerEntry]:
-        """Get all entries for an account (from in-memory cache)."""
-        return [e for e in self._accounts.values() if hasattr(e, "account_id") and e.account_id == account_id]
+        return [e for e in self._entries if e.account_id == account_id]
 
-    async def get_all_entries(self) -> list[LedgerEntry]:
-        """Get all ledger entries from PostgreSQL."""
-        if self._pool is None:
-            return []
-        conn = await self._pool.acquire()
-        try:
-            rows = await conn.fetch("SELECT * FROM ledger_entries ORDER BY created_at")
-            result = [
-                LedgerEntry(
-                    entry_id=row["entry_id"],
-                    account_id=row["account_id"],
-                    order_id=row["order_id"],
-                    fill_id=row["fill_id"],
-                    amount=Decimal(str(row["amount"])),
-                    currency=row["currency"],
-                    entry_type=row["entry_type"],
-                    description=row["description"],
-                    created_at=row["created_at"],
-                )
-                for row in rows
-            ]
-            return result
-        finally:
-            await self._pool.release(conn)
+    def get_all_entries(self) -> list[LedgerEntry]:
+        return list(self._entries)
 
-    # ── Lifecycle ───────────────────────────────────────────────────────
+    # ── Persistence ─────────────────────────────────────────────────────
 
     async def close(self) -> None:
         """Close the connection pool."""
         if self._pool:
             await self._pool.close()
             self._pool = None
-            logger.info("PostgresLedger connection pool closed")

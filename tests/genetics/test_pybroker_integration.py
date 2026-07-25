@@ -1,4 +1,10 @@
-"""Tests for PyBroker integration — walkforward backtesting bridge."""
+"""Tests for PyBroker integration — walkforward backtesting bridge.
+
+The PyBroker library is an optional, internal-only dependency that is
+NOT on PyPI and therefore NOT installed by default.  These tests are
+skipped cleanly when the module is missing — the rest of the test
+suite (and the application) is unaffected.
+"""
 
 from __future__ import annotations
 
@@ -8,7 +14,22 @@ import numpy as np
 import polars as pl
 import pytest
 
-from analytics.backtest.pybroker_integration import PyBrokerBacktest
+_pybroker_missing_reason = ""
+try:
+    import pybroker  # noqa: F401
+except ImportError as _exc:  # pragma: no cover - environment gate
+    _pybroker_missing_reason = str(_exc)
+    _pybroker_installed = False
+else:
+    _pybroker_installed = True
+
+_pybroker_skip = pytest.mark.skipif(
+    not _pybroker_installed,
+    reason=f"pybroker not installed ({_pybroker_missing_reason or 'module unavailable'}); "
+    "install with `uv sync --extra pybroker` (internal index required)",
+)
+
+from analytics.backtest.pybroker_integration import PyBrokerBacktest  # noqa: E402
 
 
 @pytest.fixture
@@ -39,7 +60,7 @@ def _constant_long(_data: pl.DataFrame) -> pl.Series:
     return pl.Series("signal", [1] * len(_data), dtype=pl.Int8)
 
 
-@pytest.mark.slow
+@_pybroker_skip
 def test_pybroker_smoke(small_data: pl.DataFrame) -> None:
     """PyBroker runs without error and returns expected metric keys."""
     pb = PyBrokerBacktest()
@@ -55,7 +76,7 @@ def test_pybroker_smoke(small_data: pl.DataFrame) -> None:
     assert result["trade_count"] >= 0
 
 
-@pytest.mark.slow
+@_pybroker_skip
 def test_pybroker_constant_long_positive_return(small_data: pl.DataFrame) -> None:
     """Always-long on uptrending data — basic run check."""
     pb = PyBrokerBacktest()
@@ -63,7 +84,7 @@ def test_pybroker_constant_long_positive_return(small_data: pl.DataFrame) -> Non
     assert "total_return_pct" in result
 
 
-@pytest.mark.slow
+@_pybroker_skip
 def test_pybroker_different_windows(small_data: pl.DataFrame) -> None:
     """PyBroker handles different n_windows values."""
     pb = PyBrokerBacktest()
@@ -72,7 +93,7 @@ def test_pybroker_different_windows(small_data: pl.DataFrame) -> None:
         assert "sharpe" in result
 
 
-@pytest.mark.slow
+@_pybroker_skip
 def test_pybroker_walkforward_metrics(small_data: pl.DataFrame) -> None:
     """Walkforward metrics contain bootstrap confidence intervals."""
     pb = PyBrokerBacktest()
@@ -80,7 +101,7 @@ def test_pybroker_walkforward_metrics(small_data: pl.DataFrame) -> None:
     assert pb._last_result is not None
 
 
-@pytest.mark.slow
+@_pybroker_skip
 def test_pybroker_signal_alignment(small_data: pl.DataFrame) -> None:
     """Signal is aligned by date — trading only occurs on valid signal days."""
     pb = PyBrokerBacktest()

@@ -6,12 +6,7 @@ import os
 
 import pytest
 
-from core.auth import (
-    AuthorizationError,
-    Role,
-    authorize,
-    require_role,
-)
+from core.auth import AuthorizationError, Role, authorize, require_role
 
 
 class TestAuthorization:

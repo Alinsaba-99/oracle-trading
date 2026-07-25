@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+from agents.committee.triggers import CommitteeTrigger
 from application.contracts import (
     ExecutionPreference,
     IntentAction,
@@ -18,8 +19,6 @@ from application.contracts import (
     TradingMode,
     Urgency,
 )
-
-from agents.committee.triggers import CommitteeTrigger  # noqa: F401
 
 __all__ = [
     "CommitteeTrigger",

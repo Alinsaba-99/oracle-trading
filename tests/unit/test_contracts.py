@@ -6,18 +6,7 @@ from decimal import Decimal
 
 import pytest
 
-from market.contracts import (
-    CATALOG,
-    ContractSpec,
-    ES,
-    MES,
-    NQ,
-    MNQ,
-    GC,
-    CL,
-    get_contract,
-    pnl_check,
-)
+from market.contracts import CATALOG, CL, ES, GC, MES, MNQ, NQ, get_contract, pnl_check
 
 
 class TestContractSpec:

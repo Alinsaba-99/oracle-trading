@@ -11,8 +11,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import sys
-import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
@@ -37,8 +36,8 @@ def _signal(prices: list[float], fast: int, slow: int) -> str:
     s = sum(prices[-slow:]) / slow
     if len(prices) < slow + 2:
         return "HOLD"
-    pf = sum(prices[-(fast + 1):-1]) / fast
-    ps = sum(prices[-(slow + 1):-1]) / slow
+    pf = sum(prices[-(fast + 1) : -1]) / fast
+    ps = sum(prices[-(slow + 1) : -1]) / slow
     if pf <= ps and f > s:
         return "BUY"
     if pf >= ps and f < s:
@@ -48,15 +47,17 @@ def _signal(prices: list[float], fast: int, slow: int) -> str:
 
 async def run(args: argparse.Namespace) -> dict:
     from dotenv import load_dotenv
+
     load_dotenv()
 
-    from core.domain.mode import OracleMode
+    from decimal import Decimal
+
     from core.domain.guard import guard
-    from market.realtime import PolygonWebSocketFeed
+    from core.domain.mode import OracleMode
+    from core.reconciliation import ReconciliationEngine
     from execution.brokers.paper import PaperBroker
     from execution.brokers.types import BrokerOrder
-    from core.reconciliation import ReconciliationEngine
-    from decimal import Decimal
+    from market.realtime import PolygonWebSocketFeed
 
     guard(OracleMode.PAPER)
     broker = PaperBroker()
@@ -66,13 +67,14 @@ async def run(args: argparse.Namespace) -> dict:
     position = 0
     trades: list[dict] = []
 
-    print(f"\n{'='*50}")
+    print(f"\n{'=' * 50}")
     print(f"  PAPER SESSION: {symbol} SMA({args.fast}/{args.slow})")
-    print(f"{'='*50}\n", flush=True)
+    print(f"{'=' * 50}\n", flush=True)
 
     # ── Startup reconciliation ───────────────────────────────────────
     from core.ledger import InMemoryLedger
     from core.oms import InMemoryOMS
+
     ledger = InMemoryLedger()
     oms = InMemoryOMS(ledger=ledger)
     reconciler = ReconciliationEngine(broker=broker, oms=oms, ledger=ledger)
@@ -80,7 +82,10 @@ async def run(args: argparse.Namespace) -> dict:
     if start_report.is_clean:
         print("  Startup reconciliation: CLEAN", flush=True)
     else:
-        print(f"  Startup reconciliation: {start_report.recoverable_count} recoverable, {start_report.fatal_count} fatal", flush=True)
+        print(
+            f"  Startup reconciliation: {start_report.recoverable_count} recoverable, {start_report.fatal_count} fatal",
+            flush=True,
+        )
         if start_report.has_fatal:
             print("  ⛔ FATAL mismatch at startup — blocking orders", flush=True)
     print(flush=True)
@@ -111,8 +116,7 @@ async def run(args: argparse.Namespace) -> dict:
             new_pos = -1
 
         print(
-            f"  [{count}] ${price:.2f}  sig={sig:5s}  "
-            f"pos={position}  trades={contracts}",
+            f"  [{count}] ${price:.2f}  sig={sig:5s}  pos={position}  trades={contracts}",
             flush=True,
         )
 
@@ -126,19 +130,26 @@ async def run(args: argparse.Namespace) -> dict:
                 side=side,
                 quantity=Decimal(str(contracts)),
                 price=Decimal(str(price)),
-                created_at=datetime.now(timezone.utc).isoformat(),
+                created_at=datetime.now(UTC).isoformat(),
             )
             oid = await broker.submit_order(order)
-            trades.append({"time": datetime.now(timezone.utc).isoformat(), "side": side, "contracts": contracts, "price": price})
+            trades.append(
+                {
+                    "time": datetime.now(UTC).isoformat(),
+                    "side": side,
+                    "contracts": contracts,
+                    "price": price,
+                }
+            )
             position = new_pos
             print(f"    -> FILLED #{oid}", flush=True)
 
         if args.polls and count >= args.polls:
             break
 
-    print(f"\n{'='*50}")
+    print(f"\n{'=' * 50}")
     print(f"  RESULT: {len(trades)} trades, final pos={position}")
-    print(f"{'='*50}\n", flush=True)
+    print(f"{'=' * 50}\n", flush=True)
     return {"trades": len(trades), "position": position}
 
 

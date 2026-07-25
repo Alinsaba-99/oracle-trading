@@ -11,7 +11,6 @@ from core.oms_postgres import PostgresOMS
 
 
 class TestPostgresOMS:
-
     @pytest.mark.asyncio
     async def test_create(self, fake_pg: object) -> None:
         oms = await PostgresOMS.create(dsn="postgresql://test:5432/oracle")
@@ -63,8 +62,10 @@ class TestPostgresOMS:
         # always returns None.  This is a known limitation of unit testing with
         # mocked DB — real integration test requires running PostgreSQL.
         result = await oms.record_fill(
-            order_id="fill_test", fill_id="fill_1",
-            quantity=Decimal("2"), price=Decimal("5510"),
+            order_id="fill_test",
+            fill_id="fill_1",
+            quantity=Decimal("2"),
+            price=Decimal("5510"),
             commission=Decimal("5"),
         )
         # With mock: result is False because order not found in DB
@@ -75,7 +76,7 @@ class TestPostgresOMS:
     async def test_record_fill_unknown_order(self, fake_pg: object) -> None:
         oms = await PostgresOMS.create()
         result = await oms.record_fill(
-            order_id="nonexistent", quantity=Decimal("1"), price=Decimal("5000"),
+            order_id="nonexistent", quantity=Decimal("1"), price=Decimal("5000")
         )
         assert result is False
 

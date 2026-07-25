@@ -7,11 +7,7 @@ from pathlib import Path
 import pytest
 
 from analytics.backtest.result import BacktestResult
-from analytics.backtest.store import (
-    BacktestResultStore,
-    to_equity_points,
-    to_performance_summary,
-)
+from analytics.backtest.store import BacktestResultStore, to_equity_points, to_performance_summary
 
 
 def _sample(**overrides: object) -> BacktestResult:

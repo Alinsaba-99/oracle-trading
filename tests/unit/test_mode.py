@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from core.domain.guard import ModeGuardError, guard, current_mode
-from core.domain.mode import OracleMode, can_transition, VALID_TRANSITIONS
+from core.domain.guard import ModeGuardError, current_mode, guard
+from core.domain.mode import VALID_TRANSITIONS, OracleMode, can_transition
 
 
 class TestOracleMode:
@@ -68,21 +68,14 @@ class TestGuard:
 
     def test_paper_with_api_key(self) -> None:
         guard(
-            OracleMode.PAPER,
-            env={
-                "ORACLE_MODE": "paper",
-                "ORACLE_PAPER_API_KEY": "test-key-123",
-            },
+            OracleMode.PAPER, env={"ORACLE_MODE": "paper", "ORACLE_PAPER_API_KEY": "test-key-123"}
         )
 
     def test_evaluation_requires_broker_token(self) -> None:
         with pytest.raises(ModeGuardError, match="ORACLE_EVAL_BROKER_TOKEN"):
             guard(
                 OracleMode.EVALUATION,
-                env={
-                    "ORACLE_MODE": "evaluation",
-                    "ORACLE_EVAL_API_KEY": "key",
-                },
+                env={"ORACLE_MODE": "evaluation", "ORACLE_EVAL_API_KEY": "key"},
             )
 
     def test_invalid_mode_string(self) -> None:
@@ -92,18 +85,13 @@ class TestGuard:
     def test_invalid_transition(self) -> None:
         with pytest.raises(ModeGuardError, match="Invalid mode transition"):
             guard(
-                OracleMode.FUNDED,
-                env={"ORACLE_MODE": "funded"},
-                previous_mode=OracleMode.RESEARCH,
+                OracleMode.FUNDED, env={"ORACLE_MODE": "funded"}, previous_mode=OracleMode.RESEARCH
             )
 
     def test_valid_transition(self) -> None:
         guard(
             OracleMode.PAPER,
-            env={
-                "ORACLE_MODE": "paper",
-                "ORACLE_PAPER_API_KEY": "key",
-            },
+            env={"ORACLE_MODE": "paper", "ORACLE_PAPER_API_KEY": "key"},
             previous_mode=OracleMode.RESEARCH,
         )
 

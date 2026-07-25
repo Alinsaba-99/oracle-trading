@@ -312,8 +312,7 @@ def get_contract(symbol: str) -> ContractSpec:
     """
     if symbol not in CATALOG:
         raise KeyError(
-            f"Unknown contract symbol {symbol!r}. "
-            f"Available: {', '.join(sorted(CATALOG))}"
+            f"Unknown contract symbol {symbol!r}. Available: {', '.join(sorted(CATALOG))}"
         )
     return CATALOG[symbol]
 

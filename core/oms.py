@@ -72,6 +72,11 @@ class Fill:
     commission: Decimal = Decimal("0")
     realized_pnl: Decimal = Decimal("0")
 
+    # Side of the fill: "buy" debits cash by price*qty,
+    # "sell" credits cash by price*qty.  Defaults to "buy" for
+    # backward compatibility with existing callers.
+    side: str = "buy"
+
     fill_time: datetime = field(default_factory=_utcnow)
     idempotency_key: str | None = None
 
@@ -103,13 +108,17 @@ class InMemoryOMS:
     stores orders, fills, and outbox events in Python dicts.
     """
 
-    def __init__(self, ledger: Any | None = None) -> None:
+    def __init__(self, ledger: Any | None = None, idempotency_store: Any | None = None) -> None:
         self._orders: dict[str, Order] = {}
         self._fills: dict[str, Fill] = {}
         self._broker_fill_index: dict[str, str] = {}
         self._outbox: list[OutboxEvent] = []
         self._idempotency: dict[str, str] = {}  # client_order_id → order_id
         self._ledger = ledger
+        # Durable idempotency: if provided, cross-process restarts are safe.
+        # The in-memory dict still serves as the fast-path cache; the
+        # durable store is read on miss, written on every put.
+        self._idempotency_store = idempotency_store
 
     # ── Order lifecycle ─────────────────────────────────────────────
 
@@ -118,13 +127,42 @@ class InMemoryOMS:
 
         If ``client_order_id`` was already seen, returns the existing
         order instead of creating a duplicate.
+
+        Idempotency is consulted in two layers: in-memory fast path,
+        then durable store (if configured).  Writes go to both layers.
+
+        On a process restart where the in-memory order store has been
+        wiped, the durable layer still resolves the
+        ``client_order_id`` and returns a stub Order with the same
+        ``order_id`` so the broker is not contacted twice.
         """
+        # Fast path: in-memory
         if order.client_order_id in self._idempotency:
             existing_id = self._idempotency[order.client_order_id]
-            return self._orders[existing_id]
+            existing = self._orders.get(existing_id)
+            if existing is not None:
+                return existing
 
+        # Slow path: durable store (cross-process safe)
+        if self._idempotency_store is not None:
+            existing_id = self._idempotency_store.get(order.client_order_id)
+            if existing_id is not None:
+                # Backfill fast-path cache; return whichever order we
+                # have, or a stub if the in-memory orders dict was wiped.
+                existing = self._orders.get(existing_id)
+                if existing is not None:
+                    self._idempotency[order.client_order_id] = existing_id
+                    return existing
+                # Stub: caller will see the right order_id; the broker
+                # will short-circuit because we don't re-submit.
+                stub = Order(**{**order.__dict__, "order_id": existing_id, "status": "submitted"})
+                return stub
+
+        # Neither layer has it: persist a fresh order.
         self._orders[order.order_id] = order
         self._idempotency[order.client_order_id] = order.order_id
+        if self._idempotency_store is not None:
+            self._idempotency_store.put(order.client_order_id, order.order_id)
 
         self._outbox.append(
             OutboxEvent(
@@ -171,6 +209,12 @@ class InMemoryOMS:
         """Record a fill and update the linked order.
 
         Duplicate detection via ``broker_fill_id``.
+
+        Computes ``avg_fill_price`` as a volume-weighted average across
+        all fills received so far for this order (NOT just the latest
+        fill price).  Also enforces a cumulative overfill guard: raises
+        ValueError if accepting this fill would push cumulative
+        ``filled_quantity`` above ``order.quantity``.
         """
         if fill.broker_fill_id:
             dup_key = f"{fill.order_id}:{fill.broker_fill_id}"
@@ -182,16 +226,31 @@ class InMemoryOMS:
         if fill.broker_fill_id:
             self._broker_fill_index[f"{fill.order_id}:{fill.broker_fill_id}"] = fill.fill_id
 
-        # Update the order's filled quantity
+        # Update the order's filled quantity + VWAP
         order = self._orders.get(fill.order_id)
         if order:
             new_filled = order.filled_quantity + fill.quantity
+            # Overfill guard: cumulative fills must not exceed order quantity
+            if new_filled > order.quantity:
+                raise ValueError(
+                    f"Cumulative fill quantity {new_filled} would exceed "
+                    f"order {order.order_id} quantity {order.quantity}"
+                )
+
+            # VWAP across all fills so far for this order, weighted by quantity
+            order_fills = self.get_fills(fill.order_id)
+            total_qty = sum((f.quantity for f in order_fills), Decimal("0"))
+            if total_qty > 0:
+                vwap = sum((f.price * f.quantity for f in order_fills), Decimal("0")) / total_qty
+            else:
+                vwap = fill.price
+
             new_status = "filled" if new_filled >= order.quantity else "partially_filled"
             updated = Order(
                 **{
                     **order.__dict__,
                     "filled_quantity": new_filled,
-                    "avg_fill_price": fill.price,
+                    "avg_fill_price": vwap,
                     "status": new_status,
                     "version": order.version + 1,
                     "updated_at": fill.fill_time,
@@ -224,6 +283,7 @@ class InMemoryOMS:
                     price=fill.price,
                     commission=fill.commission,
                     realized_pnl=fill.realized_pnl,
+                    side=fill.side,
                 )
 
         return fill

@@ -13,7 +13,7 @@ Usage::
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import StrEnum
 
 
@@ -34,7 +34,7 @@ PROVIDER_CAPABILITIES: dict[DataProvider, dict[str, bool]] = {
         "futures_daily": True,
         "futures_intraday": False,  # No 1m/5m for futures
         "equity_daily": True,
-        "equity_intraday": True,    # 1h for some tickers
+        "equity_intraday": True,  # 1h for some tickers
         "crypto_daily": True,
         "fx_daily": True,
         "options": False,
@@ -45,7 +45,7 @@ PROVIDER_CAPABILITIES: dict[DataProvider, dict[str, bool]] = {
         "futures_daily": False,
         "futures_intraday": False,
         "crypto_spot": True,
-        "crypto_futures": True,     # Perpetual + delivery futures
+        "crypto_futures": True,  # Perpetual + delivery futures
         "crypto_funding_rate": True,
         "orderbook_l2": True,
         "ticker_live": True,
@@ -61,10 +61,10 @@ PROVIDER_CAPABILITIES: dict[DataProvider, dict[str, bool]] = {
     },
     DataProvider.POLYGON: {
         "stocks_daily": True,
-        "stocks_minute": True,      # 1m bars for stocks
+        "stocks_minute": True,  # 1m bars for stocks
         "options": True,
         "futures_daily": True,
-        "futures_minute": True,     # 1m/5m/15m for futures! KEY FEATURE
+        "futures_minute": True,  # 1m/5m/15m for futures! KEY FEATURE
         "fx": True,
         "indices": True,
     },
@@ -76,17 +76,14 @@ PROVIDER_CAPABILITIES: dict[DataProvider, dict[str, bool]] = {
         "macro_unemployment": True,
     },
     DataProvider.IBKR: {
-        "futures_tick": True,       # Real-time tick for futures
-        "futures_1m": True,         # Real-time 1m bars
+        "futures_tick": True,  # Real-time tick for futures
+        "futures_1m": True,  # Real-time 1m bars
         "equity_tick": True,
         "fx_tick": True,
         "account_data": True,
         "order_execution": True,
     },
-    DataProvider.ALPHAI: {
-        "news": True,
-        "sentiment": True,
-    },
+    DataProvider.ALPHAI: {"news": True, "sentiment": True},
 }
 
 

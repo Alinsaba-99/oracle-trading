@@ -7,9 +7,8 @@ Every API request must carry an API key that maps to a role.
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any
 
 
 class Role(StrEnum):
@@ -70,7 +69,7 @@ ROLE_PERMISSIONS: dict[Role, list[Permission]] = {
         Permission("health", "read"),
     ],
     Role.ADMIN: [
-        Permission("*", "*"),  # Full access
+        Permission("*", "*")  # Full access
     ],
     Role.EMERGENCY: [
         Permission("kill", "execute"),
@@ -101,7 +100,7 @@ def _parse_api_key_roles() -> dict[str, Role]:
     # Additional keys with specific roles
     for env_var, value in os.environ.items():
         if env_var.startswith(prefix):
-            key_name = env_var[len(prefix):].lower()
+            key_name = env_var[len(prefix) :].lower()
             try:
                 role = Role(value.lower())
                 # The actual key value is stored in another env var
@@ -149,13 +148,13 @@ def authorize(api_key: str, resource: str, action: str) -> Role:
 
     # Check specific permission
     for perm in permissions:
-        if (perm.resource == "*" or perm.resource == resource) and \
-           (perm.action == "*" or perm.action == action):
+        if (perm.resource == "*" or perm.resource == resource) and (
+            perm.action == "*" or perm.action == action
+        ):
             return role
 
     raise AuthorizationError(
-        f"API key with role '{role}' not authorized for "
-        f"'{action}' on '{resource}'"
+        f"API key with role '{role}' not authorized for '{action}' on '{resource}'"
     )
 
 
@@ -182,8 +181,6 @@ def require_role(api_key: str, required_role: Role) -> Role:
     required_level = list(Role).index(required_role)
 
     if role_level < required_level:
-        raise AuthorizationError(
-            f"API key has role '{role}' but '{required_role}' is required"
-        )
+        raise AuthorizationError(f"API key has role '{role}' but '{required_role}' is required")
 
     return role

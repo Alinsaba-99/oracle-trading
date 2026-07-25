@@ -7,12 +7,7 @@ from datetime import UTC, datetime, timedelta
 import polars as pl
 import pytest
 
-from analytics.backtest.instruments import default_registry
-from analytics.backtest.providers import (
-    SUPPORTED_TIMEFRAMES,
-    DataRegistry,
-    _resample,
-)
+from analytics.backtest.providers import DataRegistry, _resample
 
 
 def test_cache_path_layout(tmp_path: object) -> None:

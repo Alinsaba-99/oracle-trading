@@ -40,19 +40,51 @@ def _get_broker(broker_type: str = "paper", **kwargs: Any) -> Any:
 
 
 def _get_order_manager(
-    broker_type: str = "paper", broker_kwargs: dict[str, Any] | None = None
+    broker_type: str = "paper",
+    broker_kwargs: dict[str, Any] | None = None,
+    risk_adapter: str = "paper",
+    instrument_id: str | None = None,
+    entry_price: Decimal | None = None,
+    contract_size: Decimal | None = None,
 ) -> Any:
     """Create a broker and OrderManager for the given broker type.
 
-    Wires a mandatory risk manager:
-    - Paper broker uses ``_PaperRiskAdapter`` (basic validation only).
-    - Live brokers will use ``PropFirmOrderRiskAdapter`` once market
-      data and contract specs are wired (G2/G4).
+    Wires a mandatory risk manager.  Risk adapter is selectable:
+
+    - ``paper`` (default): ``_PaperRiskAdapter`` — basic validation only,
+      safe for research / paper.
+    - ``propfirm``: ``PropFirmOrderRiskAdapter`` — full prop-firm
+      compliance, requires ``instrument_id``, ``entry_price`` and
+      ``contract_size`` to be provided so the governor can evaluate
+      the order against the loaded ``FirmProgramProfile``.
+
+    Live brokers are still disabled (paper-only G1-006).  Selecting
+    ``propfirm`` here wires the adapter into the OrderManager but
+    only functions correctly when the submitter also provides a
+    ``--stop-price`` (the adapter rejects orders without one).
     """
     from execution.order_manager.manager import OrderManager
 
     broker = _get_broker(broker_type, **(broker_kwargs or {}))
-    risk = _PaperRiskAdapter()
+
+    risk: Any
+    if risk_adapter == "propfirm":
+        from policy.prop_firm.fixtures import TOPSTEP_TC_50K
+        from policy.prop_firm.governor import PropFirmRiskGovernor
+        from policy.prop_firm.order_risk import PropFirmOrderRiskAdapter
+
+        # Initial balance for the governor is the firm program's account
+        # size; the adapter itself updates the live balance via update().
+        governor = PropFirmRiskGovernor(
+            profile=TOPSTEP_TC_50K, initial_balance=float(TOPSTEP_TC_50K.account_size)
+        )
+        adapter = PropFirmOrderRiskAdapter(governor, replay_only=True)
+        if instrument_id is not None and entry_price is not None and contract_size is not None:
+            adapter.update_market(instrument_id, entry_price, contract_size)
+        risk = adapter
+    else:
+        risk = _PaperRiskAdapter()
+
     return OrderManager(broker, risk_manager=risk)
 
 
@@ -111,12 +143,15 @@ async def handle_trade_submit(args: argparse.Namespace) -> int:
     )
 
     if args.dry_run:
-        msg = f"DRY RUN: {req.side} {req.quantity} {req.instrument_id}"
+        msg = f"DRY RUN: {req.side} {req.quantity} {args.instrument}"
         msg += f" via {req.execution_algo or 'market'} on {broker_type}"
+        if getattr(args, "risk_adapter", None) == "propfirm":
+            msg += " (risk adapter: PropFirm)"
         print(msg)
         return 0
 
-    mgr = _get_order_manager(broker_type)
+    risk_adapter = getattr(args, "risk_adapter", "paper")
+    mgr = _get_order_manager(broker_type, risk_adapter=risk_adapter)
     result = await mgr.submit(req)
     print(f"Order {'REJECTED' if result.status == 'rejected' else 'SUBMITTED'}: {result.order_id}")
     if result.error:

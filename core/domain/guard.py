@@ -8,9 +8,8 @@ that all required credentials are present.
 from __future__ import annotations
 
 import os
-import sys
 
-from core.domain.mode import OracleMode, MODE_ENV_PREFIX, VALID_TRANSITIONS, can_transition
+from core.domain.mode import MODE_ENV_PREFIX, VALID_TRANSITIONS, OracleMode, can_transition
 
 # ── Error codes ──────────────────────────────────────────────────────
 
@@ -36,10 +35,7 @@ MODE_REQUIRED_ENV: dict[OracleMode, list[str]] = {
 
 
 def guard(
-    mode: OracleMode,
-    *,
-    env: dict[str, str] | None = None,
-    previous_mode: OracleMode | None = None,
+    mode: OracleMode, *, env: dict[str, str] | None = None, previous_mode: OracleMode | None = None
 ) -> None:
     """Startup guard for Oracle mode.
 
@@ -59,22 +55,20 @@ def guard(
     if mode_str:
         try:
             configured_mode = OracleMode(mode_str)
-        except ValueError:
+        except ValueError as exc:
             raise ModeGuardError(
                 f"Invalid ORACLE_MODE={mode_str!r}. "
                 f"Valid modes: {', '.join(m.value for m in OracleMode)}",
                 MODE_MISMATCH,
-            )
+            ) from exc
         if configured_mode != mode:
             raise ModeGuardError(
-                f"ORACLE_MODE={configured_mode!r} does not match requested "
-                f"mode={mode!r}",
+                f"ORACLE_MODE={configured_mode!r} does not match requested mode={mode!r}",
                 MODE_MISMATCH,
             )
     elif mode != OracleMode.RESEARCH:
         raise ModeGuardError(
-            "ORACLE_MODE is not set.  Set it explicitly for any mode "
-            "other than 'research'.",
+            "ORACLE_MODE is not set.  Set it explicitly for any mode other than 'research'.",
             MODE_MISMATCH,
         )
 
@@ -97,8 +91,7 @@ def guard(
 
     if missing:
         raise ModeGuardError(
-            f"Missing required environment variables for mode {mode!r}: "
-            f"{', '.join(missing)}",
+            f"Missing required environment variables for mode {mode!r}: {', '.join(missing)}",
             MISSING_CREDENTIALS,
         )
 

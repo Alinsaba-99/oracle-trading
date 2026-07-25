@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import cast
+from typing import Any, cast
 from uuid import uuid4
 
 import numpy as np
@@ -44,7 +44,7 @@ from core.domain.trade import Trade
 
 # ── Known futures contracts ───────────────────────────────────────────────
 
-CONTRACT_SPECS: dict[str, dict] = {
+CONTRACT_SPECS: dict[str, dict[str, Any]] = {
     "ES": {
         "asset_class": AssetClass.EQUITY,
         "price_precision": 2,
@@ -383,6 +383,20 @@ class NautilusEngine:
         if len(data) == 0:
             raise ValueError("DataFrame is empty — cannot run backtest.")
 
+        # Schema check: NautilusEngine requires an explicit ``timestamp``
+        # column (datetime).  VectorizedEngine does not require it
+        # (its synthetic index is the row position).  Failing fast here
+        # gives a clear error instead of a mid-run ColumnNotFoundError.
+        # Callers that don't carry a timestamp can either:
+        #   1) add ``data.with_columns(pl.datetime_range(...).alias("timestamp"))``, or
+        #   2) use VectorizedEngine.
+        if "timestamp" not in data.columns:
+            raise ValueError(
+                "NautilusEngine.run requires a 'timestamp' column of dtype "
+                "Datetime.  Use VectorizedEngine if you don't have one, or "
+                "add 'timestamp' to your DataFrame before calling run()."
+            )
+
         # ── compute signal ─────────────────────────────────────────────
         signal_series = signal.compute(data)
         raw = np.asarray(signal_series, dtype=np.int64)
@@ -490,12 +504,28 @@ class NautilusEngine:
         sharpe = MetricsCalculator.sharpe_ratio(returns, 252)
         sortino = MetricsCalculator.sortino_ratio(returns, 252)
         calmar = MetricsCalculator.calmar_ratio(returns, max_dd)
-        vol = float(returns.std()) if returns is not None and len(returns) > 1 else 0.0
+        std_value = returns.std()
+        # polars.Series.std() may return float or timedelta depending on the
+        # dtype; we want volatility in the same unit as returns, so cast.
+        if isinstance(std_value, timedelta):
+            vol = std_value.total_seconds()
+        elif std_value is not None:
+            vol = float(std_value)
+        else:
+            vol = 0.0
 
-        wins = [t for t in trades if t.pnl and float(t.pnl) > 0]
-        losses = [t for t in trades if t.pnl and float(t.pnl) < 0]
-        avg_win = float(sum(float(t.pnl) for t in wins)) / len(wins) if wins else 0.0
-        avg_loss = abs(float(sum(float(t.pnl) for t in losses))) / len(losses) if losses else 0.0
+        wins = [t for t in trades if t.pnl is not None and float(t.pnl) > 0]
+        losses = [t for t in trades if t.pnl is not None and float(t.pnl) < 0]
+        if wins:
+            total_win_pnl = sum(float(t.pnl) for t in wins if t.pnl is not None)
+            avg_win = total_win_pnl / len(wins)
+        else:
+            avg_win = 0.0
+        if losses:
+            total_loss_pnl = sum(float(t.pnl) for t in losses if t.pnl is not None)
+            avg_loss = abs(total_loss_pnl) / len(losses)
+        else:
+            avg_loss = 0.0
         win_rate = len(wins) / len(trades) if trades else 0.0
         profit_factor = avg_win / avg_loss if avg_loss > 0 else float("inf")
 

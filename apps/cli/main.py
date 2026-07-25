@@ -20,7 +20,6 @@ def main() -> None:
     CLI operations today.  Set ``ORACLE_MODE`` env var explicitly.
     """
     from core.domain.guard import current_mode, guard
-    from core.domain.mode import OracleMode
 
     mode = current_mode()
     guard(mode)
@@ -143,6 +142,20 @@ def main() -> None:
     trade_submit_parser.add_argument(
         "--algo-config", type=str, default=None, help="JSON algo config (EXPERIMENTAL)"
     )
+    trade_submit_parser.add_argument(
+        "--risk-adapter",
+        type=str,
+        default="paper",
+        choices=["paper", "propfirm"],
+        help="Risk adapter: 'paper' (basic) or 'propfirm' (full Topstep compliance, "
+        "requires --stop-price and replay context)",
+    )
+    trade_submit_parser.add_argument(
+        "--stop-price",
+        type=float,
+        default=None,
+        help="Protective stop price (required for --risk-adapter=propfirm)",
+    )
     trade_sub.add_parser("list", help="List open orders")
 
     # trade cancel
@@ -155,6 +168,23 @@ def main() -> None:
 
     # trade kill
     trade_sub.add_parser("kill", help="Cancel ALL open orders")
+
+    # trade reconcile — runs ReconciliationEngine (broker ↔ OMS ↔ ledger)
+    trade_reconcile_parser = trade_sub.add_parser(
+        "reconcile", help="Run broker↔OMS↔ledger reconciliation and report mismatches"
+    )
+    trade_reconcile_parser.add_argument(
+        "--broker",
+        type=str,
+        default="paper",
+        choices=["paper", "ibkr", "ccxt"],
+        help="Broker to reconcile against",
+    )
+    trade_reconcile_parser.add_argument(
+        "--fail-on-mismatch",
+        action="store_true",
+        help="Exit non-zero if any mismatch (fatal or recoverable) is found",
+    )
 
     args = parser.parse_args()
 
@@ -194,6 +224,8 @@ def main() -> None:
             _handle_trade_status(args)
         elif args.trade_action == "kill":
             _handle_trade_kill(args)
+        elif args.trade_action == "reconcile":
+            _handle_trade_reconcile(args)
         else:
             trade_parser.print_help()
     else:
@@ -508,6 +540,49 @@ def _handle_trade_kill(args: argparse.Namespace) -> None:
     from apps.cli.trade_commands import handle_trade_kill
 
     sys.exit(asyncio.run(handle_trade_kill(args)))
+
+
+def _handle_trade_reconcile(args: argparse.Namespace) -> None:
+    """Run ReconciliationEngine and report mismatches.
+
+    Builds a fresh broker, OMS, and ledger; runs reconciliation; prints
+    a human-readable summary.  Exits 0 if clean, 1 if --fail-on-mismatch
+    and any mismatch is found, 2 on unexpected error.
+    """
+    import asyncio as _asyncio
+
+    from apps.cli.trade_commands import _get_broker
+    from core.ledger import InMemoryLedger
+    from core.oms import InMemoryOMS
+    from core.reconciliation import ReconciliationEngine
+
+    async def _run() -> int:
+        broker_type = getattr(args, "broker", "paper")
+        broker = _get_broker(broker_type)
+        oms = InMemoryOMS()
+        ledger = InMemoryLedger()
+        report = await ReconciliationEngine(broker, oms, ledger).reconcile()
+        if report.is_clean:
+            print("✅ Reconciliation clean — broker ↔ OMS ↔ ledger in sync")
+            return 0
+        print(
+            f"⚠️  {len(report.mismatches)} mismatches "
+            f"({report.fatal_count} fatal, {report.recoverable_count} recoverable)"
+        )
+        for m in report.mismatches:
+            print(
+                f"  - [{m.severity.value}] {m.mismatch_type.value}: {m.description} "
+                f"(broker={m.broker_value} oracle={m.oracle_value} diff={m.diff})"
+            )
+        if getattr(args, "fail_on_mismatch", False):
+            return 1
+        return 0
+
+    try:
+        sys.exit(_asyncio.run(_run()))
+    except Exception as e:  # pragma: no cover - CLI guard
+        print(f"ERROR: reconciliation failed: {e}", file=sys.stderr)
+        sys.exit(2)
 
 
 if __name__ == "__main__":

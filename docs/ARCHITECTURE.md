@@ -1,8 +1,10 @@
 # Oracle Architecture — Current State and Target Boundaries
 
 > Stato: living architecture
-> Data: 2026-07-18
+> Data: 2026-07-18; aggiornamenti mirati al 25-lug-2026 (post audit-remediation-beta)
 > Decisioni normative: [ADR/README.md](ADR/README.md)
+> Stato gate-by-gate: [STATUS.md](../ROADMAP.md) / [ORACLE_AUTOPILOT_STATUS.md](ORACLE_AUTOPILOT_STATUS.md)
+> Audit secco: [AUDIT_FINDINGS.md](AUDIT_FINDINGS.md)
 
 ## 1. Perimetro
 

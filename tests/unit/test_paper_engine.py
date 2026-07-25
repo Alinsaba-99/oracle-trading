@@ -7,9 +7,9 @@ from decimal import Decimal
 import pytest
 
 from execution.brokers.paper_engine import (
+    CRYPTO_CONFIG,
     EQUITY_CONFIG,
     FUTURES_CONFIG,
-    CRYPTO_CONFIG,
     FillModelConfig,
     RealisticPaperFillEngine,
 )
@@ -64,7 +64,7 @@ class TestRealisticFillEngine:
         market_fills = 0
         limit_fills = 0
         trials = 100
-        for i in range(trials):
+        for _i in range(trials):
             if engine.simulate_fill("ES", 5500.0, 1, "market").filled:
                 market_fills += 1
             if engine.simulate_fill("ES", 5500.0, 1, "limit", limit_price=5500.0).filled:
@@ -97,11 +97,13 @@ class TestRealisticFillEngine:
         # Custom config with no random noise so impact dominates
         engine = RealisticPaperFillEngine(seed=42)
         # Small order with high volume → negligible impact
-        small = engine.simulate_fill("ES", 5500.0, 1, "market", side="buy",
-                                     estimated_daily_volume=1_000_000)
+        small = engine.simulate_fill(
+            "ES", 5500.0, 1, "market", side="buy", estimated_daily_volume=1_000_000
+        )
         # Large order with low volume → measurable impact
-        large = engine.simulate_fill("ES", 5500.0, 100, "market", side="buy",
-                                     estimated_daily_volume=10_000)
+        large = engine.simulate_fill(
+            "ES", 5500.0, 100, "market", side="buy", estimated_daily_volume=10_000
+        )
         if small.filled and large.filled:
             # Impact = (100/10000) * 0.3 = 0.003 bps for ES
             # Since we have high volume for small, it should be less
@@ -131,6 +133,7 @@ class TestRealisticFillEngine:
     def test_config_per_symbol(self) -> None:
         """Different symbols should use different configs."""
         from execution.brokers.paper_engine import _get_config
+
         es_config = _get_config("ES")
         btc_config = _get_config("BTC")
         assert es_config.impact_bps_per_pct_volume != btc_config.impact_bps_per_pct_volume

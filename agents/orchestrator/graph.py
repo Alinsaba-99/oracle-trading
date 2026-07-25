@@ -64,8 +64,8 @@ def _build_agent_specific_data(market_data: Any, market_state: Any) -> dict[str,
 
     Extracts or computes:
       - technical: recent closes, RSI (14), MACD, SMA(20/50)
-      - macro:     placeholder (TODO: GDP, CPI, unemployment integration)
-      - sentiment: placeholder (TODO: news / social sentiment integration)
+      - macro:     not yet integrated (planned: GDP, CPI, unemployment)
+      - sentiment: not yet integrated (planned: news / social sentiment)
 
     Returns a non-empty dict even when *market_data* is ``None``,
     falling back to the qualitative *market_state* fields.

@@ -2,16 +2,11 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
-from core.data.quality import (
-    check_future_leakage,
-    find_duplicates,
-    find_gaps,
-    find_outliers,
-)
+from core.data.quality import check_future_leakage, find_duplicates, find_gaps, find_outliers
 
-UTC = timezone.utc
+UTC = UTC
 
 
 class TestFindDuplicates:
@@ -21,17 +16,11 @@ class TestFindDuplicates:
         assert find_duplicates([]) == []
 
     def test_no_duplicates(self) -> None:
-        records = [
-            {"id": "1", "price": 100},
-            {"id": "2", "price": 101},
-        ]
+        records = [{"id": "1", "price": 100}, {"id": "2", "price": 101}]
         assert find_duplicates(records, id_key="id") == []
 
     def test_finds_duplicate(self) -> None:
-        records = [
-            {"id": "1", "price": 100},
-            {"id": "1", "price": 100},
-        ]
+        records = [{"id": "1", "price": 100}, {"id": "1", "price": 100}]
         assert find_duplicates(records, id_key="id") == [1]
 
     def test_duplicate_without_id_key(self) -> None:
@@ -116,15 +105,11 @@ class TestFutureLeakage:
 
     def test_no_leak(self) -> None:
         base = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
-        records = [
-            {"event_time": base, "available_at": base + timedelta(seconds=1)},
-        ]
+        records = [{"event_time": base, "available_at": base + timedelta(seconds=1)}]
         assert check_future_leakage(records) == []
 
     def test_detects_leak(self) -> None:
         base = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
-        records = [
-            {"event_time": base, "available_at": base - timedelta(hours=1)},
-        ]
+        records = [{"event_time": base, "available_at": base - timedelta(hours=1)}]
         leaks = check_future_leakage(records)
         assert len(leaks) == 1
