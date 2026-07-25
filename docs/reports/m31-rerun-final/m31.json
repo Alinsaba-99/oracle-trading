@@ -1,0 +1,36 @@
+{
+  "metadata": {
+    "title": "M31 rerun with regime ribilanciato (BL-022)",
+    "timestamp": "2026-07-25T15:06:53.133962+00:00",
+    "git_commit": "18a6836af5677a0e40982b02f3cd5c0a3a6ff6ed",
+    "data_hash": "09a22268d2a7fa815beed6788917663771c7af7b347b7b49db6c2a1318f26b42",
+    "data": "data/ohlcv/ES_1d.parquet",
+    "n_bars": 250,
+    "engine": "EventDrivenQualificationRunner",
+    "signal": "RegimeAwareEnsemble v2 (BL-010..014)",
+    "bl": "BL-022"
+  },
+  "regime_distribution": {
+    "bear": 16,
+    "bull": 16,
+    "high_volatility": 16,
+    "liquidity_shock": 16,
+    "sideways": 16
+  },
+  "thresholds": {
+    "median_sharpe_min": 0.5,
+    "worst_drawdown_max": 0.04,
+    "hard_breaches_max": 0
+  },
+  "metrics": {
+    "observations": 80,
+    "median_sharpe": 0.1331,
+    "median_sortino": 0.0722,
+    "median_max_drawdown": 0.1481,
+    "worst_max_drawdown": 0.1538,
+    "total_breaches": 96,
+    "breach_rate": 1.2
+  },
+  "errors": [],
+  "decision": "REJECTED"
+}

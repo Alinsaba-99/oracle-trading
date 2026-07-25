@@ -18,11 +18,16 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from analytics.backtest.engines.vectorized import sma_crossover_signal
+from analytics.strategy.lorentzian import LorentzianKNN
+from analytics.strategy.regime_ensemble import RegimeAwareEnsemble, SpecialistId
+from analytics.strategy.signals import (
+    DonchianBreakout,
+    EmaTrend,
+    RsiReversion,
+)
 from analytics.qualification import (
     EventDrivenQualificationRunner,
     GateDecision,
-    MacroSurpriseEvent,
     QualificationEvidence,
     QualificationThresholds,
     ReplayObservation,
@@ -34,6 +39,7 @@ from analytics.qualification import (
     slice_period,
     write_report,
 )
+from analytics.qualification.models import MacroSurpriseEvent
 from market.contracts import MES
 from policy.prop_firm.fixtures import TOPSTEP_TC_50K
 
@@ -52,8 +58,6 @@ def main() -> int:
     )
     parser.add_argument("--window-bars", type=int, default=40)
     parser.add_argument("--warmup-bars", type=int, default=30)
-    parser.add_argument("--fast", type=int, default=5)
-    parser.add_argument("--slow", type=int, default=15)
     parser.add_argument(
         "--json-output",
         type=Path,
@@ -77,8 +81,19 @@ def main() -> int:
         args.data_provenance, data_hash=data_hash, data=data
     )
     prop_profile_certified = _prop_profile_certified(args.prop_profile_evidence)
+    signal = RegimeAwareEnsemble(
+        specialists={
+            SpecialistId.TREND: EmaTrend(fast=10, slow=30),
+            SpecialistId.MEAN_REVERSION: RsiReversion(period=14),
+            SpecialistId.BREAKOUT: DonchianBreakout(period=20),
+            SpecialistId.LORENTZIAN: LorentzianKNN(
+                k=4, lookahead=4, max_bars_back=80, feature_count=3
+            ),
+        },
+        min_confidence=0.5,
+    )
     runner = EventDrivenQualificationRunner(
-        signal=sma_crossover_signal(fast=args.fast, slow=args.slow, long_short=True),
+        signal=signal,
         contract=MES,
         initial_capital=Decimal(str(TOPSTEP_TC_50K.account_size)),
         prop_profile=TOPSTEP_TC_50K,
