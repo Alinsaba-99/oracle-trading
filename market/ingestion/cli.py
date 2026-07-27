@@ -6,6 +6,7 @@ Examples:
   python -m market.ingestion.cli fetch ES 1d stooq
   python -m market.ingestion.cli run-plan
 """
+
 from __future__ import annotations
 
 import argparse
@@ -28,7 +29,15 @@ def main() -> int:
     f.add_argument("--end")
     f.add_argument("--full", action="store_true")
 
-    sub.add_parser("run-plan", help="Run the YAML backfill plan")
+    rp = sub.add_parser("run-plan", help="Run the YAML backfill plan (resumable)")
+    rp.add_argument(
+        "--max-runtime",
+        type=float,
+        default=None,
+        help="Stop cleanly after N seconds; remaining entries stay pending",
+    )
+    rp.add_argument("--pause", type=float, default=0.0, help="Seconds to sleep between entries")
+    sub.add_parser("status-run", help="Show orchestrator state")
 
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -36,15 +45,17 @@ def main() -> int:
         return cli_status()
     if args.cmd == "fetch":
         return cli_fetch(
-            args.symbol,
-            args.timeframe,
-            args.source,
-            start=args.start,
-            end=args.end,
-            full=args.full,
+            args.symbol, args.timeframe, args.source, start=args.start, end=args.end, full=args.full
         )
     if args.cmd == "run-plan":
-        return run_plan()
+        return run_plan(max_runtime_s=args.max_runtime, pause_between_s=args.pause)
+    if args.cmd == "status-run":
+        import json as _json
+
+        from market.ingestion.orchestrator import status as _orch_status
+
+        print(_json.dumps(_orch_status(), indent=2, default=str))
+        return 0
     return 1
 
 

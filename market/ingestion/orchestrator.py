@@ -10,16 +10,14 @@ Usage:
   python -m market.ingestion.orchestrator run
   python -m market.ingestion.orchestrator status
 """
+
 from __future__ import annotations
 
 import json
 import logging
 import time
 from dataclasses import dataclass
-from datetime import UTC, date, datetime, timezone
-
-UTC = UTC, timezone
-UTC = timezone.utc
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 from market.ingestion import metadata_io as meta
@@ -93,20 +91,45 @@ def write_default_plan() -> None:
     )
 
 
-def run_plan(entries: list[BackfillEntry] | None = None) -> int:
+def run_plan(
+    entries: list[BackfillEntry] | None = None,
+    *,
+    max_runtime_s: float | None = None,
+    pause_between_s: float = 0.0,
+) -> int:
+    """Run the backfill plan in series. Resumable across restarts.
+
+    Args:
+        entries: explicit list; default reads the YAML plan.
+        max_runtime_s: if set, the loop exits cleanly after this many
+            seconds. Use for laptop-aware batching.
+        pause_between_s: delay between entries (gives the source rate
+            limit a moment to recover).
+    """
     write_default_plan()
     entries = entries or _load_plan_yaml()
     state = meta.load_state()
     pipeline = Pipeline()
     completed: set[str] = set(state.get("completed", []))
-    started_at = datetime.now(UTC).isoformat()
-    logger.info("orchestrator: starting %d entries at %s", len(entries), started_at)
+    failed: dict[str, str] = dict(state.get("failed", {}))
+    started_at = state.get("started_at", datetime.now(UTC).isoformat())
+    runtime_start = time.monotonic()
+    logger.info(
+        "orchestrator: %d entries, done=%d, failed=%d", len(entries), len(completed), len(failed)
+    )
     t0 = time.monotonic()
     for entry in entries:
         key = _state_key(entry)
         if key in completed:
-            logger.info("skip (already done): %s", key)
+            logger.info("skip (done): %s", key)
             continue
+        if max_runtime_s is not None and (time.monotonic() - runtime_start) > max_runtime_s:
+            pending = sum(1 for e in entries if _state_key(e) not in completed)
+            logger.info(
+                "max-runtime %.0fs reached; pending %d entries for next run", max_runtime_s, pending
+            )
+            break
+        last_attempt = datetime.now(UTC)
         try:
             report: FetchReport = pipeline.fetch(
                 entry.symbol,
@@ -116,33 +139,92 @@ def run_plan(entries: list[BackfillEntry] | None = None) -> int:
                 end=entry.end,
             )
         except Exception as exc:
-            logger.exception("entry failed: %s — %s", key, exc)
+            logger.exception("entry raised: %s - %s", key, exc)
+            failed[key] = f"{type(exc).__name__}: {exc}"
+            meta.save_state(
+                {
+                    "started_at": started_at,
+                    "completed": sorted(completed),
+                    "failed": failed,
+                    "last_error": f"{key} :: {failed[key]}",
+                    "last_attempt": last_attempt.isoformat(),
+                }
+            )
             continue
         if report.note.startswith("FAILED"):
-            logger.error("entry FAILED: %s", key)
-            completed.add(key)
-            meta.save_state({"started_at": started_at, "completed": sorted(completed), "last_error": report.note})
-            return 1
+            logger.error("entry FAILED: %s (%s)", key, report.note)
+            failed[key] = report.note
+            meta.save_state(
+                {
+                    "started_at": started_at,
+                    "completed": sorted(completed),
+                    "failed": failed,
+                    "last_error": f"{key} :: {report.note}",
+                    "last_attempt": last_attempt.isoformat(),
+                }
+            )
+            continue
         completed.add(key)
-        meta.save_state({"started_at": started_at, "completed": sorted(completed)})
+        failed.pop(key, None)
+        meta.save_state(
+            {
+                "started_at": started_at,
+                "completed": sorted(completed),
+                "failed": failed,
+                "last_attempt": last_attempt.isoformat(),
+                "last_entry_summary": {
+                    "key": key,
+                    "rows_in": report.rows_in,
+                    "rows_out": report.rows_out,
+                    "rows_rejected": report.rows_rejected,
+                    "duration_s": report.duration_s,
+                },
+            }
+        )
         logger.info(
-            "completed %s/%s: in=%d out=%d rej=%d",
+            "completed %s/%s [%s %s %s]: in=%d out=%d rej=%d %.1fs",
             len(completed),
             len(entries),
+            entry.source,
+            entry.symbol,
+            entry.timeframe,
             report.rows_in,
             report.rows_out,
             report.rows_rejected,
+            report.duration_s,
         )
+        if pause_between_s > 0:
+            time.sleep(pause_between_s)
     duration = round(time.monotonic() - t0, 2)
     summary = {
         "started_at": started_at,
         "finished_at": datetime.now(UTC).isoformat(),
         "entries_total": len(entries),
         "entries_completed": len(completed),
+        "entries_failed": len(failed),
         "duration_s": duration,
+        "max_runtime_s": max_runtime_s,
     }
     log_dir = Path("logs")
     log_dir.mkdir(exist_ok=True)
     (log_dir / "orchestrator_summary.json").write_text(json.dumps(summary, indent=2, default=str))
-    logger.info("orchestrator done: %s", summary)
-    return 0
+    (Path("data/lake/metadata") / "orchestrator_summary.json").write_text(
+        json.dumps(summary, indent=2, default=str)
+    )
+    logger.info(
+        "orchestrator: completed=%d failed=%d duration=%.1fs", len(completed), len(failed), duration
+    )
+    return 0 if not failed else 1
+
+
+def status() -> dict:
+    """Return current state of the orchestrator: completed, failed, last error."""
+    s = meta.load_state()
+    return {
+        "started_at": s.get("started_at"),
+        "completed": s.get("completed", []),
+        "failed": s.get("failed", {}),
+        "last_attempt": s.get("last_attempt"),
+        "last_entry_summary": s.get("last_entry_summary", {}),
+        "last_error": s.get("last_error"),
+    }

@@ -16,6 +16,7 @@ The pipeline always writes normalized partitions; curated is rebuilt
 on demand to keep complexity low. The :class:`DataRegistry` reads
 directly from normalized partitions for time-range queries.
 """
+
 from __future__ import annotations
 
 import logging
@@ -146,9 +147,7 @@ class Pipeline:
         )
         return report
 
-    def _infer_start(
-        self, symbol: str, timeframe: str, source: SourceId, *, full: bool
-    ) -> date:
+    def _infer_start(self, symbol: str, timeframe: str, source: SourceId, *, full: bool) -> date:
         if full:
             spec = get_source(source).asset_spec(symbol)
             return spec.earliest_available or date(2010, 1, 1)
@@ -160,11 +159,7 @@ class Pipeline:
         return spec.earliest_available or date(2010, 1, 1)
 
     def _write_normalized(
-        self,
-        spec: AssetSpec,
-        source: SourceId,
-        timeframe: str,
-        bars: list[OHLCVBar],
+        self, spec: AssetSpec, source: SourceId, timeframe: str, bars: list[OHLCVBar]
     ) -> dict[Path, pl.DataFrame]:
         """Group bars by (year, month) and write each partition as parquet."""
         if not bars:
@@ -183,18 +178,15 @@ class Pipeline:
             }
             for b in bars
         ]
-        df = pl.DataFrame(records).with_columns(pl.col("timestamp").dt.replace_time_zone(None))
+        df = pl.DataFrame(records).with_columns(
+            pl.col("timestamp").dt.replace_time_zone(None),
+            pl.col("timestamp").dt.year().alias("year"),
+            pl.col("timestamp").dt.month().alias("month"),
+        )
         df = df.unique(subset=["timestamp"], keep="last").sort("timestamp")
         partitions: dict[Path, pl.DataFrame] = {}
-        for (year, month), group in df.group_by(
-            [df["timestamp"].dt.year().alias("year"), df["timestamp"].dt.month().alias("month")]
-        ):
-            part_dir = (
-                NORM_ROOT
-                / f"symbol={spec.symbol}"
-                / f"tf={timeframe}"
-                / f"year={year}"
-            )
+        for (year, month), group in df.group_by(["year", "month"]):
+            part_dir = NORM_ROOT / f"symbol={spec.symbol}" / f"tf={timeframe}" / f"year={year}"
             part_dir.mkdir(parents=True, exist_ok=True)
             part_file = part_dir / f"month={int(month):02d}.parquet"
             existing = pl.read_parquet(part_file) if part_file.exists() else None
@@ -208,11 +200,7 @@ class Pipeline:
         return partitions
 
     def _update_coverage(
-        self,
-        spec: AssetSpec,
-        timeframe: str,
-        bars: list[OHLCVBar],
-        source: SourceId,
+        self, spec: AssetSpec, timeframe: str, bars: list[OHLCVBar], source: SourceId
     ) -> None:
         if not bars:
             return
@@ -274,14 +262,7 @@ def cli_fetch(
     p = Pipeline()
     sd = date.fromisoformat(start) if start else None
     ed = date.fromisoformat(end) if end else None
-    r = p.fetch(
-        symbol,
-        timeframe,
-        SourceId(source),
-        start=sd,
-        end=ed,
-        full=full,
-    )
+    r = p.fetch(symbol, timeframe, SourceId(source), start=sd, end=ed, full=full)
     print(
         f"[{r.source}] {r.symbol} {r.timeframe}: "
         f"in={r.rows_in} out={r.rows_out} rej={r.rows_rejected} "

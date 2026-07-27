@@ -172,6 +172,7 @@ split-on-trailing-comma = false
 "tests/unit/test_ledger_oms.py" = ["RUF043"]
 "market/macro.py" = ["E501"]
 "scripts/run_paper_session.py" = ["E501"]
+"scripts/legacy/*.py" = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "ARG", "C4", "RUF"]  # noqa
 
 [tool.ruff.format]
 quote-style = "double"

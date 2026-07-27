@@ -12,6 +12,7 @@ Each adapter conforms to the :class:`DataSource` protocol (duck-typed):
 Adapters live behind their concrete class so that adding BL-301.b adapters
 (Dukascopy full FX, Polygon, Stooq intraday) is additive.
 """
+
 from __future__ import annotations
 
 import csv
@@ -27,6 +28,8 @@ from decimal import Decimal, InvalidOperation
 from typing import Protocol, runtime_checkable
 from urllib.request import Request, urlopen
 
+import pandas as pd
+
 from market.ingestion.types import AssetClass, AssetSpec, OHLCVBar, RateLimit, SourceId
 
 logger = logging.getLogger("oracle.market.ingestion.sources")
@@ -40,11 +43,7 @@ class DataSource(Protocol):
     def asset_spec(self, symbol: str) -> AssetSpec: ...
 
     def fetch_range(
-        self,
-        symbol: str,
-        timeframe: str,
-        start: date,
-        end: date,
+        self, symbol: str, timeframe: str, start: date, end: date
     ) -> Iterator[OHLCVBar]: ...
 
     def is_paused(self) -> bool: ...
@@ -67,10 +66,7 @@ class HttpSource:
         logger.warning("%s paused for %.1fs", self.name, seconds)
 
     def _get(self, url: str, *, timeout: int = 30) -> bytes:
-        req = Request(
-            url,
-            headers={"User-Agent": self.rate_limit.user_agent, "Accept": "*/*"},
-        )
+        req = Request(url, headers={"User-Agent": self.rate_limit.user_agent, "Accept": "*/*"})
         try:
             with urlopen(req, timeout=timeout) as resp:
                 if resp.status == 429:
@@ -142,17 +138,15 @@ class BinanceREST(HttpSource):
         )
 
     def fetch_range(
-        self,
-        symbol: str,
-        timeframe: str,
-        start: date,
-        end: date,
+        self, symbol: str, timeframe: str, start: date, end: date
     ) -> Iterator[OHLCVBar]:
         interval = self.INTERVAL_MAP.get(timeframe)
         if interval is None:
             raise ValueError(f"BinanceREST: unsupported timeframe {timeframe}")
         start_ms = int(datetime(start.year, start.month, start.day, tzinfo=UTC).timestamp() * 1000)
-        end_ms = int(datetime(end.year, end.month, end.day, 23, 59, 59, tzinfo=UTC).timestamp() * 1000)
+        end_ms = int(
+            datetime(end.year, end.month, end.day, 23, 59, 59, tzinfo=UTC).timestamp() * 1000
+        )
         spec = self.asset_spec(symbol)
         ms = start_ms
         while ms < end_ms:
@@ -217,11 +211,7 @@ class CryptoDataDownload(HttpSource):
         )
 
     def fetch_range(
-        self,
-        symbol: str,
-        timeframe: str,
-        start: date,
-        end: date,
+        self, symbol: str, timeframe: str, start: date, end: date
     ) -> Iterator[OHLCVBar]:
         self._cooldown_until_clear()
         url = f"{self.BASE_URL}{symbol.upper()}_{timeframe}_2024-01.csv.gz"
@@ -274,13 +264,7 @@ class DatabentoHistorical(HttpSource):
     name = SourceId.DATABENTO
     BASE_URL = "https://hist.databento.com/v0/klines"
 
-    TF_DATABENTO: dict[str, str] = {
-        "1m": "1m",
-        "5m": "5m",
-        "15m": "15m",
-        "1h": "1h",
-        "1d": "1d",
-    }
+    TF_DATABENTO: dict[str, str] = {"1m": "1m", "5m": "5m", "15m": "15m", "1h": "1h", "1d": "1d"}
 
     SYMBOL_MAP: dict[str, str] = {
         "ES": "ES.FUT",
@@ -314,17 +298,10 @@ class DatabentoHistorical(HttpSource):
         )
 
     def fetch_range(
-        self,
-        symbol: str,
-        timeframe: str,
-        start: date,
-        end: date,
+        self, symbol: str, timeframe: str, start: date, end: date
     ) -> Iterator[OHLCVBar]:
         if not self.api_key:
-            logger.warning(
-                "%s: no API key configured (set DATABENTO_API_KEY); skipping",
-                self.name,
-            )
+            logger.warning("%s: no API key configured (set DATABENTO_API_KEY); skipping", self.name)
             return
         tf = self.TF_DATABENTO.get(timeframe)
         if tf is None:
@@ -410,11 +387,7 @@ class HistData(HttpSource):
         )
 
     def fetch_range(
-        self,
-        symbol: str,
-        timeframe: str,
-        start: date,
-        end: date,
+        self, symbol: str, timeframe: str, start: date, end: date
     ) -> Iterator[OHLCVBar]:
         pair = self.FX_PAIRS.get(symbol.upper())
         if pair is None:
@@ -424,9 +397,7 @@ class HistData(HttpSource):
         year = start.year
         while year <= end.year:
             self._cooldown_until_clear()
-            url = (
-                f"{self.BASE_URL}{pair}/{timeframe}/{year}/{pair}{timeframe}_{year}.zip"
-            )
+            url = f"{self.BASE_URL}{pair}/{timeframe}/{year}/{pair}{timeframe}_{year}.zip"
             req = Request(url, headers={"User-Agent": self.rate_limit.user_agent})
             try:
                 with urlopen(req, timeout=60) as resp:
@@ -457,7 +428,9 @@ class HistData(HttpSource):
                             h = Decimal(parts[3])
                             lo = Decimal(parts[4])
                             c = Decimal(parts[5])
-                            yield OHLCVBar(t, o, h, lo, c, Decimal("0"), spec.symbol, self.name, timeframe)
+                            yield OHLCVBar(
+                                t, o, h, lo, c, Decimal("0"), spec.symbol, self.name, timeframe
+                            )
                         except (ValueError, InvalidOperation, IndexError):
                             continue
             time.sleep(5.0)
@@ -485,9 +458,7 @@ class Stooq(HttpSource):
     def __init__(self) -> None:
         super().__init__()
         self.rate_limit = RateLimit(
-            requests_per_second=0.3,
-            requests_per_minute=15,
-            user_agent="oracle-trading/1.0",
+            requests_per_second=0.3, requests_per_minute=15, user_agent="oracle-trading/1.0"
         )
 
     def asset_spec(self, symbol: str) -> AssetSpec:
@@ -503,11 +474,7 @@ class Stooq(HttpSource):
         )
 
     def fetch_range(
-        self,
-        symbol: str,
-        timeframe: str,
-        start: date,
-        end: date,
+        self, symbol: str, timeframe: str, start: date, end: date
     ) -> Iterator[OHLCVBar]:
         if timeframe != "1d":
             logger.warning("%s: daily only; tf=%s skipped", self.name, timeframe)
@@ -546,12 +513,149 @@ class Stooq(HttpSource):
 
 
 # ----------------------------------------------------------------------
+# YFinance — free OHLCV for equities, ETFs, futures, FX, crypto.
+# No API key required. Daily back to ~1970 for equities, varies for others.
+# Symbol map: ES=F for E-mini S&P 500, GC=F for Gold, etc.
+# Interval support: 1m, 2m, 5m, 15m, 30m, 60m, 1h, 1d, 5d, 1wk, 1mo
+# ----------------------------------------------------------------------
+class YFinance(HttpSource):
+    name = SourceId.YAHOO
+
+    SYMBOL_MAP: dict[str, str] = {
+        "ES": "ES=F",
+        "NQ": "NQ=F",
+        "YM": "YM=F",
+        "CL": "CL=F",
+        "GC": "GC=F",
+        "EURUSD": "EURUSD=X",
+        "GBPUSD": "GBPUSD=X",
+        "SPY": "SPY",
+    }
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.rate_limit = RateLimit(
+            requests_per_second=1.0, requests_per_minute=60, user_agent="oracle-trading/1.0"
+        )
+
+    def asset_spec(self, symbol: str) -> AssetSpec:
+        s = symbol.upper()
+        if s in ("ES", "NQ", "YM"):
+            cls = AssetClass.FUTURES
+            mult = {"ES": Decimal("50"), "NQ": Decimal("20"), "YM": Decimal("5")}.get(
+                s, Decimal("1")
+            )
+        elif s in ("CL", "GC"):
+            cls = AssetClass.FUTURES
+            mult = {"CL": Decimal("1000"), "GC": Decimal("100")}.get(s, Decimal("1"))
+        elif s in ("EURUSD", "GBPUSD"):
+            cls = AssetClass.FX
+            mult = Decimal("1")
+        else:
+            cls = AssetClass.EQUITY
+            mult = Decimal("1")
+        return AssetSpec(
+            symbol=s,
+            asset_class=cls,
+            exchange="nyse"
+            if cls == AssetClass.EQUITY
+            else "cme"
+            if cls == AssetClass.FUTURES
+            else "ideal",
+            point_precision=2,
+            volume_precision=0,
+            earliest_available=date(2000, 1, 1),
+            multiplier=mult,
+            quote_currency="USD",
+        )
+
+    def fetch_range(
+        self, symbol: str, timeframe: str, start: date, end: date
+    ) -> Iterator[OHLCVBar]:
+        import yfinance as yf
+
+        ticker = self.SYMBOL_MAP.get(symbol.upper(), symbol)
+        interval = self._to_yf_interval(timeframe)
+        period = self._to_yf_period(start, end)
+        self._cooldown_until_clear()
+        try:
+            hist = yf.download(
+                ticker, period=period, interval=interval, progress=False, auto_adjust=True
+            )
+        except Exception as exc:
+            logger.warning("%s: yfinance download failed for %s: %s", self.name, ticker, exc)
+            return
+        if hist.empty:
+            logger.warning("%s: no data returned for %s", self.name, ticker)
+            return
+        spec = self.asset_spec(symbol)
+        # yfinance returns MultiIndex columns; flatten to single level
+        if isinstance(hist.columns, type(pd.Index([]))) and hasattr(hist.columns, "levels"):
+            hist.columns = hist.columns.get_level_values(0)
+        for idx, row in hist.iterrows():
+            try:
+                ts = idx.to_pydatetime() if hasattr(idx, "to_pydatetime") else idx
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=UTC)
+                d = ts.date()
+                if d < start or d > end:
+                    continue
+                yield OHLCVBar(
+                    ts,
+                    Decimal(str(row["Open"])),
+                    Decimal(str(row["High"])),
+                    Decimal(str(row["Low"])),
+                    Decimal(str(row["Close"])),
+                    Decimal(str(row.get("Volume", 0) or 0)),
+                    spec.symbol,
+                    self.name,
+                    timeframe,
+                )
+            except (KeyError, ValueError, InvalidOperation):
+                continue
+
+    @staticmethod
+    def _to_yf_interval(tf: str) -> str:
+        mapping = {
+            "1m": "1m",
+            "5m": "5m",
+            "15m": "15m",
+            "30m": "30m",
+            "1h": "60m",
+            "1d": "1d",
+            "1wk": "1wk",
+            "1mo": "1mo",
+        }
+        return mapping.get(tf, "1d")
+
+    @staticmethod
+    def _to_yf_period(start: date, end: date) -> str:
+        days = (end - start).days
+        if days <= 7:
+            return "1wk"
+        if days <= 30:
+            return "1mo"
+        if days <= 90:
+            return "3mo"
+        if days <= 180:
+            return "6mo"
+        if days <= 365:
+            return "1y"
+        if days <= 730:
+            return "2y"
+        if days <= 1825:
+            return "5y"
+        return "max"
+
+
+# ----------------------------------------------------------------------
 # Registry helper
 # ----------------------------------------------------------------------
 SOURCES: dict[SourceId, DataSource] = {
     SourceId.BINANCE_REST: BinanceREST(),
     SourceId.CRYPTODATA: CryptoDataDownload(),
     SourceId.DATABENTO: DatabentoHistorical(),
+    SourceId.YAHOO: YFinance(),
     SourceId.HISTDATA: HistData(),
     SourceId.STOOQ: Stooq(),
 }

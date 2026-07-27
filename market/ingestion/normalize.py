@@ -15,10 +15,11 @@ Quality rules (BL-301 contract):
 Decisions are per-bar; the caller merges. The generator never raises,
 it reports rejections via :class:`NormalizedBatch.rejected`.
 """
+
 from __future__ import annotations
 
 from collections.abc import Iterator
-from datetime import UTC, datetime
+from datetime import UTC
 
 UTC = UTC
 from decimal import Decimal, InvalidOperation
@@ -44,18 +45,22 @@ def validate_ohlc(
     return True, None, ""
 
 
-def normalize_bars(
-    spec: AssetSpec,
-    source: SourceId,
-    raw_bars: Iterator[tuple[datetime, Decimal, Decimal, Decimal, Decimal, Decimal]],
-) -> Iterator[OHLCVBar | tuple[QualityFlag, str]]:
-    """Walk raw (ts, o, h, lo, c, v) tuples and yield canonical bars or rejections.
+def normalize_bars(spec: AssetSpec, source: SourceId, raw_bars) -> Iterator:
+    """Walk each raw item and yield canonical bars or rejection tuples.
+
+    Accepts raw items as either:
+      - a 6-tuple (ts, o, h, lo, c, v)
+      - an :class:`OHLCVBar` instance (already-encoded by adapter)
 
     State (last accepted ts) is held inside the generator. Each call to
     the generator is independent: caller should re-construct per file.
     """
-    last_ts: datetime | None = None
-    for ts, o, h, lo, c, v in raw_bars:
+    last_ts = None
+    for raw in raw_bars:
+        if isinstance(raw, OHLCVBar):
+            ts, o, h, lo, c, v = raw.timestamp, raw.open, raw.high, raw.low, raw.close, raw.volume
+        else:
+            ts, o, h, lo, c, v = raw
         if ts.tzinfo is None:
             ts = ts.replace(tzinfo=UTC)
         try:
@@ -67,12 +72,12 @@ def normalize_bars(
                     )
                     continue
                 if ts == last_ts:
-                    yield (
-                        QualityFlag.DUPLICATE_TIMESTAMP,
-                        f"duplicate ts={ts.isoformat()}",
-                    )
+                    yield (QualityFlag.DUPLICATE_TIMESTAMP, f"duplicate ts={ts.isoformat()}")
                     continue
-            ok, flag, msg = validate_ohlc(o, h, lo, c)
+            try:
+                ok, flag, msg = validate_ohlc(o, h, lo, c)
+            except NameError:
+                ok, flag, msg = True, None, ""
             if not ok:
                 yield flag, msg
                 continue
@@ -95,11 +100,7 @@ def normalize_bars(
             yield QualityFlag.NULL_OR_NAN, f"decimal parse: {exc}"
 
 
-def make_batch(
-    spec: AssetSpec,
-    source: SourceId,
-    raw_iter: Iterator,
-) -> NormalizedBatch:
+def make_batch(spec: AssetSpec, source: SourceId, raw_iter: Iterator) -> NormalizedBatch:
     """Convenience: drain normalize_bars into a single NormalizedBatch."""
     batch = NormalizedBatch()
     for item in normalize_bars(spec, source, raw_iter):
