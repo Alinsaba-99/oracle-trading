@@ -26,7 +26,7 @@ from market.ingestion.types import SourceId
 
 logger = logging.getLogger("oracle.market.ingestion.orchestrator")
 
-PLAN_PATH = Path("data/lake/plans/backfill.yaml")
+PLAN_PATH = Path("data/lake/plans/backfill.conf")
 
 
 @dataclass
@@ -81,12 +81,13 @@ def write_default_plan() -> None:
     PLAN_PATH.write_text(
         "# BL-301 default plan — repo-pinned sources only (no API key)\n"
         "# Format: SYMBOL|TIMEFRAME|SOURCE|START_DATE|END_DATE(optional)\n"
-        "# Available sources: binance_rest, cryptodata, histdata, stooq, databento\n"
+        "# Available sources: binance_rest, cryptodata, histdata, stooq, databento, dukascopy\n"
         "BTCUSDT|1d|cryptodata|2014-01-01\n"
         "BTCUSDT|1m|binance_rest|2017-08-17\n"
         "BTCUSDT|1h|binance_rest|2017-08-17\n"
         "ETHUSDT|1m|binance_rest|2017-08-17\n"
-        "EURUSD|1m|histdata|2000-01-01\n"
+        "EURUSD|1m|dukascopy|2003-05-04\n"
+        "EURUSD|1h|dukascopy|2003-05-04\n"
         "ES|1d|stooq|1990-01-01\n"
     )
 

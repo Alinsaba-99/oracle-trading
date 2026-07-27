@@ -357,12 +357,40 @@ class HistData(HttpSource):
     BASE_URL = "https://www.histdata.com/download-free/"
 
     FX_PAIRS: dict[str, str] = {
+        # Majors
         "EURUSD": "eurusd",
         "GBPUSD": "gbpusd",
         "USDJPY": "usdjpy",
         "AUDUSD": "audusd",
         "USDCHF": "usdchf",
         "USDCAD": "usdcad",
+        "NZDUSD": "nzdusd",
+        # Crosses EUR
+        "EURGBP": "eurgbp",
+        "EURJPY": "eurjpy",
+        "EURCHF": "eurchf",
+        "EURCAD": "eurcad",
+        "EURAUD": "euraud",
+        "EURNZD": "eurnzd",
+        # Crosses GBP
+        "GBPJPY": "gbpjpy",
+        "GBPCHF": "gbpchf",
+        "GBPCAD": "gbpcad",
+        "GBPAUD": "gbpaud",
+        "GBPNZD": "gbpnzd",
+        # Crosses AUD
+        "AUDJPY": "audjpy",
+        "AUDCHF": "audchf",
+        "AUDCAD": "audcad",
+        "AUDNZD": "audnzd",
+        # Crosses NZD
+        "NZDJPY": "nzdjpy",
+        "NZDCHF": "nzdchf",
+        "NZDCAD": "nzdcad",
+        # Crosses CHF/CAD
+        "CHFJPY": "chfjpy",
+        "CADJPY": "cadjpy",
+        "CADCHF": "cadchf",
     }
 
     def __init__(self) -> None:
@@ -648,6 +676,324 @@ class YFinance(HttpSource):
         return "max"
 
 
+# Dukascopy JForex — new JSON endpoint (jetta.dukascopy.com/v1).
+# Provides FX majors + crosses + XAU/XAG from 2003-05-04 at 1m resolution.
+# No API key. Data served via CloudFront CDN — supports 10-20 concurrent reqs.
+# Timeframes: 1m/5m/15m/30m native (day bucket); 1h/4h (month bucket); 1d (year bucket).
+# 5m/15m/30m/4h are aggregated client-side from the finer native resolution.
+class Dukascopy(HttpSource):
+    """Adapter for the Dukascopy JForex v1 candle API.
+
+    URL pattern (minute-resolution day bucket):
+      GET https://jetta.dukascopy.com/v1/candles/minute/{code}/ASK/{year}/{month}/{day}
+
+    Response: JSON with differential-encoded OHLCV arrays.
+    Decode: reconstruct absolute prices from delta arrays + multiplier.
+    """
+
+    name = SourceId.DUKASCOPY
+    BASE_URL = "https://jetta.dukascopy.com/v1"
+
+    # Dukascopy instrument code (BASE-QUOTE hyphen format)
+    SYMBOL_MAP: dict[str, str] = {
+        # Majors
+        "EURUSD": "EUR-USD",
+        "GBPUSD": "GBP-USD",
+        "USDJPY": "USD-JPY",
+        "USDCHF": "USD-CHF",
+        "USDCAD": "USD-CAD",
+        "AUDUSD": "AUD-USD",
+        "NZDUSD": "NZD-USD",
+        # Metals
+        "XAUUSD": "XAU-USD",
+        "XAGUSD": "XAG-USD",
+        # EUR crosses
+        "EURGBP": "EUR-GBP",
+        "EURJPY": "EUR-JPY",
+        "EURCHF": "EUR-CHF",
+        "EURCAD": "EUR-CAD",
+        "EURAUD": "EUR-AUD",
+        "EURNZD": "EUR-NZD",
+        # GBP crosses
+        "GBPJPY": "GBP-JPY",
+        "GBPCHF": "GBP-CHF",
+        "GBPCAD": "GBP-CAD",
+        "GBPAUD": "GBP-AUD",
+        "GBPNZD": "GBP-NZD",
+        # AUD/NZD crosses
+        "AUDJPY": "AUD-JPY",
+        "AUDCHF": "AUD-CHF",
+        "AUDCAD": "AUD-CAD",
+        "AUDNZD": "AUD-NZD",
+        "NZDJPY": "NZD-JPY",
+        "NZDCHF": "NZD-CHF",
+        "NZDCAD": "NZD-CAD",
+        # CHF/CAD crosses
+        "CHFJPY": "CHF-JPY",
+        "CADJPY": "CAD-JPY",
+        "CADCHF": "CAD-CHF",
+    }
+
+    # earliest 1m data per symbol (approximate; server returns empty before this)
+    EARLIEST: dict[str, date] = {
+        "EURUSD": date(2003, 5, 4),
+        "GBPUSD": date(2003, 5, 4),
+        "USDJPY": date(2003, 5, 4),
+        "USDCHF": date(2003, 5, 4),
+        "USDCAD": date(2003, 8, 3),
+        "AUDUSD": date(2003, 8, 3),
+        "NZDUSD": date(2003, 8, 3),
+        "XAUUSD": date(2003, 5, 5),
+        "XAGUSD": date(2003, 5, 4),
+    }
+    _DEFAULT_EARLIEST = date(2004, 1, 1)
+
+    # timeframe → (api_source, bucket_type, minutes_per_bar)
+    # bucket_type: "day" → 1 day of 1m bars, "month" → 1 month of 1h bars
+    _TF_CONFIG: dict[str, tuple[str, str, int]] = {
+        "1m": ("minute", "day", 1),
+        "5m": ("minute", "day", 5),
+        "15m": ("minute", "day", 15),
+        "30m": ("minute", "day", 30),
+        "1h": ("hour", "month", 60),
+        "4h": ("hour", "month", 240),
+        "1d": ("day", "year", 1440),
+    }
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.rate_limit = RateLimit(
+            requests_per_second=10.0,
+            requests_per_minute=600,
+            concurrent=10,
+            cooldown_on_429=30.0,
+            user_agent="oracle-trading/1.0 (research)",
+        )
+
+    def asset_spec(self, symbol: str) -> AssetSpec:
+        s = symbol.upper()
+        is_jpy = "JPY" in s
+        is_metal = s.startswith("XA")
+        return AssetSpec(
+            symbol=s,
+            asset_class=AssetClass.FX if not is_metal else AssetClass.FUTURES,
+            exchange="dukascopy",
+            point_precision=3 if is_jpy else (2 if is_metal else 5),
+            volume_precision=2,
+            earliest_available=self.EARLIEST.get(s, self._DEFAULT_EARLIEST),
+            multiplier=Decimal("100000") if not is_metal else Decimal("1"),
+            quote_currency=s[3:6] if len(s) >= 6 else "USD",
+        )
+
+    def fetch_range(
+        self, symbol: str, timeframe: str, start: date, end: date
+    ) -> Iterator[OHLCVBar]:
+        import json as _json
+
+        code = self.SYMBOL_MAP.get(symbol.upper())
+        if code is None:
+            logger.warning("%s: symbol %s not in SYMBOL_MAP", self.name, symbol)
+            return
+        cfg = self._TF_CONFIG.get(timeframe)
+        if cfg is None:
+            logger.warning("%s: unsupported timeframe %s", self.name, timeframe)
+            return
+        api_source, bucket_type, _minutes_per_bar = cfg
+
+        spec = self.asset_spec(symbol)
+        earliest = spec.earliest_available or self._DEFAULT_EARLIEST
+        effective_start = max(start, earliest)
+
+        for url, _bucket_start in self._iter_bucket_urls(
+            code, api_source, bucket_type, effective_start, end
+        ):
+            self._cooldown_until_clear()
+            try:
+                raw = self._get(url, timeout=30)
+            except Exception as exc:
+                logger.warning("%s: skip bucket %s — %s", self.name, url, exc)
+                time.sleep(1.0)
+                continue
+
+            try:
+                resp = _json.loads(raw)
+            except Exception:
+                continue
+
+            bars = self._decode_response(resp, spec, timeframe)
+            for bar in bars:
+                if bar.timestamp.date() < start or bar.timestamp.date() > end:
+                    continue
+                yield bar
+
+            time.sleep(1.0 / self.rate_limit.requests_per_second)
+
+    def _iter_bucket_urls(
+        self, code: str, api_source: str, bucket_type: str, start: date, end: date
+    ) -> Iterator[tuple[str, date]]:
+        """Yield (url, bucket_start_date) for each time bucket in [start, end]."""
+        from datetime import timedelta
+
+        cur = start
+        while cur <= end:
+            if bucket_type == "day":
+                url = (
+                    f"{self.BASE_URL}/candles/{api_source}/{code}/ASK"
+                    f"/{cur.year}/{cur.month}/{cur.day}"
+                )
+                yield url, cur
+                cur = (datetime(cur.year, cur.month, cur.day) + timedelta(days=1)).date()
+            elif bucket_type == "month":
+                url = f"{self.BASE_URL}/candles/{api_source}/{code}/ASK/{cur.year}/{cur.month}"
+                yield url, cur
+                cur = (
+                    date(cur.year + 1, 1, 1)
+                    if cur.month == 12
+                    else date(cur.year, cur.month + 1, 1)
+                )
+            elif bucket_type == "year":
+                url = f"{self.BASE_URL}/candles/{api_source}/{code}/ASK/{cur.year}"
+                yield url, cur
+                cur = date(cur.year + 1, 1, 1)
+
+    @staticmethod
+    def _parse_fields(
+        resp: dict,  # type: ignore[type-arg]
+    ) -> (
+        tuple[int, float, int, list[int], list[int], list[int], list[int], list[int], list[float]]
+        | None
+    ):
+        """Extract and validate the raw arrays from a Dukascopy JSON bucket."""
+        try:
+            base_ts_ms: int = int(resp["timestamp"])
+            multiplier: float = float(resp["multiplier"])
+            shift_ms: int = int(resp["shift"])
+            times: list[int] = list(resp.get("times", []))
+        except (KeyError, TypeError, ValueError):
+            return None
+        if not times:
+            return None
+        return (
+            base_ts_ms,
+            multiplier,
+            shift_ms,
+            times,
+            list(resp.get("opens", [])),
+            list(resp.get("highs", [])),
+            list(resp.get("lows", [])),
+            list(resp.get("closes", [])),
+            list(resp.get("volumes", [])),
+        )
+
+    def _make_bar(
+        self,
+        ts_ms: int,
+        o: int,
+        h: int,
+        lo: int,
+        c: int,
+        vol: float,
+        multiplier: float,
+        quant: Decimal,
+        spec: AssetSpec,
+        timeframe: str,
+    ) -> OHLCVBar:
+        bar_ts = datetime.fromtimestamp(ts_ms / 1000.0, tz=UTC)
+        m = multiplier
+        return OHLCVBar(
+            bar_ts,
+            Decimal(o * m).quantize(quant),
+            Decimal(h * m).quantize(quant),
+            Decimal(lo * m).quantize(quant),
+            Decimal(c * m).quantize(quant),
+            Decimal(str(round(vol, 2))),
+            spec.symbol,
+            self.name,
+            timeframe,
+        )
+
+    def _resample_buf(
+        self,
+        buf: list[tuple[int, int, int, int, float]],
+        close_ts_ms: int,
+        shift_ms: int,
+        multiplier: float,
+        quant: Decimal,
+        spec: AssetSpec,
+        timeframe: str,
+    ) -> OHLCVBar | None:
+        if not buf:
+            return None
+        ao, ah, al, ac, av = (
+            buf[0][0],
+            max(x[1] for x in buf),
+            min(x[2] for x in buf),
+            buf[-1][3],
+            sum(x[4] for x in buf),
+        )
+        bar_ts_ms = close_ts_ms - len(buf) * shift_ms
+        return self._make_bar(bar_ts_ms, ao, ah, al, ac, av, multiplier, quant, spec, timeframe)
+
+    def _decode_response(
+        self, resp: dict[str, object], spec: AssetSpec, timeframe: str
+    ) -> list[OHLCVBar]:
+        """Decode Dukascopy differential JSON → list of OHLCVBar."""
+        import math
+
+        fields = self._parse_fields(resp)
+        if fields is None:
+            return []
+        base_ts_ms, multiplier, shift_ms, times, opens, highs, lows, closes, volumes = fields
+
+        prec = max(0, -math.floor(math.log10(abs(multiplier)))) if multiplier else 5
+        quant = Decimal(10) ** -prec
+
+        o_u = round(float(resp.get("open", 0)) / multiplier)
+        h_u = round(float(resp.get("high", 0)) / multiplier)
+        l_u = round(float(resp.get("low", 0)) / multiplier)
+        c_u = round(float(resp.get("close", 0)) / multiplier)
+
+        native_min = shift_ms // 60000
+        target_min = self._TF_CONFIG[timeframe][2]
+        bars_per_agg = target_min // native_min if target_min > native_min else 1
+        needs_agg = bars_per_agg > 1
+
+        bars: list[OHLCVBar] = []
+        ts_ms = base_ts_ms
+        agg_buf: list[tuple[int, int, int, int, float]] = []
+
+        for i, td in enumerate(times):
+            ts_ms += td * shift_ms
+            o_u += opens[i] if i < len(opens) else 0
+            h_u += highs[i] if i < len(highs) else 0
+            l_u += lows[i] if i < len(lows) else 0
+            c_u += closes[i] if i < len(closes) else 0
+            vol = volumes[i] if i < len(volumes) else 0.0
+
+            if needs_agg:
+                agg_buf.append((o_u, h_u, l_u, c_u, vol))
+                if len(agg_buf) >= bars_per_agg:
+                    bar = self._resample_buf(
+                        agg_buf, ts_ms, shift_ms, multiplier, quant, spec, timeframe
+                    )
+                    if bar:
+                        bars.append(bar)
+                    agg_buf.clear()
+            else:
+                bars.append(
+                    self._make_bar(
+                        ts_ms, o_u, h_u, l_u, c_u, vol, multiplier, quant, spec, timeframe
+                    )
+                )
+
+        if needs_agg and agg_buf:
+            bar = self._resample_buf(agg_buf, ts_ms, shift_ms, multiplier, quant, spec, timeframe)
+            if bar:
+                bars.append(bar)
+
+        return bars
+
+
 # ----------------------------------------------------------------------
 # Registry helper
 # ----------------------------------------------------------------------
@@ -658,6 +1004,7 @@ SOURCES: dict[SourceId, DataSource] = {
     SourceId.YAHOO: YFinance(),
     SourceId.HISTDATA: HistData(),
     SourceId.STOOQ: Stooq(),
+    SourceId.DUKASCOPY: Dukascopy(),
 }
 
 
