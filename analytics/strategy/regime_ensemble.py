@@ -22,8 +22,12 @@ import logging
 import math
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import TYPE_CHECKING
 
 import polars as pl
+
+if TYPE_CHECKING:
+    from analytics.research.memory import ResearchMemory
 
 logger = logging.getLogger("oracle.strategy.regime_ensemble")
 
@@ -79,6 +83,7 @@ class RegimeAwareEnsemble:
         specialists: dict[SpecialistId, object],
         regime_detector: object | None = None,
         min_confidence: float = 0.5,
+        memory: ResearchMemory | None = None,
     ) -> None:
         """Args:
         specialists: map ``SpecialistId → signal computer``; must
@@ -86,6 +91,8 @@ class RegimeAwareEnsemble:
         regime_detector: optional; if None, a simple SMA-based
             heuristic is used (fast, deterministic).
         min_confidence: below this, force ``SpecialistId.FLAT``.
+        memory: optional ``ResearchMemory`` for tracking decisions
+            and outcomes (BL-090).
         """
         if not specialists:
             raise ValueError("specialists must be non-empty")
@@ -93,6 +100,7 @@ class RegimeAwareEnsemble:
         self._regime_detector = regime_detector
         self._min_confidence = min_confidence
         self._last_decision: RoutingDecision | None = None
+        self._memory = memory
 
     # ── public API ─────────────────────────────────────────────────────
 
@@ -114,15 +122,26 @@ class RegimeAwareEnsemble:
         specialist to compute the full signal series.  Bars where
         confidence is low are forced to 0 by the specialist-selection
         logic.
+
+        If ``memory`` is configured, records the routing decision and
+        the last signal value for post-hoc outcome tracking.
         """
         decision = self.route(data)
         if decision.specialist == SpecialistId.FLAT:
-            return pl.Series("signal", [0] * len(data), dtype=pl.Int8)
+            sig = pl.Series("signal", [0] * len(data), dtype=pl.Int8)
+            _record_decision(self._memory, decision, data)
+            return sig
         spec = self._specialists.get(decision.specialist)
         if spec is None:
             logger.warning(f"specialist {decision.specialist} not registered — flat")
-            return pl.Series("signal", [0] * len(data), dtype=pl.Int8)
+            sig = pl.Series("signal", [0] * len(data), dtype=pl.Int8)
+            _record_decision(self._memory, decision, data)
+            return sig
         result: pl.Series = spec.compute(data)  # type: ignore[attr-defined]
+        _record_decision(
+            self._memory, decision, data,
+            signal=int(result[-1]) if len(result) > 0 else 0,
+        )
         return result
 
     # ── internals ──────────────────────────────────────────────────────
@@ -242,6 +261,40 @@ def _sma_regime_heuristic(data: pl.DataFrame) -> tuple[RegimeLabel, float]:
         return label, _confidence(short_sigma, _TREND_SHORT_SIGMA)
     # Further below the trend gate = more clearly rangebound.
     return RegimeLabel.CHOPPY, max(0.55, min(1.0, 1.0 - long_sigma / _TREND_LONG_SIGMA * 0.45))
+
+
+# ── ResearchMemory hook (BL-090) ────────────────────────────────────────
+
+
+def _record_decision(
+    memory: ResearchMemory | None,
+    decision: RoutingDecision,
+    data: pl.DataFrame,
+    signal: int = 0,
+) -> None:
+    """Record the routing decision in ResearchMemory if configured."""
+    if memory is None:
+        return
+    close_col = next((c for c in data.columns if c.lower() in ("close", "adj_close")), None)
+    close = float(data[close_col][-1]) if close_col is not None and len(data) > 0 else None
+    vol: float | None = None
+    if close_col is not None and len(data) > 20:
+        returns = (data[close_col].to_numpy()[1:] / data[close_col].to_numpy()[:-1]) - 1.0
+        vol = float(returns[-20:].std()) if len(returns) >= 20 else None
+    features = {}
+    if close is not None:
+        features["close"] = close
+    if vol is not None:
+        features["volatility"] = vol
+    features["n_bars"] = len(data)
+    memory.record_decision(
+        regime=decision.regime.value,
+        regime_confidence=decision.regime_confidence,
+        specialist=decision.specialist.value,
+        reason=decision.reason,
+        signal=signal,
+        features=features,
+    )
 
 
 __all__ = ["RegimeAwareEnsemble", "RegimeLabel", "RoutingDecision", "SpecialistId"]
