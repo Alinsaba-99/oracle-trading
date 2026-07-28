@@ -12,6 +12,8 @@ reproducible results with real-world costs.
 
 from __future__ import annotations
 
+import hashlib
+import json
 from decimal import Decimal
 from pathlib import Path
 
@@ -20,10 +22,14 @@ import pytest
 
 from market.contracts import ES
 
-#: Renamed from ES_daily.parquet in f87726f. This file keeps the capitalised
-#: yfinance schema (Close/High/Low/Open/Volume/Date) these tests read directly;
-#: data/ohlcv/ES/1d.parquet is the lower-case DataRegistry cache layout.
-ES_DAILY = Path("data/ohlcv/ES_1d.parquet")
+#: The pinned M31 baseline (see data/pinned/ES_1d_m31.provenance.json, BL-001).
+#: Previously this read data/ohlcv/ES_daily.parquet, which was renamed to
+#: ES_1d.parquet in f87726f and is git-ignored — so the test broke and could
+#: not pass on a fresh clone at all. The pinned copy is tracked, hash-verified,
+#: and keeps the capitalised yfinance schema (Close/High/Low/Open/Volume/Date)
+#: that these tests read directly. Do not repoint at data/ohlcv/: ADR-014
+#: records that file being regenerated out-of-band, losing the M31 evidence.
+ES_DAILY = Path("data/pinned/ES_1d_m31.parquet")
 
 
 @pytest.fixture(scope="module")
@@ -44,7 +50,23 @@ class TestQualification:
         assert len(df) >= 100, f"Need at least 100 bars, got {len(df)}"
         assert "Close" in df.columns
         assert "Volume" in df.columns
-        print(f"✅ ES data: {len(df)} bars")
+
+    def test_pinned_dataset_hash_matches_provenance(self) -> None:
+        """The pin must still hash to what its provenance claims.
+
+        ADR-014: the original M31 dataset was regenerated out-of-band and the
+        qualifying row set was lost, with nothing failing to signal it. This
+        check turns that silent drift into a test failure.
+        """
+        provenance = json.loads(
+            Path("data/pinned/ES_1d_m31.provenance.json").read_text(encoding="utf-8")
+        )
+        digest = hashlib.sha256(ES_DAILY.read_bytes()).hexdigest()
+        assert digest == provenance["sha256"], (
+            f"pinned dataset drifted: {digest} != {provenance['sha256']}. "
+            "Regenerate M31 evidence and update the pin — do not edit the hash."
+        )
+        assert pl.read_parquet(ES_DAILY).height == provenance["rows"]
 
     def test_contract_spec_matches(self) -> None:
         """ES contract spec must match known values."""

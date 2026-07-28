@@ -33,9 +33,10 @@ docker/data/
 results/
 # data/ohlcv/  # qualification tests need these
 
-# Experiment artifacts
+# Experiment artifacts — search runs write their own SQLite store per round
+# (experiments.db, r4_search.db, ...), all regenerable from the runners.
 experiments/*/
-experiments/experiments.db
+experiments/*.db
 
 # Checkpoints from GA runs
 checkpoints/legacy/
@@ -94,7 +95,7 @@ tmp/
 logs/
 checkpoints/*.json
 data/ohlcv/*.parquet
-experiments/experiments.db
+experiments/*.db
 
 # Pinned datasets (track for reproducibility — see data/pinned/*provenance.json)
 !data/pinned/
