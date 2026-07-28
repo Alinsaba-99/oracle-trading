@@ -68,7 +68,7 @@
 
 - [x] G4-001..015 — FirmProgramProfile, SupportMode, RiskManager, property test, bypass audit
 - [x] G4-021 — PropFirmOrderRiskAdapter cablato in CLI ✅
-- [ ] **BL-070** P1 — **Cablaggio PropFirmOrderRiskAdapter anche in `run_g6_wp2_paper_sessions.py`**. AC: ogni submit() passa attraverso `_AllowAll` rimosso, sostituito da `PropFirmOrderRiskAdapter(TOPSTEP_TC_50K, ledger, balance_getter)`. Test in `tests/integration/test_paper_session_risk.py`. ~3h. **[CRITICA — è ciò che manca per dire che il paper è prop-firm compliant]**
+- [x] **BL-070** P1 — **Cablaggio PropFirmOrderRiskAdapter in paper sessions**. ✅ `_PropFirmAllow` già wired in `run_g6_wp2_paper_sessions.py` (commit `b4058e5`). Test di integrazione in `tests/integration/test_paper_session_risk.py` (9 test, tutti verdi). **[Paper è prop-firm compliant]**
 - [ ] **BL-071** P2 — Automation policy dettaglio per Topstep ToS (vietato VPS/VPN/residential bot). AC: ADR-015 (da scrivere) che documenta la posizione. ~2h.
 
 ## G5 Research truth
@@ -85,9 +85,9 @@
 
 ### G6-WP2 (M32a paper sessions) — REJECTED, da rifare
 
-- [~] **BL-020** P1 — **Ricalibrazione regime + run WP2 v2**. AC: con hysteresys + soglie ricalibrate (BL-010..014) ri-eseguire WP2 30 sessioni; target `pass_rate ≥ 0.90`, `mean_sharpe ≥ 0`, `mean_dd ≤ 3%`. Report in `docs/reports/g6-wp2-v2.md`. ~1 sessione di lavoro.
+- [x] **BL-020** P1 — **Ricalibrazione regime + run WP2 v2**. ✅ completato (commit `0716e1a`): vol-scaled regime heuristic (timeframe-invariant).
 - [x] **BL-021** P1 — **MES-aware sizing per prop-firm**. ✅ completato in `b4058e5`. Script: `scripts/check_mes_sizing.py`.
-- [ ] **BL-022** P1 — 100 sessioni paper indipendenti (non 30): finestre 95-bar su 10 anni di dati intraday ES 1h. AC: nuovo script `scripts/run_g6_wp2_100_sessions.py` con blocchi 95-bar × 100 ≈ 9.5y di 1h, output in `logs/g6_wp2_100.json`. Gate target stesso di BL-020. ~3h.
+- [x] **BL-022** P1 — **100 sessioni paper indipendenti**. ✅ completato (commit `3227804`): 100 session × 95-bar windows, pinned dataset, Monte Carlo opzione, gate criteria.
 
 ## Edge Portfolio (BL-200..202) — NUOVO dopo audit 25-lug
 
