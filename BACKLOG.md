@@ -86,7 +86,7 @@
 ### G6-WP2 (M32a paper sessions) — REJECTED, da rifare
 
 - [~] **BL-020** P1 — **Ricalibrazione regime + run WP2 v2**. AC: con hysteresys + soglie ricalibrate (BL-010..014) ri-eseguire WP2 30 sessioni; target `pass_rate ≥ 0.90`, `mean_sharpe ≥ 0`, `mean_dd ≤ 3%`. Report in `docs/reports/g6-wp2-v2.md`. ~1 sessione di lavoro.
-- [ ] **BL-021** P1 — **MES-aware sizing per prop-firm**. AC: nuovo flag `--instrument=MES` (default su account 50K) e sizing derivato da `account_risk / stop_distance_in_points` con stop 8pt = $80/contract; test che su ES 50K il sizing = 0 contratti (sotto minimo MES) ma su MES = 1 contract. ~2h.
+- [x] **BL-021** P1 — **MES-aware sizing per prop-firm**. ✅ completato in `b4058e5`. Script: `scripts/check_mes_sizing.py`.
 - [ ] **BL-022** P1 — 100 sessioni paper indipendenti (non 30): finestre 95-bar su 10 anni di dati intraday ES 1h. AC: nuovo script `scripts/run_g6_wp2_100_sessions.py` con blocchi 95-bar × 100 ≈ 9.5y di 1h, output in `logs/g6_wp2_100.json`. Gate target stesso di BL-020. ~3h.
 
 ## Edge Portfolio (BL-200..202) — NUOVO dopo audit 25-lug
