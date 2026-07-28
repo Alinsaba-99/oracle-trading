@@ -32,9 +32,15 @@ from analytics.strategy.experiments_store import (
     save_wf_result,
     top_specs,
 )
-from analytics.strategy.fitness import EvalMode
+from analytics.strategy.fitness import EvalMode, FitnessReport
 from analytics.strategy.ga_spec_search import GASearchConfig, ga_spec_search
-from analytics.strategy.researcher import LLMStrategyResearcher, ResearchLog, run_research_rounds
+from analytics.strategy.researcher import (
+    LLMStrategyResearcher,
+    ResearchLog,
+    SpecResult,
+    run_research_rounds,
+)
+from analytics.strategy.spec import StrategySpec
 from analytics.strategy.walk_forward_spec import walk_forward_spec
 
 _ROOT = Path(__file__).parent.parent
@@ -49,8 +55,8 @@ def cmd_run(args: argparse.Namespace) -> int:
     mode = EvalMode(args.mode)
     registry = _make_registry()
 
-    llm_results: list = []
-    ga_results: list = []
+    llm_results: list[SpecResult] = []
+    ga_results: list[tuple[StrategySpec, FitnessReport]] = []
 
     # ── LLM researcher ─────────────────────────────────────────────────────
     if not args.ga_only and args.llm_rounds > 0:
@@ -174,24 +180,25 @@ def cmd_status(_args: argparse.Namespace) -> int:
         top = sorted(rows, key=lambda r: r.get("fitness", 0), reverse=True)[:10]
         print("\n  Top 10 by fitness:")
         print(
-            f"  {'Name':<28} {'Src':<4} {'Fitness':>7} {'PassRate':>8} "
+            f"  {'Name':<14} {'Src':<12} {'Fitness':>7} {'PassRate':>8} "
             f"{'Sharpe':>6} {'WF-med':>7} {'WF-min':>7}"
         )
         print(f"  {'-' * 70}")
         for r in top:
             wf_med = r.get("wf_median_fitness")
             wf_min = r.get("wf_min_fitness")
+            # Format the WF columns separately: folding these conditionals into
+            # the row f-string made the ternary swallow the whole line, so every
+            # not-yet-walk-forwarded spec printed as a bare "—".
+            med_txt = f"{wf_med:>7.4f}" if wf_med is not None else f"{'—':>7}"
+            min_txt = f"{wf_min:>7.4f}" if wf_min is not None else f"{'—':>7}"
             print(
-                f"  {r.get('spec_name', '?'):<28} "
-                f"{r.get('source', '?'):<4} "
+                f"  {r.get('spec_name', '?'):<14} "
+                f"{r.get('source', '?'):<12} "
                 f"{r.get('fitness', 0):>7.4f} "
                 f"{r.get('pass_rate', 0) * 100:>7.1f}% "
                 f"{r.get('sharpe', 0):>6.2f} "
-                f"{wf_med:>7.4f}"
-                if wf_med is not None
-                else f"{'—':>7} {wf_min:>7.4f}"
-                if wf_min is not None
-                else f"{'—':>7}"
+                f"{med_txt} {min_txt}"
             )
     return 0
 
@@ -205,7 +212,10 @@ def _print_summary(mode: str, top_n: int = 10) -> None:
     print(f"  R4 Search Summary — {mode.upper()} mode — top {len(rows)}")
     print(f"{'=' * 60}")
     for i, r in enumerate(rows):
-        wf = f" wf={r['wf_median_fitness']:.4f}" if r.get("wf_median_fitness") else ""
+        # `is not None`, not truthiness: a walk-forward median of exactly 0.0
+        # is a real result and must not read as "never validated".
+        wf_med = r.get("wf_median_fitness")
+        wf = f" wf={wf_med:.4f}" if wf_med is not None else ""
         print(
             f"  [{i + 1:2d}] {r.get('spec_name', '?'):<28} "
             f"fit={r.get('fitness', 0):.4f} "

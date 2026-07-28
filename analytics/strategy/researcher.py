@@ -17,6 +17,7 @@ import logging
 import os
 import re
 from dataclasses import dataclass, field
+from typing import Any
 
 from analytics.backtest.providers import DataRegistry
 from analytics.strategy.evaluator import evaluate_spec as _evaluate_spec
@@ -83,7 +84,7 @@ class ResearchLog:
 
 
 def evaluate_spec_with_registry(
-    spec: StrategySpec, registry: DataRegistry, mode: EvalMode | str = EvalMode.FIRM, **kwargs
+    spec: StrategySpec, registry: DataRegistry, mode: EvalMode | str = EvalMode.FIRM, **kwargs: Any
 ) -> SpecResult:
     """Evaluate one spec via the unified R3 evaluator."""
     try:
