@@ -87,7 +87,7 @@ class BbandReversion:
 
     def compute(self, data: pl.DataFrame) -> pl.Series:
         close = _close(data)
-        lower, mid, _upper = bbands(close, self.period, self.std)
+        _upper, mid, lower = bbands(close, self.period, self.std)
         c = _to_np(close)
         lo = _to_np(lower)
         mi = _to_np(mid)
@@ -262,6 +262,7 @@ DEFAULT_STRATEGIES["zscore_reversion"] = ZscoreReversion
 DEFAULT_STRATEGIES["keltner_reversion"] = KeltnerReversion
 
 
-# R1 breadth - extended families (signals_r1) self-register into
-# DEFAULT_STRATEGIES on import. Keep LAST so the dict is populated first.
+# R1/R2 breadth - extended families self-register into DEFAULT_STRATEGIES on
+# import. Keep LAST so the dict is populated first.
 from analytics.strategy import signals_r1 as _signals_r1  # noqa: E402,F401
+from analytics.strategy import signals_r2 as _signals_r2  # noqa: E402,F401

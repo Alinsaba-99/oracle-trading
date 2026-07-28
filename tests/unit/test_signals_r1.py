@@ -35,8 +35,10 @@ NEW_KEYS = [
 
 
 def test_self_registration_adds_ten_families() -> None:
-    # 8 v1 + 10 R1 = 18 (signals_r1 self-registers on import).
-    assert len(signals.DEFAULT_STRATEGIES) == 18
+    # signals_r1 self-registers its families on import. Assert the R1 keys are
+    # present rather than a total count — later rounds (R2, ...) also register
+    # into the same dict, so an exact total goes stale on every expansion.
+    assert len(NEW_KEYS) == 10
     for key in NEW_KEYS:
         assert key in signals.DEFAULT_STRATEGIES, key
 

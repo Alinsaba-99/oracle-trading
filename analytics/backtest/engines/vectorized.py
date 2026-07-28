@@ -76,6 +76,88 @@ def _infer_freq(index: pd.Index) -> str | None:
     return None
 
 
+def _periods_per_year(index: pd.Index) -> float:
+    """Estimate how many bars make up one year, from the median bar spacing.
+
+    Annualisation must follow the actual bar size: treating 1h bars as daily
+    inflates Sharpe by ~sqrt(24). Falls back to 252 when spacing is unknown.
+    """
+    if isinstance(index, pd.DatetimeIndex) and len(index) > 2:
+        # Let pandas resolve the unit: polars frames arrive as datetime64[us],
+        # so reading the raw integers as nanoseconds understates bar spacing
+        # 1000-fold and inflates every annualised metric by ~31x.
+        deltas = pd.Series(index).diff().dt.total_seconds().to_numpy()
+        positive = deltas[np.isfinite(deltas) & (deltas > 0)]
+        if positive.size:
+            # Median ignores weekend/session gaps that would skew a mean.
+            bar_seconds = float(np.median(positive))
+            if bar_seconds > 0:
+                if bar_seconds >= 86_400:
+                    # Daily or coarser: count trading days, not calendar days.
+                    return max(1.0, 252.0 * 86_400.0 / bar_seconds)
+                # Intraday: FX/crypto trade ~24h, ~252 sessions a year.
+                return 252.0 * 86_400.0 / bar_seconds
+    return 252.0
+
+
+def _risk_metrics_from_equity(
+    equity: np.ndarray, max_drawdown_pct: float, periods_per_year: float = 252.0
+) -> tuple[float, float, float, float]:
+    """Compute (sharpe, sortino, calmar, volatility_pct) from an equity curve.
+
+    Derived from the equity curve rather than read from ``portfolio.stats()``
+    so that annualisation matches the actual bar size — vectorbt infers its
+    own frequency and silently reports NaN when the index has irregular gaps,
+    which is the norm for FX data with weekend breaks.
+
+    Returns volatility as a percentage to match vectorbt's ``Volatility [%]``.
+    """
+    if equity.size < 3:
+        return 0.0, 0.0, 0.0, 0.0
+
+    valid = equity[np.isfinite(equity) & (equity > 0)]
+    if valid.size < 3:
+        return 0.0, 0.0, 0.0, 0.0
+
+    # Log returns: additive across time, so scaling by sqrt(n) is valid.
+    returns = np.diff(np.log(valid))
+    returns = returns[np.isfinite(returns)]
+    if returns.size < 2:
+        return 0.0, 0.0, 0.0, 0.0
+
+    ann = float(np.sqrt(periods_per_year))
+    mean_r = float(np.mean(returns))
+    std_r = float(np.std(returns, ddof=1))
+
+    volatility = std_r * ann
+    sharpe = (mean_r / std_r) * ann if std_r > 0 else 0.0
+
+    downside = returns[returns < 0]
+    if downside.size >= 2:
+        downside_std = float(np.std(downside, ddof=1))
+        sortino = (mean_r / downside_std) * ann if downside_std > 0 else 0.0
+    else:
+        # No losing bars: reward is real but Sortino is undefined, so fall
+        # back to Sharpe instead of emitting a spurious infinity.
+        sortino = sharpe
+
+    # Calmar uses the annualised return against peak-to-trough drawdown.
+    dd_frac = abs(max_drawdown_pct) / 100.0
+    calmar = 0.0
+    if dd_frac > 1e-9:
+        # Annualise in log space: a short sample would otherwise raise the
+        # growth factor to a huge power and overflow.
+        ann_mean = mean_r * periods_per_year
+        cagr = float(np.expm1(ann_mean)) if abs(ann_mean) < 500.0 else 0.0
+        if np.isfinite(cagr):
+            calmar = cagr / dd_frac
+
+    def _clean(x: float) -> float:
+        return float(x) if np.isfinite(x) else 0.0
+
+    return _clean(sharpe), _clean(sortino), _clean(calmar), _clean(volatility * 100.0)
+
+
 class _SmaCrossoverSignal:
     """SMA crossover reference strategy (50 / 200) on daily data.
 
@@ -224,12 +306,7 @@ class VectorizedEngine:
             return float(val)
 
         total_return = _metric("Total Return [%]")
-        sharpe = _metric("Sharpe Ratio")
-        sortino = _metric("Sortino Ratio")
-        calmar = _metric("Calmar Ratio")
         max_dd = _metric("Max Drawdown [%]")
-        volatility = _metric("Volatility [%]")
-
         total_trades = int(_metric("Total Trades"))
         win_rate = _metric("Win Rate [%]")
         profit_factor = _metric("Profit Factor")
@@ -238,7 +315,14 @@ class VectorizedEngine:
 
         # ── equity curve ────────────────────────────────────────────
         equity_pd = self._portfolio.value()
-        self._equity = pl.Series("equity", equity_pd.to_numpy(dtype=np.float64))
+        self._equity = pl.Series("equity", equity_pd.to_numpy())
+
+        # ── compute risk metrics from equity curve ──────────────────
+        sharpe, sortino, calmar, volatility = _risk_metrics_from_equity(
+            np.asarray(self._equity, dtype=np.float64),
+            max_dd,
+            periods_per_year=_periods_per_year(df.index),
+        )
 
         # ── trades ──────────────────────────────────────────────────
         self._trades_list = self._extract_trades(close=df["Close"])
@@ -333,7 +417,8 @@ class VectorizedEngine:
             trade = Trade(
                 trade_id=str(uuid4()),
                 instrument_id="",
-                direction=TradeDirection.long if direction_val in (0, 1) else TradeDirection.short,
+                # vectorbt TradeDirection: 0 = Long, 1 = Short, 2 = Both.
+                direction=TradeDirection.long if direction_val == 0 else TradeDirection.short,
                 status=TradeStatus.closed if exit_time is not None else TradeStatus.open,
                 entry_price=Decimal(str(entry_price_val)),
                 exit_price=(

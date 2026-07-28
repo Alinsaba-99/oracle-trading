@@ -29,40 +29,44 @@ from analytics.strategy.signals import (
     ZscoreReversion,
 )
 from analytics.strategy.signals_r1 import AdxTrend, MacdTrend, Pullback, VolumeBreakout
+from analytics.strategy.signals_r2 import R2_SIGNALS
 from analytics.strategy.timeframe import is_higher_tf
 
-#: yfinance tickers.  All validated to serve daily; 1h/15m serve shorter history.
+#: Instruments the search may sample. Every entry is backed by 1h/4h/1d in the
+#: data lake (see ``scripts/lake_status.py``); the value is the yfinance
+#: ticker used only when falling back to a live fetch.
 INSTRUMENTS: dict[str, str] = {
-    # metals & commodities
+    # metals — lake-backed from 2003
     "GOLD": "GC=F",
     "SILVER": "SI=F",
-    "COPPER": "HG=F",
-    "CRUDE": "CL=F",
-    "NATGAS": "NG=F",
-    # equity indices
-    "SP500": "^GSPC",
-    "NASDAQ": "^NDX",
-    "DOW": "^DJI",
-    "RUSSELL": "^RUT",
-    "DAX": "^GDAXI",
-    "FTSE": "^FTSE",
-    "NIKKEI": "^N225",
-    # FX majors + crosses
+    # FX majors — lake-backed from 2003
     "EURUSD": "EURUSD=X",
     "GBPUSD": "GBPUSD=X",
     "USDJPY": "USDJPY=X",
     "USDCHF": "USDCHF=X",
     "AUDUSD": "AUDUSD=X",
     "USDCAD": "USDCAD=X",
+    "NZDUSD": "NZDUSD=X",
+    # FX crosses — lake-backed from 2004-2006; different vol/carry character
+    # from the majors, which widens the regime coverage of the search.
     "EURJPY": "EURJPY=X",
+    "EURGBP": "EURGBP=X",
+    "EURCHF": "EURCHF=X",
+    "EURCAD": "EURCAD=X",
+    "EURAUD": "EURAUD=X",
+    "EURNZD": "EURNZD=X",
     "GBPJPY": "GBPJPY=X",
-    # crypto (24/7, high vol)
+    "GBPCHF": "GBPCHF=X",
+    "GBPCAD": "GBPCAD=X",
+    "GBPAUD": "GBPAUD=X",
+    # crypto (24/7, high vol) — lake-backed from 2017
     "BTC": "BTC-USD",
     "ETH": "ETH-USD",
 }
 
-#: Supported bar timeframes. Must match analytics.strategy.timeframe.TIMEFRAME_ORDER.
-TIMEFRAMES: list[str] = ["15m", "1h", "4h", "1d"]
+#: Supported bar timeframes — must exist in the data lake (1m available but
+#: too slow for search; 15m not in lake). Use 1h/4h/1d for search loops.
+TIMEFRAMES: list[str] = ["1h", "4h", "1d"]
 
 #: Entry-rule name -> signal builder.  The LLM picks a name + params; the
 #: machine constructs the signal deterministically.
@@ -80,6 +84,9 @@ ENTRY_TYPES: dict[str, type[BacktestSignal]] = {
     "macd_trend": MacdTrend,
     "pullback": Pullback,
     "volume_breakout": VolumeBreakout,
+    # R2 long/short families (see analytics.strategy.signals_r2). These emit
+    # the full -1/0/+1 domain, so the search can find short-side edges too.
+    **R2_SIGNALS,
 }
 
 #: Composite multi-TF combination rules (see CompositeMTFSignal).
@@ -88,6 +95,15 @@ FILTER_MODES: list[str] = ["gate", "confirm", "size"]
 #: Backtest regimes. "fixed" = full notional (higher return, more DD);
 #: "sized" = volatility-scaled (lower DD, lower return).
 REGIMES: list[str] = ["fixed", "sized"]
+
+#: Spec key → DataRegistry instrument ID (for lake-backed evaluation).
+#: Falls back to uppercased key when not listed (FX pairs use same id).
+LAKE_INSTRUMENTS: dict[str, str] = {
+    "GOLD": "XAUUSD",
+    "SILVER": "XAGUSD",
+    "BTC": "BTCUSDT",
+    "ETH": "ETHUSDT",
+}
 
 
 class StrategySpec(BaseModel):
@@ -130,6 +146,11 @@ class StrategySpec(BaseModel):
     def ticker(self) -> str:
         """Resolve to the yfinance ticker."""
         return INSTRUMENTS.get(self.instrument.upper(), self.instrument)
+
+    def lake_instrument_id(self) -> str:
+        """Resolve to the DataRegistry / lake instrument ID."""
+        key = self.instrument.upper()
+        return LAKE_INSTRUMENTS.get(key, key)
 
     @property
     def is_multi_tf(self) -> bool:

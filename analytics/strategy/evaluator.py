@@ -64,12 +64,13 @@ def evaluate_spec(
     """
     signal = spec.build_signal()
     orch = orchestrator or BacktestOrchestrator()
+    lake_id = spec.lake_instrument_id()
 
     if isinstance(signal, CompositeMTFSignal):
         assert spec.filter_tf is not None
         primary_df, filter_df = fetch_pair(
             data_registry,
-            spec.instrument,
+            lake_id,
             spec.timeframe,
             spec.filter_tf,
             period=period,
@@ -79,7 +80,7 @@ def evaluate_spec(
         )
     else:
         primary_df = data_registry.get_ohlcv(
-            spec.instrument, spec.timeframe, period=period, start=start, end=end, force=force
+            lake_id, spec.timeframe, period=period, start=start, end=end, force=force
         )
         filter_df = None
 

@@ -1,10 +1,10 @@
-"""LLM strategy researcher — Modo A.
+"""LLM strategy researcher — Modo A (R4-rewired).
 
 The LLM acts as a quant researcher: given the current best candidate and
-the history of tried specs + their Monte-Carlo results, it proposes new
+the history of tried specs + their FitnessReports, it proposes new
 :class:`StrategySpec` objects.  The machine deterministically builds,
-backtests (sized), and Monte-Carlo evaluates each.  The LLM never runs
-code or places orders — it only fills the validated spec DSL.
+backtests, and evaluates each via :func:`evaluator.evaluate_spec` (the
+unified R3 entry point) — same fitness function used by the GA.
 
 LLM access is via an OpenAI-compatible endpoint (litellm).  Configure with
 env: ``LLM_BASE``, ``LLM_KEY``, ``LLM_MODEL`` (see ``.env.example``).
@@ -13,16 +13,14 @@ env: ``LLM_BASE``, ``LLM_KEY``, ``LLM_MODEL`` (see ``.env.example``).
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 from dataclasses import dataclass, field
 
-import structlog
-
-from analytics.backtest.fx_data import fetch_ohlcv
-from analytics.strategy.evaluation import monte_carlo_calendar_windows
-from analytics.strategy.metrics_enrich import recompute_metrics
-from analytics.strategy.risk_sized import sized_backtest
+from analytics.backtest.providers import DataRegistry
+from analytics.strategy.evaluator import evaluate_spec as _evaluate_spec
+from analytics.strategy.fitness import EvalMode, FitnessReport
 from analytics.strategy.spec import (
     ENTRY_TYPES,
     INSTRUMENTS,
@@ -31,9 +29,8 @@ from analytics.strategy.spec import (
     StrategySpec,
     spec_summary,
 )
-from policy.prop_firm import THE5ERS
 
-logger = structlog.get_logger("oracle.strategy.researcher")
+logger = logging.getLogger("oracle.strategy.researcher")
 
 DEFAULT_MODEL = os.environ.get("LLM_MODEL", "claude-sonnet-4-6")
 DEFAULT_BASE = os.environ.get("LLM_BASE", "https://api.vsllm.com/v1")
@@ -41,16 +38,27 @@ DEFAULT_BASE = os.environ.get("LLM_BASE", "https://api.vsllm.com/v1")
 
 @dataclass
 class SpecResult:
-    """Evaluation of one spec."""
+    """Evaluation of one spec — wraps FitnessReport."""
 
     spec: StrategySpec
-    pass_rate: float
-    sharpe: float
-    return_pct: float
-    fail_d: float
-    fail_o: float
-    n_windows: int
+    report: FitnessReport
     error: str = ""
+
+    @property
+    def pass_rate(self) -> float:
+        return self.report.mc_pass_rate or 0.0
+
+    @property
+    def sharpe(self) -> float:
+        return self.report.sharpe or 0.0
+
+    @property
+    def return_pct(self) -> float:
+        return (self.report.total_return or 0.0) * 100
+
+    @property
+    def fitness(self) -> float:
+        return self.report.fitness
 
 
 @dataclass
@@ -58,73 +66,33 @@ class ResearchLog:
     """Accumulated specs + results across rounds."""
 
     results: list[SpecResult] = field(default_factory=list)
+    mode: EvalMode = EvalMode.FIRM
 
     def best(self) -> SpecResult | None:
         valid = [r for r in self.results if not r.error]
-        return max(valid, key=lambda r: r.pass_rate) if valid else None
+        return max(valid, key=lambda r: r.fitness) if valid else None
 
     def history_text(self, k: int = 8) -> str:
         valid = [r for r in self.results if not r.error]
-        ranked = sorted(valid, key=lambda r: r.pass_rate, reverse=True)[:k]
+        ranked = sorted(valid, key=lambda r: r.fitness, reverse=True)[:k]
         if not ranked:
             return "(none yet)"
-        return "\n".join(spec_summary(r.spec, r.__dict__) for r in ranked)
+        return "\n".join(
+            spec_summary(r.spec, {"pass_rate": r.pass_rate, "sharpe": r.sharpe}) for r in ranked
+        )
 
 
-#: yfinance period per timeframe (longest history each serves).
-PERIOD_BY_TF: dict[str, str] = {"1d": "2y", "1h": "730d", "15m": "60d"}
-
-
-def evaluate_spec(spec: StrategySpec, period: str | None = None) -> SpecResult:
-    """Build + backtest + Monte-Carlo evaluate one spec (multi-timeframe)."""
+def evaluate_spec_with_registry(
+    spec: StrategySpec, registry: DataRegistry, mode: EvalMode | str = EvalMode.FIRM, **kwargs
+) -> SpecResult:
+    """Evaluate one spec via the unified R3 evaluator."""
     try:
-        tf = spec.timeframe if spec.timeframe in PERIOD_BY_TF else "1d"
-        period = period or PERIOD_BY_TF[tf]
-        data = fetch_ohlcv(spec.ticker(), period=period, interval=tf)
-        if data.is_empty():
-            raise ValueError(f"no data for {spec.ticker()}")
-        signal = spec.build_signal()
-
-        if spec.regime == "fixed":
-            from analytics.backtest.orchestrator import BacktestOrchestrator
-
-            result = recompute_metrics(
-                BacktestOrchestrator().run(
-                    signal, engine="vectorized", instrument_id=spec.instrument, data=data
-                )
-            )
-        else:
-            result = recompute_metrics(
-                sized_backtest(
-                    data,
-                    signal,
-                    spec.instrument,
-                    risk_pct=spec.risk_pct,
-                    stop_atr_mult=spec.stop_atr_mult,
-                )
-            )
-
-        # Calendar-window MC (works for 1d / 1h / 15m via real day-rollover).
-        equity = result.equity_curve
-        dates = [t.date() for t in data["timestamp"].to_list()][: len(equity)]
-        unique_days = len(set(dates))
-        window_days = min(60, max(20, unique_days // 3))
-        stride_days = max(1, window_days // 10)
-        mc = monte_carlo_calendar_windows(
-            dates, equity, THE5ERS, window_days=window_days, stride_days=stride_days
-        )
-        return SpecResult(
-            spec=spec,
-            pass_rate=mc.pass_rate,
-            sharpe=result.sharpe_ratio,
-            return_pct=result.total_return * 100,
-            fail_d=mc.failed_daily_rate,
-            fail_o=mc.failed_overall_rate,
-            n_windows=mc.total,
-        )
+        report = _evaluate_spec(spec, registry, mode, **kwargs)
+        return SpecResult(spec=spec, report=report)
     except Exception as exc:
-        logger.warning("researcher.eval_failed", spec=spec.name, error=str(exc))
-        return SpecResult(spec, 0.0, 0.0, 0.0, 0.0, 0.0, 0, error=str(exc))
+        logger.warning("researcher.eval_failed spec=%s error=%s", spec.name, exc)
+        empty = FitnessReport(mode=EvalMode(mode), fitness=0.0)
+        return SpecResult(spec=spec, report=empty, error=str(exc))
 
 
 class LLMStrategyResearcher:
@@ -229,23 +197,25 @@ def _parse_specs(text: str, n: int) -> list[StrategySpec]:
 
 def run_research_rounds(
     researcher: LLMStrategyResearcher,
+    registry: DataRegistry,
     rounds: int = 3,
     per_round: int = 3,
+    mode: EvalMode | str = EvalMode.FIRM,
     log: ResearchLog | None = None,
 ) -> ResearchLog:
     """Iterate: propose -> evaluate -> record, for ``rounds`` rounds."""
-    log = log or ResearchLog()
+    log = log or ResearchLog(mode=EvalMode(mode))
     for r in range(rounds):
         specs = researcher.propose(log, per_round)
-        logger.info("researcher.round", round=r + 1, proposed=len(specs))
+        logger.info("researcher.round=%d proposed=%d", r + 1, len(specs))
         for spec in specs:
-            log.results.append(evaluate_spec(spec))
+            log.results.append(evaluate_spec_with_registry(spec, registry, mode))
         best = log.best()
         if best:
             logger.info(
-                "researcher.best_so_far",
-                round=r + 1,
-                name=best.spec.name,
-                pass_rate=round(best.pass_rate, 3),
+                "researcher.best_so_far round=%d name=%s pass_rate=%.3f",
+                r + 1,
+                best.spec.name,
+                best.pass_rate,
             )
     return log

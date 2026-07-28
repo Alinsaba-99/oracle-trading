@@ -20,14 +20,18 @@ import pytest
 
 from market.contracts import ES
 
+#: Renamed from ES_daily.parquet in f87726f. This file keeps the capitalised
+#: yfinance schema (Close/High/Low/Open/Volume/Date) these tests read directly;
+#: data/ohlcv/ES/1d.parquet is the lower-case DataRegistry cache layout.
+ES_DAILY = Path("data/ohlcv/ES_1d.parquet")
+
 
 @pytest.fixture(scope="module")
 def es_data() -> pl.DataFrame:
     """Load ES daily data from parquet."""
-    path = Path("data/ohlcv/ES_daily.parquet")
-    if not path.exists():
+    if not ES_DAILY.exists():
         pytest.skip("ES data not found — run scripts/fetch_data.py first")
-    return pl.read_parquet(path)
+    return pl.read_parquet(ES_DAILY)
 
 
 class TestQualification:
@@ -35,9 +39,8 @@ class TestQualification:
 
     def test_data_available(self) -> None:
         """Verify ES data exists with minimum required bars."""
-        path = Path("data/ohlcv/ES_daily.parquet")
-        assert path.exists(), "ES data not found"
-        df = pl.read_parquet(path)
+        assert ES_DAILY.exists(), "ES data not found"
+        df = pl.read_parquet(ES_DAILY)
         assert len(df) >= 100, f"Need at least 100 bars, got {len(df)}"
         assert "Close" in df.columns
         assert "Volume" in df.columns
@@ -53,7 +56,7 @@ class TestQualification:
         """Simple SMA crossover should produce expected results."""
         import pandas as pd
 
-        df = pd.read_parquet("data/ohlcv/ES_daily.parquet")
+        df = pd.read_parquet(ES_DAILY)
         close = df["Close"] if "Close" in df.columns else df.iloc[:, 0]
 
         # SMA crossover: 20/50 (faster for our data length)
@@ -106,7 +109,7 @@ class TestQualification:
         import pandas as pd
         import vectorbt as vbt
 
-        df = pd.read_parquet("data/ohlcv/ES_daily.parquet")
+        df = pd.read_parquet(ES_DAILY)
         close = df["Close"] if "Close" in df.columns else df.iloc[:, 0]
 
         # Same SMA crossover with vectorbt

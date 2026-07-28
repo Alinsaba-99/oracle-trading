@@ -31,7 +31,7 @@ NORM_ROOT = LAKE_ROOT / "normalized"
 LEGACY_ROOT = Path("data/ohlcv")
 
 
-def _lake_path(symbol, tf):
+def _lake_path(symbol: str, tf: str) -> list[Path]:
     if not NORM_ROOT.exists():
         return []
     base = NORM_ROOT / f"symbol={symbol}" / f"tf={tf}"
@@ -40,7 +40,30 @@ def _lake_path(symbol, tf):
     return sorted(base.glob("year=*/month=*.parquet"))
 
 
-def read_from_lake(symbol, tf, *, start=None, end=None):
+def _period_to_timedelta(period: str) -> timedelta | None:
+    """Parse a yfinance-style period ('60d', '2y', '1mo') to a timedelta."""
+    text = period.strip().lower()
+    if text in {"max", "ytd"}:
+        return None
+    units = {"d": 1.0, "wk": 7.0, "mo": 30.44, "y": 365.25}
+    for suffix, days in units.items():
+        if text.endswith(suffix):
+            try:
+                count = float(text[: -len(suffix)])
+            except ValueError:
+                return None
+            return timedelta(days=count * days)
+    return None
+
+
+def read_from_lake(
+    symbol: str,
+    tf: str,
+    *,
+    start: datetime | None = None,
+    end: datetime | None = None,
+    period: str | None = None,
+) -> pl.DataFrame | None:
     parts = _lake_path(symbol, tf)
     if not parts:
         return None
@@ -55,7 +78,16 @@ def read_from_lake(symbol, tf, *, start=None, end=None):
         df = df.filter(pl.col("timestamp") >= start)
     if end is not None:
         df = df.filter(pl.col("timestamp") <= end)
+    # An explicit start/end wins; period is only a "last N" shorthand. Without
+    # this the lake would hand back its full history and silently ignore the
+    # caller's requested window.
+    if period is not None and start is None:
+        span = _period_to_timedelta(period)
+        if span is not None and df.height:
+            last = df.select(pl.col("timestamp").max()).item()
+            df = df.filter(pl.col("timestamp") >= last - span)
     return df if not df.is_empty() else None
+
 
 # interval codes per backend. yfinance has no native 4h -> resample from 60m.
 _YF_INTERVAL = {"15m": "15m", "1h": "60m", "4h": "60m", "1d": "1d"}
@@ -242,7 +274,7 @@ class DataRegistry:
                 if end is not None:
                     df = df.filter(pl.col("timestamp") <= end)
                 return df
-            lake_df = read_from_lake(instrument_id, tf, start=start, end=end)
+            lake_df = read_from_lake(instrument_id, tf, start=start, end=end, period=period)
             if lake_df is not None:
                 return lake_df
         inst = self.registry.get(instrument_id)
