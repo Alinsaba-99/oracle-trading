@@ -6,6 +6,7 @@ Validates that the adapter wired into OrderManager blocks:
 - missing market inputs (fail-closed)
 - missing stop (must specify protective stop)
 """
+
 from __future__ import annotations
 
 import sys
@@ -29,9 +30,7 @@ def adapter() -> PropFirmOrderRiskAdapter:
     gov.update(balance=49_500.0, equity=49_500.0)
     adapter = PropFirmOrderRiskAdapter(gov)
     adapter.update_market(
-        instrument_id="MES",
-        entry_price=Decimal("4500.00"),
-        contract_size=Decimal("5"),
+        instrument_id="MES", entry_price=Decimal("4500.00"), contract_size=Decimal("5")
     )
     return adapter
 

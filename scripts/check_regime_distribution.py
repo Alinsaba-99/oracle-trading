@@ -7,6 +7,7 @@ windows and confirm regime distribution roughly hits:
 - volatile 10-20%
 - unknown < 5%
 """
+
 from __future__ import annotations
 
 import argparse

@@ -96,6 +96,13 @@ logs/
 checkpoints/*.json
 data/ohlcv/*.parquet
 experiments/*.db
+experiments/*.db.*-bak
+experiments.db
+
+# Data lake bars: 2.7 GB, rebuildable from the 1m parquet via
+# scripts/resample_lake.py. The coverage/manifest JSON stays tracked so the
+# lake's shape is reviewable without the payload.
+data/lake/**/*.parquet
 
 # Pinned datasets (track for reproducibility — see data/pinned/*provenance.json)
 !data/pinned/

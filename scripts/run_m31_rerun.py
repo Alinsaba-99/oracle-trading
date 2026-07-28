@@ -11,6 +11,7 @@ Output:
 - AC: median Sharpe >= 0.5, worst DD <= 4%, hard breaches = 0
   altrimenti REJECTED con nota su cosa serve per green-light.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -30,18 +31,11 @@ import polars as pl
 
 from analytics.qualification.execution import EventDrivenQualificationRunner
 from analytics.qualification.intelligence import build_offline_intelligence_artifact
-from analytics.qualification.models import (
-    ReplayPeriod,
-    ReplayVariant,
-)
+from analytics.qualification.models import ReplayVariant
 from analytics.qualification.periods import select_replay_periods
 from analytics.strategy.lorentzian import LorentzianKNN
 from analytics.strategy.regime_ensemble import RegimeAwareEnsemble, SpecialistId
-from analytics.strategy.signals import (
-    DonchianBreakout,
-    EmaTrend,
-    RsiReversion,
-)
+from analytics.strategy.signals import DonchianBreakout, EmaTrend, RsiReversion
 from market.contracts import MES
 from policy.prop_firm.fixtures import TOPSTEP_TC_50K
 
@@ -77,26 +71,26 @@ def main() -> int:
     parser.add_argument("--window-bars", type=int, default=40)
     parser.add_argument("--warmup-bars", type=int, default=30)
     parser.add_argument("--quantities", type=int, nargs="+", default=[1, 2])
-    parser.add_argument("--periods-slice", type=int, default=6, help="max periods from select_replay_periods")
     parser.add_argument(
-        "--json-output",
-        type=Path,
-        default=Path("docs/reports/m31-rerun-final/m31.json"),
+        "--periods-slice", type=int, default=6, help="max periods from select_replay_periods"
     )
     parser.add_argument(
-        "--markdown-output",
-        type=Path,
-        default=Path("docs/reports/m31-rerun-final/m31.md"),
+        "--json-output", type=Path, default=Path("docs/reports/m31-rerun-final/m31.json")
+    )
+    parser.add_argument(
+        "--markdown-output", type=Path, default=Path("docs/reports/m31-rerun-final/m31.md")
     )
     args = parser.parse_args()
 
-    data = pl.read_parquet(args.data).rename({c: c.lower() for c in pl.read_parquet(args.data).columns})
+    data = pl.read_parquet(args.data).rename(
+        {c: c.lower() for c in pl.read_parquet(args.data).columns}
+    )
     data_hash = _data_hash(args.data)
 
     print(f"Dataset: {args.data} ({len(data)} bars, sha256={data_hash[:12]}...)")
     print(f"Quantities tested: {args.quantities}")
     print(f"Periods slice: {args.periods_slice}")
-    print(f"Signal: RegimeAwareEnsemble (4 specialists, min_conf=0.5)")
+    print("Signal: RegimeAwareEnsemble (4 specialists, min_conf=0.5)")
     print()
 
     selection = select_replay_periods(data, window_bars=args.window_bars)
@@ -120,21 +114,20 @@ def main() -> int:
     regime_counts: dict[str, int] = {}
     for period in periods:
         n_bars_period = (period.end - period.start).days + 1
-        start_offset = selection.normalized_data["timestamp"].to_list().index(
-            period.start
-        ) if period.start in selection.normalized_data["timestamp"].to_list() else 0
-        period_data = selection.normalized_data.slice(start_offset, n_bars_period + 30)  # warmup buffer
+        start_offset = (
+            selection.normalized_data["timestamp"].to_list().index(period.start)
+            if period.start in selection.normalized_data["timestamp"].to_list()
+            else 0
+        )
+        period_data = selection.normalized_data.slice(
+            start_offset, n_bars_period + 30
+        )  # warmup buffer
         for variant in variants:
             for qty in args.quantities:
                 artifact = build_offline_intelligence_artifact(period, variant)
                 try:
                     obs = asyncio.run(
-                        runner.run(
-                            period_data,
-                            period,
-                            variant,
-                            intelligence_artifact=artifact,
-                        )
+                        runner.run(period_data, period, variant, intelligence_artifact=artifact)
                     )
                     observations.append(obs)
                     regime_counts[obs.regime.value] = regime_counts.get(obs.regime.value, 0) + 1
@@ -145,7 +138,9 @@ def main() -> int:
         print("FATAL: no observations collected")
         return 2
 
-    sharpes = [obs.metrics.sharpe_ratio for obs in observations if obs.metrics.sharpe_ratio is not None]
+    sharpes = [
+        obs.metrics.sharpe_ratio for obs in observations if obs.metrics.sharpe_ratio is not None
+    ]
     dds = [obs.metrics.max_drawdown for obs in observations if obs.metrics.max_drawdown is not None]
     breaches_total = sum(obs.metrics.hard_breaches for obs in observations)
 
@@ -153,7 +148,9 @@ def main() -> int:
     worst_dd = max(dds) if dds else 0.0
     median_dd = statistics.median(dds) if dds else 0.0
     breach_rate = breaches_total / len(observations) if observations else 0.0
-    sortinos = [obs.metrics.sortino_ratio for obs in observations if obs.metrics.sortino_ratio is not None]
+    sortinos = [
+        obs.metrics.sortino_ratio for obs in observations if obs.metrics.sortino_ratio is not None
+    ]
     median_sortino = statistics.median(sortinos) if sortinos else 0.0
 
     decision = (
@@ -203,8 +200,8 @@ def main() -> int:
         f"- Generato: {out['metadata']['timestamp']}",
         f"- Git commit: `{_git_commit()[:8]}`",
         f"- Data hash: `{data_hash[:16]}...`",
-        f"- Signal: `RegimeAwareEnsemble v2 (BL-010..014, hysteresys + Lorentzian-first)`",
-        f"- Engine: `EventDrivenQualificationRunner` (PropFirm risk adapter cablato)",
+        "- Signal: `RegimeAwareEnsemble v2 (BL-010..014, hysteresys + Lorentzian-first)`",
+        "- Engine: `EventDrivenQualificationRunner` (PropFirm risk adapter cablato)",
         "",
         "## Regime distribution osservata",
         "",
@@ -220,10 +217,12 @@ def main() -> int:
             "",
             "| Metrica | Valore | Soglia | Stato |",
             "|---|---:|---:|:---:|",
-            f"| Median Sharpe | {median_sharpe:.4f} | ≥ 0.5 | {'✅' if median_sharpe >= 0.5 else '❌'} |",
+            f"| Median Sharpe | {median_sharpe:.4f} | ≥ 0.5 | "
+            f"{'✅' if median_sharpe >= 0.5 else '❌'} |",
             f"| Worst DD | {worst_dd:.4f} | ≤ 0.04 | {'✅' if worst_dd <= 0.04 else '❌'} |",
             f"| Hard breaches | {breaches_total} | = 0 | {'✅' if breaches_total == 0 else '❌'} |",
-            f"| Observations | {len(observations)} | ≥ 48 | {'✅' if len(observations) >= 48 else '⚠️'} |",
+            f"| Observations | {len(observations)} | ≥ 48 | "
+            f"{'✅' if len(observations) >= 48 else '⚠️'} |",
             "",
             "## Errori",
             "",
@@ -238,10 +237,8 @@ def main() -> int:
             "",
             "## AC per G5 PASSED",
             "",
-            "- [x] 6 regimi × 8 varianti × {n_qty} sizing = `{n_obs}` osservazioni".format(
-                n_qty=len(args.quantities),
-                n_obs=len(observations),
-            ),
+            f"- [x] 6 regimi × 8 varianti × {len(args.quantities)} sizing = "
+            f"`{len(observations)}` osservazioni",
             "- [x] dataset pinned (sha256 in header)",
             "- [x] regime detection ribilanciata",
             "- [x] risk adapter cablato",

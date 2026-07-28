@@ -5,27 +5,22 @@ BTC/USDT 1h, ES 1h, GC, EURUSD via DataRegistry.
 
 Output: `logs/cross_asset_factor_timing.json` con ranking per strumento.
 """
+
 from __future__ import annotations
 
 import argparse
 import json
 import sys
-from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import polars as pl
 
-from analytics.strategy.factor_timing.effectiveness import score_factor
-from analytics.strategy.factor_timing.rank import FactorRanking, FactorTimingEngine
-from analytics.strategy.lorentzian import LorentzianKNN
-from analytics.strategy.signals import (
-    DonchianBreakout,
-    EmaTrend,
-    RsiReversion,
-)
 from analytics.regime.detector import RegimeDetector
+from analytics.strategy.factor_timing.rank import FactorTimingEngine
+from analytics.strategy.lorentzian import LorentzianKNN
+from analytics.strategy.signals import DonchianBreakout, EmaTrend, RsiReversion
 
 
 def _human_factors() -> dict[str, callable]:
@@ -102,7 +97,8 @@ def main() -> int:
             ],
             "top_factor": rank[0].name if rank else None,
         }
-        print(f"\n{path.stem}: regime={regime_label} top={instrument_results[path.stem]['top_factor']}")
+        top_factor = instrument_results[path.stem]["top_factor"]
+        print(f"\n{path.stem}: regime={regime_label} top={top_factor}")
         for r in rank[:3]:
             eff = r.effectiveness
             print(f"  {r.name:<40} IC={eff.rank_ic:+.3f} dec={eff.decay_state}")

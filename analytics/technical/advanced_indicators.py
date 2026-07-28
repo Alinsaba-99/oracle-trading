@@ -275,11 +275,7 @@ def parabolic_sar(
 
 
 def ichimoku(
-    high: pl.Series,
-    low: pl.Series,
-    conversion: int = 9,
-    base: int = 26,
-    span_b: int = 52,
+    high: pl.Series, low: pl.Series, conversion: int = 9, base: int = 26, span_b: int = 52
 ) -> tuple[pl.Series, pl.Series, pl.Series, pl.Series]:
     """Ichimoku — returns (tenkan, kijun, senkou_a, senkou_b).
 

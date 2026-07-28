@@ -19,6 +19,7 @@ promoted to active; high-uncertainty bars yield 0.
 from __future__ import annotations
 
 import logging
+import math
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -153,9 +154,7 @@ class RegimeAwareEnsemble:
                 return chosen
         return SpecialistId.FLAT
 
-    def _try_pick(
-        self, cand: SpecialistId, data: pl.DataFrame | None
-    ) -> SpecialistId | None:
+    def _try_pick(self, cand: SpecialistId, data: pl.DataFrame | None) -> SpecialistId | None:
         if cand == SpecialistId.FLAT:
             return SpecialistId.FLAT
         if cand not in self._specialists:
@@ -171,12 +170,43 @@ class RegimeAwareEnsemble:
         return cand
 
 
+#: SMA separation, in units of per-bar volatility, above which the market is
+#: called trending. Expressing the gate in vol units rather than raw percent is
+#: what makes it timeframe-invariant: a 2.5% SMA50/SMA100 gap is a strong daily
+#: trend but a huge, near-unreachable move on 1h bars, so the old absolute
+#: thresholds classified ~92% of 1h data as choppy and starved every
+#: trend specialist of routing. See G6 regime-bias finding.
+#: Calibrated by sweeping thresholds over EURUSD/XAUUSD/USDJPY/BTCUSDT at 1h
+#: and 1d (~48k windows) against the documented target mix
+#: bull 10-30% / bear 5-20% / choppy 40-60% / volatile 10-20%. These land at
+#: bull 18% / bear 16% / choppy 56% / volatile 10%, and hold on every
+#: instrument/timeframe pair tested without per-market retuning.
+_TREND_LONG_SIGMA = 0.45
+_TREND_SHORT_SIGMA = 0.60
+_VOL_RATIO_TREND = 1.35
+
+
+def _confidence(value: float, threshold: float) -> float:
+    """Map a metric that just cleared ``threshold`` onto [0.55, 1.0].
+
+    A regime is only reported once its gate is passed, so the weakest possible
+    reading still deserves usable confidence. Scaling by ``value / (3 *
+    threshold)`` instead put a freshly-triggered trend at ~0.33 — under the
+    0.5 routing gate — so detected trends were immediately forced back to FLAT
+    and no trend specialist could ever be selected.
+    """
+    excess = (value - threshold) / max(threshold, 1e-9)
+    return max(0.55, min(1.0, 0.55 + 0.45 * min(1.0, excess)))
+
+
 def _sma_regime_heuristic(data: pl.DataFrame) -> tuple[RegimeLabel, float]:
     """Deterministic regime heuristic: SMA fast vs SMA slow + realized vol.
 
-    Calibrated against 250-bar ES daily so that regime distribution on
-    the M31-pinned dataset is roughly bull/bear/choppy/volatile:
-    10–30% / 5–20% / 40–60% / 10–20%.
+    Trend gates are scaled by realized per-bar volatility, so the same
+    thresholds hold on 1h, 4h, and 1d without recalibration. An SMA gap is
+    compared against how far price typically drifts over the averaging span
+    (``sigma * sqrt(span)``), which is the scale a random walk would produce
+    by chance — so exceeding it is evidence of actual directional drift.
     """
     close_col = next((c for c in data.columns if c.lower() in ("close", "adj_close")), None)
     if close_col is None or len(data) < 30:
@@ -194,15 +224,24 @@ def _sma_regime_heuristic(data: pl.DataFrame) -> tuple[RegimeLabel, float]:
     trend_strength_long = abs(sma50 - sma100) / (sma100 or 1.0)
     vol_ratio = recent_vol / long_vol
 
-    if vol_ratio > 1.4:
-        return RegimeLabel.VOLATILE, min(1.0, (vol_ratio - 1.0) / 1.0)
-    if trend_strength_long > 0.025:
+    # Expected drift of an SMA pair separated by ~span bars under a random
+    # walk of per-bar vol `long_vol`. Guarded so a flat series cannot make
+    # every comparison trivially true.
+    long_scale = max(long_vol * math.sqrt(50.0), 1e-9)
+    short_scale = max(long_vol * math.sqrt(20.0), 1e-9)
+    long_sigma = trend_strength_long / long_scale
+    short_sigma = trend_strength / short_scale
+
+    if vol_ratio > _VOL_RATIO_TREND:
+        return RegimeLabel.VOLATILE, _confidence(vol_ratio, _VOL_RATIO_TREND)
+    if long_sigma > _TREND_LONG_SIGMA:
         label = RegimeLabel.BULL if sma50 > sma100 else RegimeLabel.BEAR
-        return label, min(1.0, trend_strength_long / 0.08)
-    if trend_strength > 0.012:
+        return label, _confidence(long_sigma, _TREND_LONG_SIGMA)
+    if short_sigma > _TREND_SHORT_SIGMA:
         label = RegimeLabel.BULL if sma20 > sma50 else RegimeLabel.BEAR
-        return label, min(1.0, trend_strength / 0.04)
-    return RegimeLabel.CHOPPY, max(0.4, 0.6 + (0.025 - trend_strength) / 0.05)
+        return label, _confidence(short_sigma, _TREND_SHORT_SIGMA)
+    # Further below the trend gate = more clearly rangebound.
+    return RegimeLabel.CHOPPY, max(0.55, min(1.0, 1.0 - long_sigma / _TREND_LONG_SIGMA * 0.45))
 
 
 __all__ = ["RegimeAwareEnsemble", "RegimeLabel", "RoutingDecision", "SpecialistId"]

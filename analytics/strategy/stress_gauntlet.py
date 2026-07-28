@@ -261,9 +261,7 @@ def _check_baseline(base: FitnessReport, mode: EvalMode, th: GauntletThresholds)
     return failures
 
 
-def _check_walk_forward(
-    wf: WalkForwardReport, mode: EvalMode, th: GauntletThresholds
-) -> list[str]:
+def _check_walk_forward(wf: WalkForwardReport, mode: EvalMode, th: GauntletThresholds) -> list[str]:
     """Threshold checks against out-of-sample fold consistency."""
     failures: list[str] = []
     if wf.median_fitness < th.min_median_fitness:

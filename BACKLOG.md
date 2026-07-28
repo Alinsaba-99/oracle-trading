@@ -157,6 +157,97 @@ Non iniziato. Dipende da G5 + G6.
   che spiega perché sono fuori scope.
 - [ ] **BL-033** P2 — Rimuovere `data/ohlcv/ES_1d.parquet` da ".gitignore commentato" e spostare il pinned in `data/pinned/`. AC: `.gitignore` aggiornato, symlink gestito da `scripts/setup_data.sh`. ~30min.
 
+## G10 — Strategy Catalog (100+ strategie)
+
+- [ ] **BL-400** P2 — **Implementare Trend Following (10 strategie)**: Golden/Death Cross,
+  Donchian, Supertrend, EMA21 Trend Ride, Elder Triple Screen, Parabolic SAR,
+  Linear Regression Channel, Heikin Ashi Trend, Ichimoku Kumo, ADX Trend.
+  AC: ogni strategia come signal puro in `analytics/signals/catalog/trend/`,
+  test unitari, test su 3 asset via DataRegistry. ~1 sprint.
+- [ ] **BL-401** P2 — **Implementare Mean Reversion (10 strategie)**: Bollinger Bounce,
+  RSI 30/70, Stochastic, Std Dev from Spanning, Williams %R, CCI, DPO,
+  Envelopes, Z-Score Mean Rev, Pivot Point Bounce.
+  AC: stessa struttura di BL-400. ~1 sprint.
+- [ ] **BL-402** P2 — **Implementare Breakout (10 strategie)**: Previous Day HL, ORB,
+  S/R Horizontal, Trendline, Volatility Squeeze, Triangle, Rectangle,
+  Cup&Handle, Flag&Pennant, Volume Profile.
+  AC: stessa struttura. ~1 sprint.
+- [ ] **BL-403** P3 — **Implementare Price Action (10 strategie)**: Pin Bar, Engulfing,
+  Inside Bar, Fakey, Morning/Evening Star, Tweezer, 3 Soldiers/Crows,
+  Piercing Line, Doji Star, 1-2-3 Pattern. ~1 sprint.
+- [ ] **BL-404** P3 — **Implementare Volumetric & Order Flow (10 strategie)**: POC,
+  Volume Imbalance, Volume Exhaustion, Order Book Absorption, Liquidity Sweep,
+  Delta Divergence, Iceberg Detection, T&S Acceleration, VWAP, Cumulative Delta.
+  Nota: molte richiedono dati di order book / tick — stub per paper iniziale. ~2 sprint.
+- [ ] **BL-405** P3 — **Implementare Macro & Fundamentali (10 strategie)**: Interest Rate,
+  NFP, Earnings Surprise, Carry Trade, EIA Stocks, Insider Tracking, Dividend Arb,
+  COT Report, Intermarket Correlation, CPI. ~2 sprint.
+- [ ] **BL-406** P3 — **Implementare Quantitative & Algo (10 strategie)**: Pairs Trading,
+  Grid, Market Making, Cross-Exchange Arb, Slipped MA, HFT Momentum, PCA,
+  Kalman Filter, Sentiment NLP, Monte Carlo. ~2 sprint.
+- [ ] **BL-407** P3 — **Implementare Opzioni (10 strategie)**: Covered Call, Iron Condor,
+  Protective Put, Long Straddle, Bull Call Spread, Bear Put Spread,
+  Calendar Spread, Cash-Secured Put, Iron Butterfly, Gamma Scalping.
+  Nota: richiede dati opzioni. ~3 sprint.
+- [ ] **BL-408** P3 — **Implementare Portafoglio & Esotiche (10 strategie)**: All Weather,
+  Systematic Rebalancing, Currency Hedge, Smart Beta, Seasonal Commodity,
+  Crypto DCA Trend, Funding Rate Arb, Value+Technical Exit,
+  Futures Calendar Spread, Anti-Martingala. ~2 sprint.
+
+## G11 — Cross-Asset Universal Coverage
+
+- [ ] **BL-410** P2 — **Auto-calibrazione parametri per asset**: ogni strategia del catalogo
+  calibra i propri parametri in base alla volatilità dell'asset (vol-scaled).
+  AC: test su 10 asset × 10 strategie = 100 combinazioni. ~1 sprint.
+- [ ] **BL-411** P2 — **Regime detection multi-asset**: regime classifier funziona su
+  qualsiasi asset con dati OHLCV, non solo ES. AC: test su FX, crypto, commodities,
+  tassi. ~3gg.
+- [ ] **BL-412** P2 — **Coverage matrix dinamica**: report automatico che mostra
+  quante strategie funzionano per ogni (asset, timeframe, regime).
+  AC: script `scripts/report_coverage.py` produce JSON + Markdown. ~2gg.
+- [ ] **BL-413** P3 — **Portfolio allocation cross-asset**: distribuisce il rischio
+  tra asset scorrelati con target volatility. ~1 sprint.
+
+## G12 — Meta-Optimizer Real-Time
+
+- [ ] **BL-420** P1 — **Strategy Performance Registry**: database/metric store che
+  tiene traccia di Sharpe rolling, win rate, drawdown per ogni (strategia, asset,
+  regime) dopo ogni trade. AC: aggiornato in tempo reale via hook nel paper engine.
+  ~1 sprint.
+- [ ] **BL-421** P1 — **Regime-aware signal blender**: pesa le strategie in base
+  alla performance storica per regime corrente. AC: backtest del blender vs
+  baseline a strategia singola su 3 regimi. ~1 sprint.
+- [ ] **BL-422** P1 — **Decay detection**: se una strategia degrada per N finestre
+  consecutive, peso azzerato con escalation. AC: test su degradazione simulata.
+  ~3gg.
+- [ ] **BL-423** P2 — **Portfolio risk allocation**: rischio distribuito tra strategie
+  scorrelate con target volatility. AC: drawdown massimo < target. ~5gg.
+
+## G13 — Strategy Evolution Loop
+
+- [ ] **BL-430** P2 — **GA evolution scheduling**: GA search lancia nuove varianti
+  ogni N sessioni paper. AC: integrazione con R4 GA search esistente. ~5gg.
+- [ ] **BL-431** P2 — **Automatic qualification pipeline**: nuova strategia →
+  walk-forward → stress gauntlet → paper. AC: pipeline end-to-end testata.
+  ~1 sprint.
+- [ ] **BL-432** P3 — **Strategy淘汰 (eliminazione)**: strategie con fitness negativo
+  per X finestre rimosse dal catalogo attivo. AC: test su degradazione simulata.
+  ~3gg.
+- [ ] **BL-433** P3 — **Human-in-the-loop gate**: nuove strategie richiedono approval
+  umano prima di paper live (fino a G14). AC: notifica + comando approve/deny.
+  ~3gg.
+
+## G14 — Edge Discovery Autonomo
+
+- [ ] **BL-440** P3 — **Event study engine**: scandisce dati storici per eventi con
+  bucket pre/durante/post. ~1 sprint.
+- [ ] **BL-441** P3 — **VARRD model**: Variance Analysis of Returns in Regime Dimensions
+  per scoprire pattern con edge in regimi specifici. ~2 sprint.
+- [ ] **BL-442** P3 — **Auto-qualification per nuovi pattern**: scoperta → qualifica →
+  promozione automatica. ~2 sprint.
+- [ ] **BL-443** P3 — **Research memory feedback loop**: il sistema cerca pattern
+  simili a quelli già funzionati in passato. ~1 sprint.
+
 ## ADR backlog
 
 - [ ] **ADR-015** proposta — Automation policy per Topstep ToS (vietato VPS) e
@@ -169,7 +260,15 @@ Non iniziato. Dipende da G5 + G6.
   `fix(BL-NNN): ...`.
 - Ogni PR deve avere `pytest`, `ruff`, `mypy --strict` verdi sul path
   toccato.
-- I task P1 sono sequenziali (pin → regime rebalance → 100 sessioni → M31).
-  I P2 sono paralleli dove indipendenti.
-- Una volta passati a G6-WP2 verde, la sequenza diventa: G6-WP3 shadow → G7
-  cert firm → G8 smallest evaluation.
+- **Mutageno priority chain:**
+  ```
+  BL-020 (regime fix) → BL-021 (MES sizing) → BL-022 (100 sessions)
+  → BL-070 (risk wiring) → G6 ✅
+  → BL-090 (research memory) → BL-400..408 (strategy catalog)
+  → BL-420 (meta-optimizer) → G12
+  → BL-430 (evolution loop) → G13
+  → BL-440 (edge discovery) → G14 ✅
+  ```
+- I task P1 sono sequenziali. I P2/P3 sono paralleli dove indipendenti.
+- Una volta passati a G6-WP2 verde, si procede con G6-WP3 shadow → G7
+  cert firm → G8 → poi mutageno gates G10→G14.

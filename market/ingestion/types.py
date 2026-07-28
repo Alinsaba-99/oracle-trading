@@ -6,13 +6,12 @@ Defines:
 - AssetClass + AssetSpec: instrument metadata
 - Quality flags for the normalizer
 """
+
 from __future__ import annotations
 
 from collections.abc import Iterator
 from dataclasses import dataclass, field
-from datetime import UTC, date, datetime
-
-UTC = UTC
+from datetime import date, datetime
 from decimal import Decimal
 from enum import StrEnum
 
@@ -99,7 +98,7 @@ class OHLCVBar:
 
 
 class QualityFlag(StrEnum):
-    OHLC_INVALID = "ohlc_invalid"          # high < low or open/close out of range
+    OHLC_INVALID = "ohlc_invalid"  # high < low or open/close out of range
     VOLUME_NEGATIVE = "volume_negative"
     TIMESTAMP_NONMONOTONIC = "timestamp_nonmonotonic"
     DUPLICATE_TIMESTAMP = "duplicate_timestamp"

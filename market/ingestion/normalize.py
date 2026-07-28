@@ -20,8 +20,6 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from datetime import UTC
-
-UTC = UTC
 from decimal import Decimal, InvalidOperation
 
 from market.ingestion.types import AssetSpec, NormalizedBatch, OHLCVBar, QualityFlag, SourceId

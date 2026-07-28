@@ -7,12 +7,12 @@ Comportamento:
 
 Output: logs/<tag>.json con per-session + summary.
 """
+
 from __future__ import annotations
 
 import argparse
 import asyncio
 import json
-import math
 import statistics
 import sys
 from datetime import UTC, datetime
@@ -25,7 +25,6 @@ import polars as pl
 
 import scripts.run_g6_wp2_paper_sessions as base  # type: ignore[import-not-found]
 
-
 DEFAULT_INSTRUMENT_BY_DATA = {
     "data/ohlcv/ES_1d.parquet": ("ES", 50.0),
     "data/ohlcv/BTC_USDT_1h.parquet": ("BTC_USDT", 50.0),
@@ -33,9 +32,16 @@ DEFAULT_INSTRUMENT_BY_DATA = {
 
 
 async def _run_paper(
-    n: int, data_path: str, instrument: str | None, point_value: float | None, capital: float, output: str
+    n: int,
+    data_path: str,
+    instrument: str | None,
+    point_value: float | None,
+    capital: float,
+    output: str,
 ) -> int:
-    df = pl.read_parquet(data_path).rename({c: c.lower() for c in pl.read_parquet(data_path).columns})
+    df = pl.read_parquet(data_path).rename(
+        {c: c.lower() for c in pl.read_parquet(data_path).columns}
+    )
     n_total = len(df)
     n_per_session = n_total // n
     if n_per_session < 5:
@@ -87,10 +93,14 @@ async def _run_paper(
             "bl": "BL-020",
         },
         "gate": {
-            "decision": "approved" if passed / n >= 0.9 and statistics.mean(shs) >= -0.5 and statistics.mean(dds) <= 3 else "rejected",
+            "decision": "approved"
+            if passed / n >= 0.9 and statistics.mean(shs) >= -0.5 and statistics.mean(dds) <= 3
+            else "rejected",
             "pass_rate": round(passed / n, 4),
             "mean_sharpe": round(statistics.mean(shs), 4),
             "mean_drawdown_pct": round(statistics.mean(dds), 4),
+            "total_pnl": round(sum(pnls), 2),
+            "mean_pnl": round(statistics.mean(pnls), 2),
         },
         "results": results,
     }
@@ -116,9 +126,7 @@ def main() -> int:
     p.add_argument("--output", default="logs/g6_wp2_30_default.json")
     args = p.parse_args()
     return asyncio.run(
-        _run_paper(
-            args.n, args.data, args.instrument, args.point_value, args.capital, args.output
-        )
+        _run_paper(args.n, args.data, args.instrument, args.point_value, args.capital, args.output)
     )
 
 

@@ -1,21 +1,38 @@
 # Oracle Autopilot — Capability-Gated Master Roadmap
 
-> Versione: 2.2
-> Ultimo aggiornamento: 2026-07-24
+> Versione: 3.0 — Mutageno
+> Ultimo aggiornamento: 2026-07-28
 > Stato: roadmap canonica
 > Modello di avanzamento: capability gate con evidenza, non phase temporali
 > Gerarchia fonti: ROADMAP (perché) → STATUS (cosa) → BACKLOG (come) → ADR (decisioni) → report (evidenza).
 > La matrice gate/stato fresca è in ORACLE_AUTOPILOT_STATUS.md.
 
-## 1. Risultato atteso
+## 1. Risultato atteso — Visione Mutageno
 
-Oracle deve evolvere da piattaforma di ricerca a sistema capace di gestire un
-portafoglio futures su **un singolo programma prop-firm** scelto e
-certificato. Al 25-lug-2026, la scelta del programma non è ancora stata fatta
-e dipende dai gate G5 e G6 (vedi [STATUS.md §3](docs/ORACLE_AUTOPILOT_STATUS.md)).
-I candidati noti sono in [PROP_FIRM_READINESS_ROADMAP.md §9](PROP_FIRM_READINESS_ROADMAP.md);
-Topstep TC 50K in modalità `RESEARCH_ONLY` è il fallback se nessun altro
-programma viene certificato.
+Oracle deve evolvere da piattaforma di ricerca a **meta-sistema di trading
+auto-adattivo** che opera come un'intera trading firm: analizza, decide,
+esegue e impara continuamente, mutando la propria composizione di strategie
+in risposta alle condizioni di mercato.
+
+Come un organismo mutageno, il sistema:
+- **percepisce** il mercato su ogni asset, timeframe e regime;
+- **adatta** il proprio portafoglio di strategie in tempo reale;
+- **impara** dai propri errori attraverso memoria e feedback;
+- **evolve** eliminando strategie morte e sperimentandone di nuove;
+- **opera** simultaneamente su trend, mean-reversion, breakout, price action,
+  volumetriche, macro e quantitative —
+  **100+ strategie, ogni condizione, ogni asset, ogni timeframe**.
+
+### Fasi di realizzazione
+
+| Fase | Cosa | Gate target |
+|------|------|-------------|
+| **Fondazione** | Pipeline dati, risk, OMS, qualificazione | G0–G6 |
+| **Meta-Intelligence** | Research Memory, meta-optimizer, signal blender | G6-I → G10 |
+| **Espansione orizzontale** | 100+ strategie, tutti gli asset, tutti i TF | G10–G11 |
+| **Mutageno** | Real-time adaptation, evolution loop, auto-discovery | G12–G14 |
+
+### Risultato immediato (pre-G6)
 
 L'edge su cui ci si basa è **regime-conditional mean-reversion su RSI in
 choppy daily ES**, verificato in 23/30 sessioni paper indipendenti
@@ -23,9 +40,10 @@ choppy daily ES**, verificato in 23/30 sessioni paper indipendenti
 `ffe91b4`). È un edge di piccola taglia — pass_rate 77%, mean_sharpe -0.31
 borderline — sufficiente forse per 1 ciclo prop-firm evaluation su MES, non
 per 10 consecutive. Vedi [docs/AUDIT_FINDINGS.md](docs/AUDIT_FINDINGS.md) §3.3
-per il sizing corretto e i limiti reali.
+per il sizing corretto e i limiti reali. Questo edge è il punto di partenza,
+non il traguardo.
 
-Il risultato finale richiede contemporaneamente:
+Il risultato finale della **Fase Fondazione** richiede contemporaneamente:
 
 - dati point-in-time e specifiche contratto verificati;
 - decisioni riproducibili e versionate;
@@ -128,27 +146,86 @@ security e audit. È il percorso critico.
 Contract data, point-in-time lineage, backtest, costi, WFA, holdout, stress ed
 economics.
 
-### I — Intelligence con feedback loop, non bloccante per la prima verticale sicura
+### I — Intelligence con feedback loop (Mutageno Core)
 
-Investment Committee, LLM gateway, Eliza scouts, memoria, debate e GA.
+Investment Committee, LLM gateway, Eliza scouts, memoria, debate, GA,
+meta-optimizer, strategy catalog, signal blender, evolution loop.
 Questi moduli possono migliorare decision quality soltanto dopo aver rispettato
 i confini S e D.
 
-**Novità: AI Feedback Loop** (Q3 2026). I moduli I vengono potenziati con
-un ciclo chiuso che permette all'agente di imparare dai propri errori:
+La visione mutageno estende il feedback loop classico in un **ciclo evolutivo
+completo** che copre:
+
+#### I-A — Strategy Catalog (100+ strategie)
+
+Tassonomia completa coprendo ogni famiglia di trading:
+
+| Famiglia | Strategie | Esempi |
+|----------|-----------|--------|
+| **Trend Following** | 10 | Golden/Death Cross, Donchian, Supertrend, EMA21, Parabolic SAR, Ichimoku, ADX, Elder Triple, Heikin Ashi, Linear Regression |
+| **Mean Reversion** | 10 | Bollinger Bands, RSI 30/70, Stochastic, Williams %R, CCI, DPO, Envelopes, Z-Score, Pivot Point, Standard Deviation |
+| **Breakout** | 10 | ORB, Support/Resistance, Trendline, Volatility Squeeze, Triangle, Rectangle, Cup&Handle, Flag&Pennant, Volume Profile, Previous Day HL |
+| **Price Action** | 10 | Pin Bar, Engulfing, Inside Bar, Fakey, Morning/Evening Star, Tweezer, 3 Soldiers/Crows, Piercing Line, Doji Star, 1-2-3 Pattern |
+| **Volumetric** | 10 | POC, Volume Imbalance, Volume Exhaustion, Order Book Absorption, Liquidity Sweep, Delta Divergence, Iceberg Detection, T&S Acceleration, VWAP, Cumulative Delta |
+| **Scalping/Intraday** | 10 | Micro-Scalping, EMA8 1m, Fibonacci Intraday, Gap Fill, News Straddle, Elliott Waves, Momo, Time-of-Day, Tick Chart, Fade First Move |
+| **Macro/Fondamentali** | 10 | Interest Rates, NFP, Earnings Surprise, Carry Trade, EIA Stocks, Insider Tracking, Dividend Arb, COT Report, Intermarket Correlation, CPI |
+| **Quantitative** | 10 | Pairs Trading, Grid, Market Making, Cross-Exchange Arb, Slipped MA, HFT Momentum, PCA, Kalman Filter, Sentiment NLP, Monte Carlo |
+| **Opzioni** | 10 | Covered Call, Iron Condor, Protective Put, Long Straddle, Bull Call Spread, Bear Put Spread, Calendar Spread, Cash-Secured Put, Iron Butterfly, Gamma Scalping |
+| **Portafoglio** | 10 | All Weather, Systematic Rebalancing, Currency Hedge, Smart Beta, Seasonal Commodity, Crypto DCA, Funding Rate Arb, Value+Technical Exit, Calendar Spreads, Anti-Martingala |
+
+Ogni strategia è:
+- **implementata** come signal puro (regime-aware o meno);
+- **testabile** su qualsiasi asset via DataRegistry;
+- **valutabile** con walk-forward + gauntlet;
+- **componibile** in ensemble multi-segnale.
+
+#### I-B — Meta-Optimizer (Signal Blender)
+
+Non un singolo segnale, ma un **portafoglio di segnali** pesato dinamicamente:
+
+- **Strategy Performance Registry**: ogni strategia tiene traccia di Sharpe,
+  win rate, drawdown, pass rate per regime (bull/bear/choppy/volatile).
+- **Per-Regime Weighting**: in regime choppy → più peso a mean-reversion;
+  in trend → più peso a trend following.
+- **Decay Detection**: se una strategia degrada, il peso cala
+  esponenzialmente fino a esclusione.
+- **Portfolio Allocation Engine**: distribuisce il rischio tra strategie
+  scorrelate per minimizzare il drawdown complessivo.
+
+#### I-C — Research Memory (BL-090)
+
+Ogni decisione è registrata con:
+- `decision_id, timestamp, regime al momento, strategia, confidence,
+   outcome (win/loss), P&L, feature correnti`
+- Backend SQLite (dev) / PostgreSQL (prod)
+- Hook nel decision path del `RegimeAwareEnsemble.compute()`
+- Report periodici: "cosa sta funzionando ora?" per regime/asset/TF
+
+#### I-D — Strategy Evolution Loop
+
+Il sistema **non è statico**: impara, muta, elimina:
+
+1. **Monitoraggio continuo**: ogni strategia ha metriche di fitness in tempo
+   reale per regime corrente.
+2. **Segnalazione decadimento**: se una strategia non performa più nel suo
+   regime target, viene depromossa.
+3. **GA evolution**: nuove varianti di parametri vengono esplorate via GA
+   (già implementato in R4).
+4. **Edge Discovery**: l'agente cerca nuovi pattern statisticamente validati
+   (VARRD model).
+5. **Promozione**: solo edge che passano walk-forward + gauntlet + paper
+   vengono promossi a live.
+
+#### I-E — Altri moduli intelligence
 
 - **Factor Timing**: i fattori alpha (50+) vengono classificati per Rank IC
   corrente, con decay detection. L'agente vede quelli che funzionano *ora*.
-- **Strategy Evolution Loop**: l'agente scrive strategie Python, passano 3
-  sandbox, vengono cross-validate (WalkForward / CPCV / Deflated Sharpe),
-  e se superiori al baseline vengono promosse a paper live.
-- **Research Memory**: ogni decisione è registrata con esito, regime e
-  confidence. L'agente calibra la propria confidence sull'accuratezza storica.
 - **Regime Ensemble**: HMM + Lorenzian classification + BOCD per rilevare
   transizioni di regime non-lineari e pesare i fattori di conseguenza.
-- **Edge Discovery**: l'agente scopre nuovi pattern statisticamente validati
-  tramite event study, seguendo il modello VARRD. I nuovi edge entrano
-  automaticamente nel factor timing.
+- **Multi-Timeframe Regime Detection**: il regime su 1d vs 1h può essere
+  diverso — ogni timeframe ha la propria classificazione.
+- **Investment Committee LLM**: output strutturato, versionato, scadibile.
+- **ElizaOS scouts**: observation firmate, read-only.
 
 ### O — Operations e UI, trasversale
 
@@ -432,11 +509,329 @@ R → G7
 LLM, Eliza e GA possono essere rimossi senza rendere insicuro il control plane.
 Non vale il contrario.
 
-## 9. Stop condition
+## 9. Sequenza minima aggiornata
 
-L'Autopilot non è completo quando "funziona una demo". È completo per un
-programma soltanto quando G7 è PASSED e la smallest evaluation autorizzata è
-stata completata senza policy breach. Il funded rollout richiede inoltre G8.
+```
+G0 → G1 → G2 → G3 → G4
+G2 → G5
+G3 → G6, G4 → G6, G5 → G6
+G6 → G7 → G8 → G9
+
+G5 → G6-I (Intelligence loop)
+G6 → G10 (Strategy Catalog 100+)
+G10 → G11 (Cross-Asset Universal)
+G11 → G12 (Meta-Optimizer real-time)
+G12 → G13 (Evolution Loop automatico)
+G13 → G14 (Edge Discovery autonomo)
+
+G1 → I[LLM ed Eliza read-only]
+G5 → R[GA e research avanzata]
+I → G6
+R → G7
+```
+
+LLM, Eliza e GA possono essere rimossi senza rendere insicuro il control plane.
+Non vale il contrario.
+
+## 10. Mutageno Gates — G10 → G14
+
+### G10 — Strategy Catalog (100+ strategie)
+
+**Dipendenze:** G6 (paper operations stabili), G6-I (research memory).
+
+**Obiettivo:** implementare, testare e validare l'intero catalogo di 100+
+strategie su ogni famiglia di trading (trend, mean-reversion, breakout,
+price action, volumetrico, intraday, macro, quant, opzioni, portafoglio).
+
+**Deliverable minimi:**
+
+- ogni strategia implementata come signal puro in `analytics/strategy/`
+  o `analytics/signals/`;
+- ogni strategia testabile via `DataRegistry` su qualsiasi asset;
+- ogni strategia valutabile con walk-forward + stress gauntlet;
+- metriche di fitness registrate in Research Memory per ogni (strategia,
+  asset, regime, timeframe);
+- signal blender che compone segnali multipli con pesatura per-regime;
+- report di copertura: quante strategie sono attive per regime/asset/TF.
+
+**Exit evidence:**
+
+- 100+ strategie implementate con test unitari;
+- almeno 60 strategie con fitness validato su almeno 3 asset ciascuna;
+- signal blender produce un segnale composito con Sharpe OOS > baseline
+  a strategia singola;
+- copertura: ogni regime ha almeno 5 strategie con fitness positivo;
+- report `docs/reports/strategy-catalog/` con matrice strategie × asset × regime.
+
+### G11 — Cross-Asset Universal Coverage
+
+**Dipendenze:** G10, Data Lake (BL-301 maturo).
+
+**Obiettivo:** ogni strategia del catalogo opera su ogni asset disponibile
+nel data lake, con parametri auto-calibrati per asset class.
+
+**Deliverable minimi:**
+
+- calibrazione automatica dei parametri per strategia per asset (vol-scaled,
+  non hardcoded);
+- regime detection multi-asset (non solo ES, ma FX, crypto, commodities,
+  tassi);
+- coverage matrix aggiornata: quanti asset × quante strategie × quanti TF;
+- report per-asset: quali strategie funzionano su quell'asset;
+- portfolio allocation cross-asset: distribuzione del rischio tra asset
+  scorrelati.
+
+**Exit evidence:**
+
+- 80%+ delle strategie funzionano su almeno 5 asset ciascuna;
+- portfolio cross-asset ha Sharpe > strategia single-asset;
+- drawdown massimo del portafoglio < drawdown del singolo asset migliore;
+- report `docs/reports/cross-asset/` con matrice completa.
+
+### G12 — Meta-Optimizer Real-Time
+
+**Dipendenze:** G10, G11.
+
+**Obiettivo:** il sistema adatta in tempo reale i pesi delle strategie
+in base alle performance recenti per regime corrente.
+
+**Deliverable minimi:**
+
+- **Strategy Performance Registry** live: ogni strategia aggiorna le proprie
+  metriche (Sharpe rolling, win rate, drawdown) dopo ogni trade;
+- **Regime-aware blender**: pesi delle strategie cambiano al cambiare del
+  regime;
+- **Decay detection**: se una strategia degrada per N finestre consecutive,
+  peso azzerato con escalation alert;
+- **Portfolio risk allocation**: rischio distribuito tra strategie scorrelate
+  con target volatility;
+- **Backtest del meta-ottimizzatore**: simulazione storica del blending
+  dinamico vs static baseline.
+
+**Exit evidence:**
+
+- meta-optimizer batte static baseline su walk-forward (Sharpe, DD, pass rate);
+- decay detection identifica correttamente strategie degradate (test unitario);
+- rolling rial location funziona con latenza < 1 bar;
+- report `docs/reports/meta-optimizer/` con evidenza.
+
+### G13 — Strategy Evolution Loop (Mutageno)
+
+**Dipendenze:** G12, GA search (R4).
+
+**Obiettivo:** il sistema elimina autonomamente strategie morte e ne sperimenta
+di nuove via GA + qualificazione automatica.
+
+**Deliverable minimi:**
+
+- **GA evolution scheduling**: ogni N sessioni paper, GA search lancia nuove
+  varianti di strategie esistenti;
+- **Automatic qualification**: ogni nuova strategia passa walk-forward +
+  stress gauntlet prima di entrare in produzione;
+- **Strategy淘汰 (eliminazione)**: strategie con fitness negativo per X
+  finestre consecutive rimosse dal catalogo attivo;
+- **Human-in-the-loop gate**: strategie nuove richiedono approval umano prima
+  di paper live (fino a G14);
+- **Evolution log**: ogni ciclo evolutivo registrato con parametri, fitness,
+  esito.
+
+**Exit evidence:**
+
+- GA scopre almeno 1 strategia che batte il catalogo esistente;
+- strategie morte correttamente rimosse (test su degradazione simulata);
+- evolution log completo e consultabile;
+- report `docs/reports/evolution/` con storia dei cicli.
+
+### G14 — Edge Discovery Autonomo
+
+**Dipendenze:** G13.
+
+**Obiettivo:** il sistema scopre autonomamente nuovi pattern di mercato
+statisticamente validati, senza intervento umano.
+
+**Deliverable minimi:**
+
+- **Event study engine**: dati storici scanditi per eventi (macro, pattern,
+  vol spike) con bucket pre/durante/post;
+- **VARRD model**: Variance Analysis of Returns in Regime Dimensions —
+  scoperta di pattern che producono edge in regimi specifici;
+- **Auto-qualification pipeline**: nuovo pattern → walk-forward → gauntlet →
+  paper → (se passa) promozione a strategia del catalogo;
+- **Research memory feedback**: il sistema sa cosa ha funzionato in passato
+  e cerca pattern simili nel presente;
+- **Full automation option**: se G13 + G14 passati, il loop può operare senza
+  intervento umano (con kill switch remoto).
+
+**Exit evidence:**
+
+- edge discovery trova almeno 1 pattern valido non pre-programmato;
+- auto-qualification pipeline funziona end-to-end;
+- full automation option documentata e testata;
+- report `docs/reports/edge-discovery/` con pattern scoperti.
+
+## 11. Tassonomia Mutageno — Strategie 1–100
+
+### Trend Following (10)
+
+| # | Strategia | Logica |
+|---|-----------|--------|
+| 1 | Golden/Death Cross | SMA50/200 crossover |
+| 2 | Donchian Channel | Rottura massimo/minimo N periodi |
+| 3 | Supertrend | Combinazione volatilità + prezzo |
+| 4 | EMA21 Trend Ride | Prezzo sopra EMA21 = long |
+| 5 | Elder Triple Screen | Trend lungo filtro per trade breve |
+| 6 | Parabolic SAR | Stop-and-reverse come trailing |
+| 7 | Linear Regression Channel | Rimbalzo su linea inferiore |
+| 8 | Heikin Ashi Trend | Colore/persistenza candele HA |
+| 9 | Ichimoku Kumo Breakout | Prezzo esce dalla nuvola |
+| 10 | ADX Trend Strength | ADX > 25 = trend forte |
+
+### Mean Reversion (10)
+
+| # | Strategia | Logica |
+|---|-----------|--------|
+| 11 | Bollinger Bounce | Compra a banda inferiore, vendi a superiore |
+| 12 | RSI 30/70 | Ipercomprato > 70, ipervenduto < 30 |
+| 13 | Stochastic Oscillator | %K/%D crossover in zone estreme |
+| 14 | Std Dev from Spanning | Deviazione dalla media geometrica |
+| 15 | Williams %R Reversal | Letture estreme per correzioni |
+| 16 | CCI +100/-100 | Oltre +100 o -100 per rientri statistici |
+| 17 | DPO (Detrended Price Osc.) | Isola cicli rimuovendo trend lungo |
+| 18 | Envelopes | Deviazione % fissa da media centrale |
+| 19 | Z-Score Mean Reversion | Deviazioni standard dal prezzo medio |
+| 20 | Pivot Point Bounce | Pivot giornaliero come magnete |
+
+### Breakout (10)
+
+| # | Strategia | Logica |
+|---|-----------|--------|
+| 21 | Previous Day HL Breakout | Rottura massimo/minimo giorno prima |
+| 22 | Opening Range Breakout | Rottura primi 15-30 min |
+| 23 | S/R Horizontal Breakout | Rottura supporti/resistenze statici |
+| 24 | Trendline Breakout | Violazione linea di tendenza |
+| 25 | Volatility Squeeze | Bollinger si espande da Keltner |
+| 26 | Triangle Pattern | Compressione geometrica → esplosione |
+| 27 | Rectangle Breakout | Uscita da fase laterale |
+| 28 | Cup & Handle | Rottura resistenza tazza |
+| 29 | Flag & Pennant | Rottura bandiera/gagliardetto |
+| 30 | Volume Profile Breakout | Superamento nodi ad alto volume |
+
+### Price Action (10)
+
+| # | Strategia | Logica |
+|---|-----------|--------|
+| 31 | Pin Bar / Hammer | Rifiuto minimi/massimi con ombra lunga |
+| 32 | Engulfing Pattern | Corpo ingloba candela precedente |
+| 33 | Inside Bar Breakout | Ordini sopra/sotto mother bar |
+| 34 | Fakey Setup | Falsa rottura Inside Bar → direzione opposta |
+| 35 | Morning / Evening Star | 3-candle reversal pattern |
+| 36 | Tweezer Tops & Bottoms | Massimi/minimi identici consecutivi |
+| 37 | 3 Soldiers / 3 Crows | 3 candele direzionali consecutive |
+| 38 | Piercing Line / Dark Cloud | Penetrazione corpo candela precedente |
+| 39 | Doji Star Reversal | Doji in punto di massimo/minimo |
+| 40 | 1-2-3 Pattern (Ross) | Cambio struttura: minimi/massimi crescenti |
+
+### Volumetric & Order Flow (10)
+
+| # | Strategia | Logica |
+|---|-----------|--------|
+| 41 | Point of Control (POC) | Livello con maggior volume come S/R |
+| 42 | Volume Imbalance | Sbilanciamento compratori/venditori |
+| 43 | Volume Exhaustion | Trend accelera, volume cala |
+| 44 | Order Book Absorption | Ordini passivi assorbono flussi |
+| 45 | Liquidity Sweep | Stop puliti sopra massimi relativi |
+| 46 | Delta Divergence | Prezzo vs delta volumi divergono |
+| 47 | Iceberg Detection | Ordini nascosti di grandi dimensioni |
+| 48 | T&S Acceleration | Velocità esecuzione nastro aumenta |
+| 49 | VWAP Trading | Compra sotto VWAP in uptrend |
+| 50 | Cumulative Delta Trend | Accumulo contratti conferma trend |
+
+### Scalping & Intraday (10)
+
+| # | Strategia | Logica |
+|---|-----------|--------|
+| 51 | Micro-Scalping Book | Spread bid-ask in frazioni di pip |
+| 52 | EMA8 1m Bounce | Rimbalzo su EMA8 a 1 minuto |
+| 53 | Fibonacci Intraday | Ritracciamento 38.2% / 61.8% |
+| 54 | Gap Fill | Chiusura gap di apertura |
+| 55 | News Straddle | Buy-stop + sell-stop pre-macro |
+| 56 | Elliott Waves Scalping | Sotto-onda 3 su 3-5 min |
+| 57 | Momo Strategy | Accelerazione volumetrica iniziale |
+| 58 | Time-of-Day Trading | Sovrapposizione London/New York |
+| 59 | Tick Chart Chasing | Grafici a tick, senza timeframe |
+| 60 | Fade First Move | Vendi prima fiammata post-apertura |
+
+### Macro & Fundamentali (10)
+
+| # | Strategia | Logica |
+|---|-----------|--------|
+| 61 | Interest Rate Trading | Differenziali tassi banche centrali |
+| 62 | NFP Momentum | Non-Farm Payrolls volatilità |
+| 63 | Earnings Surprise | Utili vs stime analisti |
+| 64 | Carry Trade | Compra valute alto rendimento |
+| 65 | EIA Stocks (Oil/Gas) | Report settimanali scorte energetiche |
+| 66 | Insider Trading Tracking | Acquisti legali di insider |
+| 67 | Dividend Arbitrage | Asimmetrie prezzo stacco cedola |
+| 68 | COT Report Sentiment | Posizionamento fondi istituzionali |
+| 69 | Intermarket Correlation | Oro/USD, Bond/Equity, etc. |
+| 70 | CPI Trading | Reazione ai dati inflazione |
+
+### Quantitative & Algoritmiche (10)
+
+| # | Strategia | Logica |
+|---|-----------|--------|
+| 71 | Pairs Trading | Spread tra asset correlati |
+| 72 | Grid Trading | Rete ordini a intervalli regolari |
+| 73 | Market Making Algo | Fornitura liquidità, cattura spread |
+| 74 | Cross-Exchange Arb | Differenze prezzo tra exchange |
+| 75 | Slipped Moving Average | SMA sfasata per ridurre falsi segnali |
+| 76 | HFT Momentum | Ordini istituzionali frazionati |
+| 77 | PCA Analysis | Fattori matematici dominanti |
+| 78 | Kalman Filter | Tracciamento dinamico riduce rumore |
+| 79 | Sentiment NLP | Social media + news feed |
+| 80 | Monte Carlo Path | Scenari probabilistici per TP/SL |
+
+### Opzioni & Derivati (10)
+
+| # | Strategia | Logica |
+|---|-----------|--------|
+| 81 | Covered Call | Compra asset, vendi Call |
+| 82 | Iron Condor | Lateralità: vendi Put + Call distanti |
+| 83 | Protective Put | Put a protezione portafoglio |
+| 84 | Long Straddle | Call + Put stesso strike (vol esplosiva) |
+| 85 | Bull Call Spread | Call inferiore + Call superiore |
+| 86 | Bear Put Spread | Put superiore + Put inferiore |
+| 87 | Calendar Spread | Scadenze diverse stesso strike (Theta) |
+| 88 | Cash-Secured Put | Vendi Put su titoli desiderati |
+| 89 | Iron Butterfly | Put + Call attorno a strike centrale |
+| 90 | Gamma Scalping | Delta-neutral su opzioni lunghe |
+
+### Portafoglio & Esotiche (10)
+
+| # | Strategia | Logica |
+|---|-----------|--------|
+| 91 | All Weather Portfolio | Azioni, bond, oro, commodity |
+| 92 | Systematic Rebalancing | Vendi vincenti, compri perdenti |
+| 93 | Currency Hedge | Posizioni contrarie su Forex spot |
+| 94 | Smart Beta | Fattori: bassa volatilità, alto valore |
+| 95 | Seasonal Commodity | Cicli semina/raccolto su futures agricoli |
+| 96 | Crypto DCA Trend | Accumulo solo in mercati rialzisti |
+| 97 | Funding Rate Arb | Differenziali tassi Spot/Perpetui |
+| 98 | Value + Technical Exit | Acquisti value, uscita tecnica |
+| 99 | Futures Calendar Spread | Compra/vendi stessa materia prima, mesi diversi |
+| 100 | Anti-Martingala | Size aumenta dopo win, cala dopo loss |
+
+## 12. Stop condition
+
+L'Autopilot non è completo quando "funziona una demo".
+
+**Fase Fondazione**: completa quando G7 è PASSED e la smallest evaluation
+autorizzata è stata completata senza policy breach. Il funded rollout richiede
+inoltre G8.
+
+**Fase Mutageno**: completa quando G14 è PASSED — il sistema scopre,
+sperimenta e promuove autonomamente nuove strategie, adattandosi al mercato
+in tempo reale senza intervento umano (con kill switch remoto).
 
 Qualunque dubbio su dati, regole, ledger, risk, broker o licenza mantiene il
 sistema in RESEARCH_ONLY, PAPER o ASSISTED_ONLY.

@@ -5,6 +5,7 @@ Demonstrates that:
 2. on ES 50K with stop 8pt: 1 MES contract
 3. PropFirmOrderRiskAdapter simulation on 30 paper sessions
 """
+
 from __future__ import annotations
 
 import argparse
@@ -16,13 +17,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 
-
-
 def compute_sizing(
-    account_size: float,
-    account_risk_pct: float,
-    stop_distance_points: float,
-    point_value: float,
+    account_size: float, account_risk_pct: float, stop_distance_points: float, point_value: float
 ) -> int:
     """Sizing formula: n_contracts = floor((account * risk%) / (stop_distance * point_value))."""
     account_risk_dollars = account_size * account_risk_pct

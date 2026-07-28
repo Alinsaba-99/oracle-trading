@@ -79,9 +79,7 @@ class _PropFirmAllow:
         self.last_balance = float(TOPSTEP_TC_50K.account_size)
 
     async def check_order(self, request: object) -> bool:
-        from execution.order_manager.types import OrderRequest as _OR
-
-        if not isinstance(request, _OR):
+        if not isinstance(request, OrderRequest):
             return False
         # Synthesise a stop 8pt + market inputs from current price.
         latest_price = getattr(request, "price", None)
@@ -96,7 +94,7 @@ class _PropFirmAllow:
         )
         # Build a request with stop_price set for the adapter's safety check.
         try:
-            checked = _OR(
+            checked = OrderRequest(
                 instrument_id=request.instrument_id,
                 side=request.side,
                 quantity=request.quantity,
