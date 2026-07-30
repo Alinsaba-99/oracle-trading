@@ -1,0 +1,1 @@
+{"input_dim": 18, "output_dim": 8, "feature_names": ["D", "S", "ADX", "RSI", "RSIslope", "ROC", "ATRn", "VOLz", "SpreadATR", "BBwidth", "SQZ", "CHOP", "ER", "BBpctB", "VWAPd", "WickUpProp", "WickDnProp", "BodyProp"], "epochs": 50, "final_loss": 2.2796225547790527}

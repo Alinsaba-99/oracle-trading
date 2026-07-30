@@ -1,0 +1,1 @@
+{"input_dim": 72, "output_dim": 8, "feature_names": [], "epochs": 100, "final_loss": 1.1828179359436035, "test_accuracy": 0.3645833432674408, "baseline_accuracy": 0.125, "labeling_method": "metric_based_8_regime"}
