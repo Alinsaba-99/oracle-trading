@@ -5,8 +5,8 @@
 
 ## Identità
 
-- Generato: `2026-07-25T15:17:33.526246+00:00`
-- Git commit: `18a6836af5677a0e40982b02f3cd5c0a3a6ff6ed`
+- Generato: `2026-07-30T22:10:02.385872+00:00`
+- Git commit: `ce644ba582808a250e45e9feec7b302ed18dbcbd`
 - Data hash: `09a22268d2a7fa815beed6788917663771c7af7b347b7b49db6c2a1318f26b42`
 - Config hash: `8f27b8cdd97aa8b8d4e212a1982993845f33d117b587fe058b3cb06d2a85c302`
 - Discovery engine: `oracle-regime-selector-v1`
@@ -14,10 +14,11 @@
 
 ## Decisione
 
-- Median Sharpe 0.101277 fails minimum threshold 0.5.
+- Median net return -0.0024492 fails minimum threshold 0.
+- Median Sharpe -1.15371 fails minimum threshold 0.5.
 - Median Sortino 0.0428035 fails minimum threshold 0.5.
-- Median Calmar 0 fails minimum threshold 0.25.
-- Worst drawdown 0.149792 fails maximum threshold 0.04.
+- Median Calmar -3.1481 fails minimum threshold 0.25.
+- Worst drawdown 0.127396 fails maximum threshold 0.04.
 - Hard breaches 48 fails maximum threshold 0.
 
 ## Evidenza
@@ -44,20 +45,20 @@
 | Periodi | 6 |
 | Varianti eseguite | 8/8 |
 | Osservazioni | 48 |
-| Median net return | 0.00% |
-| Median Sharpe | 0.1013 |
+| Median net return | -0.24% |
+| Median Sharpe | -1.1537 |
 | Median Sortino | 0.0428 |
-| Median Calmar | 0.0000 |
-| Worst drawdown | 14.98% |
+| Median Calmar | -3.1481 |
+| Worst drawdown | 12.74% |
 | Hard breaches | 48 |
-| Median execution cost ratio | 0.04% |
+| Median execution cost ratio | 0.06% |
 | Worst luck p-value | 1.0000 |
-| Pooled luck p-value | 0.0259 |
+| Pooled luck p-value | 0.0519 |
 | Luck test | pooled out-of-sample moving-block bootstrap |
-| Worst decision latency p95 | 10.6138 ms |
-| Risk checks | 216 |
-| Rule evaluations | 1936 |
-| Ordini OMS | 408 |
+| Worst decision latency p95 | 0.8539 ms |
+| Risk checks | 448 |
+| Rule evaluations | 1920 |
+| Ordini OMS | 640 |
 | Fill registrati | 384 |
 | Ledger entries | 960 |
 | Reconciliation | 48 |
@@ -87,14 +88,14 @@
 | bear-2026-03-30 | scouts-on__debate-off__fund-manager-challenger | oracle-event-driven-paper-v1 | -0.08% | -2.5100 | 0.08% | 0 | 1 | 2 | 2 | PASS |
 | bear-2026-03-30 | scouts-on__debate-on__fund-manager-baseline | oracle-event-driven-paper-v1 | -0.08% | -2.5100 | 0.08% | 0 | 1 | 2 | 2 | PASS |
 | bear-2026-03-30 | scouts-on__debate-on__fund-manager-challenger | oracle-event-driven-paper-v1 | -0.08% | -2.5100 | 0.08% | 0 | 1 | 2 | 2 | PASS |
-| bull-2026-05-26 | scouts-off__debate-off__fund-manager-baseline | oracle-event-driven-paper-v1 | 1.67% | 0.4552 | 14.98% | 2 | 9 | 18 | 18 | PASS |
-| bull-2026-05-26 | scouts-off__debate-off__fund-manager-challenger | oracle-event-driven-paper-v1 | 1.67% | 0.4552 | 14.98% | 2 | 9 | 18 | 18 | PASS |
-| bull-2026-05-26 | scouts-off__debate-on__fund-manager-baseline | oracle-event-driven-paper-v1 | 1.67% | 0.4552 | 14.98% | 2 | 9 | 18 | 18 | PASS |
-| bull-2026-05-26 | scouts-off__debate-on__fund-manager-challenger | oracle-event-driven-paper-v1 | 1.67% | 0.4552 | 14.98% | 2 | 9 | 18 | 18 | PASS |
-| bull-2026-05-26 | scouts-on__debate-off__fund-manager-baseline | oracle-event-driven-paper-v1 | 1.67% | 0.4552 | 14.98% | 2 | 9 | 18 | 18 | PASS |
-| bull-2026-05-26 | scouts-on__debate-off__fund-manager-challenger | oracle-event-driven-paper-v1 | 1.67% | 0.4552 | 14.98% | 2 | 9 | 18 | 18 | PASS |
-| bull-2026-05-26 | scouts-on__debate-on__fund-manager-baseline | oracle-event-driven-paper-v1 | 1.67% | 0.4552 | 14.98% | 2 | 9 | 18 | 18 | PASS |
-| bull-2026-05-26 | scouts-on__debate-on__fund-manager-challenger | oracle-event-driven-paper-v1 | 1.67% | 0.4552 | 14.98% | 2 | 9 | 18 | 18 | PASS |
+| bull-2026-05-26 | scouts-off__debate-off__fund-manager-baseline | oracle-event-driven-paper-v1 | -0.24% | 0.2026 | 12.74% | 2 | 23 | 26 | 6 | PASS |
+| bull-2026-05-26 | scouts-off__debate-off__fund-manager-challenger | oracle-event-driven-paper-v1 | -0.24% | 0.2026 | 12.74% | 2 | 23 | 26 | 6 | PASS |
+| bull-2026-05-26 | scouts-off__debate-on__fund-manager-baseline | oracle-event-driven-paper-v1 | -0.24% | 0.2026 | 12.74% | 2 | 23 | 26 | 6 | PASS |
+| bull-2026-05-26 | scouts-off__debate-on__fund-manager-challenger | oracle-event-driven-paper-v1 | -0.24% | 0.2026 | 12.74% | 2 | 23 | 26 | 6 | PASS |
+| bull-2026-05-26 | scouts-on__debate-off__fund-manager-baseline | oracle-event-driven-paper-v1 | -0.24% | 0.2026 | 12.74% | 2 | 23 | 26 | 6 | PASS |
+| bull-2026-05-26 | scouts-on__debate-off__fund-manager-challenger | oracle-event-driven-paper-v1 | -0.24% | 0.2026 | 12.74% | 2 | 23 | 26 | 6 | PASS |
+| bull-2026-05-26 | scouts-on__debate-on__fund-manager-baseline | oracle-event-driven-paper-v1 | -0.24% | 0.2026 | 12.74% | 2 | 23 | 26 | 6 | PASS |
+| bull-2026-05-26 | scouts-on__debate-on__fund-manager-challenger | oracle-event-driven-paper-v1 | -0.24% | 0.2026 | 12.74% | 2 | 23 | 26 | 6 | PASS |
 | high_volatility-2026-04-17 | scouts-off__debate-off__fund-manager-baseline | oracle-event-driven-paper-v1 | -0.24% | 0.2026 | 12.74% | 2 | 6 | 9 | 6 | PASS |
 | high_volatility-2026-04-17 | scouts-off__debate-off__fund-manager-challenger | oracle-event-driven-paper-v1 | -0.24% | 0.2026 | 12.74% | 2 | 6 | 9 | 6 | PASS |
 | high_volatility-2026-04-17 | scouts-off__debate-on__fund-manager-baseline | oracle-event-driven-paper-v1 | -0.24% | 0.2026 | 12.74% | 2 | 6 | 9 | 6 | PASS |
@@ -103,36 +104,38 @@
 | high_volatility-2026-04-17 | scouts-on__debate-off__fund-manager-challenger | oracle-event-driven-paper-v1 | -0.24% | 0.2026 | 12.74% | 2 | 6 | 9 | 6 | PASS |
 | high_volatility-2026-04-17 | scouts-on__debate-on__fund-manager-baseline | oracle-event-driven-paper-v1 | -0.24% | 0.2026 | 12.74% | 2 | 6 | 9 | 6 | PASS |
 | high_volatility-2026-04-17 | scouts-on__debate-on__fund-manager-challenger | oracle-event-driven-paper-v1 | -0.24% | 0.2026 | 12.74% | 2 | 6 | 9 | 6 | PASS |
-| liquidity_shock-2025-11-20 | scouts-off__debate-off__fund-manager-baseline | oracle-event-driven-paper-v1 | 0.00% | 0.0000 | 0.00% | 0 | 0 | 0 | 0 | PASS |
-| liquidity_shock-2025-11-20 | scouts-off__debate-off__fund-manager-challenger | oracle-event-driven-paper-v1 | 0.00% | 0.0000 | 0.00% | 0 | 0 | 0 | 0 | PASS |
-| liquidity_shock-2025-11-20 | scouts-off__debate-on__fund-manager-baseline | oracle-event-driven-paper-v1 | 0.00% | 0.0000 | 0.00% | 0 | 0 | 0 | 0 | PASS |
-| liquidity_shock-2025-11-20 | scouts-off__debate-on__fund-manager-challenger | oracle-event-driven-paper-v1 | 0.00% | 0.0000 | 0.00% | 0 | 0 | 0 | 0 | PASS |
-| liquidity_shock-2025-11-20 | scouts-on__debate-off__fund-manager-baseline | oracle-event-driven-paper-v1 | 0.00% | 0.0000 | 0.00% | 0 | 0 | 0 | 0 | PASS |
-| liquidity_shock-2025-11-20 | scouts-on__debate-off__fund-manager-challenger | oracle-event-driven-paper-v1 | 0.00% | 0.0000 | 0.00% | 0 | 0 | 0 | 0 | PASS |
-| liquidity_shock-2025-11-20 | scouts-on__debate-on__fund-manager-baseline | oracle-event-driven-paper-v1 | 0.00% | 0.0000 | 0.00% | 0 | 0 | 0 | 0 | PASS |
-| liquidity_shock-2025-11-20 | scouts-on__debate-on__fund-manager-challenger | oracle-event-driven-paper-v1 | 0.00% | 0.0000 | 0.00% | 0 | 0 | 0 | 0 | PASS |
-| macro_surprise-2026-04-13 | scouts-off__debate-off__fund-manager-baseline | oracle-event-driven-paper-v1 | 0.08% | 0.2137 | 0.85% | 2 | 11 | 22 | 22 | PASS |
-| macro_surprise-2026-04-13 | scouts-off__debate-off__fund-manager-challenger | oracle-event-driven-paper-v1 | 0.08% | 0.2137 | 0.85% | 2 | 11 | 22 | 22 | PASS |
-| macro_surprise-2026-04-13 | scouts-off__debate-on__fund-manager-baseline | oracle-event-driven-paper-v1 | 0.08% | 0.2137 | 0.85% | 2 | 11 | 22 | 22 | PASS |
-| macro_surprise-2026-04-13 | scouts-off__debate-on__fund-manager-challenger | oracle-event-driven-paper-v1 | 0.08% | 0.2137 | 0.85% | 2 | 11 | 22 | 22 | PASS |
-| macro_surprise-2026-04-13 | scouts-on__debate-off__fund-manager-baseline | oracle-event-driven-paper-v1 | 0.08% | 0.2137 | 0.85% | 2 | 11 | 22 | 22 | PASS |
-| macro_surprise-2026-04-13 | scouts-on__debate-off__fund-manager-challenger | oracle-event-driven-paper-v1 | 0.08% | 0.2137 | 0.85% | 2 | 11 | 22 | 22 | PASS |
-| macro_surprise-2026-04-13 | scouts-on__debate-on__fund-manager-baseline | oracle-event-driven-paper-v1 | 0.08% | 0.2137 | 0.85% | 2 | 11 | 22 | 22 | PASS |
-| macro_surprise-2026-04-13 | scouts-on__debate-on__fund-manager-challenger | oracle-event-driven-paper-v1 | 0.08% | 0.2137 | 0.85% | 2 | 11 | 22 | 22 | PASS |
-| sideways-2025-11-19 | scouts-off__debate-off__fund-manager-baseline | oracle-event-driven-paper-v1 | 0.00% | 0.0000 | 0.00% | 0 | 0 | 0 | 0 | PASS |
-| sideways-2025-11-19 | scouts-off__debate-off__fund-manager-challenger | oracle-event-driven-paper-v1 | 0.00% | 0.0000 | 0.00% | 0 | 0 | 0 | 0 | PASS |
-| sideways-2025-11-19 | scouts-off__debate-on__fund-manager-baseline | oracle-event-driven-paper-v1 | 0.00% | 0.0000 | 0.00% | 0 | 0 | 0 | 0 | PASS |
-| sideways-2025-11-19 | scouts-off__debate-on__fund-manager-challenger | oracle-event-driven-paper-v1 | 0.00% | 0.0000 | 0.00% | 0 | 0 | 0 | 0 | PASS |
-| sideways-2025-11-19 | scouts-on__debate-off__fund-manager-baseline | oracle-event-driven-paper-v1 | 0.00% | 0.0000 | 0.00% | 0 | 0 | 0 | 0 | PASS |
-| sideways-2025-11-19 | scouts-on__debate-off__fund-manager-challenger | oracle-event-driven-paper-v1 | 0.00% | 0.0000 | 0.00% | 0 | 0 | 0 | 0 | PASS |
-| sideways-2025-11-19 | scouts-on__debate-on__fund-manager-baseline | oracle-event-driven-paper-v1 | 0.00% | 0.0000 | 0.00% | 0 | 0 | 0 | 0 | PASS |
-| sideways-2025-11-19 | scouts-on__debate-on__fund-manager-challenger | oracle-event-driven-paper-v1 | 0.00% | 0.0000 | 0.00% | 0 | 0 | 0 | 0 | PASS |
+| liquidity_shock-2025-11-20 | scouts-off__debate-off__fund-manager-baseline | oracle-event-driven-paper-v1 | -0.41% | -5.9230 | 0.41% | 0 | 5 | 10 | 10 | PASS |
+| liquidity_shock-2025-11-20 | scouts-off__debate-off__fund-manager-challenger | oracle-event-driven-paper-v1 | -0.41% | -5.9230 | 0.41% | 0 | 5 | 10 | 10 | PASS |
+| liquidity_shock-2025-11-20 | scouts-off__debate-on__fund-manager-baseline | oracle-event-driven-paper-v1 | -0.41% | -5.9230 | 0.41% | 0 | 5 | 10 | 10 | PASS |
+| liquidity_shock-2025-11-20 | scouts-off__debate-on__fund-manager-challenger | oracle-event-driven-paper-v1 | -0.41% | -5.9230 | 0.41% | 0 | 5 | 10 | 10 | PASS |
+| liquidity_shock-2025-11-20 | scouts-on__debate-off__fund-manager-baseline | oracle-event-driven-paper-v1 | -0.41% | -5.9230 | 0.41% | 0 | 5 | 10 | 10 | PASS |
+| liquidity_shock-2025-11-20 | scouts-on__debate-off__fund-manager-challenger | oracle-event-driven-paper-v1 | -0.41% | -5.9230 | 0.41% | 0 | 5 | 10 | 10 | PASS |
+| liquidity_shock-2025-11-20 | scouts-on__debate-on__fund-manager-baseline | oracle-event-driven-paper-v1 | -0.41% | -5.9230 | 0.41% | 0 | 5 | 10 | 10 | PASS |
+| liquidity_shock-2025-11-20 | scouts-on__debate-on__fund-manager-challenger | oracle-event-driven-paper-v1 | -0.41% | -5.9230 | 0.41% | 0 | 5 | 10 | 10 | PASS |
+| macro_surprise-2026-04-13 | scouts-off__debate-off__fund-manager-baseline | oracle-event-driven-paper-v1 | -0.24% | 0.2026 | 12.74% | 2 | 12 | 15 | 6 | PASS |
+| macro_surprise-2026-04-13 | scouts-off__debate-off__fund-manager-challenger | oracle-event-driven-paper-v1 | -0.24% | 0.2026 | 12.74% | 2 | 12 | 15 | 6 | PASS |
+| macro_surprise-2026-04-13 | scouts-off__debate-on__fund-manager-baseline | oracle-event-driven-paper-v1 | -0.24% | 0.2026 | 12.74% | 2 | 12 | 15 | 6 | PASS |
+| macro_surprise-2026-04-13 | scouts-off__debate-on__fund-manager-challenger | oracle-event-driven-paper-v1 | -0.24% | 0.2026 | 12.74% | 2 | 12 | 15 | 6 | PASS |
+| macro_surprise-2026-04-13 | scouts-on__debate-off__fund-manager-baseline | oracle-event-driven-paper-v1 | -0.24% | 0.2026 | 12.74% | 2 | 12 | 15 | 6 | PASS |
+| macro_surprise-2026-04-13 | scouts-on__debate-off__fund-manager-challenger | oracle-event-driven-paper-v1 | -0.24% | 0.2026 | 12.74% | 2 | 12 | 15 | 6 | PASS |
+| macro_surprise-2026-04-13 | scouts-on__debate-on__fund-manager-baseline | oracle-event-driven-paper-v1 | -0.24% | 0.2026 | 12.74% | 2 | 12 | 15 | 6 | PASS |
+| macro_surprise-2026-04-13 | scouts-on__debate-on__fund-manager-challenger | oracle-event-driven-paper-v1 | -0.24% | 0.2026 | 12.74% | 2 | 12 | 15 | 6 | PASS |
+| sideways-2025-11-19 | scouts-off__debate-off__fund-manager-baseline | oracle-event-driven-paper-v1 | -0.75% | -8.4381 | 0.75% | 0 | 9 | 18 | 18 | PASS |
+| sideways-2025-11-19 | scouts-off__debate-off__fund-manager-challenger | oracle-event-driven-paper-v1 | -0.75% | -8.4381 | 0.75% | 0 | 9 | 18 | 18 | PASS |
+| sideways-2025-11-19 | scouts-off__debate-on__fund-manager-baseline | oracle-event-driven-paper-v1 | -0.75% | -8.4381 | 0.75% | 0 | 9 | 18 | 18 | PASS |
+| sideways-2025-11-19 | scouts-off__debate-on__fund-manager-challenger | oracle-event-driven-paper-v1 | -0.75% | -8.4381 | 0.75% | 0 | 9 | 18 | 18 | PASS |
+| sideways-2025-11-19 | scouts-on__debate-off__fund-manager-baseline | oracle-event-driven-paper-v1 | -0.75% | -8.4381 | 0.75% | 0 | 9 | 18 | 18 | PASS |
+| sideways-2025-11-19 | scouts-on__debate-off__fund-manager-challenger | oracle-event-driven-paper-v1 | -0.75% | -8.4381 | 0.75% | 0 | 9 | 18 | 18 | PASS |
+| sideways-2025-11-19 | scouts-on__debate-on__fund-manager-baseline | oracle-event-driven-paper-v1 | -0.75% | -8.4381 | 0.75% | 0 | 9 | 18 | 18 | PASS |
+| sideways-2025-11-19 | scouts-on__debate-on__fund-manager-challenger | oracle-event-driven-paper-v1 | -0.75% | -8.4381 | 0.75% | 0 | 9 | 18 | 18 | PASS |
 
 ## Limitazioni dichiarate
 
 - Official prop rules are exercised through an explicit historical replay-only gate.
 - Offline intelligence artifacts are deterministic and make no external model calls.
+- Risk gate rejected 20 opening orders.
 - Risk gate rejected 3 opening orders.
+- Risk gate rejected 9 opening orders.
 
 ## Stop condition
 
