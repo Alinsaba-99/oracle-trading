@@ -20,7 +20,7 @@ import io
 import logging
 import time
 from collections.abc import Iterator
-from datetime import UTC, date, datetime, timezone
+from datetime import UTC, date, datetime, timedelta, timezone
 
 UTC = UTC, timezone
 UTC = timezone.utc
@@ -995,8 +995,185 @@ class Dukascopy(HttpSource):
 
 
 # ----------------------------------------------------------------------
-# Registry helper
+# IBKR — Interactive Brokers historical data via ib_insync (local TWS/Gateway)
+# Requires TWS/Gateway running on localhost:7497 (paper) or 7496 (live).
+# Range: futures 1m from 2010+, equities 1m from 2000+.
+# Rate limit: 50 req historical data per 10 seconds (IBKR hard cap).
 # ----------------------------------------------------------------------
+class IBKRHistorical(HttpSource):
+    """Adapter for Interactive Brokers historical OHLCV.
+
+    API details:
+      - reqHistoricalData(contract, end, duration, bar_size, what_show, …)
+      - 1m bars: duration max "6 M" (6 months) per call
+      - Must reconnect for each pagination step
+      - Paper account: TWS port 7497, Gateway port 4002
+    """
+
+    name = SourceId.IBKR
+
+    # IBKR bar size → canonical timeframe
+    _BAR_SIZE: dict[str, str] = {
+        "1m": "1 min",
+        "5m": "5 mins",
+        "15m": "15 mins",
+        "30m": "30 mins",
+        "1h": "1 hour",
+        "4h": "4 hours",
+        "1d": "1 day",
+    }
+
+    # Symbol → (secType, exchange, currency, earliest)
+    _SYMBOL_MAP: dict[str, tuple[str, str, str, date | None]] = {
+        "ES": ("FUT", "CME", "USD", date(2010, 1, 1)),
+        "NQ": ("FUT", "CME", "USD", date(2010, 1, 1)),
+        "YM": ("FUT", "CBOT", "USD", date(2010, 1, 1)),
+        "CL": ("FUT", "NYMEX", "USD", date(2010, 1, 1)),
+        "GC": ("FUT", "COMEX", "USD", date(2010, 1, 1)),
+        "SPY": ("STK", "SMART", "USD", date(2000, 1, 1)),
+        "AAPL": ("STK", "SMART", "USD", date(2000, 1, 1)),
+        "MSFT": ("STK", "SMART", "USD", date(2000, 1, 1)),
+        "QQQ": ("STK", "SMART", "USD", date(2000, 1, 1)),
+        "IWM": ("STK", "SMART", "USD", date(2000, 1, 1)),
+        "EEM": ("STK", "SMART", "USD", date(2000, 1, 1)),
+        "TLT": ("STK", "SMART", "USD", date(2002, 1, 1)),
+    }
+
+    def __init__(self, host: str = "127.0.0.1", port: int = 7497) -> None:
+        super().__init__()
+        self._host = host
+        self._port = port
+        self.rate_limit = RateLimit(
+            requests_per_second=5.0,
+            requests_per_minute=50,
+            concurrent=1,
+            notes="IBKR hard cap: 50 historical requests per 10 seconds",
+        )
+
+    def asset_spec(self, symbol: str) -> AssetSpec:
+        spec = self._SYMBOL_MAP.get(symbol.upper())
+        if spec is None:
+            sec_type = "STK" if symbol.isalpha() else "FUT"
+            return AssetSpec(
+                symbol=symbol.upper(),
+                asset_class=AssetClass.EQUITY,
+                exchange="SMART",
+                earliest_available=date(2010, 1, 1),
+            )
+        sec_type, exchange, currency, earliest = spec
+        asset_cls = AssetClass.FUTURES if sec_type == "FUT" else AssetClass.EQUITY
+        return AssetSpec(
+            symbol=symbol.upper(),
+            asset_class=asset_cls,
+            exchange=exchange,
+            earliest_available=earliest or date(2010, 1, 1),
+            quote_currency=currency,
+        )
+
+    def fetch_range(
+        self, symbol: str, timeframe: str, start: date, end: date
+    ) -> Iterator[OHLCVBar]:
+        bar_size = self._BAR_SIZE.get(timeframe)
+        if bar_size is None:
+            raise ValueError(f"IBKR: unsupported timeframe {timeframe}")
+        spec = self.asset_spec(symbol)
+        earliest = spec.earliest_available or date(2000, 1, 1)
+        effective_start = max(start, earliest)
+        if effective_start >= end:
+            return
+
+        self._cooldown_until_clear()
+        try:
+            from ib_insync import IB, Contract
+        except ImportError:
+            logger.warning("ib_insync not installed — run ``uv add ib_insync``")
+            return
+
+        ib = IB()
+        connection_attempts = 3
+        for attempt in range(connection_attempts):
+            try:
+                ib.connect(self._host, self._port, clientId=42 + attempt)
+                break
+            except Exception as exc:
+                if attempt == connection_attempts - 1:
+                    logger.warning(
+                        "IBKR: cannot connect to %s:%s after %d attempts: %s",
+                        self._host,
+                        self._port,
+                        connection_attempts,
+                        exc,
+                    )
+                    return
+                time.sleep(1.0)
+
+        try:
+            # Build contract
+            contract = Contract()
+            contract.symbol = symbol.upper()
+            info = self._SYMBOL_MAP.get(symbol.upper())
+            if info:
+                contract.secType = info[0]
+                contract.exchange = info[1]
+                contract.currency = info[2]
+            else:
+                contract.secType = "STK"
+                contract.exchange = "SMART"
+                contract.currency = "USD"
+
+            # For futures, use continuous contract via generic ticks
+            if contract.secType == "FUT":
+                contract.includeExpired = True
+
+            # Paginate backward from end to start in 6-month chunks
+            current_end = datetime(end.year, end.month, end.day, 23, 59, 59, tzinfo=UTC)
+            while current_end > datetime(
+                effective_start.year, effective_start.month, effective_start.day, tzinfo=UTC
+            ):
+                try:
+                    bars = ib.reqHistoricalData(
+                        contract,
+                        endDateTime=current_end.strftime("%Y%m%d %H:%M:%S UTC"),
+                        durationStr="6 M",
+                        barSizeSetting=bar_size,
+                        whatToShow="TRADES",
+                        useRTH=True,
+                        formatDate=1,
+                        timeout=30,
+                    )
+                except Exception as exc:
+                    logger.warning("IBKR fetch failed: %s", exc)
+                    break
+
+                if not bars:
+                    break
+
+                for bar in bars:
+                    ts = bar.date.replace(tzinfo=UTC) if bar.date.tzinfo is None else bar.date
+                    bar_date = ts.date()
+                    if bar_date < effective_start or bar_date > end:
+                        continue
+                    yield OHLCVBar(
+                        timestamp=ts,
+                        open=Decimal(str(round(bar.open, 2))),
+                        high=Decimal(str(round(bar.high, 2))),
+                        low=Decimal(str(round(bar.low, 2))),
+                        close=Decimal(str(round(bar.close, 2))),
+                        volume=Decimal(str(int(bar.volume))),
+                        symbol=spec.symbol,
+                        source=self.name,
+                        timeframe=timeframe,
+                    )
+
+                # Move current_end back to before the earliest bar in this batch
+                earliest_bar = datetime.fromtimestamp(bars[0].date.timestamp(), tz=UTC)
+                current_end = earliest_bar - timedelta(minutes=1)
+                time.sleep(0.5)  # rate limiting between chunks
+
+        finally:
+            ib.disconnect()
+
+
 SOURCES: dict[SourceId, DataSource] = {
     SourceId.BINANCE_REST: BinanceREST(),
     SourceId.CRYPTODATA: CryptoDataDownload(),
@@ -1005,6 +1182,7 @@ SOURCES: dict[SourceId, DataSource] = {
     SourceId.HISTDATA: HistData(),
     SourceId.STOOQ: Stooq(),
     SourceId.DUKASCOPY: Dukascopy(),
+    SourceId.IBKR: IBKRHistorical(),
 }
 
 

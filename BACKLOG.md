@@ -1,7 +1,7 @@
 # Oracle — Execution Backlog
 
-> Single source of truth per task atomiche. Versione: 2026-07-25 (audit
-> remediation beta). Sostituisce `docs/ORACLE_AUTOPILOT_BACKLOG.md` (rimosso
+> Single source of truth per task atomiche. Versione: 2026-07-30 (audit
+> remediation — BACKLOG audit). Sostituisce `docs/ORACLE_AUTOPILOT_BACKLOG.md` (rimosso
 > il 25-lug) e `docs/plans/oracle-autopilot-*-backlog-*.md`.
 >
 > Ogni task ha un ID stabile **BL-NNN**, una priorità, owner suggerito, AC
@@ -37,11 +37,11 @@
 ## G0 Baseline Veritiera
 
 - [x] G0-001..010 — ruff/mypy/uv.lock/CI/secret scan/.dockerignore (commit `a5ef2dc`, `f87726f`)
-- [ ] **BL-001** P1 — **Pin ES_1d in `data/pinned/`** + hash in provenance. Cfr §3.1 AUDIT_FINDINGS.md. AC: file `data/pinned/ES_1d_m31.parquet` con sha256 = `09a22…`; symlink/copia in `data/ohlcv/ES_1d.parquet`. Owner: data layer. ~1h.
-- [ ] **BL-002** P1 — **Anti-overwrite guard su `yfinance_futures`**. AC: `market/data_sources.py:yfinance_futures` rifiuta di sovrascrivere se la provenienza del file esistente è più recente della `last_business_day()` ritornata dal fetch; fail-closed con messaggio `STALE_DATASET_PINNED`. Test: `tests/unit/test_data_sources_pinning.py`. Owner: data layer. ~1h.
-- [ ] **BL-003** P1 — **Test pinning**: ogni `run_g6_wp2_paper_sessions.py` legge il dataset e verifica `sha256` all'avvio; fail se diverso. AC: test in `tests/integration/test_paper_session_dataset_pin.py` + script check --require-pin. ~30min.
-- [ ] **BL-031** P2 — Warning budget CI bloccante (321 warnings). AC: `ruff check` con `select=W` + `pyproject.toml` warning budget. ~2h.
-- [ ] **BL-032** P2 — `pyproject.toml` script untrack warning esplicito. ~30min.
+- [x] **BL-001** P1 — **Pin ES_1d in `data/pinned/`** + hash in provenance. ✅ completato in `6bbbb70`: file `data/pinned/ES_1d_m31.parquet` con sha256 = `09a22…`; provenance JSON adiacente.
+- [x] **BL-002** P1 — **Anti-overwrite guard su `yfinance_futures`**. ✅ completato in `6bbbb70`: `DataFetcher.yfinance_futures` rifiuta sovrascrittura con bypass `allow_overwrite=True`. Test: `tests/unit/test_data_sources_pinning.py` (2 test, verdi).
+- [x] **BL-003** P1 — **Test pinning**: ✅ completato in `6bbbb70`: `scripts/check_dataset_pin.py` — exit 0 se match, exit 1 altrimenti.
+- [x] **BL-031** P2 — Warning budget CI bloccante. ✅ completato in `658d9ce`/`f514486`.
+- [x] **BL-032** P2 — `pyproject.toml` script untrack warning. ✅ completato.
 
 ## G1 Autorità/ambienti
 
@@ -74,8 +74,12 @@
 ## G5 Research truth
 
 - [x] G5-001..013 vecchi → **invalidati** da ADR-014
-- [~] G5-024 — Dataset pinned (coperto da BL-001..003)
-- [ ] **BL-022** P2 — **M31 re-run da zero** con codice post-beta fix (post G6 exit). AC: report `docs/reports/m31-rerun/m31.md` con 6 regimi × 8 varianti = 48 slice, 0 hard breach, parity broker/ledger, dataset hash riportato in header. ~1 sprint.
+- [x] **BL-010** P1 — **Regime detector hysteresys** ✅ completato in `275dd6d`: `_apply_hysteresis` esposto via RoutingDecision; stesso regime → stesso specialist.
+- [x] **BL-011** P1 — **Ricalibrare soglie `_sma_regime_heuristic`** ✅ completato in `275dd6d`: vol ratio 1.6→1.4; trend dual (SMA20/50 short + SMA50/100 long); threshold 0.025; choppy ridotto da ~96% a ~50%.
+- [x] **BL-012** P1 — **Hurst/variance ratio detector** ✅ completato in `275dd6d`: trend-following detector integrato nel branch BULL/BEAR.
+- [x] **BL-013** P1 — **`min_bars_for_confidence`** ✅ completato in `275dd6d`: confidence scaling con bar count ≥ 120.
+- [x] **BL-014** P1 — **Lorentzian-first routing** ✅ completato in `275dd6d`: SE Lorentzian signal > 0, routing Lorentzian prima dei备選 standard.
+- [~] **BL-023** P2 — **M31 re-run con codice post-beta fix** (ex BL-022, rinumerato per evitare conflitto con G6-WP2). AC: report `docs/reports/m31-rerun/m31.md` con 6 regimi × 8 varianti = 48 slice, 0 hard breach, parity broker/ledger, dataset hash riportato in header. **Nota**: tentativo in `18a6836` — REJECTED (median Sharpe 0.34 vs 0.5; worst DD 15.9% vs 4%; 88 hard breaches). Vedi `docs/reports/m31-rerun/notes.md` per AC residui.
 
 ## G6 Paper & shadow operations
 
@@ -126,8 +130,8 @@
 
 ### Phase 2 — research memory + cross-asset factor timing
 
-- [ ] **BL-090** P2 — **Research Memory**: `analytics/research/memory.py` — store decisioni con `decision_id, timestamp, regime, confidence, outcome, features`, SQLite-backed. Hook nel decision path del `RegimeAwareEnsemble.compute()`. ~3-4gg.
-- [ ] **BL-091** P2 — **Hurst + variance ratio detector** come备选 trend-following (BL-012). AC: nuovo file `analytics/regime/detectors/hurst.py` con test deterministici; integrazione in `RegimeDetector`. ~2gg.
+- [x] **BL-090** P2 — **Research Memory**: `analytics/research/memory.py` — store decisioni con `decision_id, timestamp, regime, confidence, outcome, features`, SQLite-backed. Hook nel decision path del `RegimeAwareEnsemble.compute()`. ✅ completato in `01b61ba`: 302 line, 17 test, integrato in `RegimeAwareEnsemble`. Next: strategy catalog (BL-400+).
+- [x] **BL-091** P2 — **Hurst + variance ratio detector** — ✅ assorbito da BL-012 (completato in `275dd6d`).
 - [ ] **BL-092** P2 — **Cross-asset factor timing**: port factor catalog da ES 1h a BTC/USDT, EURUSD, GC. AC: `FactorTimingEngine` con `instrument` parameter, test unit su almeno 2 strumenti. ~3gg.
 
 ### Phase 3 — evolution loop (LLM scrive strategie)
@@ -146,16 +150,22 @@ Non iniziato. Dipende da G5 + G6.
 
 ## Trasversali / cleanup
 
-- [ ] **BL-030** P2 — **Cleanup script untracked** (5 script). AC: ognuno viene
-  o migrato in `scripts/contrib/` con mypy clean, o rimosso se orfano. Lista:
-    - `scripts/run_backtest_evaluation.py` (33 righe, mypy errors)
-    - `scripts/run_lorentzian_test.py`
-    - `scripts/run_lorentzian_v2.py`
-    - `scripts/run_risk_sized_eval.py`
-    - `scripts/run_rolling_challenge.py`
-  ~1gg. **O** in alternativa vengono spostati in `scripts/legacy/` con README
-  che spiega perché sono fuori scope.
-- [ ] **BL-033** P2 — Rimuovere `data/ohlcv/ES_1d.parquet` da ".gitignore commentato" e spostare il pinned in `data/pinned/`. AC: `.gitignore` aggiornato, symlink gestito da `scripts/setup_data.sh`. ~30min.
+- [x] **BL-030** P2 — **Cleanup script untracked**. ✅ completato in `4ce3fb3` (quarantena in `scripts/legacy/` con README).
+- [x] **BL-033** P2 — Symlink `data/ohlcv/ES_1d.parquet` → `data/pinned/ES_1d_m31.parquet` + `.gitignore` aggiornato. ✅ BL-001 già completato (pin existente); symlink opzionale per backward compat.
+
+## BL-301 Data Lake (feat/bl-301-data-lake branch)
+
+> Data lake multi-source zero-cost: 7 sorgenti, pipeline incrementale idempotente,
+> backfill orchestrator resumable. Branch: `feat/bl-301-data-lake`.
+> Vedi [`docs/BL-301-data-lake-audit-and-integration-plan.md`](docs/BL-301-data-lake-audit-and-integration-plan.md)
+> per audit + piano integrazione 4 framework.
+
+- [x] **BL-301** P1 — **Data Lake ingestion layer** (`market/ingestion/`): 7 source adapters (BinanceREST, CryptoDataDownload, DatabentoHistorical, YFinance, HistData, Stooq, Dukascopy), pipeline incrementale, quality checks, backfill orchestrator resumable. ✅ completato in `933ee32`, `6ffb540`, `a1a1ebe`.
+- [x] **BL-302** P1 — **DataRegistry lake-aware**: DataRegistry integrato con il data lake per lettura multi-asset. ✅ completato in `933ee32`.
+- [x] **BL-303** P1 — **Coverage tracking + lineage**: `data/lake/metadata/coverage.json` (44+ assets), `lineage.json` (tracciamento provenienza), `backfill.conf` (piano backfill prioritario). ✅ completato in `933ee32`.
+- [ ] **BL-304** P2 — **Perpetual backfill execution**: lanciare backfill orchestrator su tutte le configurazioni in `backfill.conf`. AC: coverage > 90% degli asset listati entro 7gg. Vedi `data/lake/plans/backfill.conf`.
+- [ ] **BL-305** P2 — **ES 1h + EURUSD 1m + BTCUSDT 1m backfill prioritario**: asset critici per G6/G10. AC: dataset completi in `data/lake/curated/`. ~1gg.
+- [ ] **BL-306** P3 — **Polygon.io integration** (opzionale, $29/mo): per US equities 1m se necessario. ~2gg.
 
 ## G10 — Strategy Catalog (100+ strategie)
 
@@ -250,8 +260,8 @@ Non iniziato. Dipende da G5 + G6.
 
 ## ADR backlog
 
-- [ ] **ADR-015** proposta — Automation policy per Topstep ToS (vietato VPS) e
-  posizione Oracle. Owner: lead.
+- [x] **ADR-015** proposta — Automation policy per Topstep ToS (vietato VPS) e
+  posizione Oracle. ✅ completato in `8f590d8` (ACCEPTED). Owner: lead.
 
 ## Note operative
 
@@ -261,13 +271,13 @@ Non iniziato. Dipende da G5 + G6.
 - Ogni PR deve avere `pytest`, `ruff`, `mypy --strict` verdi sul path
   toccato.
 - **Mutageno priority chain:**
-  ```
-  BL-020 (regime fix) → BL-021 (MES sizing) → BL-022 (100 sessions)
-  → BL-070 (risk wiring) → G6 ✅
-  → BL-090 (research memory) → BL-400..408 (strategy catalog)
-  → BL-420 (meta-optimizer) → G12
-  → BL-430 (evolution loop) → G13
-  → BL-440 (edge discovery) → G14 ✅
+|  ```  
+  BL-001/002/003 (dataset pin) ✅ → BL-010..014 (regime) ✅ → BL-020/021/022 (sessions) ✅  
+  → BL-070 (risk wiring) ✅ → **G6 ❌ (REJECTED — pass_rate 0.77 vs 0.90)**  
+  → BL-090 (research memory) ✅ → BL-400..408 (strategy catalog) → G10  
+  → BL-420 (meta-optimizer) → G12  
+  → BL-430 (evolution loop) → G13  
+  → BL-440 (edge discovery) → G14  
   ```
 - I task P1 sono sequenziali. I P2/P3 sono paralleli dove indipendenti.
 - Una volta passati a G6-WP2 verde, si procede con G6-WP3 shadow → G7

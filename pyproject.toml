@@ -2,7 +2,7 @@
 name = "oracle"
 version = "0.1.0"
 description = "Systematic Trading Intelligence Platform"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.14"
 authors = [{ name = "Oracle Team" }]
 license = { text = "MIT" }
 
@@ -27,6 +27,17 @@ dependencies = [
     "uvicorn[standard]>=0.32",
     "pydantic-settings>=2.5",
     "sse-starlette>=2.1",
+    "ib-insync",
+    "torch",
+    "statsmodels>=0.14.6",
+    "nautilus-trader>=1.230.0",
+    "asyncpg>=0.31.0",
+    "deap>=1.4.4",
+    "vectorbt>=0.23.3",
+    "ta-lib>=0.7.1",
+    "lightgbm>=4.7.0",
+    "ccxt>=4.5.64",
+    "pyportfolioopt>=1.6.0",
 ]
 
 [project.scripts]
@@ -117,6 +128,7 @@ all = [
 [tool.ruff]
 target-version = "py312"
 line-length = 100
+extend-exclude = ["*.conf"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "ARG", "C4", "RUF"]
@@ -198,13 +210,6 @@ warn_unused_configs = true
 # across many files.  These are pre-existing and tracked separately.
 [[tool.mypy.overrides]]
 module = [
-    "genetics.alpha.expression",
-    "genetics.alpha.operators",
-    "genetics.genome.expression_codec",
-    "genetics.genome.knn_signal",
-    "genetics.fitness.evaluator",
-    "genetics.population",
-    "genetics.signal.*",
     "analytics.backtest.pybroker_integration",
 ]
 ignore_errors = true

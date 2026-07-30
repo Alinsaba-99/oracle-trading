@@ -64,6 +64,7 @@ _PINNED_HASH = "09a22b7dcb37212630e96a880f17924023e3ed985206d51c390f0efb8f61cd62
 
 # ── helpers ──────────────────────────────────────────────────────────────
 
+
 def _read_data(data_path: str) -> pl.DataFrame:
     """Read OHLCV parquet and lowercase column names."""
     path = Path(data_path)
@@ -100,12 +101,14 @@ def _verify_pin_hash(df: pl.DataFrame) -> None:
     buf = df.select(sorted(df.columns)).to_pandas().to_csv(index=False).encode("utf-8")
     h = hashlib.sha256(buf).hexdigest()
     if h != _PINNED_HASH:
-        print(f"WARNING: pinned dataset hash mismatch (got {h}, expected {_PINNED_HASH})", flush=True)
+        msg = f"WARNING: pinned dataset hash mismatch (got {h}, expected {_PINNED_HASH})"
+        print(msg, flush=True)
     else:
         print("Pinned dataset hash verified OK.", flush=True)
 
 
 # ── core ─────────────────────────────────────────────────────────────────
+
 
 async def _run_paper_sessions(
     n: int,
@@ -175,9 +178,7 @@ async def _run_paper_sessions(
     pass_rate = passed / n if n else 0.0
 
     decision = (
-        "approved"
-        if pass_rate >= 0.90 and mean_sharpe >= -0.5 and mean_dd <= 3.0
-        else "rejected"
+        "approved" if pass_rate >= 0.90 and mean_sharpe >= -0.5 and mean_dd <= 3.0 else "rejected"
     )
 
     summary = {
@@ -209,7 +210,7 @@ async def _run_paper_sessions(
     Path(output).parent.mkdir(parents=True, exist_ok=True)
     Path(output).write_text(json.dumps(summary, indent=2, default=str))
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  BL-022 — {n} sessions × {window}-bar windows")
     print(f"  Data: {data_path} ({n_total} bars)")
     print(f"  Instrument: {instrument}  |  Point value: ${point_value}")
@@ -218,12 +219,13 @@ async def _run_paper_sessions(
     print(f"  Mean Sharpe: {mean_sharpe:.3f}  (target ≥ -0.5)")
     print(f"  Mean DD:     {mean_dd:.2f}%  (target ≤ 3.0%)")
     print(f"  Decision:    {decision.upper()}")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
     print(f"Results saved to {output}")
     return 0 if decision == "approved" else 1
 
 
 # ── CLI ──────────────────────────────────────────────────────────────────
+
 
 def main() -> int:
     p = argparse.ArgumentParser(
@@ -236,12 +238,20 @@ def main() -> int:
     p.add_argument("--point-value", type=float, default=_DEFAULT_POINT_VALUE)
     p.add_argument("--capital", type=float, default=_DEFAULT_CAPITAL)
     p.add_argument("--output", default="logs/g6_wp2_100.json", help="Output path")
-    p.add_argument("--verify-pin", action="store_true", default=True,
-                   help="Verify pinned dataset hash before running (default: True)")
-    p.add_argument("--no-verify-pin", action="store_false", dest="verify_pin",
-                   help="Skip hash verification")
-    p.add_argument("--monte-carlo", action="store_true",
-                   help="Random Monte Carlo window start positions instead of sequential")
+    p.add_argument(
+        "--verify-pin",
+        action="store_true",
+        default=True,
+        help="Verify pinned dataset hash before running (default: True)",
+    )
+    p.add_argument(
+        "--no-verify-pin", action="store_false", dest="verify_pin", help="Skip hash verification"
+    )
+    p.add_argument(
+        "--monte-carlo",
+        action="store_true",
+        help="Random Monte Carlo window start positions instead of sequential",
+    )
     args = p.parse_args()
 
     return asyncio.run(

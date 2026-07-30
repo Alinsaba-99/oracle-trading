@@ -25,14 +25,12 @@ import pytest
 
 from execution.order_manager.types import OrderRequest
 from policy.prop_firm.fixtures import TOPSTEP_TC_50K
-from policy.prop_firm.governor import PropFirmRiskGovernor
-from policy.prop_firm.order_risk import PropFirmOrderRiskAdapter
 
 # Re-use the _PropFirmAllow from the paper session harness.
 from scripts.run_g6_wp2_paper_sessions import _PropFirmAllow
 
-
 # ── helpers ──────────────────────────────────────────────────────────────
+
 
 def _make_session_df(n: int = 100) -> pl.DataFrame:
     """Deterministic mock OHLCV series."""
@@ -40,13 +38,15 @@ def _make_session_df(n: int = 100) -> pl.DataFrame:
 
     rng = np.random.default_rng(42)
     close = list(100.0 + np.cumsum(rng.standard_normal(n) * 0.5))
-    return pl.DataFrame({
-        "open": close,
-        "high": [c * 1.01 for c in close],
-        "low": [c * 0.99 for c in close],
-        "close": close,
-        "volume": [1000.0] * n,
-    })
+    return pl.DataFrame(
+        {
+            "open": close,
+            "high": [c * 1.01 for c in close],
+            "low": [c * 0.99 for c in close],
+            "close": close,
+            "volume": [1000.0] * n,
+        }
+    )
 
 
 # ── tests ────────────────────────────────────────────────────────────────

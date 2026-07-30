@@ -38,6 +38,11 @@ import polars as pl
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+import numpy as np
+
+from analytics.portfolio.hrp import compute_hrp_weights
+from analytics.research.factor_timing import compute_per_session_ic
+from analytics.research.memory import ResearchMemory
 from analytics.strategy.lorentzian import LorentzianKNN
 from analytics.strategy.regime_ensemble import RegimeAwareEnsemble, SpecialistId
 from analytics.strategy.signals import DonchianBreakout, EmaTrend, RsiReversion
@@ -69,6 +74,11 @@ class _PropFirmAllow:
         )
         self.adapter = PropFirmOrderRiskAdapter(self.governor, replay_only=True)
         self.last_balance = float(TOPSTEP_TC_50K.account_size)
+        self._latest_price: Decimal | None = None
+
+    def update_price(self, price: Decimal) -> None:
+        """Track the current market price for market orders (no price in request)."""
+        self._latest_price = price
 
     def reset_session(self) -> None:
         """Reset governor + adapter to fresh-start state for a new paper session."""
@@ -77,12 +87,13 @@ class _PropFirmAllow:
         )
         self.adapter = PropFirmOrderRiskAdapter(self.governor, replay_only=True)
         self.last_balance = float(TOPSTEP_TC_50K.account_size)
+        self._latest_price = None
 
     async def check_order(self, request: object) -> bool:
         if not isinstance(request, OrderRequest):
             return False
-        # Synthesise a stop 8pt + market inputs from current price.
-        latest_price = getattr(request, "price", None)
+        # Market orders carry no price; use the latest tracked price.
+        latest_price = getattr(request, "price", None) or self._latest_price
         if latest_price is None:
             return False
         # Update governor with synthetic equity = balance
@@ -110,7 +121,14 @@ class _PropFirmAllow:
         return bool(ok)
 
 
-def _build_ensemble() -> RegimeAwareEnsemble:
+def _build_ensemble(memory=None, asset: str = "ES", timeframe: str = "1d") -> Any:
+    """Factory: returns AdaptiveEnsemble when asset is known, else basic."""
+    try:
+        from analytics.strategy.adaptive_ensemble import AdaptiveEnsemble
+
+        return AdaptiveEnsemble(asset=asset, timeframe=timeframe)
+    except ImportError:
+        pass
     return RegimeAwareEnsemble(
         specialists={
             SpecialistId.TREND: EmaTrend(fast=10, slow=30),
@@ -121,6 +139,7 @@ def _build_ensemble() -> RegimeAwareEnsemble:
             ),
         },
         min_confidence=0.5,
+        memory=memory,
     )
 
 
@@ -133,6 +152,9 @@ async def _run_session(
     max_dd_pct: float,
     storage: str,
     dsn: str | None,
+    memory: ResearchMemory | None = None,
+    timeframe: str = "1d",
+    weights_path: str | None = None,
 ) -> dict[str, Any]:
     """Run one paper session. Returns session report."""
     config = BrokerConfig(
@@ -165,9 +187,28 @@ async def _run_session(
         oms = create_oms(storage="memory", ledger=ledger)
 
     # Regime ensemble signal
-    ensemble = _build_ensemble()
-    signal_series = ensemble.compute(df_session).to_numpy()
+    ensemble = _build_ensemble(memory=memory, asset=instrument, timeframe=timeframe)
+    signal_series = ensemble.compute(df_session)
     routing = ensemble.route(df_session)
+
+    # Apply GA-optimized weights if provided
+    if weights_path:
+        try:
+            import json as _json
+            from pathlib import Path as _Path
+
+            ga_data = _json.loads(_Path(weights_path).read_text())
+            ga_weights = ga_data.get("weights", {})
+            if ga_weights and hasattr(ensemble, "set_factor_weights"):
+                ensemble.set_factor_weights(ga_weights)
+                # Recompute with GA weights
+                signal_series = ensemble.compute(df_session)
+                routing = ensemble.route(df_session)
+                print(
+                    f"    [sess {session_id}] GA weights applied: {list(ga_weights.keys())[:3]}..."
+                )
+        except Exception as exc:
+            print(f"    [sess {session_id}] WARNING: could not load GA weights: {exc}")
 
     # Iterate bar-by-bar, executing via OrderManager
     risk_adapter = _PropFirmAllow(point_value=point_value)
@@ -187,6 +228,7 @@ async def _run_session(
     for i in range(1, len(close)):
         price = Decimal(str(close[i]))
         await broker.on_price_update(price)
+        risk_adapter.update_price(price)
 
         # Regime ensemble signal (single shot for last bar; target_pos from current bar)
         sig = signal_series[i] if i < len(signal_series) else 0
@@ -259,6 +301,7 @@ async def _run_session(
     if position != Decimal("0"):
         side = "sell" if position > 0 else "buy"
         qty = abs(position)
+        last_price = Decimal(str(close[-1]))
         req = OrderRequest(
             instrument_id=instrument,
             side=side,
@@ -269,7 +312,6 @@ async def _run_session(
         )
         fills_before = len(broker._fills)
         await mgr.submit(req)
-        last_price = Decimal(str(close[-1]))
         await broker.on_price_update(last_price)
         for fill in broker._fills[fills_before:]:
             total_commission += fill.commission
@@ -309,6 +351,10 @@ async def _run_session(
         "reconcile_clean": rec_report.is_clean,
         "passed": len(hard_incidents) == 0,
         "hard_incidents": hard_incidents,
+        "_signal_series": signal_series.tolist()
+        if hasattr(signal_series, "tolist")
+        else signal_series,
+        "_equity_curve": equity_curve,
     }
 
 
@@ -325,10 +371,21 @@ async def main() -> int:
     parser.add_argument("--storage", choices=["memory", "postgres"], default="memory")
     parser.add_argument("--dsn", default=None)
     parser.add_argument("--output", default="logs/g6_wp2_paper_sessions.json")
+    parser.add_argument(
+        "--weights",
+        default=None,
+        help="Path to GA weights JSON (data/ga_weights.json). Overrides default ensemble weights.",
+    )
     args = parser.parse_args()
 
     if args.point_value is None:
         args.point_value = 5.0 if args.instrument.upper() == "MES" else 50.0
+
+    # ── Parse timeframe from filename ───────────────────────────
+    import re as _re
+
+    tf_match = _re.search(r"_(\d+[mhdw])\.", args.data)
+    args.timeframe = tf_match.group(1) if tf_match else "1d"
 
     # ── Load and split data ───────────────────────────────────────────
     df = pl.read_parquet(args.data)
@@ -352,6 +409,9 @@ async def main() -> int:
     capital_dec = Decimal(str(args.capital))
     point_value_dec = Decimal(str(args.point_value))
 
+    # Shared research memory for factor timing
+    session_memory = ResearchMemory("logs/research_memory.db")
+
     results: list[dict[str, Any]] = []
     for s in range(args.sessions):
         start = s * n_per_session
@@ -366,6 +426,9 @@ async def main() -> int:
             max_dd_pct=args.max_dd_pct,
             storage=args.storage,
             dsn=args.dsn,
+            memory=session_memory,
+            timeframe=args.timeframe,
+            weights_path=args.weights,
         )
         results.append(res)
         status = "✅" if res["passed"] else "❌"
@@ -403,6 +466,71 @@ async def main() -> int:
 
     gate_passed = pass_rate >= 0.90 and mean_sharpe >= -0.5 and mean_dd <= 3.0
     print(f"\n  G6-WP2 gate: {'✅ PASS' if gate_passed else '❌ FAIL'}")
+    print(f"{'=' * 70}\n")
+
+    # ── Factor Timing Report ──────────────────────────────────────────
+    ic_results: dict[str, list] = {}
+    for res in results:
+        spec = res.get("specialist", "unknown")
+        sig = np.array(res.get("_signal_series", []), dtype=float)
+        eq = res.get("_equity_curve", [])
+        if len(sig) >= 8 and len(eq) >= 9:
+            ft = compute_per_session_ic(sig, eq, specialist=spec)
+            ic_results.setdefault(spec, []).append(ft)
+
+    if ic_results:
+        print("FACTOR TIMING — IC Scores & Decay States")
+        lines = [
+            "  Specialist        IC     IC_rec   ICIR   WR%   Mean$   N  Decay      Wt",
+            "  " + "-" * 75,
+        ]
+        for spec, vals in sorted(ic_results.items()):
+            avg_ic = float(np.mean([v.rank_ic for v in vals]))
+            avg_icr = float(np.mean([v.rank_ic_recent for v in vals]))
+            avg_icir = float(np.mean([v.icir for v in vals]))
+            avg_wr = float(np.mean([v.win_rate for v in vals]))
+            avg_pnl = float(np.mean([v.mean_pnl for v in vals]))
+            total_n = sum(v.n for v in vals)
+            # Dominant decay state
+            states = [v.decay_state for v in vals]
+            dom_state = max(set(states), key=states.count)
+            dom_weight = float(np.mean([v.weight for v in vals]))
+            decay_mark = {"stable": "🟢", "fading": "🟡", "decaying": "🔴"}.get(dom_state, "⚪")
+            lines.append(
+                f"  {spec:<16s} {avg_ic:>+6.3f} {avg_icr:>+6.3f} "
+                f"{avg_icir:>+6.3f} {avg_wr:>5.1%} {avg_pnl:>+7.2f} "
+                f"{total_n:>3d}  {decay_mark} {dom_state:<8s} {dom_weight:.2f}"
+            )
+        print("\n".join(lines) + "\n")
+    else:
+        print("  (insufficient data for IC computation)\n")
+
+    # ── HRP Portfolio Weights ──────────────────────────────────────────
+    try:
+        import pandas as pd_util
+
+        spec_pnls = {}
+        for res_ in results:
+            spec = res_.get("specialist", "unknown")
+            pnl = res_.get("total_pnl", 0.0)
+            spec_pnls.setdefault(spec, []).append(float(pnl))
+        if len(spec_pnls) >= 2:
+            max_len = max(len(v) for v in spec_pnls.values())
+            returns_dict = {}
+            for s_, vals_ in spec_pnls.items():
+                padded = vals_ + [0.0] * (max_len - len(vals_))
+                returns_dict[s_] = padded
+            hrp_weights = compute_hrp_weights(pd_util.DataFrame(returns_dict))
+            if hrp_weights:
+                print("HRP PORTFOLIO WEIGHTS — Allocation per Specialist")
+                print(f"  {'=' * 45}")
+                for spec_, w_ in sorted(hrp_weights.items(), key=lambda x: -x[1]):
+                    bar = "█" * int(w_ * 40)
+                    print(f"  {spec_:<16s} {w_:>6.1%} {bar}")
+                print()
+    except Exception as exc:
+        print(f"  HRP weights skipped: {exc}\n")
+
     print(f"{'=' * 70}\n")
 
     output_path = Path(args.output)

@@ -11,9 +11,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from collections.abc import Sequence
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import Any
 
 _DEFAULT_DB = "research_memory.db"
@@ -89,19 +87,17 @@ class ResearchMemory:
         features_json = json.dumps(features) if features else None
         cur = self._conn.execute(
             """INSERT INTO decisions
-               (timestamp, regime, regime_confidence, specialist, reason, signal, features, session_id)
+               (timestamp, regime, regime_confidence,
+                specialist, reason, signal, features, session_id)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
             (now, regime, regime_confidence, specialist, reason, signal, features_json, session_id),
         )
         self._conn.commit()
-        return int(cur.lastrowid)  # type: ignore[return-value]
+        if cur.lastrowid is None:
+            return 0
+        return cur.lastrowid
 
-    def record_outcome(
-        self,
-        decision_id: int,
-        pnl: float,
-        market_return: float,
-    ) -> None:
+    def record_outcome(self, decision_id: int, pnl: float, market_return: float) -> None:
         """Record the realised P&L for a previous decision.
 
         Args:
@@ -115,11 +111,7 @@ class ResearchMemory:
         )
         self._conn.commit()
 
-    def get_regime_accuracy(
-        self,
-        regime: str | None = None,
-        window: int = 100,
-    ) -> dict[str, Any]:
+    def get_regime_accuracy(self, regime: str | None = None, window: int = 100) -> dict[str, Any]:
         """Return confidence calibration stats for the regime detector.
 
         For each regime, reports: count, mean_confidence, win_rate (if outcomes
@@ -166,13 +158,12 @@ class ResearchMemory:
             }
 
         if regime and regime in result:
-            return result[regime]
+            # result is already built as dict[str, Any]
+            return result[regime]  # type: ignore[no-any-return]
         return result
 
     def get_specialist_performance(
-        self,
-        specialist: str | None = None,
-        window: int = 100,
+        self, specialist: str | None = None, window: int = 100
     ) -> dict[str, Any]:
         """Return performance metrics per specialist.
 
@@ -221,7 +212,7 @@ class ResearchMemory:
             }
 
         if specialist and specialist in result:
-            return result[specialist]
+            return result[specialist]  # type: ignore[no-any-return]
         return result
 
     def get_recent_decisions(self, n: int = 20) -> list[dict[str, Any]]:
@@ -234,22 +225,20 @@ class ResearchMemory:
             List of dicts keyed by column name.
         """
         rows = self._conn.execute(
-            """SELECT * FROM decisions ORDER BY rowid DESC LIMIT ?""",
-            (n,),
+            """SELECT * FROM decisions ORDER BY rowid DESC LIMIT ?""", (n,)
         ).fetchall()
         return [dict(r) for r in rows]
 
     def get_decisions_by_session(self, session_id: str) -> list[dict[str, Any]]:
         """Return all decisions belonging to a specific session."""
         rows = self._conn.execute(
-            """SELECT * FROM decisions WHERE session_id = ? ORDER BY rowid ASC""",
-            (session_id,),
+            """SELECT * FROM decisions WHERE session_id = ? ORDER BY rowid ASC""", (session_id,)
         ).fetchall()
         return [dict(r) for r in rows]
 
     def count(self) -> int:
         """Total number of recorded decisions."""
-        (n,) = self._conn.execute("SELECT COUNT(*) FROM decisions").fetchone()  # type: ignore[misc]
+        (n,) = self._conn.execute("SELECT COUNT(*) FROM decisions").fetchone()
         return int(n)
 
     def close(self) -> None:
@@ -266,6 +255,7 @@ class ResearchMemory:
 
 
 # ── helper: build features from common data ──────────────────────────────
+
 
 def build_features(
     *,
@@ -296,7 +286,4 @@ def build_features(
     return features
 
 
-__all__ = [
-    "ResearchMemory",
-    "build_features",
-]
+__all__ = ["ResearchMemory", "build_features"]

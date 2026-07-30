@@ -39,6 +39,7 @@ class SourceId(StrEnum):
     YAHOO = "yahoo"
     STOOQ = "stooq"
     DUKASCOPY = "dukascopy"
+    IBKR = "ibkr"
 
 
 @dataclass(frozen=True, slots=True)

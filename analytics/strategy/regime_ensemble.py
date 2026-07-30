@@ -139,10 +139,32 @@ class RegimeAwareEnsemble:
             return sig
         result: pl.Series = spec.compute(data)  # type: ignore[attr-defined]
         _record_decision(
-            self._memory, decision, data,
-            signal=int(result[-1]) if len(result) > 0 else 0,
+            self._memory, decision, data, signal=int(result[-1]) if len(result) > 0 else 0
         )
         return result
+
+    # ── compute_specialist ──────────────────────────────────────────────
+    def compute_specialist(self, data: pl.DataFrame, specialist_id: SpecialistId) -> pl.Series:
+        """Compute signal from a single named specialist, bypassing routing.
+
+        Used by AdaptiveEnsemble to get individual signals for weighted
+        combination instead of binary routing.
+
+        Args:
+            data: OHLCV DataFrame with close column.
+            specialist_id: Which specialist to invoke.
+
+        Returns:
+            Signal Series from that specialist.  Returns zeros if the
+            specialist is not registered.
+        """
+        spec = self._specialists.get(specialist_id)
+        if spec is None:
+            return pl.Series("signal", [0] * len(data), dtype=pl.Int8)
+        try:
+            return spec.compute(data)  # type: ignore[attr-defined]
+        except Exception:
+            return pl.Series("signal", [0] * len(data), dtype=pl.Int8)
 
     # ── internals ──────────────────────────────────────────────────────
 
@@ -267,10 +289,7 @@ def _sma_regime_heuristic(data: pl.DataFrame) -> tuple[RegimeLabel, float]:
 
 
 def _record_decision(
-    memory: ResearchMemory | None,
-    decision: RoutingDecision,
-    data: pl.DataFrame,
-    signal: int = 0,
+    memory: ResearchMemory | None, decision: RoutingDecision, data: pl.DataFrame, signal: int = 0
 ) -> None:
     """Record the routing decision in ResearchMemory if configured."""
     if memory is None:

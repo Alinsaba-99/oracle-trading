@@ -6,7 +6,6 @@ Run with: ``python -m pytest tests/unit/test_research_memory.py -x -v``
 from __future__ import annotations
 
 import json
-import math
 import tempfile
 from pathlib import Path
 
@@ -14,12 +13,6 @@ import polars as pl
 import pytest
 
 from analytics.research.memory import ResearchMemory, build_features
-from analytics.strategy.regime_ensemble import (
-    RegimeAwareEnsemble,
-    RoutingDecision,
-    SpecialistId,
-)
-
 
 # ── fixtures ────────────────────────────────────────────────────────────
 
@@ -48,9 +41,7 @@ class TestResearchMemoryCore:
     """Core CRUD operations."""
 
     def test_record_and_count(self, mem: ResearchMemory) -> None:
-        did = mem.record_decision(
-            regime="bull", regime_confidence=0.85, specialist="trend",
-        )
+        did = mem.record_decision(regime="bull", regime_confidence=0.85, specialist="trend")
         assert isinstance(did, int)
         assert did >= 1
         assert mem.count() == 1
@@ -80,9 +71,7 @@ class TestResearchMemoryCore:
         assert feats["close"] == 4500.0
 
     def test_outcome_updates(self, mem: ResearchMemory) -> None:
-        did = mem.record_decision(
-            regime="bull", regime_confidence=0.9, specialist="trend",
-        )
+        did = mem.record_decision(regime="bull", regime_confidence=0.9, specialist="trend")
         mem.record_outcome(did, pnl=125.0, market_return=0.02)
 
         rows = mem.get_recent_decisions(10)
@@ -107,9 +96,7 @@ class TestResearchMemoryCore:
 
         try:
             mem1 = ResearchMemory(db_path)
-            did = mem1.record_decision(
-                regime="bear", regime_confidence=0.6, specialist="flat",
-            )
+            did = mem1.record_decision(regime="bear", regime_confidence=0.6, specialist="flat")
             mem1.record_outcome(did, pnl=-50.0, market_return=-0.01)
             mem1.close()
 
@@ -136,9 +123,7 @@ class TestResearchMemoryAnalytics:
     def test_regime_accuracy_with_outcomes(self, mem: ResearchMemory) -> None:
         for i in range(10):
             d = mem.record_decision(
-                regime="bull" if i < 8 else "choppy",
-                regime_confidence=0.85,
-                specialist="trend",
+                regime="bull" if i < 8 else "choppy", regime_confidence=0.85, specialist="trend"
             )
             mem.record_outcome(d, pnl=100.0 if i < 6 else -50.0, market_return=0.01)
 
@@ -189,14 +174,15 @@ class TestResearchMemoryAnalytics:
         assert trend_perf["n"] == 5
 
     def test_get_decisions_by_session(self, mem: ResearchMemory) -> None:
-        for i in range(5):
+        for _i in range(5):
             mem.record_decision(
-                regime="bull", regime_confidence=0.8, specialist="trend",
-                session_id="session-1",
+                regime="bull", regime_confidence=0.8, specialist="trend", session_id="session-1"
             )
-        for i in range(3):
+        for _i in range(3):
             mem.record_decision(
-                regime="choppy", regime_confidence=0.7, specialist="mean_rev",
+                regime="choppy",
+                regime_confidence=0.7,
+                specialist="mean_rev",
                 session_id="session-2",
             )
 
