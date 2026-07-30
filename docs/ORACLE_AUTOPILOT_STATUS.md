@@ -7,9 +7,9 @@
 
 ## 1. Identità del checkpoint
 
-- **Branch**: `audit-remediation-beta`
-- **HEAD**: `ffe91b4` (feat(g6-i): G3 Postgres + G5 restore + Factor Timing v1 + regime ensemble + Lorentzian causal fix)
-- **Working tree**: pulito (i 5 script untracked sono ereditati da lavoro precedente non mio)
+- **Branch**: `feat/bl-301-data-lake` (active development)
+- **HEAD**: `01b61ba` (feat(BL-090): Research Memory — SQLite-backed decision tracking)
+- **Working tree**: modificato (BACKLOG.md aggiornato, BL-301 lake attivo, untracked scripts dal branch feat/bl-301-data-lake)
 - **Modalità autorizzata**: RESEARCH, REPLAY, PAPER
 - **PAPER, SHADOW, EVALUATION, FUNDED**: PAPER parziale (gate rejected). SHADOW/EVALUATION/FUNDED: DISABLED
 
@@ -29,10 +29,10 @@
 | Gate | Stato | Evidenza | Limite noto |
 |---|---|---|---|
 | G0 baseline | ✅ PASSED | ruff/mypy verdi, uv.lock, CI, secret scan | warning budget non applicato |
-| G1 autorità/ambienti | ✅ PASSED | mode guard, startup fail-closed, credential isolation, CLI guard | `OrderManager` ammette risk=None in path script untracked |
-| G2 contract data | 🟡 PARTIAL | ContractSpec, CME calendars, roll, PIT detection. Intraday futures **non disponibile** (Polygon key required) | ES=F daily solo da yfinance |
+| G1 autorità/ambienti | ✅ PASSED | mode guard, startup fail-closed, credential isolation, CLI guard | `OrderManager` ammette risk=None in path script untracked (BL-040) |
+| G2 contract data | 🟡 PARTIAL | ContractSpec, CME calendars, roll, PIT detection. Intraday futures via BL-301 (lake) in progress | ES=F daily da yfinance; intraday via Databento/HistData |
 | G3 ledger/OMS | ✅ PASSED | PostgreSQL path attivo 25-lug; RecoveryService + ReconciliationWorker + idempotency; restart senza perdita/dup | persistenza Postgres solo in `--storage=postgres` |
-| G4 hard risk | ✅ PASSED | RiskManager, FirmProgramProfile, 35 property test, bypass audit | adapter PropFirm cablato in CLI ma **escluso dal paper harness** |
+| G4 hard risk | ✅ PASSED | RiskManager, FirmProgramProfile, 35 property test, bypass audit | adapter PropFirm cablato in CLI ma **escluso dal paper harness** (BL-070 risolto) |
 | **G5 research truth** | ❌ **REGRESSED** | M31 riproducibile solo **se** `data/ohlcv/ES_1d.parquet` rimane pinned a `09a22…`. ADR-014 documenta la perdita di evidenza. | dataset non pinned; refresh_data lo sovrascrive |
 | G6 paper | 🟡 **REJECTED** | M32 diagnostic 20/20 PASSED (max DD 0.21%). M32a WP2: 23/30 PASSED, **mean_sharpe = -0.31 (borderline -0.5)**, **pass_rate 0.77 vs target 0.90** | gate failed per regime choppy-biased + missing Lorentzian weighting |
 | G6-I feedback loop | 🟡 PARTIAL | Factor Timing v1 (26 test), Lorentzian causal-fix (6 test), Regime Ensemble (14 test) | nessun gate end-to-end; Lorentzian mai trigger dominante |
