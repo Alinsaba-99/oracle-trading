@@ -4,18 +4,18 @@
     "BTCUSDT|1h|binance_rest|2026-07-26",
     "BTCUSDT|1m|binance_rest|2026-07-26",
     "ES|1d|yahoo|2026-07-27",
+    "ES|1h|yahoo|2026-07-31",
     "ETHUSDT|1m|binance_rest|2026-07-26",
     "EURUSD|1m|histdata|2026-07-26"
   ],
   "failed": {},
-  "last_attempt": "2026-07-27T15:11:53.863074+00:00",
+  "last_attempt": "2026-07-30T22:39:04.879466+00:00",
   "last_entry_summary": {
-    "duration_s": 0.92,
-    "key": "ES|1d|yahoo|2026-07-27",
-    "rows_in": 6527,
-    "rows_out": 6517,
-    "rows_rejected": 10
+    "duration_s": 1.38,
+    "key": "ES|1h|yahoo|2026-07-31",
+    "rows_in": 11460,
+    "rows_out": 11506,
+    "rows_rejected": 0
   },
-  "last_error": null,
   "started_at": "2026-07-26T06:59:38.641613+00:00"
 }

@@ -48,7 +48,7 @@ import polars as pl
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import scripts.run_g6_wp2_paper_sessions as base  # type: ignore[import-not-found]
+import scripts.run_g6_wp2_paper_sessions as base
 
 # ── defaults ─────────────────────────────────────────────────────────────
 _DEFAULT_DATA = "data/pinned/ES_1d_m31.parquet"
