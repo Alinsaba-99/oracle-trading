@@ -550,14 +550,91 @@ class YFinance(HttpSource):
     name = SourceId.YAHOO
 
     SYMBOL_MAP: dict[str, str] = {
+        # Index futures
         "ES": "ES=F",
         "NQ": "NQ=F",
         "YM": "YM=F",
+        "RTY": "RTY=F",
+        "MES": "MES=F",
+        "MNQ": "MNQ=F",
+        "MYM": "MYM=F",
+        # Energy
         "CL": "CL=F",
+        "NG": "NG=F",
+        "RB": "RB=F",
+        "HO": "HO=F",
+        "MCL": "MCL=F",
+        # Metals
         "GC": "GC=F",
+        "SI": "SI=F",
+        "HG": "HG=F",
+        "PL": "PL=F",
+        "PA": "PA=F",
+        "MGC": "MGC=F",
+        # Interest rates
+        "ZN": "ZN=F",
+        "ZB": "ZB=F",
+        "ZF": "ZF=F",
+        "ZT": "ZT=F",
+        # Grains
+        "ZC": "ZC=F",
+        "ZW": "ZW=F",
+        "ZS": "ZS=F",
+        "ZM": "ZM=F",
+        "ZL": "ZL=F",
+        # FX futures
+        "6E": "6E=F",
+        "6J": "6J=F",
+        "6B": "6B=F",
+        "6A": "6A=F",
+        "6C": "6C=F",
+        "6N": "6N=F",
+        "6S": "6S=F",
+        "M6E": "M6E=F",
+        # FX spot (backward compat)
         "EURUSD": "EURUSD=X",
         "GBPUSD": "GBPUSD=X",
+        # Equities/ETF
         "SPY": "SPY",
+    }
+
+    # CME futures multiplier catalog (USD per point/tick)
+    _FUTURES_MULT: dict[str, Decimal] = {
+        "ES": Decimal("50"),
+        "NQ": Decimal("20"),
+        "YM": Decimal("5"),
+        "RTY": Decimal("50"),
+        "MES": Decimal("5"),
+        "MNQ": Decimal("2"),
+        "MYM": Decimal("0.5"),
+        "CL": Decimal("1000"),
+        "NG": Decimal("10000"),
+        "RB": Decimal("42000"),
+        "HO": Decimal("42000"),
+        "MCL": Decimal("100"),
+        "GC": Decimal("100"),
+        "SI": Decimal("5000"),
+        "HG": Decimal("25000"),
+        "PL": Decimal("50"),
+        "PA": Decimal("100"),
+        "MGC": Decimal("10"),
+        "ZN": Decimal("1000"),
+        "ZB": Decimal("1000"),
+        "ZF": Decimal("1000"),
+        "ZT": Decimal("2000"),
+        "ZC": Decimal("5000"),
+        "ZW": Decimal("5000"),
+        "ZS": Decimal("5000"),
+        "ZM": Decimal("100"),
+        "ZL": Decimal("60000"),
+        "6E": Decimal("125000"),
+        "6J": Decimal("12500000"),
+        "6B": Decimal("62500"),
+        "6A": Decimal("100000"),
+        "6C": Decimal("100000"),
+        "6N": Decimal("100000"),
+        "6S": Decimal("125000"),
+        "M6E": Decimal("12500"),
     }
 
     def __init__(self) -> None:
@@ -568,14 +645,9 @@ class YFinance(HttpSource):
 
     def asset_spec(self, symbol: str) -> AssetSpec:
         s = symbol.upper()
-        if s in ("ES", "NQ", "YM"):
+        if s in self._FUTURES_MULT:
             cls = AssetClass.FUTURES
-            mult = {"ES": Decimal("50"), "NQ": Decimal("20"), "YM": Decimal("5")}.get(
-                s, Decimal("1")
-            )
-        elif s in ("CL", "GC"):
-            cls = AssetClass.FUTURES
-            mult = {"CL": Decimal("1000"), "GC": Decimal("100")}.get(s, Decimal("1"))
+            mult = self._FUTURES_MULT[s]
         elif s in ("EURUSD", "GBPUSD"):
             cls = AssetClass.FX
             mult = Decimal("1")
@@ -604,7 +676,7 @@ class YFinance(HttpSource):
 
         ticker = self.SYMBOL_MAP.get(symbol.upper(), symbol)
         interval = self._to_yf_interval(timeframe)
-        period = self._to_yf_period(start, end)
+        period = self._to_yf_period(start, end, timeframe)
         self._cooldown_until_clear()
         try:
             hist = yf.download(
@@ -657,7 +729,30 @@ class YFinance(HttpSource):
         return mapping.get(tf, "1d")
 
     @staticmethod
-    def _to_yf_period(start: date, end: date) -> str:
+    def _to_yf_period(start: date, end: date, timeframe: str = "1d") -> str:
+        """Map (start, end, timeframe) to a yfinance period string.
+
+        yfinance hard limits intraday history depth:
+          - 1m/2m:      last 7 days
+          - 5m/15m/30m: last 60 days
+          - 1h:         last 730 days
+          - 1d+:        full history ("max")
+        The returned period is clamped to those limits so the adapter
+        never requests a range yfinance rejects.
+        """
+        # Intraday timeframes: clamp to yfinance's maximum window.
+        if timeframe in ("1m", "2m"):
+            return "7d"
+        if timeframe in ("5m", "15m", "30m"):
+            return "60d"
+        if timeframe == "1h":
+            return "730d" if (end - start).days > 730 else YFinance._days_period(start, end)
+
+        # Daily and coarser: full-period selection.
+        return YFinance._days_period(start, end)
+
+    @staticmethod
+    def _days_period(start: date, end: date) -> str:
         days = (end - start).days
         if days <= 7:
             return "1wk"

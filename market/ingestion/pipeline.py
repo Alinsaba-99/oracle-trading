@@ -133,6 +133,15 @@ class Pipeline:
         except Exception as exc:
             report.note = f"FAILED: {type(exc).__name__}: {exc}"
             logger.exception("fetch failed: %s", report)
+        # A successful fetch that produced zero bars is NOT success — the
+        # source either lacks the requested range or is misconfigured.
+        # Mark it explicitly so the orchestrator treats it as failed and
+        # can retry later (previously empty note == "completed" bug).
+        if not report.note and report.rows_out == 0:
+            report.note = "NO_DATA"
+            logger.warning(
+                "fetch returned no bars: %s %s %s [%s..%s]", source, symbol, timeframe, start, end
+            )
         report.duration_s = round(time.monotonic() - t0, 2)
         meta.append_audit_log(
             source=str(source),
