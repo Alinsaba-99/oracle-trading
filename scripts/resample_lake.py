@@ -13,6 +13,7 @@ Usage:
     python -m scripts.resample_lake --plan
     python -m scripts.resample_lake --all
     python -m scripts.resample_lake --symbols EURAUD,GBPJPY --tfs 1h,4h,1d
+    python -m scripts.resample_lake --all --tfs 5m,15m,30m --recent-days 45
 """
 
 from __future__ import annotations
@@ -20,7 +21,7 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import polars as pl
@@ -37,7 +38,14 @@ NORM_ROOT = LAKE_ROOT / "normalized"
 SOURCE_TAG = "resample:1m"
 
 #: group_by_dynamic rule per target timeframe.
-TF_RULES: dict[str, str] = {"1h": "1h", "4h": "4h", "1d": "1d"}
+TF_RULES: dict[str, str] = {
+    "5m": "5m",
+    "15m": "15m",
+    "30m": "30m",
+    "1h": "1h",
+    "4h": "4h",
+    "1d": "1d",
+}
 
 #: Lake parquet column order — must match Pipeline._write_normalized.
 LAKE_COLUMNS = [
@@ -82,11 +90,20 @@ def available_tfs(symbol: str) -> set[str]:
     return found
 
 
-def read_source_1m(symbol: str) -> pl.DataFrame | None:
-    """Load every 1m partition for a symbol, deduped and sorted."""
+def read_source_1m(symbol: str, recent_days: int | None = None) -> pl.DataFrame | None:
+    """Load every 1m partition for a symbol, deduped and sorted.
+
+    With ``recent_days`` set, only partitions overlapping the last N days
+    are read (cheap incremental refresh; merge + dedupe keeps the rest).
+    """
     parts = partition_files(symbol, "1m")
     if not parts:
         return None
+    if recent_days is not None:
+        cutoff = (datetime.now(UTC).date() - timedelta(days=recent_days)).replace(day=1)
+        parts = [p for p in parts if _partition_year_month(p) >= (cutoff.year, cutoff.month)]
+        if not parts:
+            return None
     frames = []
     for path in parts:
         try:
@@ -99,6 +116,18 @@ def read_source_1m(symbol: str) -> pl.DataFrame | None:
     if df.is_empty():
         return None
     return df.unique(subset=["timestamp"], keep="last").sort("timestamp")
+
+
+def _partition_year_month(path: Path) -> tuple[int, int]:
+    """Extract (year, month) from a year=YYYY/month=MM.parquet path."""
+    year = 0
+    month = 0
+    for part in path.parts:
+        if part.startswith("year="):
+            year = int(part.split("=", 1)[1])
+        elif part.startswith("month="):
+            month = int(part.split("=", 1)[1].split(".", 1)[0])
+    return year, month
 
 
 def resample(df: pl.DataFrame, symbol: str, tf: str) -> pl.DataFrame:
@@ -213,7 +242,14 @@ def build_plan(symbols: list[str], tfs: list[str], *, overwrite: bool) -> list[t
     return plan
 
 
-def run(symbols: list[str], tfs: list[str], *, overwrite: bool, dry_run: bool) -> int:
+def run(
+    symbols: list[str],
+    tfs: list[str],
+    *,
+    overwrite: bool,
+    dry_run: bool,
+    recent_days: int | None = None,
+) -> int:
     plan = build_plan(symbols, tfs, overwrite=overwrite)
     if not plan:
         print("Nothing to do — every requested symbol/timeframe already exists.")
@@ -232,7 +268,7 @@ def run(symbols: list[str], tfs: list[str], *, overwrite: bool, dry_run: bool) -
     for symbol, tf_list in sorted(by_symbol.items()):
         # Read the 1m history once and reuse it for every target timeframe.
         print(f"\n[{symbol}] loading 1m bars…", flush=True)
-        src = read_source_1m(symbol)
+        src = read_source_1m(symbol, recent_days=recent_days)
         if src is None:
             log.warning("%s: no readable 1m data, skipping", symbol)
             continue
@@ -248,7 +284,7 @@ def run(symbols: list[str], tfs: list[str], *, overwrite: bool, dry_run: bool) -
             total_rows += out.height
             print(
                 f"[{symbol}] {tf}: {out.height:,} bars -> {n_parts} partitions "
-                f"({out['timestamp'].min()} .. {out['timestamp'].max()})",
+                f"({out['timestamp'].min()!s} .. {out['timestamp'].max()!s})",
                 flush=True,
             )
 
@@ -262,6 +298,12 @@ def main() -> None:
     parser.add_argument("--tfs", default="1h,4h,1d", help="Comma-separated target timeframes")
     parser.add_argument("--all", action="store_true", help="Process every symbol with 1m data")
     parser.add_argument("--plan", action="store_true", help="Show what would be done, then exit")
+    parser.add_argument(
+        "--recent-days",
+        type=int,
+        default=None,
+        help="Only read 1m partitions overlapping the last N days (cheap daily refresh)",
+    )
     parser.add_argument(
         "--overwrite",
         action="store_true",
@@ -283,7 +325,9 @@ def main() -> None:
     if unknown:
         parser.error(f"unsupported timeframes {unknown}; choose from {list(TF_RULES)}")
 
-    sys.exit(run(symbols, tfs, overwrite=args.overwrite, dry_run=args.plan))
+    sys.exit(
+        run(symbols, tfs, overwrite=args.overwrite, dry_run=args.plan, recent_days=args.recent_days)
+    )
 
 
 if __name__ == "__main__":

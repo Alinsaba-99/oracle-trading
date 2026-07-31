@@ -33,8 +33,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Daily lake refresh (BL-304)")
     parser.add_argument(
         "--tf",
-        default="1m,1h,1d",
-        help="Comma-separated timeframes to rebuild in curated (default: 1m,1h,1d)",
+        default="1m,1h,1d,5m,15m,30m",
+        help="Comma-separated timeframes to rebuild in curated (default: 1m,1h,1d,5m,15m,30m)",
     )
     args = parser.parse_args()
 
@@ -63,7 +63,24 @@ def main() -> int:
             flush=True,
         )
 
-    # 2) rebuild curated layer so consumers always read merged files
+    # 2) derive 5m/15m/30m from the freshly-fetched 1m (no extra downloads)
+    rc_res = run(
+        [
+            "uv",
+            "run",
+            "python",
+            "scripts/resample_lake.py",
+            "--all",
+            "--tfs",
+            "5m,15m,30m",
+            "--recent-days",
+            "45",
+        ]
+    )
+    if rc_res != 0:
+        rc = rc_res
+
+    # 3) rebuild curated layer so consumers always read merged files
     for tf in (t.strip() for t in args.tf.split(",") if t.strip()):
         rc_cur = run(["uv", "run", "python", "scripts/build_curated_contracts.py", "--tf", tf])
         if rc_cur != 0:

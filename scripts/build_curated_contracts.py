@@ -33,7 +33,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 LAKE = Path("data/lake/normalized")
 CURATED = Path("data/lake/curated")
 
-GAP_HOURS_DEFAULT: dict[str, int] = {"1m": 2, "1h": 4, "4h": 8, "1d": 72}
+GAP_HOURS_DEFAULT: dict[str, int] = {
+    "5m": 1,
+    "15m": 2,
+    "30m": 2,
+    "1m": 2,
+    "1h": 4,
+    "4h": 8,
+    "1d": 72,
+}
 
 
 def discover_symbols(tf: str) -> list[str]:
