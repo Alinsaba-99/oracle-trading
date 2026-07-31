@@ -27,12 +27,41 @@ LAKE = Path("data/lake/normalized")
 CURATED = Path("data/lake/curated")
 
 FUTURES = [
-    "ES", "NQ", "YM", "RTY", "MES", "MNQ", "MYM",
-    "CL", "NG", "RB", "HO", "MCL",
-    "GC", "SI", "HG", "PL", "PA", "MGC",
-    "ZN", "ZB", "ZF", "ZT",
-    "ZC", "ZW", "ZS", "ZM", "ZL",
-    "6E", "6J", "6B", "6A", "6C", "6N", "6S", "M6E",
+    "ES",
+    "NQ",
+    "YM",
+    "RTY",
+    "MES",
+    "MNQ",
+    "MYM",
+    "CL",
+    "NG",
+    "RB",
+    "HO",
+    "MCL",
+    "GC",
+    "SI",
+    "HG",
+    "PL",
+    "PA",
+    "MGC",
+    "ZN",
+    "ZB",
+    "ZF",
+    "ZT",
+    "ZC",
+    "ZW",
+    "ZS",
+    "ZM",
+    "ZL",
+    "6E",
+    "6J",
+    "6B",
+    "6A",
+    "6C",
+    "6N",
+    "6S",
+    "M6E",
 ]
 
 
@@ -76,8 +105,7 @@ def main() -> int:
     symbols = args.symbols.split(",") if args.symbols else FUTURES
     print(f"Building curated {args.tf} contracts for {len(symbols)} symbols...")
     header = (
-        f"{'Sym':5s} {'Rows':>8s} {'Dupes':>6s} "
-        f"{'Gaps>3h':>8s}  {'Range':22s} {'MB':>5s}  Status"
+        f"{'Sym':5s} {'Rows':>8s} {'Dupes':>6s} {'Gaps>3h':>8s}  {'Range':22s} {'MB':>5s}  Status"
     )
     print(header)
     total_rows = 0
