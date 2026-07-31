@@ -138,6 +138,7 @@ Usare `statsmodels.tsa.stattools.coint` per test di cointegrazione:
 
 ```python
 from statsmodels.tsa.stattools import coint
+
 score, pvalue, _ = coint(asset_a, asset_b)
 # pvalue < 0.05 → cointegrati
 ```

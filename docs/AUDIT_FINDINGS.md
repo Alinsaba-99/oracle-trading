@@ -109,7 +109,7 @@ vol_ratio = recent_vol / long_vol
 if vol_ratio > 1.6:
     return VOLATILE
 if trend_strength > 0.02:
-    return BULL/BEAR
+    return BULL / BEAR
 return CHOPPY  # ← default
 ```
 

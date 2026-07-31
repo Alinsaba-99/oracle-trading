@@ -153,7 +153,7 @@ Basandosi sui dati, l'ensemble DEVE adattarsi DINAMICAMENTE per asset e regime:
 # Non più: ensemble.route()
 # Ma: regime_aware_ranking()
 
-regime = detector.classify(data)   # bull, bear, choppy, volatile
+regime = detector.classify(data)  # bull, bear, choppy, volatile
 
 if regime == "bull":
     weights = {"trend": 0.7, "mean_rev": 0.2, "breakout": 0.1}

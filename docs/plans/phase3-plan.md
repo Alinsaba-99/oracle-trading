@@ -310,15 +310,18 @@ oracle/
 ```python
 class BacktestResult:
     """Result of a single backtest run."""
-    returns: pl.Series          # Daily strategy returns
-    trades: list[dict]          # Individual trade log
-    metrics: dict               # Raw computed metrics
+
+    returns: pl.Series  # Daily strategy returns
+    trades: list[dict]  # Individual trade log
+    metrics: dict  # Raw computed metrics
+
 
 class BacktestEngine:
     @staticmethod
     def run(data: pl.DataFrame, signal: BacktestSignal, config: BacktestConfig) -> BacktestResult:
         """Run a backtest given market data and a signal definition."""
         ...
+
 
 class MetricsCalculator:
     @staticmethod
@@ -337,10 +340,16 @@ class MetricsCalculator:
     def max_drawdown(returns: pl.Series) -> float:
         """Maximum peak-to-trough drawdown as positive percentage."""
 
+
 class WalkForwardEngine:
     @staticmethod
-    def run(data: pl.DataFrame, signal: BacktestSignal, config: BacktestConfig,
-            n_splits: int = 5, purge_window: int = 5) -> list[BacktestResult]:
+    def run(
+        data: pl.DataFrame,
+        signal: BacktestSignal,
+        config: BacktestConfig,
+        n_splits: int = 5,
+        purge_window: int = 5,
+    ) -> list[BacktestResult]:
         """Run walk-forward backtest with purge/embargo. Returns one BacktestResult per fold (out-of-sample)."""
         ...
 ```

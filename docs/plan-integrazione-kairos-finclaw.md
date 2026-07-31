@@ -17,8 +17,8 @@
 # ml/trang_thai_thi_truong_ml/ml_model.py
 class TradingMLP(nn.Module):
     """Input 80-dim (18 features × 4 TF + 8 ctx)
-       → 3 × ResBlock(256, Dropout=0.3)
-       → Output 8 classi regime"""
+    → 3 × ResBlock(256, Dropout=0.3)
+    → Output 8 classi regime"""
 ```
 
 **Architettura esatta:**
@@ -150,8 +150,8 @@ genetics/
 ```python
 @dataclass
 class DNA:
-    factor_weights: np.ndarray     # [484] float32, softmax
-    risk_params: dict              # stop_loss_pct, take_profit_pct, sizing
+    factor_weights: np.ndarray  # [484] float32, softmax
+    risk_params: dict  # stop_loss_pct, take_profit_pct, sizing
 ```
 
 **Algoritmo GA:**

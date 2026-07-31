@@ -86,9 +86,10 @@
 ```python
 class AgentVote(BaseModel):
     direction: Literal["buy", "sell", "hold"]
-    confidence: float           # 0.0-1.0
+    confidence: float  # 0.0-1.0
     reasoning: str
     risk_score: float | None = None  # 0 (safe) - 1 (risky)
+
 
 class AnalystInput(BaseModel):
     instrument: str
@@ -96,14 +97,16 @@ class AnalystInput(BaseModel):
     market_state: "MarketState"
     agent_specific_data: dict[str, Any]  # indicatori pre-calcolati
 
+
 class AnalystSignal(BaseModel):
     source: Literal["macro", "technical", "sentiment"]
     vote: AgentVote
     metadata: dict[str, Any]
     blind_spot: str
-    prompt_hash: str = ""       # per tracciabilità versioni prompt
-    model: str = ""             # modello LLM usato
-    tokens_used: int = 0        # per cost tracking
+    prompt_hash: str = ""  # per tracciabilità versioni prompt
+    model: str = ""  # modello LLM usato
+    tokens_used: int = 0  # per cost tracking
+
 
 class DebateResult(BaseModel, frozen=True):
     round_1: dict  # bull + bear + da
@@ -112,13 +115,15 @@ class DebateResult(BaseModel, frozen=True):
     disagreements: list[str] = []
     debate_quality: float = 0.0  # 0-1 da DebateScorer
 
+
 class MarketState(BaseModel, frozen=True):
-    regime: str                 # bull, bear, choppy
-    phase: str                  # accumulation, markup, distribution, markdown
-    volatility: str             # low, medium, high, panic
-    liquidity: str              # normal, tight, crisis
-    risk_appetite: str          # risk_on, risk_off
-    narrative: str = ""         # LLM narrative (solo testo)
+    regime: str  # bull, bear, choppy
+    phase: str  # accumulation, markup, distribution, markdown
+    volatility: str  # low, medium, high, panic
+    liquidity: str  # normal, tight, crisis
+    risk_appetite: str  # risk_on, risk_off
+    narrative: str = ""  # LLM narrative (solo testo)
+
 
 class RiskAssessment(BaseModel, frozen=True):
     approved: bool
@@ -126,6 +131,7 @@ class RiskAssessment(BaseModel, frozen=True):
     kelly_fraction: float
     var_95: float
     reasons: list[str]
+
 
 class PortfolioDecision(BaseModel, frozen=True):
     direction: Literal["buy", "sell", "hold", "no_trade"]
@@ -138,8 +144,9 @@ class PortfolioDecision(BaseModel, frozen=True):
     risk_approved: bool
     escalated: bool = False
 
+
 class MASState(BaseModel, frozen=True):
-    market_data: Any | None = None        # pl.DataFrame
+    market_data: Any | None = None  # pl.DataFrame
     market_state: MarketState | None = None
     analyst_signals: list[AnalystSignal] = []
     debate: DebateResult | None = None
@@ -158,6 +165,7 @@ class MASState(BaseModel, frozen=True):
 ```python
 class LLMClient(Protocol):
     """Adapter protocol — isola il MAS da LangChain/litellm."""
+
     async def structured_call(
         self,
         system_prompt: str,

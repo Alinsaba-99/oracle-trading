@@ -32,24 +32,25 @@ Ogni plugin attraversa queste fasi al caricamento e allo spegnimento.
 from abc import ABC, abstractmethod
 from typing import Optional
 
+
 class BasePlugin(ABC):
     """Classe base per tutti i plugin Oracle."""
 
     # --- Metadata (dichiarati dal plugin) ---
-    name: str                       # Nome univoco
-    version: str                    # Semver (es: "1.2.3")
-    description: str                # Descrizione testuale
-    dependencies: list[str] = []    # Nomi plugin richiesti
-    subjects_in: list[str] = []     # NATS subjects consumati
-    subjects_out: list[str] = []    # NATS subjects emessi
+    name: str  # Nome univoco
+    version: str  # Semver (es: "1.2.3")
+    description: str  # Descrizione testuale
+    dependencies: list[str] = []  # Nomi plugin richiesti
+    subjects_in: list[str] = []  # NATS subjects consumati
+    subjects_out: list[str] = []  # NATS subjects emessi
 
     # --- Config ---
     config_schema: Optional[dict] = None  # JSON Schema per validazione
 
     def __init__(self, config: Optional[dict] = None):
         self.config = config or {}
-        self.logger = None          # Assegnato dal plugin manager
-        self.event_bus = None       # Assegnato dal plugin manager
+        self.logger = None  # Assegnato dal plugin manager
+        self.event_bus = None  # Assegnato dal plugin manager
 
     # --- Lifecycle ---
     def validate(self) -> list[str]:
@@ -71,12 +72,10 @@ class BasePlugin(ABC):
     # --- Event Helpers ---
     async def publish(self, subject: str, data: dict, version: int = 1):
         """Pubblica un evento su NATS."""
-        await self.event_bus.publish(subject, {
-            "type": subject,
-            "version": version,
-            "data": data,
-            "source": f"plugin.{self.name}",
-        })
+        await self.event_bus.publish(
+            subject,
+            {"type": subject, "version": version, "data": data, "source": f"plugin.{self.name}"},
+        )
 
     async def subscribe(self, subject: str, handler: callable):
         """Subscribe a un subject NATS."""
@@ -159,14 +158,14 @@ class BaseRiskModel(BasePlugin):
     """Modello di risk metrics e position sizing."""
 
     @abstractmethod
-    async def evaluate(self, portfolio: Portfolio,
-                       signal: Signal,
-                       market_state: MarketState) -> RiskEvaluation: ...
+    async def evaluate(
+        self, portfolio: Portfolio, signal: Signal, market_state: MarketState
+    ) -> RiskEvaluation: ...
 
     @abstractmethod
-    async def position_size(self, portfolio: Portfolio,
-                            signal: Signal,
-                            risk_budget: float) -> Decimal: ...
+    async def position_size(
+        self, portfolio: Portfolio, signal: Signal, risk_budget: float
+    ) -> Decimal: ...
 ```
 
 ### 4.4 Execution Algo Plugin
@@ -176,8 +175,7 @@ class BaseExecutionAlgo(BasePlugin):
     """Algoritmo di execution (VWAP, TWAP, Iceberg)."""
 
     @abstractmethod
-    async def execute(self, order: Order,
-                      market_data: MarketData) -> ExecutionResult: ...
+    async def execute(self, order: Order, market_data: MarketData) -> ExecutionResult: ...
 ```
 
 ### 4.5 Agent Plugin
@@ -186,16 +184,16 @@ class BaseExecutionAlgo(BasePlugin):
 class BaseAgent(BasePlugin):
     """Agente LLM specializzato."""
 
-    agent_role: str                 # "technical_analyst", "macro_analyst", etc.
-    agent_layer: str                # "analyst", "debate", "decision", "meta"
+    agent_role: str  # "technical_analyst", "macro_analyst", etc.
+    agent_layer: str  # "analyst", "debate", "decision", "meta"
 
     @abstractmethod
-    async def analyze(self, instrument_id: str,
-                      context: AgentContext) -> AnalysisResult: ...
+    async def analyze(self, instrument_id: str, context: AgentContext) -> AnalysisResult: ...
 
     @abstractmethod
-    async def debate(self, bull_case: AnalysisResult,
-                     bear_case: AnalysisResult) -> DebateResult: ...
+    async def debate(
+        self, bull_case: AnalysisResult, bear_case: AnalysisResult
+    ) -> DebateResult: ...
 ```
 
 ### 4.6 Feature Plugin
@@ -205,8 +203,7 @@ class BaseFeaturePlugin(BasePlugin):
     """Trasformazione/calcolo feature."""
 
     @abstractmethod
-    async def compute(self, features: dict,
-                      market_data: MarketData) -> dict: ...
+    async def compute(self, features: dict, market_data: MarketData) -> dict: ...
 ```
 
 ---
@@ -244,6 +241,7 @@ I plugin non devono mai crashare il sistema:
 class PluginError(Exception):
     """Errore recuperabile del plugin."""
 
+
 class PluginFatalError(Exception):
     """Errore irreversibile. Plugin disabilitato."""
 ```
@@ -280,6 +278,7 @@ from decimal import Decimal
 from libraries.core.plugin import BasePlugin
 from libraries.events import event_bus
 
+
 class EMAPlugin(BasePlugin):
     name = "ema"
     version = "1.0.0"
@@ -290,12 +289,8 @@ class EMAPlugin(BasePlugin):
     config_schema = {
         "type": "object",
         "properties": {
-            "periods": {
-                "type": "array",
-                "items": {"type": "integer"},
-                "default": [10, 20, 50, 200]
-            }
-        }
+            "periods": {"type": "array", "items": {"type": "integer"}, "default": [10, 20, 50, 200]}
+        },
     }
 
     def initialize(self):
@@ -309,18 +304,14 @@ class EMAPlugin(BasePlugin):
 
         features = {}
         for period in self.periods:
-            features[f"ema_{period}"] = self._compute_ema(
-                instrument_id, close, period
-            )
+            features[f"ema_{period}"] = self._compute_ema(instrument_id, close, period)
 
-        await self.publish("feature.updated", {
-            "instrument_id": instrument_id,
-            "feature_set": "technical_v2",
-            "features": features,
-        })
+        await self.publish(
+            "feature.updated",
+            {"instrument_id": instrument_id, "feature_set": "technical_v2", "features": features},
+        )
 
-    def _compute_ema(self, instrument_id: str,
-                     price: Decimal, period: int) -> float:
+    def _compute_ema(self, instrument_id: str, price: Decimal, period: int) -> float:
         key = (instrument_id, period)
         prev = self.cache.get(key)
         k = 2 / (period + 1)

@@ -56,8 +56,11 @@ The dual engine strategy is sound in design but **completely unvalidated**. With
    `WalkForwardConfig` defines `embargo: int = 10` (line 48 in `evaluator.py`), but in `evaluate()` (lines 137-143):
    ```python
    fold_results = wf.run(
-       data, signal, settings=..., 
-       n_splits=..., purge_window=..., 
+       data,
+       signal,
+       settings=...,
+       n_splits=...,
+       purge_window=...,
        split_method=...,  # ← embargo NOT passed!
    )
    ```

@@ -37,6 +37,7 @@ if constraints is None:
     return _EMPTY_FITNESS  # ← sentinel per low trades
 return constraints
 
+
 # C — Nuovo metodo
 def _apply_constraints(self, fitness: tuple, combined: dict) -> tuple | None:
     # Fix 1: Min trade sentinel

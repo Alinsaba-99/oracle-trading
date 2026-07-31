@@ -229,9 +229,9 @@ Each module (M4-M8) uses a bounded `asyncio.Queue` for input events. Configurabl
 
 ```python
 class BackpressureSettings(BaseModel):
-    max_queue_size: int = 1000      # max buffered events
+    max_queue_size: int = 1000  # max buffered events
     drop_policy: Literal["oldest", "newest", "block"] = "oldest"
-    poll_interval_ms: int = 100     # polling interval when queue is empty
+    poll_interval_ms: int = 100  # polling interval when queue is empty
 ```
 
 The drop policy determines behavior when the queue is full:
@@ -449,6 +449,7 @@ def from_numpy(data: np.ndarray, index: pl.Series | None = None) -> pl.Series: .
 def validate_numpy(arr: np.ndarray, min_length: int = 1) -> np.ndarray:
     """Validate numpy array for NaN/Inf, ensure minimum length. Raises IndicatorError."""
 
+
 # analytics/common/schema.py
 class FeatureSchema(BaseModel):
     name: str
@@ -457,15 +458,17 @@ class FeatureSchema(BaseModel):
     description: str = ""
     valid_range: tuple[float | None, float | None] | None = None
 
+
 def validate_schema(df: pl.DataFrame, schema: list[FeatureSchema]) -> list[str]:
     """Returns list of schema violations (empty = valid)."""
+
 
 # analytics/common/models.py
 class UTCModel(BaseModel):
     """Base model enforcing timezone-aware UTC datetimes."""
+
     model_config = ConfigDict(
-        json_encoders={datetime: lambda dt: dt.isoformat()},
-        arbitrary_types_allowed=True,
+        json_encoders={datetime: lambda dt: dt.isoformat()}, arbitrary_types_allowed=True
     )
 
     @field_validator("*", mode="before")
@@ -477,29 +480,35 @@ class UTCModel(BaseModel):
             return v.astimezone(timezone.utc)
         return v
 
+
 # analytics/common/config.py
 class BackpressureSettings(BaseModel):
     """Bounded queue backpressure for analytics modules."""
+
     max_queue_size: int = 1000
     drop_policy: Literal["oldest", "newest", "block"] = "oldest"
     poll_interval_ms: int = 100
 
+
 class AnalyticsSettings(BaseModel):
     """Configuration for analytics engine."""
+
     indicator_batch_size: int = 100  # instruments per batch
     regime_lookback_bars: int = 500
     regime_ensemble_min_confidence: float = 0.6
     feature_store_path: str = "data/features"
     backpressure: BackpressureSettings = BackpressureSettings()
-    feature_cache_ttl_seconds: int = 300       # LRU cache TTL (Architect Rec #3)
+    feature_cache_ttl_seconds: int = 300  # LRU cache TTL (Architect Rec #3)
     feature_freshness_max_age_seconds: int = 600  # staleness threshold (Architect Rec #7)
-    utc_enforced: bool = True                    # UTC validation toggle (Architect Rec #8)
+    utc_enforced: bool = True  # UTC validation toggle (Architect Rec #8)
+
 
 # analytics/orchestrator.py
 class AnalyticsModule(ABC):
     """Interface each analytics module implements for lifecycle management."""
+
     name: ClassVar[str]
-    
+
     @abstractmethod
     async def start(self) -> None: ...
     @abstractmethod
@@ -507,21 +516,22 @@ class AnalyticsModule(ABC):
     @abstractmethod
     async def health(self) -> dict[str, Any]: ...
 
+
 class AnalyticsOrchestrator:
     """Manages startup ordering, health aggregation, and graceful shutdown of M4-M8."""
-    
+
     def __init__(self, bus: EventBusClient, store: FeatureStore): ...
-    
+
     async def start_all(self) -> None:
         """1. Wait for FeatureStore ready
         2. Start M4 (Technical) → M5 (Regime) sequentially
         3. Start M6 (Fundamental), M7 (Sentiment), M8 (Macro) in parallel
         4. Begin health polling loop
         """
-    
+
     async def shutdown(self) -> None:
         """Graceful shutdown: stop modules in reverse dependency order, flush store."""
-    
+
     async def health_check(self) -> dict[str, dict[str, Any]]:
         """Aggregate health from all modules, publish to system.health."""
 ```
@@ -608,24 +618,33 @@ analytics:
 # market/ingestion/base.py
 class DataSource(ABC):
     """Base class for all data sources."""
+
     name: ClassVar[str]
     instruments: list[str]
+
     async def connect(self) -> None: ...
     async def disconnect(self) -> None: ...
     async def health(self) -> dict[str, Any]: ...
 
+
 class WebSocketSource(DataSource):
     """Base for WebSocket data sources with auto-reconnect."""
+
     ws_url: str
     _ws: WebSocket | None = None
+
     async def _on_message(self, raw: dict) -> None: ...
     async def _reconnect(self) -> None: ...
 
+
 class RESTPoller(DataSource):
     """Base for REST-polled data sources with configurable interval."""
+
     poll_interval_seconds: int = 60
+
     async def _fetch(self) -> dict[str, Any]: ...
     async def _poll_loop(self) -> None: ...
+
 
 # market/ingestion/connectors/binance.py
 class BinanceWebSocketSource(WebSocketSource):
@@ -634,12 +653,14 @@ class BinanceWebSocketSource(WebSocketSource):
     - Streams: <symbol>@trade, <symbol>@kline_1m
     - Auto-reconnect with exponential backoff
     """
+
     name = "binance"
     ws_url = "wss://stream.binance.com:9443/ws"
     instruments: list[str]  # e.g., ["btcusdt", "ethusdt"]
-    
+
     async def _subscribe(self) -> None:
         """Send SUBSCRIBE message with instrument streams."""
+
 
 # market/ingestion/connectors/yfinance.py
 class YFinanceConnector(RESTPoller):
@@ -648,10 +669,12 @@ class YFinanceConnector(RESTPoller):
     - Supports: history, dividends, splits
     - Returns Polars DataFrame of daily bars
     """
+
     name = "yfinance"
     poll_interval_seconds = 86400  # once per day for EOD
-    
+
     async def fetch_history(self, symbol: str, period: str = "1mo") -> pl.DataFrame: ...
+
 
 # market/ingestion/connectors/coinpaprika.py
 class CoinPaprikaConnector(RESTPoller):
@@ -660,13 +683,16 @@ class CoinPaprikaConnector(RESTPoller):
     - Free, no API key
     - Rate limit: 10 req/min (free tier)
     """
+
     name = "coinpaprika"
-    
+
     async def fetch_ticker(self, coin_id: str) -> dict[str, Any]: ...
+
 
 # market/normalizer/publisher.py
 class MarketEventPublisher:
     """Publishes normalized market events to NATS."""
+
     def __init__(self, bus: EventBusClient): ...
     async def publish_tick(self, tick: MarketTickEvent) -> None: ...
     async def publish_bar(self, bar: MarketBarEvent) -> None: ...
@@ -743,20 +769,16 @@ class FeatureStore:
         self._freshness: dict[str, datetime] = {}  # last write time per (feature_set, instrument)
 
     async def write_features(
-        self,
-        feature_set: str,
-        version: str,
-        df: pl.DataFrame,
-        instrument_id: str,
+        self, feature_set: str, version: str, df: pl.DataFrame, instrument_id: str
     ) -> FeatureSetVersion:
         """Write feature DataFrame with schema validation.
-        
+
         Expects long-format DataFrame with columns:
             [timestamp, feature_name, value, version, updated_at]
-        
+
         Per-feature-set asyncio lock prevents concurrent writes.
         Updates LRU cache and freshness tracker.
-        
+
         Raises StoreError if schema validation fails.
         """
         async with self._get_write_lock(feature_set):
@@ -777,7 +799,7 @@ class FeatureStore:
         feature_names: list[str] | None = None,  # filter by feature
     ) -> pl.DataFrame:
         """Read features via DuckDB SQL on Parquet files.
-        
+
         1. Check LRU cache for hot feature sets
         2. Falls through to DuckDB on cache miss
         3. Supports filtering by feature name for efficient long-format queries
@@ -799,28 +821,32 @@ class FeatureStore:
 
     def _get_write_lock(self, feature_set: str) -> asyncio.Lock:
         """Get or create per-feature-set asyncio write lock.
-        
+
         Cross-feature-set safety: writes to different feature sets
         (e.g., technical_v2 and regime_v1) proceed concurrently.
         Only writes to the same feature set serialize.
         """
 
+
 # market/store/cache.py
 class FeatureLRUCache:
     """In-memory LRU cache for hot feature set reads.
-    
+
     Bounded by max_size items and per-item TTL.
     Thread-safe for concurrent access.
     """
+
     def __init__(self, max_size: int = 1000, ttl: int = 300): ...
     def get(self, key: str) -> pl.DataFrame | None: ...
     def put(self, key: str, df: pl.DataFrame) -> None: ...
     def invalidate(self, key: str) -> None: ...
     def invalidate_feature_set(self, feature_set: str) -> None: ...
 
+
 # market/store/duckdb_backend.py
 class DuckDBQuery:
     """Embedded DuckDB for analytical SQL on Parquet features."""
+
     def __init__(self, feature_store_path: Path): ...
     def sql(self, query: str) -> pl.DataFrame: ...
     def register_views(self, feature_sets: dict[str, FeatureSetVersion]) -> None: ...
@@ -886,43 +912,46 @@ class DuckDBQuery:
 #   from_numpy(data, index) -> pl.Series
 #   validate_numpy(arr, min_length) -> np.ndarray
 
+
 @overload
 def ta_sma(series: pl.Series, period: int = 20) -> pl.Series: ...
 @overload
 def ta_sma(df: pl.DataFrame, column: str, period: int = 20) -> pl.Series: ...
 
+
 def ta_rsi(series: pl.Series, period: int = 14) -> pl.Series: ...
-def ta_macd(close: pl.Series, fast: int = 12, slow: int = 26, signal: int = 9) -> dict[str, pl.Series]: ...
+def ta_macd(
+    close: pl.Series, fast: int = 12, slow: int = 26, signal: int = 9
+) -> dict[str, pl.Series]: ...
 def ta_bbands(close: pl.Series, period: int = 20, std: int = 2) -> dict[str, pl.Series]: ...
+
 
 # analytics/technical/compute.py
 class IndicatorComputer(AnalyticsModule):
     """Subscribes to market.bar, computes indicators, publishes feature.updated.
-    
+
     Backpressure: bounded asyncio.Queue with configurable drop policy.
     """
 
     name = "technical"
 
-    def __init__(self, bus: EventBusClient, store: FeatureStore,
-                 settings: TechnicalSettings): ...
-    
+    def __init__(self, bus: EventBusClient, store: FeatureStore, settings: TechnicalSettings): ...
+
     async def start(self) -> None:
         """Subscribe to market.bar, begin processing loop."""
-    
+
     async def stop(self) -> None:
         """Unsubscribe, flush pending events."""
-    
+
     async def health(self) -> dict[str, Any]:
         """Return queue depth, events processed, last computation time."""
-    
+
     async def on_bar(self, event: MarketBarEvent) -> None:
         """Queue bar event (respects backpressure drop policy)."""
-    
-    async def compute_all(
-        self, bars: pl.DataFrame, indicators: list[str]
-    ) -> pl.DataFrame:
+
+    async def compute_all(self, bars: pl.DataFrame, indicators: list[str]) -> pl.DataFrame:
         """Batch compute multiple indicators on multi-instrument DataFrame."""
+
 
 # Candlestick patterns
 def detect_patterns(df: pl.DataFrame) -> dict[str, list[str]]:
@@ -930,9 +959,11 @@ def detect_patterns(df: pl.DataFrame) -> dict[str, list[str]]:
     Uses TA-Lib CDL* functions internally.
     """
 
+
 # analytics/technical/config.py
 class TechnicalSettings(BackpressureSettings):
     """Technical indicator settings with inherited backpressure."""
+
     pass
 ```
 
@@ -991,16 +1022,20 @@ class BaseRegimeDetector(ABC):
     @abstractmethod
     def predict(self, data: pl.DataFrame) -> dict[str, Any]: ...
 
+
 # analytics/regime/detectors/hmm.py
 class HMMRegimeDetector(BaseRegimeDetector):
     """Gaussian HMM with 3-4 hidden states on returns + vol features."""
+
     n_states: int = 4
     covariance_type: str = "full"
 
     def fit(self, features: pl.DataFrame) -> None:
         """Fit HMM on [returns, volatility, volume_change]."""
+
     def predict(self, features: pl.DataFrame) -> dict[str, Any]:
         """Return {regime: state_idx, probabilities: [p0, p1, p2, p3]}."""
+
 
 # analytics/regime/ensemble.py
 class RegimeEnsemble:
@@ -1018,13 +1053,14 @@ class RegimeEnsemble:
         Returns None if confidence < min_confidence (no regime change).
         """
 
+
 # analytics/regime/publisher.py
 class RegimePublisher(AnalyticsModule):
     """Subscribes to feature.updated, runs ensemble, publishes regime.updated."""
+
     name = "regime"
 
-    def __init__(self, bus: EventBusClient, ensemble: RegimeEnsemble,
-                 settings: RegimeSettings): ...
+    def __init__(self, bus: EventBusClient, ensemble: RegimeEnsemble, settings: RegimeSettings): ...
     async def start(self) -> None: ...
     async def stop(self) -> None: ...
     async def health(self) -> dict[str, Any]: ...
@@ -1079,6 +1115,7 @@ class RegimePublisher(AnalyticsModule):
 # analytics/fundamental/statements.py
 class FinancialStatements(UTCModel):
     """Parsed financial statements from SEC EDGAR (XBRL) or API."""
+
     instrument_id: str
     fiscal_year: int
     fiscal_period: str  # "Q1", "Q2", "Q3", "Q4", "FY"
@@ -1090,8 +1127,10 @@ class FinancialStatements(UTCModel):
     @classmethod
     def from_edgar(cls, ticker: str) -> FinancialStatements:
         """Fetch and parse SEC EDGAR XBRL filing via edgartools."""
+
     @classmethod
     def from_api(cls, data: dict[str, Any]) -> FinancialStatements: ...
+
 
 # analytics/fundamental/ratios.py
 class RatioCalculator:
@@ -1102,23 +1141,27 @@ class RatioCalculator:
     def leverage(self, st: FinancialStatements) -> dict[str, float]: ...
     def efficiency(self, st: FinancialStatements) -> dict[str, float]: ...
 
+
 # analytics/fundamental/dcf.py
 class DCFValuation(UTCModel):
     """Discounted Cash Flow valuation model."""
+
     growth_rate: float = 0.05
     terminal_growth: float = 0.02
     discount_rate: float = 0.10
     projection_years: int = 5
 
-    def compute(self, fcf: float, debt: float, cash: float,
-                shares_outstanding: float) -> dict[str, float]:
+    def compute(
+        self, fcf: float, debt: float, cash: float, shares_outstanding: float
+    ) -> dict[str, float]:
         """Return {fair_value, upside_pct, margin_of_safety, ...}."""
+
 
 # analytics/fundamental/pipeline.py
 class FundamentalPipeline(AnalyticsModule):
     name = "fundamental"
-    def __init__(self, bus: EventBusClient, store: FeatureStore,
-                 settings: FundamentalSettings): ...
+
+    def __init__(self, bus: EventBusClient, store: FeatureStore, settings: FundamentalSettings): ...
     async def start(self) -> None: ...
     async def stop(self) -> None: ...
     async def health(self) -> dict[str, Any]: ...
@@ -1172,6 +1215,7 @@ class SentimentResult(UTCModel):
     source: str  # "news", "social", "earnings"
     text_sample: str = ""
 
+
 # analytics/sentiment/news.py
 class NewsSentimentAnalyzer:
     """Financial news sentiment via local FinBERT model."""
@@ -1184,9 +1228,11 @@ class NewsSentimentAnalyzer:
     def _classify(self, text: str) -> tuple[float, str, float]:
         """Return (score, label, confidence)."""
 
+
 # analytics/sentiment/aggregator.py
 class SentimentAggregator:
     """Combines sentiment from multiple sources with configurable weights."""
+
     weights: dict[str, float] = {"news": 0.5, "social": 0.2, "earnings": 0.3}
     min_articles: int = 1
 
@@ -1245,17 +1291,21 @@ class FREDClient:
     UNRATE = "UNRATE"
     T10Y2Y = "T10Y2Y"
 
+
 # market/sources/base.py
 class MacroDataSource(ABC):
     """Base class for macro data sources with rate limiting and caching."""
+
     name: str
+
     async def fetch(self, indicator: str) -> pl.DataFrame: ...
     async def health(self) -> bool: ...
 
+
 class MacroPublisher(AnalyticsModule):
     name = "macro"
-    def __init__(self, bus: EventBusClient, store: FeatureStore,
-                 settings: DataSourceSettings): ...
+
+    def __init__(self, bus: EventBusClient, store: FeatureStore, settings: DataSourceSettings): ...
     async def start(self) -> None: ...
     async def stop(self) -> None: ...
     async def health(self) -> dict[str, Any]: ...
@@ -1307,7 +1357,9 @@ def run_analytics(args: argparse.Namespace) -> None:
     4. Run until SIGTERM
     """
     import asyncio
+
     asyncio.run(_run())
+
 
 def run_benchmarks(args: argparse.Namespace) -> None:
     """Run performance benchmarks and log to Experiment Registry."""
@@ -1374,29 +1426,34 @@ async def test_orchestrator_startup_order():
     assert modules["technical"].started_at < modules["regime"].started_at
     assert all(m.running for m in [modules["fundamental"], modules["sentiment"], modules["macro"]])
 
+
 # FeatureStore concurrency guard test
 async def test_concurrent_write_lock():
     """Same feature set writes serialize; different sets proceed in parallel."""
     store = FeatureStore(...)
     t1 = asyncio.create_task(store.write_features("technical_v2", ...))
     t2 = asyncio.create_task(store.write_features("technical_v2", ...))  # same set
-    t3 = asyncio.create_task(store.write_features("regime_v1", ...))     # different set
+    t3 = asyncio.create_task(store.write_features("regime_v1", ...))  # different set
     # t1 and t2 overlap? t3 runs concurrently
     ...
+
 
 # FeatureStore long format round-trip test
 def test_long_format_round_trip():
     """Write long-format features, read back, assert structure."""
-    df = pl.DataFrame({
-        "timestamp": [datetime.now(timezone.utc)] * 4,
-        "feature_name": ["sma_20", "rsi_14", "bb_upper", "bb_lower"],
-        "value": [195.5, 62.5, 201.0, 190.0],
-        "version": ["1.0"] * 4,
-        "updated_at": [datetime.now(timezone.utc)] * 4,
-    })
+    df = pl.DataFrame(
+        {
+            "timestamp": [datetime.now(timezone.utc)] * 4,
+            "feature_name": ["sma_20", "rsi_14", "bb_upper", "bb_lower"],
+            "value": [195.5, 62.5, 201.0, 190.0],
+            "version": ["1.0"] * 4,
+            "updated_at": [datetime.now(timezone.utc)] * 4,
+        }
+    )
     version = await store.write_features("technical_v2", "1.0", df, "SPY")
     result = await store.read_features("technical_v2", feature_names=["sma_20"])
     assert result.filter(pl.col("feature_name") == "sma_20")["value"][0] == 195.5
+
 
 # UTC enforcement test
 def test_utc_model_rejects_naive():
@@ -1405,8 +1462,12 @@ def test_utc_model_rejects_naive():
         SentimentResult(
             instrument_id="SPY",
             timestamp=datetime.now(),  # naive!
-            score=0.5, label="bullish", confidence=0.8, source="news"
+            score=0.5,
+            label="bullish",
+            confidence=0.8,
+            source="news",
         )
+
 
 # Backpressure test
 async def test_backpressure_drop_oldest():
@@ -1418,6 +1479,7 @@ async def test_backpressure_drop_oldest():
     assert computer.queue.qsize() == 2
     ...
 
+
 # LRU cache test
 def test_feature_cache_hit():
     """Repeated read of same feature set returns cached data."""
@@ -1426,6 +1488,7 @@ def test_feature_cache_hit():
     result = cache.get("technical_v2:SPY")
     assert result is not None
     expected_shape = result.shape
+
 
 # Freshness test
 def test_feature_staleness():

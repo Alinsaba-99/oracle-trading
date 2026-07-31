@@ -45,11 +45,11 @@ Strategy
 class Policy:
     policy_id: str
     name: str
-    type: PolicyType          # hard_limit | soft_limit | compliance | market_condition | governance
+    type: PolicyType  # hard_limit | soft_limit | compliance | market_condition | governance
     enabled: bool
-    priority: int             # Ordine di valutazione (più alto = prima)
+    priority: int  # Ordine di valutazione (più alto = prima)
     conditions: list["PolicyCondition"]
-    action: str               # "block" | "warn" | "require_approval"
+    action: str  # "block" | "warn" | "require_approval"
     config: dict
     created_at: str
 ```
@@ -77,9 +77,10 @@ class PolicyContext:
     order: Order | None = None
     regime: Regime | None = None
 
+
 @dataclass
 class PolicyResult:
-    decision: str             # "approved" | "rejected" | "warning"
+    decision: str  # "approved" | "rejected" | "warning"
     policy_id: str
     policy_name: str
     policy_type: str
@@ -89,11 +90,12 @@ class PolicyResult:
     evaluated_at: str
     evaluation_time_ms: float
 
+
 @dataclass
 class PolicyChainResult:
     results: list[PolicyResult]
-    final_decision: str       # "approved" | "rejected"
-    rejected_by: str | None   # Prima policy che ha bloccato
+    final_decision: str  # "approved" | "rejected"
+    rejected_by: str | None  # Prima policy che ha bloccato
 ```
 
 ### Valutazione
@@ -117,19 +119,12 @@ class PolicyEngine:
 
             if result.decision == "rejected":
                 return PolicyChainResult(
-                    results=results,
-                    final_decision="rejected",
-                    rejected_by=policy.policy_id
+                    results=results, final_decision="rejected", rejected_by=policy.policy_id
                 )
 
-        return PolicyChainResult(
-            results=results,
-            final_decision="approved",
-            rejected_by=None
-        )
+        return PolicyChainResult(results=results, final_decision="approved", rejected_by=None)
 
-    def _evaluate_one(self, policy: Policy,
-                      context: PolicyContext) -> PolicyResult:
+    def _evaluate_one(self, policy: Policy, context: PolicyContext) -> PolicyResult:
         start = time.perf_counter()
         try:
             for condition in policy.conditions:
@@ -137,14 +132,13 @@ class PolicyEngine:
                 if violation:
                     elapsed = (time.perf_counter() - start) * 1000
                     return PolicyResult(
-                        decision="rejected" if policy.action == "block"
-                                 else "warning",
+                        decision="rejected" if policy.action == "block" else "warning",
                         policy_id=policy.policy_id,
                         policy_name=policy.name,
                         policy_type=policy.type,
                         reason=violation,
                         evaluated_at=datetime.utcnow().isoformat(),
-                        evaluation_time_ms=elapsed
+                        evaluation_time_ms=elapsed,
                     )
 
             elapsed = (time.perf_counter() - start) * 1000
@@ -154,7 +148,7 @@ class PolicyEngine:
                 policy_name=policy.name,
                 policy_type=policy.type,
                 evaluated_at=datetime.utcnow().isoformat(),
-                evaluation_time_ms=elapsed
+                evaluation_time_ms=elapsed,
             )
 
         except Exception as e:
@@ -166,7 +160,7 @@ class PolicyEngine:
                 policy_type=policy.type,
                 reason=f"Policy evaluation error: {str(e)}",
                 evaluated_at=datetime.utcnow().isoformat(),
-                evaluation_time_ms=0.0
+                evaluation_time_ms=0.0,
             )
 ```
 
@@ -330,8 +324,9 @@ CREATE INDEX idx_policy_eval_decision ON policy_evaluations(decision);
 Nel Decision Orchestration Engine:
 
 ```python
-async def orchestrate_decision(signal: Signal, portfolio: Portfolio,
-                               market_state: MarketState) -> ExecutionDecision:
+async def orchestrate_decision(
+    signal: Signal, portfolio: Portfolio, market_state: MarketState
+) -> ExecutionDecision:
     # 1. Risk evaluation
     risk_result = risk_engine.evaluate(portfolio, signal, market_state)
 
@@ -342,9 +337,7 @@ async def orchestrate_decision(signal: Signal, portfolio: Portfolio,
     # 3. Decision
     if policy_result.final_decision == "rejected":
         return ExecutionDecision(
-            action="rejected",
-            reason=policy_result.rejected_by,
-            details=policy_result.results
+            action="rejected", reason=policy_result.rejected_by, details=policy_result.results
         )
 
     # 4. Execute (se tutto ok)

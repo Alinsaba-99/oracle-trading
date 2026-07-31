@@ -169,6 +169,7 @@ Come funziona DOPO:
 # analytics/portfolio/hrp.py
 from pypfopt import HRPOpt
 
+
 def compute_strategy_weights(
     returns_df: pd.DataFrame,  # columns = strategy names
 ) -> dict[str, float]:

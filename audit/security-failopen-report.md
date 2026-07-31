@@ -146,12 +146,14 @@ async def cancel_order(self, broker_order_id: str) -> bool:
     except Exception:
         return False  # ← Could be auth failure, rate limit, connection lost
 
+
 async def order_status(self, broker_order_id: str) -> str:
     try:
         order = await self._exchange.fetch_order(broker_order_id)
         return str(order.get("status", "unknown"))
     except Exception:
         return "unknown"  # ← "unknown" is also a valid exchange status
+
 
 async def positions(self) -> list[Any]:
     try:

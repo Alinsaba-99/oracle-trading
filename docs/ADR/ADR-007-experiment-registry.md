@@ -55,7 +55,7 @@ duration_seconds: float
 ```python
 registry.search(metric="sharpe", min=1.5, max_dd=-0.2)
 registry.compare(["exp_001", "exp_047"])
-registry.reproduce("exp_047")   # Ricrea esattamente lo stesso esperimento
+registry.reproduce("exp_047")  # Ricrea esattamente lo stesso esperimento
 registry.latest(type="ga_run")
 ```
 

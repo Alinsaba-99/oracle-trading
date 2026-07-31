@@ -153,22 +153,28 @@ class OracleSettings(BaseSettings):
     postgres: PostgresSettings = PostgresSettings()
     plugins: PluginSettings = PluginSettings()
 
+
 class NATSSettings(BaseModel):
     url: str = "nats://localhost:4222"
     timeout: float = 5.0
     max_reconnect: int = 10
 
+
 # core/config/loader.py
 class ConfigLoader:
     """Loads and merges config from YAML files with env var override."""
+
     def __init__(self, config_dir: Path = Path("config")):
         self.config_dir = config_dir
+
     def load(self, profile: str = "development") -> dict:
         """Load config/development.yaml → override with env → return dict."""
+
 
 # core/config/serializer.py
 class SettingsSerializer:
     """Export OracleSettings to JSON, YAML, or TOML."""
+
     @staticmethod
     def to_json(settings: OracleSettings) -> str: ...
     @staticmethod
@@ -213,10 +219,12 @@ class OracleSettings(BaseSettings):
     postgres: PostgresSettings = PostgresSettings()
     plugins: PluginSettings = PluginSettings()
 
+
 class NATSSettings(BaseModel):
     url: str = "nats://localhost:4222"
     timeout: float = 5.0
     max_reconnect: int = 10
+
 
 # core/config/loader.py
 class ConfigLoader:
@@ -264,15 +272,12 @@ class ConfigLoader:
 # core/errors/base.py
 class OracleError(Exception):
     """Base exception for all Oracle errors."""
-    def __init__(
-        self,
-        message: str,
-        code: str = "UNKNOWN",
-        details: dict | None = None,
-    ):
+
+    def __init__(self, message: str, code: str = "UNKNOWN", details: dict | None = None):
         self.code = code
         self.details = details or {}
         super().__init__(message)
+
 
 class OracleFatalError(Exception):
     """Non-recoverable. System should stop or skip component."""
@@ -312,6 +317,7 @@ import structlog
 import structlog.stdlib
 import logging
 
+
 def configure_logging(
     environment: str = "development",
     log_level: str = "INFO",
@@ -342,9 +348,11 @@ def configure_logging(
     )
 
     # Route stdlib logging through structlog
-    logging.basicConfig(format="%(message)s",
-        level=getattr(logging, log_level.upper(), logging.INFO))
+    logging.basicConfig(
+        format="%(message)s", level=getattr(logging, log_level.upper(), logging.INFO)
+    )
     logging.captureWarnings(True)
+
 
 # core/logging/__init__.py
 def get_logger(name: str | None = None) -> structlog.stdlib.BoundLogger:
@@ -405,9 +413,11 @@ class BasePlugin(ABC):
         """Publish via event bus. Passes BARE data — EventBusClient owns the envelope per ADR-008."""
         await self._event_bus.publish(subject, data, source=f"plugin.{self.name}", **kwargs)
 
+
 # core/plugin/registry.py
 class PluginRegistry:
     """Thread-safe registry with per-plugin state tracking."""
+
     def register(self, plugin: BasePlugin) -> None: ...
     def get(self, name: str) -> BasePlugin: ...
     def list(self, plugin_type: str | None = None) -> list[BasePlugin]: ...
@@ -416,8 +426,7 @@ class PluginRegistry:
     async def start_all(self) -> dict[str, Exception | None]:
         """Start all plugins with return_exceptions=True for isolation."""
         results = await asyncio.gather(
-            *(p.start() for p in self._plugins.values()),
-            return_exceptions=True,
+            *(p.start() for p in self._plugins.values()), return_exceptions=True
         )
         errors = {}
         for name, result in zip(self._plugins.keys(), results):
@@ -425,6 +434,7 @@ class PluginRegistry:
                 errors[name] = result
                 self._states[name] = PluginState.error
         return errors
+
 
 # core/plugin/discovery.py
 class PluginDiscovery:
@@ -510,9 +520,11 @@ class EventBusClient:
             raise NATSConnectionError("Not connected. Call connect() first.")
         ...
 
+
 # core/events/envelope.py
-def build_envelope(subject: str, data: dict, source: str, version: int = 1,
-                   trace_id: str | None = None) -> dict:
+def build_envelope(
+    subject: str, data: dict, source: str, version: int = 1, trace_id: str | None = None
+) -> dict:
     """Build standard NATS envelope. Sole owner — no double-wrapping.
 
     Schema per EVENTS.md: { subject, version, timestamp, source, trace_id, data }
@@ -526,22 +538,29 @@ def build_envelope(subject: str, data: dict, source: str, version: int = 1,
         "data": data,
     }
 
+
 # core/events/system.py
 SYSTEM_HEALTH = "system.health"
 SYSTEM_PLUGIN_REGISTERED = "system.plugin.registered"
 
+
 class SystemEventPayload(BaseModel):
     """Base for system events per EVENTS.md."""
+
     timestamp: datetime
     service: str = "oracle"
 
+
 class HealthEventPayload(SystemEventPayload):
     """Published on EventBusClient.connect()."""
+
     status: Literal["healthy", "degraded", "unhealthy"]
     components: dict[str, str]
 
+
 class PluginRegisteredPayload(SystemEventPayload):
     """Published on successful plugin registration."""
+
     plugin_name: str
     plugin_version: str
 ```
@@ -596,16 +615,20 @@ class PluginRegisteredPayload(SystemEventPayload):
 import threading
 from datetime import datetime, timezone
 
+
 class ExperimentContext(BaseModel):
     """Immutable experiment context. Created once, never mutated."""
+
     experiment_id: str = Field(default_factory=lambda: str(uuid4()))
     git_commit: str = ""
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     random_seed: int = 42
     tags: dict[str, str] = Field(default_factory=dict)
 
+
 class ExperimentRegistry:
     """Thread-safe experiment registry backed by JSONL. Phase 1: migrate to PG/QuestDB."""
+
     def __init__(self, path: Path = Path("experiments/_registry.jsonl")):
         self._path = path
         self._lock = threading.Lock()
@@ -619,9 +642,11 @@ class ExperimentRegistry:
     def list(self) -> list[ExperimentContext]: ...
     def get(self, experiment_id: str) -> ExperimentContext | None: ...
 
+
 # apps/cli/application.py
 class OracleApplication:
     """Context manager with signal handlers and clean shutdown."""
+
     async def __aenter__(self) -> "OracleApplication": ...
     async def __aexit__(self, *args) -> None: ...
     async def shutdown(self, sig: signal.Signals) -> None: ...

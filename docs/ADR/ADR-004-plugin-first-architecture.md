@@ -24,12 +24,12 @@ Adottare architettura **Plugin-First** con ciclo di vita standardizzato.
 ## Plugin Lifecycle
 
 ```python
-register()      # Plugin manager scopre e registra il plugin
-validate()      # Verifica configurazione e dipendenze (fail fast)
-initialize()    # Alloca risorse, connette API, carica modelli
-start()         # Avvia processing (subscribe a eventi NATS)
-stop()          # Ferma processing gracefulmente
-dispose()       # Rilascia risorse
+register()  # Plugin manager scopre e registra il plugin
+validate()  # Verifica configurazione e dipendenze (fail fast)
+initialize()  # Alloca risorse, connette API, carica modelli
+start()  # Avvia processing (subscribe a eventi NATS)
+stop()  # Ferma processing gracefulmente
+dispose()  # Rilascia risorse
 ```
 
 ## Plugin Contract
@@ -38,13 +38,13 @@ Ogni plugin deve esporre:
 
 ```python
 class OraclePlugin(BasePlugin):
-    name: str                      # Nome univoco
-    version: str                   # Semver
-    description: str               # Descrizione
-    dependencies: list[str]        # Altri plugin richiesti
-    subjects_in: list[str]         # NATS subjects consumati
-    subjects_out: list[str]        # NATS subjects emessi
-    config_schema: dict            # JSON Schema per validazione config
+    name: str  # Nome univoco
+    version: str  # Semver
+    description: str  # Descrizione
+    dependencies: list[str]  # Altri plugin richiesti
+    subjects_in: list[str]  # NATS subjects consumati
+    subjects_out: list[str]  # NATS subjects emessi
+    config_schema: dict  # JSON Schema per validazione config
 ```
 
 ## Plugin Discovery
