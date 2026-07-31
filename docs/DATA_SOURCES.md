@@ -1,82 +1,70 @@
 # Oracle Data Sources — Coverage Matrix
 
-> Aggiornato: 2026-07-19
+> Aggiornato: 2026-07-31 (post BL-304 futures intraday a tappeto)
 
-## Coverage Completa
+## Coverage Reale del Data Lake
 
 ```
-ASSET CLASS    Timeframes              Fonti
-───────────────────────────────────────────────────────
-Futures (ES)   tick  ❌                 Polygon.io (con key)
-              1m-5m  🟡 Polygon.io     Polygon.io (con key)  
-              15m    🟡 Polygon.io     Polygon.io (con key)
-              1h     ✅ yfinance       yfinance
-              1d     ✅ yfinance/OBB   yfinance, OpenBB
+ASSET CLASS    TF     Stato      Copertura                Fonte
+─────────────────────────────────────────────────────────────────────
+FUTURES CME   1m     🟡 parziale 2010+ (Databento key)    Databento/IBKR
+(35 simboli)  1h     ✅ 35/35    2024-03 → oggi (13.7K)   yfinance
+              1d     ✅ 35/35    2000 → oggi (6.5K)       yfinance/stooq
 
-Crypto (BTC)   tick  🟡 CCXT           CCXT orderbook
-              1m    ✅ CCXT            CCXT spot/futures
-              5m    ✅ CCXT            CCXT spot/futures
-              15m   ✅ CCXT            CCXT spot/futures
-              1h    ✅ CCXT            CCXT spot/futures
-              1d    ✅ CCXT/yfinance   CCXT, yfinance
-              fund. ✅ CCXT            Perpetual funding rate
+FX majors     1m     ✅ 9/9      2003 → oggi (8.6M)       Dukascopy
++ crosses     1h     ✅ 28/28    2003 → oggi (140K)       Dukascopy
+              4h     ✅ 24/24    2003 → oggi (37K)        Dukascopy
+              1d     ✅ 28/28    2003 → oggi (7K)         Dukascopy/histdata
 
-Equities(SPY)  tick  ❌                 IBKR (con TWS)
-              1m    🟡 Polygon.io      Polygon.io (con key)
-              1d    ✅ yfinance/OBB    yfinance, OpenBB
-              fund. ✅ OpenBB           Financial statements
+Crypto       1m     ✅ 2/2      BTC/ETH 2017 → (4.7M)    Binance REST
+              1h     ✅ 4/4      BTC/ETH/SOL/BNB          Binance REST
+              4h     ✅ 2/2      BTC/ETH                  Binance REST
+              1d     ✅ 4/4      BTC/ETH/SOL/BNB          Binance REST
 
-FX majors      1d    ✅ yfinance/OBB    yfinance, OpenBB
-FX minors      1d    🟡 OpenBB         OpenBB
+Equities/ETF  1d     ✅ 11       SPY/QQQ/AAPL/MSFT/TLT/
+                              GLD/DBA/DIA/IWM/...         yfinance
+              1m     🟡 IBKR TWS/Gateway (non attivo)    IBKR
 
-Macro (GDP)    qrt   ✅ FRED           Federal Reserve API
-Macro (CPI)    mon   ✅ FRED           Federal Reserve API
-Macro (NFP)    mon   ✅ FRED           Federal Reserve API
-Macro (rates)  mon   ✅ FRED           FEDFUNDS, DGS10, DGS2
-
-News/Sentiment N/A   ✅ AlphaAI        Relevance-scored news
-
-Options        chain 🟡 OpenBB         OpenBB
-               greeks✅ Helium MCP     Free, no signup
+Metalli FX    1m     ✅ XAU/XAG  2003 → oggi (7.9M)      Dukascopy
 ```
 
-## Fonti per Gap
+## 35 Futures CME Coperti (1h + 1d)
 
-| Gap | Fonte | API Key | Costo | Integrazione |
-|:---:|-------|:-------:|:-----:|:------------:|
-| Intraday futures 1m/5m/15m | **Polygon.io** | ✅ `ORACLE_DATA_POLYGON_KEY` | Free (5 req/min) | `polygon_futures_minute()` |
-| Crypto perpetuals + funding | **CCXT** | ❌ | Free | `ccxt_futures_ohlcv()` |
-| Macro (GDP, CPI, NFP, rates) | **FRED** | 🟡 Demo/public | Free | `fred_series()` |
-| News/sentiment scoring | **AlphaAI** | ✅ `ORACLE_DATA_ALPHAI_KEY` | Free (20 req/min) | `SentimentFetcher.alphai_news()` |
-| Options Greeks (free) | **Helium MCP** | ❌ | Free (50 queries) | Da integrare |
-| Real-time tick futures | **IBKR** (ib_insync) | TWS/Gateway | Già in dip. | Da attivare |
+| Gruppo | Simboli |
+|--------|---------|
+| Index | ES, NQ, YM, RTY, MES, MNQ, MYM |
+| Energy | CL, NG, RB, HO, MCL |
+| Metals | GC, SI, HG, PL, PA, MGC |
+| Rates | ZN, ZB, ZF, ZT |
+| Grains | ZC, ZW, ZS, ZM, ZL |
+| FX | 6E, 6J, 6B, 6A, 6C, 6N, 6S, M6E |
 
-## Quick Reference
+## Gap Residui (per parità col forex 1m dal 2003)
 
-```bash
-# Macro data (no key needed)
-uv run --frozen python -c "from market.data_sources import DataFetcher; f=DataFetcher(); f.fred_series('GDP')"
+| Gap | Fonte necessaria | Costo | Stato |
+|-----|-----------------|-------|-------|
+| Futures 1m 2010+ | Databento free tier | 0$ (1GB/mese) | 🔴 serve API key |
+| Futures 1m 2010+ | IBKR TWS/Gateway | 0$ (paper) | 🔴 serve login browser |
+| Futures 1h pre-2024 | Databento / IBKR | 0$ | 🔴 come sopra |
+| Equities 1m | Polygon | $29/mo | opzionale |
 
-# Crypto perpetual futures (no key)
-uv run --frozen python -c "from market.data_sources import DataFetcher; f=DataFetcher(); f.ccxt_futures_ohlcv('binance','BTC/USDT:USDT','1h')"
+## Fonti e Rate Limits
 
-# Intraday futures (Polygon key needed)
-uv run --frozen python -c "from market.data_sources import DataFetcher; f=DataFetcher(); f.polygon_futures_minute('ES','2026-07-01','2026-07-19')"
+| Fonte | Asset | TF | Profondità | Auth |
+|-------|-------|----|-----------|------|
+| **yfinance** | Futures, EQ, FX | 1h max 730gg; 1d max | 2000+ daily | nessuna |
+| **Dukascopy** | FX 28 coppie, XAU/XAG | 1m/5m/15m/30m/1h/4h/1d | 2003+ | nessuna |
+| **Binance REST** | Crypto spot | 1m..1d | 2017+ | nessuna |
+| **Databento** | CME futures | 1m..1d | 2010+ (free 1GB/mo) | API key gratis |
+| **IBKR REST** | Futures, EQ | 1m..1d | ~1 anno | login browser |
+| **Stooq** | Futures | 1d | 1990+ | nessuna |
+| **HistData** | FX | 1m..1d | 2003+ | nessuna |
 
-# Multi-timeframe refresh
-uv run --frozen python scripts/refresh_data.py --multi-timeframe ES
-```
+## Continuous Contracts
 
-## Setup Chiavi API
-
-```bash
-# Polygon.io (free tier: 5 API calls/min)
-export ORACLE_DATA_POLYGON_KEY="your_key_here"
-
-# AlphaAI (free tier: 20 req/min, 100/day)
-export ORACLE_DATA_ALPHAI_KEY="your_key_here"
-
-# FRED (free, no key needed for basic CSV access)
-# Optional: get key at https://fred.stlouisfed.org/docs/api/api_key.html
-export ORACLE_DATA_FRED_KEY="your_key_here"
-```
+- Le serie yfinance (`ES=F`) sono **continuous proxy**: roll e adjustment
+  fatti dal provider (documentato in provenance)
+- `scripts/build_curated_contracts.py` consolida le partizioni Hive in
+  `data/lake/curated/<SYMBOL>_<TF>.parquet` con validazione continuità
+- Roll esplicito per contract month (ESU26→ESZ26): `market/roll.py`
+  (serve dati per contract month da Databento)
