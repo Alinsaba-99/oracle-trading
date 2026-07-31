@@ -779,23 +779,29 @@ class YFinance(HttpSource):
 # Timeframes: 1m/5m/15m/30m native (day bucket); 1h/4h (month bucket); 1d (year bucket).
 # 5m/15m/30m/4h are aggregated client-side from the finer native resolution.
 def _clamp_bucket_range(
-    bucket_type: str, start: date, end: date, earliest: date
+    bucket_type: str, start: date, end: date, earliest: date, today: date
 ) -> tuple[date, date]:
     """Clamp [start, end] to the buckets the jetta API actually serves.
 
-    The API serves minute data for the current day, but hour/day data
-    only for closed months/years — the current month/year bucket answers
-    HTTP 400 ("From time is too late"). Clamp to the last closed bucket.
+    The API serves data only for buckets strictly older than today: the
+    bucket containing *today* (day, month or year) answers HTTP 400
+    ("From time is too late"), while every closed bucket is servable.
+    The cap is therefore a function of *today*, not of ``end``:
+
+      day   -> yesterday
+      month -> last day of previous month
+      year  -> Dec 31 of previous year
+
     If the requested range is entirely inside the unserved current
-    bucket, collapse it to the last closed bucket so incremental
+    bucket, it collapses to the last closed bucket so incremental
     refreshes mark the entry "fresh" (all duplicates) instead of failed.
     """
     if bucket_type == "month":
-        cap = date(end.year, end.month, 1) - timedelta(days=1)
+        cap = date(today.year, today.month, 1) - timedelta(days=1)
     elif bucket_type == "year":
-        cap = date(end.year, 1, 1) - timedelta(days=1)
-    else:  # "day" — the API serves closed days only (current day → 400)
-        cap = end - timedelta(days=1)
+        cap = date(today.year, 1, 1) - timedelta(days=1)
+    else:  # "day"
+        cap = today - timedelta(days=1)
     effective_start = max(start, earliest)
     effective_end = min(end, cap)
     if effective_start > effective_end:
@@ -924,7 +930,9 @@ class Dukascopy(HttpSource):
 
         spec = self.asset_spec(symbol)
         earliest = spec.earliest_available or self._DEFAULT_EARLIEST
-        effective_start, effective_end = _clamp_bucket_range(bucket_type, start, end, earliest)
+        effective_start, effective_end = _clamp_bucket_range(
+            bucket_type, start, end, earliest, datetime.now(UTC).date()
+        )
 
         for url, _bucket_start in self._iter_bucket_urls(
             code, api_source, bucket_type, effective_start, effective_end
@@ -944,7 +952,9 @@ class Dukascopy(HttpSource):
 
             bars = self._decode_response(resp, spec, timeframe)
             for bar in bars:
-                if bar.timestamp.date() < start or bar.timestamp.date() > end:
+                # filter against the *effective* range: with clamping the
+                # buckets may be older than the original start/end
+                if bar.timestamp.date() < effective_start or bar.timestamp.date() > effective_end:
                     continue
                 yield bar
 
