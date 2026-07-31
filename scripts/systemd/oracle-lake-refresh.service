@@ -1,0 +1,10 @@
+[Unit]
+Description=Oracle Trading — daily data lake refresh (BL-304)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/alin/_repos/oracle-trading
+ExecStart=/home/alin/_repos/oracle-trading/.venv/bin/python /home/alin/_repos/oracle-trading/scripts/refresh_lake.py --tf 1m,1h,1d
+Nice=10

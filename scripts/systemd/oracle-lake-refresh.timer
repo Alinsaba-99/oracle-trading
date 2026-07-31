@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily oracle-trading lake refresh at 07:00 local
+
+[Timer]
+OnCalendar=*-*-* 07:00:00
+Persistent=true
+Unit=oracle-lake-refresh.service
+
+[Install]
+WantedBy=timers.target

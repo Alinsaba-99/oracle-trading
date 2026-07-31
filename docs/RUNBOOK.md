@@ -91,6 +91,33 @@ git show 8708d74:data/ohlcv/ES_1d.parquet > data/ohlcv/ES_1d.parquet
 cp data/ohlcv/ES_1d.parquet data/pinned/ES_1d_m31.parquet
 ```
 
+## Refresh giornaliero data lake (BL-304)
+
+Il data lake si aggiorna da solo: timer systemd utente, ogni giorno alle
+07:00 local, con `Persistent=true` (recupera il run se il PC era spento).
+
+```bash
+# Stato timer
+systemctl --user list-timers oracle-lake-refresh.timer
+
+# Run manuale (stesso percorso del timer)
+cd ~/_repos/oracle-trading && uv run python scripts/refresh_lake.py
+
+# Log dell'ultimo run
+journalctl --user -u oracle-lake-refresh.service -n 50 --no-pager
+```
+
+Cosa fa `scripts/refresh_lake.py`:
+1. `run-plan` incrementale — riprende da `data/lake/metadata/ingestion_state.json`,
+   scarica solo i giorni mancanti (coverage `latest` → oggi), salta le entry già
+   fresche; i fallimenti (es. ibkr/databento senza credenziali) finiscono in
+   `failed` senza bloccare il resto.
+2. Ricostruzione `curated/` — consolida le partizioni Hive in
+   `data/lake/curated/<SYMBOL>_<TF>.parquet` (default: 1m, 1h, 1d).
+
+Unit file: `~/.config/systemd/user/oracle-lake-refresh.{service,timer}`
+(template nel repo: `scripts/systemd/`).
+
 ## Incident response (research/paper)
 
 ### Regime detector choppy-biased

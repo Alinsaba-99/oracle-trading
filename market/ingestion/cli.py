@@ -37,6 +37,12 @@ def main() -> int:
         help="Stop cleanly after N seconds; remaining entries stay pending",
     )
     rp.add_argument("--pause", type=float, default=0.0, help="Seconds to sleep between entries")
+    rp.add_argument(
+        "--incremental",
+        action="store_true",
+        help="Fetch only missing bars (from coverage latest) for entries "
+        "without explicit END_DATE — use for the daily refresh",
+    )
     sub.add_parser("status-run", help="Show orchestrator state")
 
     args = parser.parse_args()
@@ -48,7 +54,9 @@ def main() -> int:
             args.symbol, args.timeframe, args.source, start=args.start, end=args.end, full=args.full
         )
     if args.cmd == "run-plan":
-        return run_plan(max_runtime_s=args.max_runtime, pause_between_s=args.pause)
+        return run_plan(
+            max_runtime_s=args.max_runtime, pause_between_s=args.pause, incremental=args.incremental
+        )
     if args.cmd == "status-run":
         import json as _json
 

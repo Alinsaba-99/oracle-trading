@@ -773,9 +773,36 @@ class YFinance(HttpSource):
 
 # Dukascopy JForex — new JSON endpoint (jetta.dukascopy.com/v1).
 # Provides FX majors + crosses + XAU/XAG from 2003-05-04 at 1m resolution.
+# ----------------------------------------------------------------------
+# Dukascopy jetta — free FX/metals candle API.
 # No API key. Data served via CloudFront CDN — supports 10-20 concurrent reqs.
 # Timeframes: 1m/5m/15m/30m native (day bucket); 1h/4h (month bucket); 1d (year bucket).
 # 5m/15m/30m/4h are aggregated client-side from the finer native resolution.
+def _clamp_bucket_range(
+    bucket_type: str, start: date, end: date, earliest: date
+) -> tuple[date, date]:
+    """Clamp [start, end] to the buckets the jetta API actually serves.
+
+    The API serves minute data for the current day, but hour/day data
+    only for closed months/years — the current month/year bucket answers
+    HTTP 400 ("From time is too late"). Clamp to the last closed bucket.
+    If the requested range is entirely inside the unserved current
+    bucket, collapse it to the last closed bucket so incremental
+    refreshes mark the entry "fresh" (all duplicates) instead of failed.
+    """
+    if bucket_type == "month":
+        cap = date(end.year, end.month, 1) - timedelta(days=1)
+    elif bucket_type == "year":
+        cap = date(end.year, 1, 1) - timedelta(days=1)
+    else:  # "day" — the API serves closed days only (current day → 400)
+        cap = end - timedelta(days=1)
+    effective_start = max(start, earliest)
+    effective_end = min(end, cap)
+    if effective_start > effective_end:
+        effective_start = effective_end
+    return effective_start, effective_end
+
+
 class Dukascopy(HttpSource):
     """Adapter for the Dukascopy JForex v1 candle API.
 
@@ -897,10 +924,10 @@ class Dukascopy(HttpSource):
 
         spec = self.asset_spec(symbol)
         earliest = spec.earliest_available or self._DEFAULT_EARLIEST
-        effective_start = max(start, earliest)
+        effective_start, effective_end = _clamp_bucket_range(bucket_type, start, end, earliest)
 
         for url, _bucket_start in self._iter_bucket_urls(
-            code, api_source, bucket_type, effective_start, end
+            code, api_source, bucket_type, effective_start, effective_end
         ):
             self._cooldown_until_clear()
             try:
@@ -927,8 +954,6 @@ class Dukascopy(HttpSource):
         self, code: str, api_source: str, bucket_type: str, start: date, end: date
     ) -> Iterator[tuple[str, date]]:
         """Yield (url, bucket_start_date) for each time bucket in [start, end]."""
-        from datetime import timedelta
-
         cur = start
         while cur <= end:
             if bucket_type == "day":

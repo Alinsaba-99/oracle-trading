@@ -1,6 +1,6 @@
 # Oracle Data Sources — Coverage Matrix
 
-> Aggiornato: 2026-07-31 (post BL-304 futures intraday a tappeto)
+> Aggiornato: 2026-07-31 (post BL-304: refresh perpetuo + sorgenti bloccate)
 
 ## Coverage Reale del Data Lake
 
@@ -47,6 +47,35 @@ Metalli FX    1m     ✅ XAU/XAG  2003 → oggi (7.9M)      Dukascopy
 | Futures 1m 2010+ | IBKR TWS/Gateway | 0$ (paper) | 🔴 serve login browser |
 | Futures 1h pre-2024 | Databento / IBKR | 0$ | 🔴 come sopra |
 | Equities 1m | Polygon | $29/mo | opzionale |
+
+## Sorgenti bloccate (2026-07-31) — fuori dal piano live
+
+| Fonte | Motivo | Workaround |
+|-------|--------|------------|
+| HistData | token flow rotto (404/HTML) | dati coperti da Dukascopy (1m/1h/1d) |
+| Stooq | anti-bot JS challenge | dati coperti da yfinance (1d) |
+| IBKR | TWS/Gateway non attivo | Databento quando c'è la key |
+| Databento | serve `DATABENTO_API_KEY` | — |
+
+Le relative entry in `data/lake/plans/backfill.conf` sono commentate
+(section `BLOCKED`): il piano live (152 entry: dukascopy+yahoo+binance) è
+interamente raggiungibile.
+
+## Nota API Dukascopy jetta (lag bucket)
+
+L'API `jetta.dukascopy.com/v1` serve SOLO bucket chiusi: il giorno/mese/anno
+corrente risponde HTTP 400 ("From time is too late"). Conseguenze attese sul
+refresh giornaliero (`scripts/refresh_lake.py`):
+
+- 1m → dati fino a ieri
+- 1h/4h → dati fino a fine mese precedente
+- 1d → dati fino a fine anno precedente
+
+Al rollover (1° del mese / 1° gennaio) il refresh riprende automaticamente
+il bucket appena chiuso. L'adapter clampa il range ai bucket serviti
+(`_clamp_bucket_range` in `market/ingestion/sources.py`); gli entry il cui
+range è interamente nel bucket non servito vengono marcati `fresh` (già
+aggiornati), non `failed`.
 
 ## Fonti e Rate Limits
 

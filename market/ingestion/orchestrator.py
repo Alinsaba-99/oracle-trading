@@ -92,11 +92,31 @@ def write_default_plan() -> None:
     )
 
 
+def classify_report(report: FetchReport) -> str:
+    """Classify a fetch outcome for the orchestrator state machine.
+
+    Returns:
+        "ok": data written (rows_out > 0)
+        "fresh": nothing new but the source answered (rows_in > 0 and
+            rows_rejected == 0) — the series is already up to date;
+            treated as completed so weekend runs do not poison `failed`
+        "failed": source error, empty answer, or all rows rejected
+    """
+    if report.note.startswith("FAILED"):
+        return "failed"
+    if report.rows_out > 0:
+        return "ok"
+    if report.note == "NO_DATA" and report.rows_in > 0 and report.rows_rejected == 0:
+        return "fresh"
+    return "failed"
+
+
 def run_plan(
     entries: list[BackfillEntry] | None = None,
     *,
     max_runtime_s: float | None = None,
     pause_between_s: float = 0.0,
+    incremental: bool = False,
 ) -> int:
     """Run the backfill plan in series. Resumable across restarts.
 
@@ -106,6 +126,13 @@ def run_plan(
             seconds. Use for laptop-aware batching.
         pause_between_s: delay between entries (gives the source rate
             limit a moment to recover).
+        incremental: for entries without an explicit END_DATE in the
+            plan, let the pipeline infer the start from coverage
+            ``latest`` instead of re-downloading the full configured
+            range. This is the right mode for the daily/perpetual
+            refresh: sources are queried only for bars newer than the
+            last covered one. Explicit-end entries keep their exact
+            range (historical backfill chunks stay full).
     """
     write_default_plan()
     entries = entries or _load_plan_yaml()
@@ -132,12 +159,12 @@ def run_plan(
             break
         last_attempt = datetime.now(UTC)
         try:
+            # incremental: no explicit END_DATE in the plan -> let the
+            # pipeline infer start from coverage latest (only fetch what
+            # is missing). Explicit-end entries keep their full range.
+            start = None if incremental and entry.end is None else entry.start
             report: FetchReport = pipeline.fetch(
-                entry.symbol,
-                entry.timeframe,
-                SourceId(entry.source),
-                start=entry.start,
-                end=entry.end,
+                entry.symbol, entry.timeframe, SourceId(entry.source), start=start, end=entry.end
             )
         except Exception as exc:
             logger.exception("entry raised: %s - %s", key, exc)
@@ -152,7 +179,8 @@ def run_plan(
                 }
             )
             continue
-        if report.note.startswith("FAILED"):
+        kind = classify_report(report)
+        if kind == "failed":
             logger.error("entry FAILED: %s (%s)", key, report.note)
             failed[key] = report.note
             meta.save_state(
@@ -165,6 +193,8 @@ def run_plan(
                 }
             )
             continue
+        if kind == "fresh":
+            logger.info("already fresh (no new bars): %s", key)
         completed.add(key)
         failed.pop(key, None)
         meta.save_state(

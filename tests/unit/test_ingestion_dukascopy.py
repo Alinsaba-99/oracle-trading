@@ -8,7 +8,7 @@ from decimal import Decimal
 from typing import Any
 from unittest.mock import MagicMock, patch
 
-from market.ingestion.sources import Dukascopy, HistData
+from market.ingestion.sources import Dukascopy, HistData, _clamp_bucket_range
 from market.ingestion.types import AssetClass, SourceId
 
 # ---------------------------------------------------------------------------
@@ -309,3 +309,38 @@ class TestDukascopyRegistry:
         from market.ingestion.sources import SOURCES
 
         assert isinstance(SOURCES[SourceId.DUKASCOPY], Dukascopy)
+
+
+# ---------------------------------------------------------------------------
+# _clamp_bucket_range — jetta serves closed buckets only (current → HTTP 400)
+# ---------------------------------------------------------------------------
+
+
+class TestClampBucketRange:
+    def test_day_bucket_caps_at_yesterday(self) -> None:
+        s, e = _clamp_bucket_range("day", date(2026, 7, 26), date(2026, 7, 31), date(2003, 5, 4))
+        assert (s, e) == (date(2026, 7, 26), date(2026, 7, 30))
+
+    def test_day_bucket_collapses_when_range_is_current_day(self) -> None:
+        s, e = _clamp_bucket_range("day", date(2026, 7, 31), date(2026, 7, 31), date(2003, 5, 4))
+        assert (s, e) == (date(2026, 7, 30), date(2026, 7, 30))
+
+    def test_month_bucket_caps_at_previous_month_end(self) -> None:
+        s, e = _clamp_bucket_range("month", date(2026, 7, 26), date(2026, 7, 31), date(2003, 5, 4))
+        assert (s, e) == (date(2026, 6, 30), date(2026, 6, 30))
+
+    def test_month_bucket_after_rollover_includes_new_closed_month(self) -> None:
+        s, e = _clamp_bucket_range("month", date(2026, 7, 26), date(2026, 8, 5), date(2003, 5, 4))
+        assert (s, e) == (date(2026, 7, 26), date(2026, 7, 31))
+
+    def test_year_bucket_caps_at_previous_year_end(self) -> None:
+        s, e = _clamp_bucket_range("year", date(2026, 7, 28), date(2026, 7, 31), date(2003, 5, 4))
+        assert (s, e) == (date(2025, 12, 31), date(2025, 12, 31))
+
+    def test_year_bucket_after_rollover_includes_new_closed_year(self) -> None:
+        s, e = _clamp_bucket_range("year", date(2026, 12, 20), date(2027, 1, 15), date(2003, 5, 4))
+        assert (s, e) == (date(2026, 12, 20), date(2026, 12, 31))
+
+    def test_earliest_floor(self) -> None:
+        s, e = _clamp_bucket_range("day", date(2000, 1, 1), date(2026, 7, 31), date(2003, 5, 4))
+        assert (s, e) == (date(2003, 5, 4), date(2026, 7, 30))
