@@ -1,9 +1,9 @@
 {
   "started_at": "2026-07-26T06:59:38.641613+00:00",
-  "finished_at": "2026-07-31T05:51:16.464875+00:00",
-  "entries_total": 36,
-  "entries_completed": 75,
+  "finished_at": "2026-07-31T06:13:23.432497+00:00",
+  "entries_total": 175,
+  "entries_completed": 250,
   "entries_failed": 0,
-  "duration_s": 47.11,
-  "max_runtime_s": 1800
+  "duration_s": 115.57,
+  "max_runtime_s": 3600
 }

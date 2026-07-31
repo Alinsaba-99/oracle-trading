@@ -1001,6 +1001,9 @@
   "normalized/symbol=6A/tf=1h/year=2026/month=07.parquet": [
     "yahoo"
   ],
+  "normalized/symbol=6A/tf=1m/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
   "normalized/symbol=6B/tf=1d/year=2000/month=10.parquet": [
     "yahoo"
   ],
@@ -2013,6 +2016,9 @@
     "yahoo"
   ],
   "normalized/symbol=6B/tf=1h/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
+  "normalized/symbol=6B/tf=1m/year=2026/month=07.parquet": [
     "yahoo"
   ],
   "normalized/symbol=6C/tf=1d/year=2000/month=05.parquet": [
@@ -3041,6 +3047,9 @@
   "normalized/symbol=6C/tf=1h/year=2026/month=07.parquet": [
     "yahoo"
   ],
+  "normalized/symbol=6C/tf=1m/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
   "normalized/symbol=6E/tf=1d/year=2000/month=09.parquet": [
     "yahoo"
   ],
@@ -4061,6 +4070,9 @@
   "normalized/symbol=6E/tf=1h/year=2026/month=07.parquet": [
     "yahoo"
   ],
+  "normalized/symbol=6E/tf=1m/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
   "normalized/symbol=6J/tf=1d/year=2000/month=09.parquet": [
     "yahoo"
   ],
@@ -5075,6 +5087,9 @@
   "normalized/symbol=6J/tf=1h/year=2026/month=07.parquet": [
     "yahoo"
   ],
+  "normalized/symbol=6J/tf=1m/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
   "normalized/symbol=6N/tf=1d/year=2000/month=06.parquet": [
     "yahoo"
   ],
@@ -6083,6 +6098,9 @@
   "normalized/symbol=6N/tf=1h/year=2026/month=07.parquet": [
     "yahoo"
   ],
+  "normalized/symbol=6N/tf=1m/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
   "normalized/symbol=6S/tf=1d/year=2000/month=12.parquet": [
     "yahoo"
   ],
@@ -7086,6 +7104,9 @@
     "yahoo"
   ],
   "normalized/symbol=6S/tf=1h/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
+  "normalized/symbol=6S/tf=1m/year=2026/month=07.parquet": [
     "yahoo"
   ],
   "normalized/symbol=AAPL/tf=1d/year=2000/month=01.parquet": [
@@ -14279,6 +14300,9 @@
   "normalized/symbol=CL/tf=1h/year=2026/month=07.parquet": [
     "yahoo"
   ],
+  "normalized/symbol=CL/tf=1m/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
   "normalized/symbol=DBA/tf=1d/year=2007/month=01.parquet": [
     "yahoo"
   ],
@@ -16959,6 +16983,9 @@
     "yahoo"
   ],
   "normalized/symbol=ES/tf=1h/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
+  "normalized/symbol=ES/tf=1m/year=2026/month=07.parquet": [
     "yahoo"
   ],
   "normalized/symbol=ES/tf=4h/year=2000/month=09.parquet": [
@@ -20873,6 +20900,9 @@
   "normalized/symbol=GC/tf=1h/year=2026/month=07.parquet": [
     "yahoo"
   ],
+  "normalized/symbol=GC/tf=1m/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
   "normalized/symbol=GLD/tf=1d/year=2004/month=11.parquet": [
     "yahoo"
   ],
@@ -22679,6 +22709,9 @@
   "normalized/symbol=HG/tf=1h/year=2026/month=07.parquet": [
     "yahoo"
   ],
+  "normalized/symbol=HG/tf=1m/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
   "normalized/symbol=HO/tf=1d/year=2005/month=01.parquet": [
     "yahoo"
   ],
@@ -23541,6 +23574,9 @@
     "yahoo"
   ],
   "normalized/symbol=HO/tf=1h/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
+  "normalized/symbol=HO/tf=1m/year=2026/month=07.parquet": [
     "yahoo"
   ],
   "normalized/symbol=IWM/tf=1d/year=2000/month=05.parquet": [
@@ -24668,6 +24704,9 @@
   "normalized/symbol=M6E/tf=1h/year=2026/month=07.parquet": [
     "yahoo"
   ],
+  "normalized/symbol=M6E/tf=1m/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
   "normalized/symbol=MCL/tf=1d/year=2026/month=07.parquet": [
     "yahoo"
   ],
@@ -24756,6 +24795,9 @@
     "yahoo"
   ],
   "normalized/symbol=MCL/tf=1h/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
+  "normalized/symbol=MCL/tf=1m/year=2026/month=07.parquet": [
     "yahoo"
   ],
   "normalized/symbol=MES/tf=1d/year=2024/month=01.parquet": [
@@ -24938,6 +24980,9 @@
   "normalized/symbol=MES/tf=1h/year=2026/month=07.parquet": [
     "yahoo"
   ],
+  "normalized/symbol=MES/tf=1m/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
   "normalized/symbol=MGC/tf=1d/year=2024/month=01.parquet": [
     "yahoo"
   ],
@@ -25118,6 +25163,9 @@
   "normalized/symbol=MGC/tf=1h/year=2026/month=07.parquet": [
     "yahoo"
   ],
+  "normalized/symbol=MGC/tf=1m/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
   "normalized/symbol=MNQ/tf=1d/year=2024/month=01.parquet": [
     "yahoo"
   ],
@@ -25296,6 +25344,9 @@
     "yahoo"
   ],
   "normalized/symbol=MNQ/tf=1h/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
+  "normalized/symbol=MNQ/tf=1m/year=2026/month=07.parquet": [
     "yahoo"
   ],
   "normalized/symbol=MSFT/tf=1d/year=2000/month=01.parquet": [
@@ -26435,6 +26486,9 @@
   "normalized/symbol=MYM/tf=1h/year=2026/month=07.parquet": [
     "yahoo"
   ],
+  "normalized/symbol=MYM/tf=1m/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
   "normalized/symbol=NG/tf=1d/year=2000/month=08.parquet": [
     "yahoo"
   ],
@@ -27458,6 +27512,9 @@
   "normalized/symbol=NG/tf=1h/year=2026/month=07.parquet": [
     "yahoo"
   ],
+  "normalized/symbol=NG/tf=1m/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
   "normalized/symbol=NQ/tf=1d/year=2000/month=09.parquet": [
     "yahoo"
   ],
@@ -28476,6 +28533,9 @@
     "yahoo"
   ],
   "normalized/symbol=NQ/tf=1h/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
+  "normalized/symbol=NQ/tf=1m/year=2026/month=07.parquet": [
     "yahoo"
   ],
   "normalized/symbol=NZDJPY/tf=1d/year=2004/month=01.parquet": [
@@ -30287,6 +30347,9 @@
   "normalized/symbol=PA/tf=1h/year=2026/month=07.parquet": [
     "yahoo"
   ],
+  "normalized/symbol=PA/tf=1m/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
   "normalized/symbol=PL/tf=1d/year=2000/month=01.parquet": [
     "yahoo"
   ],
@@ -31287,6 +31350,9 @@
     "yahoo"
   ],
   "normalized/symbol=PL/tf=1h/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
+  "normalized/symbol=PL/tf=1m/year=2026/month=07.parquet": [
     "yahoo"
   ],
   "normalized/symbol=QQQ/tf=1d/year=2000/month=01.parquet": [
@@ -33110,6 +33176,9 @@
   "normalized/symbol=RB/tf=1h/year=2026/month=07.parquet": [
     "yahoo"
   ],
+  "normalized/symbol=RB/tf=1m/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
   "normalized/symbol=RTY/tf=1d/year=2017/month=07.parquet": [
     "yahoo"
   ],
@@ -33522,6 +33591,9 @@
     "yahoo"
   ],
   "normalized/symbol=RTY/tf=1h/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
+  "normalized/symbol=RTY/tf=1m/year=2026/month=07.parquet": [
     "yahoo"
   ],
   "normalized/symbol=SI/tf=1d/year=2000/month=08.parquet": [
@@ -34545,6 +34617,9 @@
     "yahoo"
   ],
   "normalized/symbol=SI/tf=1h/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
+  "normalized/symbol=SI/tf=1m/year=2026/month=07.parquet": [
     "yahoo"
   ],
   "normalized/symbol=SOLUSDT/tf=1d/year=2020/month=08.parquet": [
@@ -37766,6 +37841,9 @@
   "normalized/symbol=YM/tf=1h/year=2026/month=07.parquet": [
     "yahoo"
   ],
+  "normalized/symbol=YM/tf=1m/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
   "normalized/symbol=ZB/tf=1d/year=2000/month=09.parquet": [
     "yahoo"
   ],
@@ -38784,6 +38862,9 @@
     "yahoo"
   ],
   "normalized/symbol=ZB/tf=1h/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
+  "normalized/symbol=ZB/tf=1m/year=2026/month=07.parquet": [
     "yahoo"
   ],
   "normalized/symbol=ZC/tf=1d/year=2000/month=07.parquet": [
@@ -39812,6 +39893,9 @@
   "normalized/symbol=ZC/tf=1h/year=2026/month=07.parquet": [
     "yahoo"
   ],
+  "normalized/symbol=ZC/tf=1m/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
   "normalized/symbol=ZF/tf=1d/year=2000/month=09.parquet": [
     "yahoo"
   ],
@@ -40830,6 +40914,9 @@
     "yahoo"
   ],
   "normalized/symbol=ZF/tf=1h/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
+  "normalized/symbol=ZF/tf=1m/year=2026/month=07.parquet": [
     "yahoo"
   ],
   "normalized/symbol=ZL/tf=1d/year=2000/month=03.parquet": [
@@ -41870,6 +41957,9 @@
   "normalized/symbol=ZL/tf=1h/year=2026/month=07.parquet": [
     "yahoo"
   ],
+  "normalized/symbol=ZL/tf=1m/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
   "normalized/symbol=ZM/tf=1d/year=2000/month=05.parquet": [
     "yahoo"
   ],
@@ -42902,6 +42992,9 @@
   "normalized/symbol=ZM/tf=1h/year=2026/month=07.parquet": [
     "yahoo"
   ],
+  "normalized/symbol=ZM/tf=1m/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
   "normalized/symbol=ZN/tf=1d/year=2000/month=09.parquet": [
     "yahoo"
   ],
@@ -43922,6 +44015,9 @@
   "normalized/symbol=ZN/tf=1h/year=2026/month=07.parquet": [
     "yahoo"
   ],
+  "normalized/symbol=ZN/tf=1m/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
   "normalized/symbol=ZS/tf=1d/year=2000/month=09.parquet": [
     "yahoo"
   ],
@@ -44940,6 +45036,9 @@
     "yahoo"
   ],
   "normalized/symbol=ZS/tf=1h/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
+  "normalized/symbol=ZS/tf=1m/year=2026/month=07.parquet": [
     "yahoo"
   ],
   "normalized/symbol=ZT/tf=1d/year=2000/month=06.parquet": [
@@ -45971,6 +46070,9 @@
   "normalized/symbol=ZT/tf=1h/year=2026/month=07.parquet": [
     "yahoo"
   ],
+  "normalized/symbol=ZT/tf=1m/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
   "normalized/symbol=ZW/tf=1d/year=2000/month=07.parquet": [
     "yahoo"
   ],
@@ -46995,6 +47097,9 @@
     "yahoo"
   ],
   "normalized/symbol=ZW/tf=1h/year=2026/month=07.parquet": [
+    "yahoo"
+  ],
+  "normalized/symbol=ZW/tf=1m/year=2026/month=07.parquet": [
     "yahoo"
   ]
 }
