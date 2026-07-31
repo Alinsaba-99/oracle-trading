@@ -163,8 +163,8 @@ Non iniziato. Dipende da G5 + G6.
 - [x] **BL-301** P1 — **Data Lake ingestion layer** (`market/ingestion/`): 7 source adapters (BinanceREST, CryptoDataDownload, DatabentoHistorical, YFinance, HistData, Stooq, Dukascopy), pipeline incrementale, quality checks, backfill orchestrator resumable. ✅ completato in `933ee32`, `6ffb540`, `a1a1ebe`.
 - [x] **BL-302** P1 — **DataRegistry lake-aware**: DataRegistry integrato con il data lake per lettura multi-asset. ✅ completato in `933ee32`.
 - [x] **BL-303** P1 — **Coverage tracking + lineage**: `data/lake/metadata/coverage.json` (44+ assets), `lineage.json` (tracciamento provenienza), `backfill.conf` (piano backfill prioritario). ✅ completato in `933ee32`.
-- [ ] **BL-304** P2 — **Perpetual backfill execution**: lanciare backfill orchestrator su tutte le configurazioni in `backfill.conf`. AC: coverage > 90% degli asset listati entro 7gg. Vedi `data/lake/plans/backfill.conf`.
-- [ ] **BL-305** P2 — **ES 1h + EURUSD 1m + BTCUSDT 1m backfill prioritario**: asset critici per G6/G10. AC: dataset completi in `data/lake/curated/`. ~1gg.
+- [ ] **BL-304** P2 — **Perpetual backfill execution**: lanciare backfill orchestrator su tutte le configurazioni in `backfill.conf`. AC: coverage > 90% degli asset listati entro 7gg. Vedi `data/lake/plans/backfill.conf`. 🔄 Stato 31-lug: backfill 1m yahoo (35 futures × 7gg) + curation 1m completa (58 serie, 181.7M righe) fatti; manca la parte *perpetua* (schedulazione refresh).
+- [x] **BL-305** P2 — **ES 1h + EURUSD 1m + BTCUSDT 1m backfill prioritario**: asset critici per G6/G10. ✅ completato: EURUSD 1m 8.67M righe 2003→2026 (Dukascopy), BTCUSDT 1m 4.69M righe 2017→2026 (Binance), ES 1h 36.6K righe; curation 1m estesa a FX+crypto+metalli (58 serie curated, `build_curated_contracts.py` ora auto-discover + gap threshold tf-aware).
 - [ ] **BL-306** P3 — **Polygon.io integration** (opzionale, $29/mo): per US equities 1m se necessario. ~2gg.
 
 ## G10 — Strategy Catalog (100+ strategie)
@@ -271,13 +271,13 @@ Non iniziato. Dipende da G5 + G6.
 - Ogni PR deve avere `pytest`, `ruff`, `mypy --strict` verdi sul path
   toccato.
 - **Mutageno priority chain:**
-|  ```  
-  BL-001/002/003 (dataset pin) ✅ → BL-010..014 (regime) ✅ → BL-020/021/022 (sessions) ✅  
-  → BL-070 (risk wiring) ✅ → **G6 ❌ (REJECTED — pass_rate 0.77 vs 0.90)**  
-  → BL-090 (research memory) ✅ → BL-400..408 (strategy catalog) → G10  
-  → BL-420 (meta-optimizer) → G12  
-  → BL-430 (evolution loop) → G13  
-  → BL-440 (edge discovery) → G14  
+|  ```
+  BL-001/002/003 (dataset pin) ✅ → BL-010..014 (regime) ✅ → BL-020/021/022 (sessions) ✅
+  → BL-070 (risk wiring) ✅ → **G6 ❌ (REJECTED — pass_rate 0.77 vs 0.90)**
+  → BL-090 (research memory) ✅ → BL-400..408 (strategy catalog) → G10
+  → BL-420 (meta-optimizer) → G12
+  → BL-430 (evolution loop) → G13
+  → BL-440 (edge discovery) → G14
   ```
 - I task P1 sono sequenziali. I P2/P3 sono paralleli dove indipendenti.
 - Una volta passati a G6-WP2 verde, si procede con G6-WP3 shadow → G7
