@@ -676,11 +676,27 @@ class YFinance(HttpSource):
 
         ticker = self.SYMBOL_MAP.get(symbol.upper(), symbol)
         interval = self._to_yf_interval(timeframe)
-        period = self._to_yf_period(start, end, timeframe)
+        # Use explicit start/end, NOT period: yfinance periods are relative
+        # to *now* (e.g. period="1mo" returns the last month regardless of
+        # the requested range), which silently returned 0 bars for any
+        # request window ending in the past. With start/end the exact range
+        # is honored; yahoo's hard intraday limits still apply (1m=7d,
+        # 5m-30m=60d, 1h=730d) — a requested range WIDER than the limit
+        # makes yfinance return empty, so clamp the width to the window.
+        today = datetime.now(UTC).date()
+        window = {"1m": 7, "2m": 7, "5m": 60, "15m": 60, "30m": 60, "60m": 730}.get(interval)
+        if window is not None:
+            end = min(end, today)
+            start = max(start, end - timedelta(days=window - 1))
         self._cooldown_until_clear()
         try:
             hist = yf.download(
-                ticker, period=period, interval=interval, progress=False, auto_adjust=True
+                ticker,
+                start=start.isoformat(),
+                end=(end + timedelta(days=1)).isoformat(),
+                interval=interval,
+                progress=False,
+                auto_adjust=True,
             )
         except Exception as exc:
             logger.warning("%s: yfinance download failed for %s: %s", self.name, ticker, exc)
@@ -727,48 +743,6 @@ class YFinance(HttpSource):
             "1mo": "1mo",
         }
         return mapping.get(tf, "1d")
-
-    @staticmethod
-    def _to_yf_period(start: date, end: date, timeframe: str = "1d") -> str:
-        """Map (start, end, timeframe) to a yfinance period string.
-
-        yfinance hard limits intraday history depth:
-          - 1m/2m:      last 7 days
-          - 5m/15m/30m: last 60 days
-          - 1h:         last 730 days
-          - 1d+:        full history ("max")
-        The returned period is clamped to those limits so the adapter
-        never requests a range yfinance rejects.
-        """
-        # Intraday timeframes: clamp to yfinance's maximum window.
-        if timeframe in ("1m", "2m"):
-            return "7d"
-        if timeframe in ("5m", "15m", "30m"):
-            return "60d"
-        if timeframe == "1h":
-            return "730d" if (end - start).days > 730 else YFinance._days_period(start, end)
-
-        # Daily and coarser: full-period selection.
-        return YFinance._days_period(start, end)
-
-    @staticmethod
-    def _days_period(start: date, end: date) -> str:
-        days = (end - start).days
-        if days <= 7:
-            return "1wk"
-        if days <= 30:
-            return "1mo"
-        if days <= 90:
-            return "3mo"
-        if days <= 180:
-            return "6mo"
-        if days <= 365:
-            return "1y"
-        if days <= 730:
-            return "2y"
-        if days <= 1825:
-            return "5y"
-        return "max"
 
 
 # Dukascopy JForex — new JSON endpoint (jetta.dukascopy.com/v1).

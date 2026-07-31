@@ -1,28 +1,34 @@
 # Oracle Data Sources — Coverage Matrix
 
-> Aggiornato: 2026-07-31 (post BL-304: refresh perpetuo + sorgenti bloccate)
+> Aggiornato: 2026-07-31 (post BL-304: refresh perpetuo + sorgenti bloccate + TIER 8 indici/ETF)
 
 ## Coverage Reale del Data Lake
 
 ```
 ASSET CLASS    TF     Stato      Copertura                Fonte
 ─────────────────────────────────────────────────────────────────────
-FUTURES CME   1m     🟡 parziale 2010+ (Databento key)    Databento/IBKR
+FUTURES CME   1m     🟡 7gg      35 simboli (limite yahoo) yfinance
 (35 simboli)  1h     ✅ 35/35    2024-03 → oggi (13.7K)   yfinance
-              1d     ✅ 35/35    2000 → oggi (6.5K)       yfinance/stooq
+              1d     ✅ 35/35    2000 → oggi (6.5K)       yfinance
 
 FX majors     1m     ✅ 9/9      2003 → oggi (8.6M)       Dukascopy
-+ crosses     1h     ✅ 28/28    2003 → oggi (140K)       Dukascopy
-              4h     ✅ 24/24    2003 → oggi (37K)        Dukascopy
-              1d     ✅ 28/28    2003 → oggi (7K)         Dukascopy/histdata
++ crosses     1h     ✅ 19/19    2003 → oggi (140K)       Dukascopy
+              4h     ✅ 17/17    2003 → oggi (37K)        Dukascopy
+              1d     ✅ 23/23    2003 → oggi (7K)         Dukascopy
 
 Crypto       1m     ✅ 2/2      BTC/ETH 2017 → (4.7M)    Binance REST
               1h     ✅ 4/4      BTC/ETH/SOL/BNB          Binance REST
               4h     ✅ 2/2      BTC/ETH                  Binance REST
               1d     ✅ 4/4      BTC/ETH/SOL/BNB          Binance REST
 
-Equities/ETF  1d     ✅ 11       SPY/QQQ/AAPL/MSFT/TLT/
-                              GLD/DBA/DIA/IWM/...         yfinance
+Indici       1d     ✅ 5/5      ^GSPC 1928→, ^DJI 1928→,  yfinance
+(^GSPC ^NDX          ^NDX 1985→, ^RUT 1987→, ^VIX 1990→
+^DJI ^RUT ^VIX) 1h  ✅ 4/4      730gg (2024-08→, limite   yfinance
+                              yahoo) per GSPC/NDX/DJI/RUT
+
+Equity/ETF   1d     ✅ 21       9 storici + 12 SPDR settori
+                              (2000→; XLC 2018→, XBI 2006→) yfinance
+              1h     ✅ 16       730gg (limite yahoo)      yfinance
               1m     🟡 IBKR TWS/Gateway (non attivo)    IBKR
 
 Metalli FX    1m     ✅ XAU/XAG  2003 → oggi (7.9M)      Dukascopy
