@@ -118,6 +118,24 @@ Cosa fa `scripts/refresh_lake.py`:
 Unit file: `~/.config/systemd/user/oracle-lake-refresh.{service,timer}`
 (template nel repo: `scripts/systemd/`).
 
+### Pitfall memoria: backfill 1m storia intera (OOM-kill)
+
+Il fetch 1m dell'intera storia di un simbolo (2003→oggi, ~7.2M barre) tiene
+in RAM ~8GB (oggetti bar + Decimal + DataFrame polars). Su macchine con
+altri workload residenti può innescare l'OOM-killer (verificato 31-lug:
+`global_oom`, processo killato a 7.9GB anon-rss). Workaround: fetch in chunk
+annuali, ~250MB di picco per anno:
+
+```bash
+for y in $(seq 2004 2026); do
+  uv run python -m market.ingestion.cli fetch SYMBOL 1m dukascopy \
+    --start "$y-01-01" --end "$y-12-31"
+done
+```
+
+Idempotente e riprendibile (merge + dedupe sulle partizioni). Il refresh
+incrementale quotidiano non ha questo problema (scarica solo pochi giorni).
+
 ## Incident response (research/paper)
 
 ### Regime detector choppy-biased
