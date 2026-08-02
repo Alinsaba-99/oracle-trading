@@ -200,14 +200,14 @@ def probability_of_backtest_overfitting(
             continue
 
         # In-sample indices
-        is_idx = []
+        is_idx: list[int] = []
         for f in in_sample_folds:
             s = f * fold_size
             e = s + fold_size if f < n_splits - 1 else n_periods
             is_idx.extend(range(s, e))
 
         # Out-of-sample indices
-        oos_idx = []
+        oos_idx: list[int] = []
         for f in out_folds:
             s = f * fold_size
             e = s + fold_size if f < n_splits - 1 else n_periods
@@ -217,8 +217,8 @@ def probability_of_backtest_overfitting(
             continue
 
         # IS and OOS returns
-        is_returns = returns_matrix[is_idx, :]
-        oos_returns = returns_matrix[oos_idx, :]
+        is_returns = returns_matrix[np.array(is_idx), :]
+        oos_returns = returns_matrix[np.array(oos_idx), :]
 
         # Rank by IS Sharpe
         is_sharpes = np.mean(is_returns, axis=0) / (np.std(is_returns, axis=0, ddof=1) + 1e-9)

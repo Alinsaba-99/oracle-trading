@@ -132,7 +132,7 @@ def build_returns_from_memory(
     """
     import polars as pl
 
-    decisions = memory.get_recent_decisions(n=window)
+    decisions = memory.get_recent_decisions(n=window)  # type: ignore[attr-defined]
     if not decisions:
         return pd.DataFrame()
 

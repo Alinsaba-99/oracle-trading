@@ -17,6 +17,7 @@ import logging
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import polars as pl
 
@@ -61,7 +62,7 @@ def check_protocol(source: str, class_name: str | None = None) -> ProtocolResult
         spec.loader.exec_module(mod)
 
         # Find the strategy class
-        strategy_cls = None
+        strategy_cls: type[Any] | None = None
         for name, obj in inspect.getmembers(mod, inspect.isclass):
             if class_name and name == class_name:
                 strategy_cls = obj

@@ -7,7 +7,7 @@ from collections.abc import Callable
 from typing import Any
 
 import numpy as np
-from deap import gp as deap_gp  # type: ignore[import-untyped]
+from deap import gp as deap_gp
 
 from genetics.alpha.expression import ConstNode, ExprNode, LeafNode, OpNode, expression_to_string
 from genetics.alpha.operators import OPERATORS_MAP
@@ -66,7 +66,7 @@ def _wrap_primitive(fn: Callable[..., Any], name: str) -> Callable[..., Any]:
                 if isinstance(a, np.ndarray) and first_arr is None:
                     first_arr = a
                 expanded.append(a)
-        return _fn(*expanded)
+        return np.asarray(_fn(*expanded))
 
     wrapper.__name__ = name
     wrapper.__qualname__ = name

@@ -39,7 +39,8 @@ def daily_cash_vol_target(capital: float, vol_pct: float = 0.25, trading_days: i
         Daily cash vol target = annual_target / sqrt(trading_days).
     """
     annual = annual_cash_vol_target(capital, vol_pct)
-    return annual / np.sqrt(trading_days)
+    result: float = annual / np.sqrt(trading_days)
+    return float(result)
 
 
 def compute_position_from_forecast(

@@ -238,9 +238,9 @@ def _get_leaf_data(name: str, data: pl.DataFrame) -> np.ndarray:
         high_arr = data["high"].to_numpy()
         low_arr = data["low"].to_numpy()
         close_arr = data["close"].to_numpy()
-        return (high_arr + low_arr + close_arr) / 3.0
+        return np.asarray((high_arr + low_arr + close_arr) / 3.0)
     if col in data.columns:
-        return data[col].to_numpy()
+        return np.asarray(data[col].to_numpy())
     raise ValueError(f"Unknown leaf: {name!r}. Available columns: {list(data.columns)}")
 
 
@@ -277,16 +277,16 @@ def evaluate(node: ExprNode, data: pl.DataFrame, op_map: dict[str, Any]) -> np.n
             a = _to_scalar(arg_arrays[0])
             b = _to_scalar(arg_arrays[1])
             if isinstance(b, float):
-                return a / (abs(b) + 1e-10)  # type: ignore[return-value]
-            return a / (np.abs(b) + 1e-10)  # type: ignore[return-value]
+                return np.asarray(a / (abs(b) + 1e-10))
+            return np.asarray(a / (np.abs(b) + 1e-10))
 
         # Named function: convert singleton constant arrays to scalars
         cleaned = [_to_scalar(a) for a in arg_arrays]
 
         if node.op in op_map:
-            return op_map[node.op](*cleaned)
+            return np.asarray(op_map[node.op](*cleaned))
         if node.op in _LEAF_NAMES:
-            return _get_leaf_data(node.op, data).astype(np.float64)
+            return np.asarray(_get_leaf_data(node.op, data).astype(np.float64))
         raise ValueError(f"Unknown operator: {node.op!r}")
 
     raise TypeError(f"Unknown node type: {type(node)}")

@@ -77,7 +77,7 @@ class FitnessEvaluator:
         self._registry = registry
         self._cache = cache
         self._signal_factory = signal_factory
-        self._min_trades = min_trades
+        self._min_trades = int(min_trades)
         self._use_pybroker = use_pybroker
 
     # ------------------------------------------------------------------
@@ -183,7 +183,7 @@ class FitnessEvaluator:
 
         pb = PyBrokerBacktest()
 
-        def sig_callable(d):
+        def sig_callable(d: Any) -> Any:
             return sig_obj.compute(d) if hasattr(sig_obj, "compute") else sig_obj
 
         btc = self._backtest_cfg
@@ -215,7 +215,7 @@ class FitnessEvaluator:
                 "cagr_mean": cagr / 100.0 if cagr is not None else None,
                 "max_drawdown_mean": max_dd_pct / 100.0,
             },
-            total_trades,
+            int(total_trades),
             self._min_trades,
         )
         return constrained if constrained != fitness else fitness

@@ -19,7 +19,7 @@ import polars as pl
 
 def _clean(x: np.ndarray) -> np.ndarray:
     """NaN → 0.0 su ogni output."""
-    return np.nan_to_num(x, nan=0.0)
+    return np.asarray(np.nan_to_num(x, nan=0.0))
 
 
 # ---------------------------------------------------------------------------
@@ -399,7 +399,7 @@ def leaf_vwap(data: pl.DataFrame) -> np.ndarray:
 # Registry
 # ---------------------------------------------------------------------------
 
-OPERATORS_MAP: dict[str, Callable] = {
+OPERATORS_MAP: dict[str, Callable[..., np.ndarray]] = {
     # Time-series
     "ts_mean": ts_mean,
     "ts_std": ts_std,

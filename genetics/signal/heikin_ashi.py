@@ -78,11 +78,11 @@ def np_maximum(a: np.ndarray, b: np.ndarray) -> np.ndarray:  #
     """Element-wise maximum, handling numpy import lazily."""
     import numpy as np
 
-    return np.maximum(a, b)
+    return np.asarray(np.maximum(a, b))
 
 
 def np_minimum(a: np.ndarray, b: np.ndarray) -> np.ndarray:  #
     """Element-wise minimum, handling numpy import lazily."""
     import numpy as np
 
-    return np.minimum(a, b)
+    return np.asarray(np.minimum(a, b))

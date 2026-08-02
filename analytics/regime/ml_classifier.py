@@ -62,6 +62,7 @@ class MyTorchScaler:
     def transform(self, x_tensor: torch.Tensor) -> torch.Tensor:
         if self.mean is None:
             raise ValueError("Scaler non ancora fit — chiama .fit() prima")
+        assert self.std is not None
         return (x_tensor - self.mean.to(x_tensor.device)) / self.std.to(x_tensor.device)
 
     def save(self, path: str) -> None:
@@ -150,9 +151,10 @@ class TradingMLP(nn.Module):
                     nn.init.constant_(m.bias, 0)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.input_layer(x)
-        x = self.res_blocks(x)
-        return self.output_layer(x)
+        result: torch.Tensor = self.input_layer(x)
+        result = self.res_blocks(result)
+        out: torch.Tensor = self.output_layer(result)
+        return out
 
 
 # ── Feature vectorization ────────────────────────────────────────────
@@ -249,10 +251,10 @@ class RegimeClassifier:
         with torch.no_grad():
             logits = self.model(x)
             probs = torch.softmax(logits, dim=1)
-            pred = probs.argmax(dim=1).item()
-            conf = probs[0, pred].item()
+            pred_idx: int = int(probs.argmax(dim=1).item())
+            conf = float(probs[0, pred_idx].item())
 
-        label = REGIME_LABELS[pred] if pred < len(REGIME_LABELS) else "Nhieu_Dong"
+        label = REGIME_LABELS[pred_idx] if pred_idx < len(REGIME_LABELS) else "Nhieu_Dong"
         return label, round(conf, 4)
 
     def predict_multi_tf(
@@ -282,13 +284,15 @@ class RegimeClassifier:
         with torch.no_grad():
             logits = self.model(x)
             probs = torch.softmax(logits, dim=1)
-            pred = probs.argmax(dim=1).item()
-            conf = probs[0, pred].item()
+            pred_idx = int(probs.argmax(dim=1).item())
+            conf = float(probs[0, pred_idx].item())
 
-        label = REGIME_LABELS[pred] if pred < len(REGIME_LABELS) else "Nhieu_Dong"
+        label = REGIME_LABELS[pred_idx] if pred_idx < len(REGIME_LABELS) else "Nhieu_Dong"
         return label, round(conf, 4)
 
-    def train(self, df_list, labels, epochs=100, lr=1e-4):
+    def train(
+        self, df_list: list[pl.DataFrame], labels: list[int], epochs: int = 100, lr: float = 1e-4
+    ) -> dict[str, list[float]]:
         """Train the classifier on historical data.
 
         Args:
@@ -313,6 +317,7 @@ class RegimeClassifier:
         y = torch.tensor(labels, dtype=torch.long, device=device)
 
         # Fit scaler and transform
+        assert self.scaler is not None
         self.scaler.fit(x)
         x_scaled = self.scaler.transform(x)
 
@@ -337,6 +342,7 @@ class RegimeClassifier:
         # Save
         self.model.eval()
         torch.save(self.model.state_dict(), str(self.model_path))
+        assert self.scaler is not None
         self.scaler.save(str(self.scaler_path))
         with open(self.info_path, "w") as f:
             json.dump(

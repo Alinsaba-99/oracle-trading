@@ -34,7 +34,7 @@ def _compute_rsi(close: np.ndarray, period: int = 14) -> np.ndarray:
         avg_loss[i] = (avg_loss[i - 1] * (period - 1) + loss[i]) / period
     rs = avg_gain / np.maximum(avg_loss, 1e-10)
     rsi = 100.0 - 100.0 / (1.0 + rs)
-    return np.nan_to_num(rsi, nan=50.0)
+    return np.asarray(np.nan_to_num(rsi, nan=50.0))
 
 
 def _compute_cci(
@@ -81,7 +81,7 @@ def _compute_adx(
     adx[2 * period] = float(np.mean(dx[period + 1 : 2 * period + 1]))
     for i in range(2 * period + 1, n):
         adx[i] = (adx[i - 1] * (period - 1) + dx[i]) / period
-    return np.nan_to_num(adx, nan=25.0)
+    return np.asarray(np.nan_to_num(adx, nan=25.0))
 
 
 def _compute_wavetrend(
@@ -98,14 +98,14 @@ def _compute_wavetrend(
     wt = np.full_like(hlc3, np.nan)
     for i in range(avg_length - 1, len(hlc3)):
         wt[i] = float(np.mean(ci[i - avg_length + 1 : i + 1]))
-    return np.nan_to_num(wt, nan=0.0)
+    return np.asarray(np.nan_to_num(wt, nan=0.0))
 
 
 def _compute_mom(close: np.ndarray, period: int = 12) -> np.ndarray:
     """Simple momentum."""
     mom = np.full_like(close, np.nan)
     mom[period:] = close[period:] / np.maximum(close[:-period], 1e-10) - 1.0
-    return np.nan_to_num(mom, nan=0.0)
+    return np.asarray(np.nan_to_num(mom, nan=0.0))
 
 
 def _lorentzian_distance(a: np.ndarray, b: np.ndarray, weights: np.ndarray | None = None) -> float:
@@ -160,7 +160,7 @@ def _extract_features(data: pl.DataFrame, periods: dict[str, int] | None = None)
         std = np.where(std < 1e-10, 1.0, std)
         normalised[i] = (raw[i] - mean) / std
 
-    return np.nan_to_num(normalised, nan=0.0)
+    return np.asarray(np.nan_to_num(normalised, nan=0.0))
 
 
 class KNNGenomeToSignal:

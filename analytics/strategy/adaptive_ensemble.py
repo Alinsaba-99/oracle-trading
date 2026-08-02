@@ -248,7 +248,7 @@ class AdaptiveEnsemble:
         if self._ml_classifier is None:
             return RegimeLabel.CHOPPY
         try:
-            kairos_regime, confidence = self._ml_classifier.predict(data)
+            kairos_regime, confidence = self._ml_classifier.predict(data)  # type: ignore[attr-defined]
             mapped = _KAIROS_TO_ORACLE.get(kairos_regime, RegimeLabel.CHOPPY)
             if confidence < 0.3:
                 return RegimeLabel.CHOPPY

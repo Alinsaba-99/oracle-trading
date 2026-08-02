@@ -92,6 +92,7 @@
 - [x] **BL-020** P1 — **Ricalibrazione regime + run WP2 v2**. ✅ completato (commit `0716e1a`): vol-scaled regime heuristic (timeframe-invariant).
 - [x] **BL-021** P1 — **MES-aware sizing per prop-firm**. ✅ completato in `b4058e5`. Script: `scripts/check_mes_sizing.py`.
 - [x] **BL-022** P1 — **100 sessioni paper indipendenti**. ✅ completato (commit `3227804`): 100 session × 95-bar windows, pinned dataset, Monte Carlo opzione, gate criteria.
+- [ ] **BL-024** P1 — **G6 re-run qualificante con trade reali**. Il run post-fix 30/30 ha prodotto 0 trade, 0 P&L e Sharpe 0, quindi non costituisce evidenza di qualifica. AC: esecuzione indipendente con `scripts/run_g6_wp2_100_sessions.py`, almeno 10 finestre con trade, P&L aggregato > 0, Sharpe non-zero, pass rate ≥ 0.90, mean max DD ≤ 3%, reconcile clean = 100%; report versionato in `docs/reports/g6-wp2-final/`.
 
 ## Edge Portfolio (BL-200..202) — NUOVO dopo audit 25-lug
 
@@ -166,6 +167,7 @@ Non iniziato. Dipende da G5 + G6.
 - [x] **BL-304** P2 — **Perpetual backfill execution**: lanciare backfill orchestrator su tutte le configurazioni in `backfill.conf`. AC: coverage > 90% degli asset listati entro 7gg. ✅ completato 31-lug: piano live 152/152 entry (0 failed) — coverage 220 serie (65×1m, 60×1h, 73×1d, 22×4h); refresh perpetuo attivo (timer systemd 07:00 + `scripts/refresh_lake.py`); orchestrator `--incremental` (fetch solo barre mancanti da coverage.latest) + classificatore ok/fresh/failed (niente falsi failed nei weekend); fix API jetta: bucket correnti → HTTP 400, clamp ai bucket chiusi basato su *today* + filtro sul range effettivo (`_clamp_bucket_range`); piano live 152 entry raggiungibili (dukascopy+yahoo+binance; histdata/stooq/ibkr/databento bloccate e commentate — vedi `docs/DATA_SOURCES.md`). Curation 1m completa: 65 serie (aggiunti 5 cross FX: AUDNZD, NZDJPY, CHFJPY, CADJPY, CADCHF).
 - [x] **BL-305** P2 — **ES 1h + EURUSD 1m + BTCUSDT 1m backfill prioritario**: asset critici per G6/G10. ✅ completato: EURUSD 1m 8.67M righe 2003→2026 (Dukascopy), BTCUSDT 1m 4.69M righe 2017→2026 (Binance), ES 1h 36.6K righe; curation 1m estesa a FX+crypto+metalli (58 serie curated, `build_curated_contracts.py` ora auto-discover + gap threshold tf-aware).
 - [ ] **BL-306** P3 — **Polygon.io integration** (opzionale, $29/mo): per US equities 1m se necessario. ~2gg.
+- [ ] **BL-307** P1 — **Ripristinare completezza metadata e lineage del lake**. Audit 2026-08-01: 20.879 partizioni `normalized/` senza entry in `lineage.json`, 32 record coverage senza `sources`/`version`/`last_touch`, 7 refresh correnti falliti (3 timeout Binance, 4 `NO_DATA` Dukascopy); 0 riferimenti lineage pendenti. AC: comando di audit ripetibile, 0 partizioni normalized senza lineage verificabile, schema coverage completo per tutte le serie, retry/classificazione dei 7 fallimenti senza inventare provenance, test automatico bloccante.
 
 ## G10 — Strategy Catalog (100+ strategie)
 

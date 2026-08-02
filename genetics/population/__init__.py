@@ -106,8 +106,8 @@ def initialize_population(
     population: list[Any] = []
 
     # Pre-encoded seed genomes (injected first, highest priority)
-    n_seed_inject = len(seed_genomes) if seed_genomes else 0
-    if n_seed_inject > 0:
+    n_seed_inject = len(seed_genomes) if seed_genomes is not None else 0
+    if n_seed_inject > 0 and seed_genomes is not None:
         for vec in seed_genomes:
             if len(vec) != n:
                 continue  # skip mismatched vectors

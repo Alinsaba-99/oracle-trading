@@ -162,9 +162,10 @@ class RegimeAwareEnsemble:
         if spec is None:
             return pl.Series("signal", [0] * len(data), dtype=pl.Int8)
         try:
-            return spec.compute(data)  # type: ignore[attr-defined]
+            result = spec.compute(data)  # type: ignore[attr-defined]
         except Exception:
             return pl.Series("signal", [0] * len(data), dtype=pl.Int8)
+        return pl.Series("signal", result) if not isinstance(result, pl.Series) else result
 
     # ── internals ──────────────────────────────────────────────────────
 

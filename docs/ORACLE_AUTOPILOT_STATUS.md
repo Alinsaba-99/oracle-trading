@@ -1,6 +1,6 @@
 # Oracle Autopilot — Execution Status
 
-> Checkpoint operativo. Aggiornato: 2026-07-25 (post-audit remediation beta).
+> Checkpoint operativo. Aggiornato: 2026-08-01 (validazione post-BL-301).
 > La gerarchia documentale è: ROADMAP (perché) → STATUS (cosa) → BACKLOG
 > (come) → ADR (decisioni) → report (evidenza). Solo STATUS riporta la
 > matrice gate/stato.
@@ -8,33 +8,34 @@
 ## 1. Identità del checkpoint
 
 - **Branch**: `feat/bl-301-data-lake` (active development)
-- **HEAD**: `01b61ba` (feat(BL-090): Research Memory — SQLite-backed decision tracking)
-- **Working tree**: modificato (BACKLOG.md aggiornato, BL-301 lake attivo, untracked scripts dal branch feat/bl-301-data-lake)
+- **HEAD**: `07e2d3d` (feat: grana 5m/15m/30m derivata dal 1m + TIER 9 crypto)
+- **Working tree**: modificato (metadata lake post-backfill + remediation typing/mypy)
 - **Modalità autorizzata**: RESEARCH, REPLAY, PAPER
 - **PAPER, SHADOW, EVALUATION, FUNDED**: PAPER parziale (gate rejected). SHADOW/EVALUATION/FUNDED: DISABLED
 
-## 2. Baseline verificata
+## 2. Baseline verificata (2026-08-01)
 
 | Comando | Esito |
 |---|---|
 | `ruff check .` | ✅ All checks passed |
-| `ruff format --check .` | ✅ 491 files formatted |
-| `mypy --strict core/ market/ analytics/ execution/ genetics/ research/ agents/ audit/ policy/ orchestration/` | ✅ Success: no issues |
-| `pytest tests/` | **✅ 2116+ passed**, 6 skipped, 0 failed |
+| `ruff format --check .` | ✅ 672 files formatted |
+| `mypy --strict core/ market/ analytics/ execution/ genetics/ research/ agents/ audit/ policy/ orchestration/` | ✅ Success: no issues found in 335 source files |
+| `pytest tests/` | **✅ 2630 passed**, 6 skipped, 42 warnings, 0 failed |
 | Postgres path (`--storage=postgres`) | ✅ — schema applicato, OMS/ledger verdi |
 | Smoke regime→paper→OMS | ✅ |
+| Data lake integrity | 🟡 457 serie / 97 simboli / 316.704.530 righe / 47.190 lineage entries; 0 riferimenti pendenti, ma 20.879 partizioni normalized senza lineage |
 
 ## 3. Gate status (unica tabella gate/stato autoritativa)
 
 | Gate | Stato | Evidenza | Limite noto |
 |---|---|---|---|
-| G0 baseline | ✅ PASSED | ruff/mypy verdi, uv.lock, CI, secret scan | warning budget non applicato |
+| G0 baseline | ✅ PASSED | ruff/mypy verdi, uv.lock, CI, secret scan, warning budget | budget warning CI = 350; run locale corrente = 42 |
 | G1 autorità/ambienti | ✅ PASSED | mode guard, startup fail-closed, credential isolation, CLI guard | `OrderManager` ammette risk=None in path script untracked (BL-040) |
-| G2 contract data | 🟡 PARTIAL | ContractSpec, CME calendars, roll, PIT detection. Intraday futures via BL-301 (lake) in progress | ES=F daily da yfinance; intraday via Databento/HistData |
+| G2 contract data | 🟡 PARTIAL | ContractSpec, CME calendars, roll, PIT detection; BL-301 lake operativo | 20.879 partizioni normalized senza lineage, 32 record coverage incompleti, 7 refresh falliti al checkpoint (BL-307) |
 | G3 ledger/OMS | ✅ PASSED | PostgreSQL path attivo 25-lug; RecoveryService + ReconciliationWorker + idempotency; restart senza perdita/dup | persistenza Postgres solo in `--storage=postgres` |
 | G4 hard risk | ✅ PASSED | RiskManager, FirmProgramProfile, 35 property test, bypass audit | adapter PropFirm cablato in CLI ma **escluso dal paper harness** (BL-070 risolto) |
-| **G5 research truth** | ❌ **REGRESSED** | M31 riproducibile solo **se** `data/ohlcv/ES_1d.parquet` rimane pinned a `09a22…`. ADR-014 documenta la perdita di evidenza. | dataset non pinned; refresh_data lo sovrascrive |
-| G6 paper | 🟡 **REJECTED** | M32 diagnostic 20/20 PASSED (max DD 0.21%). M32a WP2: 23/30 PASSED, **mean_sharpe = -0.31 (borderline -0.5)**, **pass_rate 0.77 vs target 0.90** | gate failed per regime choppy-biased + missing Lorentzian weighting |
+| **G5 research truth** | ❌ **REJECTED** | dataset M31 pinned (`09a22…`) e re-run riproducibile | median Sharpe 0.3424 < 0.5, worst DD 15.94% > 4%, 88 hard breach; BL-023 aperto |
+| G6 paper | 🟡 **REJECTED** | M32a originale 23/30; post-fix 30/30 ma con 0 trade, 0 P&L e Sharpe 0 | manca un run qualificante trade-producing; BL-024 aperto |
 | G6-I feedback loop | 🟡 PARTIAL | Factor Timing v1 (26 test), Lorentzian causal-fix (6 test), Regime Ensemble (14 test) | nessun gate end-to-end; Lorentzian mai trigger dominante |
 | G7 programm prop-firm | ⚪ NOT_STARTED | dipende da G5+G6+poli cert | block su G5/G6 |
 | G8 funded limited | ⚪ NOT_STARTED | | |
@@ -62,51 +63,48 @@ Eseguito: `python scripts/run_g6_wp2_paper_sessions.py --sessions 30 --data data
 
 ## 4. Rischi residui
 
-1. **🔴 Dataset non pinned.** `data/ohlcv/ES_1d.parquet` è untracked (vedi
-   `.gitignore`). Qualunque `refresh_data.py --multi-timeframe ES` o
-   `yfinance_futures("ES")` lo riscrive. Backlog: BL-001/002/003.
-2. **🟡 Regime detector choppy-biased.** Soglie fisse del `_sma_regime_heuristic`
-   producono 96%+ choppy su 250gg daily. Backlog: BL-010..014.
-3. **🟡 Warning budget 321 Python warnings** non bloccante in CI; da definire scope.
-4. **🟡 NATS / QuestDB / Qdrant / Redis** descritti in Compose oltre l'uso reale.
-5. **🟡 CCXT_bridge e uvicorn** in `ps -ef` non sono di Oracle (sono di
+1. **🔴 Lineage lake incompleta.** 20.879 partizioni `normalized/` non hanno
+   una voce in `lineage.json`; 32 record coverage hanno schema incompleto.
+   Non va ricostruita provenance per inferenza. Backlog: BL-307.
+2. **🔴 G5 ancora REJECTED.** Dataset pin e riproducibilità sono risolti, ma
+   Sharpe, drawdown e hard breach non raggiungono le soglie. Backlog: BL-023.
+3. **🟡 G6 senza evidenza trade-producing.** Il run post-fix passa formalmente
+   30/30 ma produce 0 trade e non qualifica la strategia. Backlog: BL-024.
+4. **🟡 42 warning pytest** entro il budget CI di 350; debito tecnico residuo.
+5. **🟡 NATS / QuestDB / Qdrant / Redis** descritti in Compose oltre l'uso reale.
+6. **🟡 CCXT_bridge e uvicorn** in `ps -ef` non sono di Oracle (sono di
    `distill-lab`). Niente da fare qui.
 
 ## 5. Stato reale vs dichiarato
 
 | Affermazione | Verificato |
 |---|---|
-| "M31 APPROVED per historical replay" | ❌ falso — ADR-014: dataset lineage GAP. M31 da rifare |
+| "M31 APPROVED per historical replay" | ❌ falso — dataset ora pinned e run riproducibile, ma le soglie G5 sono REJECTED |
 | "G3 Postgres path attivo" | ✅ vero (commit ffe91b4) |
 | "G6-WP2 PASSED 20/20" | ✅ vero **solo per il primo diagnostic M32** (DD 0.21%). M32a paper 23/30 = REJECTED |
-| "Regime-ensemble routing OK" | 🟡 routing OK, ma routing quasi sempre choppy perché heuristica sbilanciata |
+| "Regime-ensemble routing OK" | ✅ ribilanciamento e hysteresys implementati; manca ancora evidenza G6 con trade reali |
 | "Lorentzian causal fix" | ✅ test verdi, ma Lorentzian mai trigger dominante nel paper run |
 | "Live disabilitato finché G7 non è PASSED" | ✅ vero — modalità RESEARCH/PAPER autorizzate, live bloccato |
 
 ## 6. Cosa NON è stato risolto
 
-- I 5 script `run_backtest_evaluation.py` / `run_lorentzian_test.py` /
-  `run_lorentzian_v2.py` / `run_risk_sized_eval.py` / `run_rolling_challenge.py`
-  sono untracked e **hanno errori mypy** che non ho toccato (lavoro
-  precedente non mio scope). Vedi `BACKLOG.md` BL-030 per cleanup.
-- `data/ohlcv/ES_1d.parquet` va pinnato in `data/pinned/` (BL-001).
-- Regime detector va ricalibrato (BL-010..014).
-- M31 va rifatto da zero (BL-022) — non si può "recuperare" il vecchio
-  (ADR-014).
-- `_sma_regime_heuristic` non è hysteresys-aware (`ensemble.py` ha
-  `_apply_hysteresis` ma non è esposta via `RoutingDecision`).
+- Completezza del lineage e uniformità dello schema coverage (BL-307).
+- G5/M31 resta sotto soglia nonostante pinning e re-run riproducibile (BL-023).
+- G6 necessita un run indipendente che produca trade e P&L reali (BL-024).
+- `OrderManager` ammette ancora il percorso `risk_manager=None` (BL-040).
+- Ensemble edge e cross-asset factor timing restano aperti (BL-201/202).
 
 ## 7. Prossimo lavoro eseguibile (single source of truth: BACKLOG.md)
 
 Vedi `BACKLOG.md` per le task atomiche. Sommario:
 
-1. **P1**: BL-001..003 — pin ES_1d, anti-overwrite, dataset registry
-2. **P1**: BL-010..014 — regime rebalance + hysteresys
-3. **P1**: BL-020..024 — 100 sessioni paper indipendenti, MES-aware sizing
-4. **P2**: BL-030..031 — cleanup script untracked, mypy remediation
-5. **P2**: BL-022 — M31 re-run con post-fix code
-6. **P3**: G6-I Phase 2 (factor timing → cross-asset)
-7. **P3**: G7 readiness (una firm specifica)
+1. **P1**: BL-307 — audit e ripristino lineage/coverage del data lake
+2. **P1**: BL-023 — portare M31 sopra le soglie G5
+3. **P1**: BL-024 — G6 100-session re-run con trade e P&L reali
+4. **P1**: BL-201 — ensemble multi-segnale v2
+5. **P2**: BL-040 — rendere obbligatorio il RiskManager
+6. **P2**: BL-092/202 — factor timing cross-asset
+7. **P3**: G7 readiness dopo G5 e G6 verdi
 
 ## 8. Decisioni chiave recenti (link agli ADR)
 
