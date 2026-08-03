@@ -165,10 +165,10 @@ class BinanceREST(HttpSource):
             ms = int(data[-1][6]) + 1
             time.sleep(1.0 / self.rate_limit.requests_per_second)
 
-    def _get_json(self, url: str) -> list:
+    def _get_json(self, url: str, *, timeout: int = 120) -> list:
         import json
 
-        raw = self._get(url)
+        raw = self._get(url, timeout=timeout)
         return json.loads(raw)
 
 

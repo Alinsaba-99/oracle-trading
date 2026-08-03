@@ -86,6 +86,14 @@ def main() -> int:
         if rc_cur != 0:
             rc = rc_cur
 
+    # 4) BL-307: audit + repair lineage/coverage. A crash between writing a
+    # partition and updating lineage.json would otherwise leave orphans;
+    # the audit rebuilds provenance from the data itself and fails the
+    # refresh if anything is left untracked.
+    rc_audit = run(["uv", "run", "python", "scripts/audit_lake_metadata.py", "--fix"])
+    if rc_audit != 0:
+        rc = rc_audit
+
     dur = round((datetime.now(UTC) - t0).total_seconds(), 1)
     print(f"[refresh] done in {dur}s — rc={rc}", flush=True)
     return rc

@@ -31,7 +31,7 @@
 |---|---|---|---|
 | G0 baseline | ✅ PASSED | ruff/mypy verdi, uv.lock, CI, secret scan, warning budget | budget warning CI = 350; run locale corrente = 42 |
 | G1 autorità/ambienti | ✅ PASSED | mode guard, startup fail-closed, credential isolation, CLI guard | `OrderManager` ammette risk=None in path script untracked (BL-040) |
-| G2 contract data | 🟡 PARTIAL | ContractSpec, CME calendars, roll, PIT detection; BL-301 lake operativo | 20.879 partizioni normalized senza lineage, 32 record coverage incompleti, 7 refresh falliti al checkpoint (BL-307) |
+| G2 contract data | 🟡 PARTIAL | ContractSpec, CME calendars, roll, PIT detection; BL-301 lake operativo; BL-307 lineage/coverage completo (68.975 partizioni tracciate, 0 dangling) | BL-306: Polygon per equities 1m (opzionale) |
 | G3 ledger/OMS | ✅ PASSED | PostgreSQL path attivo 25-lug; RecoveryService + ReconciliationWorker + idempotency; restart senza perdita/dup | persistenza Postgres solo in `--storage=postgres` |
 | G4 hard risk | ✅ PASSED | RiskManager, FirmProgramProfile, 35 property test, bypass audit | adapter PropFirm cablato in CLI ma **escluso dal paper harness** (BL-070 risolto) |
 | **G5 research truth** | ❌ **REJECTED** | dataset M31 pinned (`09a22…`) e re-run riproducibile | median Sharpe 0.3424 < 0.5, worst DD 15.94% > 4%, 88 hard breach; BL-023 aperto |
@@ -63,16 +63,13 @@ Eseguito: `python scripts/run_g6_wp2_paper_sessions.py --sessions 30 --data data
 
 ## 4. Rischi residui
 
-1. **🔴 Lineage lake incompleta.** 20.879 partizioni `normalized/` non hanno
-   una voce in `lineage.json`; 32 record coverage hanno schema incompleto.
-   Non va ricostruita provenance per inferenza. Backlog: BL-307.
-2. **🔴 G5 ancora REJECTED.** Dataset pin e riproducibilità sono risolti, ma
+1. **🔴 G5 ancora REJECTED.** Dataset pin e riproducibilità sono risolti, ma
    Sharpe, drawdown e hard breach non raggiungono le soglie. Backlog: BL-023.
-3. **🟡 G6 senza evidenza trade-producing.** Il run post-fix passa formalmente
+2. **🟡 G6 senza evidenza trade-producing.** Il run post-fix passa formalmente
    30/30 ma produce 0 trade e non qualifica la strategia. Backlog: BL-024.
-4. **🟡 42 warning pytest** entro il budget CI di 350; debito tecnico residuo.
-5. **🟡 NATS / QuestDB / Qdrant / Redis** descritti in Compose oltre l'uso reale.
-6. **🟡 CCXT_bridge e uvicorn** in `ps -ef` non sono di Oracle (sono di
+3. **🟡 42 warning pytest** entro il budget CI di 350; debito tecnico residuo.
+4. **🟡 NATS / QuestDB / Qdrant / Redis** descritti in Compose oltre l'uso reale.
+5. **🟡 CCXT_bridge e uvicorn** in `ps -ef` non sono di Oracle (sono di
    `distill-lab`). Niente da fare qui.
 
 ## 5. Stato reale vs dichiarato
@@ -88,7 +85,6 @@ Eseguito: `python scripts/run_g6_wp2_paper_sessions.py --sessions 30 --data data
 
 ## 6. Cosa NON è stato risolto
 
-- Completezza del lineage e uniformità dello schema coverage (BL-307).
 - G5/M31 resta sotto soglia nonostante pinning e re-run riproducibile (BL-023).
 - G6 necessita un run indipendente che produca trade e P&L reali (BL-024).
 - `OrderManager` ammette ancora il percorso `risk_manager=None` (BL-040).
@@ -98,13 +94,12 @@ Eseguito: `python scripts/run_g6_wp2_paper_sessions.py --sessions 30 --data data
 
 Vedi `BACKLOG.md` per le task atomiche. Sommario:
 
-1. **P1**: BL-307 — audit e ripristino lineage/coverage del data lake
-2. **P1**: BL-023 — portare M31 sopra le soglie G5
-3. **P1**: BL-024 — G6 100-session re-run con trade e P&L reali
-4. **P1**: BL-201 — ensemble multi-segnale v2
-5. **P2**: BL-040 — rendere obbligatorio il RiskManager
-6. **P2**: BL-092/202 — factor timing cross-asset
-7. **P3**: G7 readiness dopo G5 e G6 verdi
+1. **P1**: BL-023 — portare M31 sopra le soglie G5
+2. **P1**: BL-024 — G6 100-session re-run con trade e P&L reali
+3. **P1**: BL-201 — ensemble multi-segnale v2
+4. **P2**: BL-040 — rendere obbligatorio il RiskManager
+5. **P2**: BL-092/202 — factor timing cross-asset
+6. **P3**: G7 readiness dopo G5 e G6 verdi
 
 ## 8. Decisioni chiave recenti (link agli ADR)
 

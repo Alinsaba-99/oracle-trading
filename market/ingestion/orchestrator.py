@@ -99,13 +99,18 @@ def classify_report(report: FetchReport) -> str:
         "ok": data written (rows_out > 0)
         "fresh": nothing new but the source answered (rows_in > 0 and
             rows_rejected == 0) — the series is already up to date;
-            treated as completed so weekend runs do not poison `failed`
+            treated as completed so weekend runs do not poison `failed`.
+            Also returned for NO_DATA_WEEKEND: an empty answer over a
+            weekend-only window is expected for FX/metals sources, not
+            an error.
         "failed": source error, empty answer, or all rows rejected
     """
     if report.note.startswith("FAILED"):
         return "failed"
     if report.rows_out > 0:
         return "ok"
+    if report.note in ("NO_DATA_WEEKEND",):
+        return "fresh"
     if report.note == "NO_DATA" and report.rows_in > 0 and report.rows_rejected == 0:
         return "fresh"
     return "failed"
@@ -142,6 +147,29 @@ def run_plan(
     failed: dict[str, str] = dict(state.get("failed", {}))
     started_at = state.get("started_at", datetime.now(UTC).isoformat())
     runtime_start = time.monotonic()
+
+    # BL-307: perpetual entries (no explicit END_DATE) are re-keyed by
+    # date.today() every run; a stale failed key for (symbol|tf|source)
+    # whose today-key is already done is obsolete — the series is covered.
+    for entry in entries:
+        if entry.end is not None:
+            continue
+        today_key = _state_key(entry)
+        if today_key not in completed:
+            continue
+        prefix = f"{entry.symbol}|{entry.timeframe}|{entry.source}|"
+        for stale in [k for k in failed if k.startswith(prefix)]:
+            logger.info("clearing stale failed key: %s", stale)
+            failed.pop(stale, None)
+    if state.get("failed") != failed:
+        meta.save_state(
+            {
+                "started_at": started_at,
+                "completed": sorted(completed),
+                "failed": failed,
+                "last_attempt": state.get("last_attempt"),
+            }
+        )
     logger.info(
         "orchestrator: %d entries, done=%d, failed=%d", len(entries), len(completed), len(failed)
     )
@@ -197,6 +225,15 @@ def run_plan(
             logger.info("already fresh (no new bars): %s", key)
         completed.add(key)
         failed.pop(key, None)
+        if entry.end is None:
+            # Perpetual/incremental entries (no explicit END_DATE) are
+            # re-keyed by date.today() every run. When such an entry
+            # succeeds, historical failed keys for the same
+            # (symbol|tf|source) are stale — the series is now covered.
+            prefix = f"{entry.symbol}|{entry.timeframe}|{entry.source}|"
+            for stale in [k for k in failed if k.startswith(prefix)]:
+                logger.info("clearing stale failed key: %s", stale)
+                failed.pop(stale, None)
         meta.save_state(
             {
                 "started_at": started_at,

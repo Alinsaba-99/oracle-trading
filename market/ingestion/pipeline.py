@@ -22,7 +22,7 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass, field
-from datetime import UTC, date, datetime, timezone
+from datetime import UTC, date, datetime, timedelta, timezone
 
 UTC = UTC, timezone
 UTC = timezone.utc
@@ -51,6 +51,20 @@ class CoverageReport:
     missing: list[str] = field(default_factory=list)
     total_rows: int = 0
     total_files: int = 0
+
+
+def _is_weekend_only_range(start: date, end: date) -> bool:
+    """True when every calendar day in [start, end] is Saturday/Sunday.
+
+    Used to classify empty fetches over weekends as expected for
+    sources that do not trade on Saturday/Sunday (FX, metals, futures).
+    """
+    day = start
+    while day <= end:
+        if day.weekday() < 5:  # Monday..Friday
+            return False
+        day += timedelta(days=1)
+    return True
 
 
 @dataclass
@@ -138,10 +152,30 @@ class Pipeline:
         # Mark it explicitly so the orchestrator treats it as failed and
         # can retry later (previously empty note == "completed" bug).
         if not report.note and report.rows_out == 0:
-            report.note = "NO_DATA"
-            logger.warning(
-                "fetch returned no bars: %s %s %s [%s..%s]", source, symbol, timeframe, start, end
-            )
+            if _is_weekend_only_range(start, end):
+                # FX/metals sources do not print quotes on Saturday/Sunday:
+                # an empty answer over a weekend-only window is expected,
+                # not an error. The orchestrator classifies this as "fresh"
+                # so the perpetual refresh does not poison `failed`.
+                report.note = "NO_DATA_WEEKEND"
+                logger.info(
+                    "weekend-only window, no bars expected: %s %s %s [%s..%s]",
+                    source,
+                    symbol,
+                    timeframe,
+                    start,
+                    end,
+                )
+            else:
+                report.note = "NO_DATA"
+                logger.warning(
+                    "fetch returned no bars: %s %s %s [%s..%s]",
+                    source,
+                    symbol,
+                    timeframe,
+                    start,
+                    end,
+                )
         report.duration_s = round(time.monotonic() - t0, 2)
         meta.append_audit_log(
             source=str(source),
