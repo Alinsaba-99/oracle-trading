@@ -14,12 +14,6 @@ class NATSSettings(BaseModel):
     max_reconnect: int = Field(default=10, ge=0)
 
 
-class RedisSettings(BaseModel):
-    url: str = Field(default="redis://localhost:6379")
-    timeout: float = Field(default=5.0, ge=0)
-    max_connections: int = Field(default=10, ge=1)
-
-
 class QuestDBSettings(BaseModel):
     host: str = "localhost"
     port: int = Field(default=9000, ge=1, le=65535)
@@ -76,7 +70,6 @@ class OracleSettings(BaseSettings):
     log_json: bool = False
 
     nats: NATSSettings = NATSSettings()
-    redis: RedisSettings = RedisSettings()
     questdb: QuestDBSettings = QuestDBSettings()
     postgres: PostgresSettings = PostgresSettings()
     plugins: PluginSettings = PluginSettings()

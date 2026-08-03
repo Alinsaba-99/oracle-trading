@@ -250,7 +250,6 @@ def _handle_config(args: argparse.Namespace) -> None:
         print(f"Environment: {settings.environment}")
         print(f"Log level: {settings.log_level}")
         print(f"NATS: {settings.nats.url}")
-        print(f"Redis: {settings.redis.url}")
         sys.exit(0)
 
 

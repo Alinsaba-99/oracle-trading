@@ -158,3 +158,19 @@ app.include_router(router)
 frontend_dist = Path(__file__).resolve().parent.parent / "dashboard" / "dist"
 if frontend_dist.exists():
     app.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="frontend")
+
+
+def run() -> None:
+    """Launch the API server with uvicorn (host/port from APISettings).
+
+    Entry point that keeps the ``uvicorn`` dependency alive and gives the
+    dashboard a real launch path:
+        uv run --frozen python -m apps.api.main
+    """
+    import uvicorn
+
+    uvicorn.run("apps.api.main:app", host=settings.host, port=settings.port, reload=settings.debug)
+
+
+if __name__ == "__main__":
+    run()

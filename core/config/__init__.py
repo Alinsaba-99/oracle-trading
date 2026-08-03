@@ -9,7 +9,6 @@ from core.config.settings import (
     PluginSettings,
     PostgresSettings,
     QuestDBSettings,
-    RedisSettings,
 )
 
 __all__ = [
@@ -20,6 +19,5 @@ __all__ = [
     "PluginSettings",
     "PostgresSettings",
     "QuestDBSettings",
-    "RedisSettings",
     "SettingsSerializer",
 ]

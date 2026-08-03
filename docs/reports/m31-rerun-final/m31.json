@@ -1,8 +1,8 @@
 {
   "metadata": {
     "title": "M31 rerun with regime ribilanciato (BL-022 + BL-023 fix)",
-    "timestamp": "2026-08-03T07:59:36.502191+00:00",
-    "git_commit": "87a5de4897786e5d65736808023bfc0bdaa18441",
+    "timestamp": "2026-08-03T10:14:40.877397+00:00",
+    "git_commit": "d4ab702fced01213a0e61a953bba1c369b9a6825",
     "data_hash": "09a22268d2a7fa815beed6788917663771c7af7b347b7b49db6c2a1318f26b42",
     "data": "/home/alin/_repos/oracle-trading/data/ohlcv/ES_1d.parquet",
     "n_bars": 250,
