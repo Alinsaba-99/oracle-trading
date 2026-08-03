@@ -274,6 +274,13 @@ diventa probe stop-sensitivity + warmup-placement.
 
 > ⛔ GATE UTENTE: nessuna Fase 3 finché non è deciso.
 
+> ✅ **DECISO 2026-08-03 (approvazione utente)** — re-spec ACCEPTED, vedi
+> `docs/ADR/ADR-016-g5-respec-stop-atr-qty1.md`: ATR 1x (period 14,
+> point-in-time) + qty 1-only + daily primario (1h cross-check dichiarato)
+> + 6 regimi (macro risolto) + Sharpe ≥ 0.5 resta + `luck_p_value` nel gate
+> + DD ≤ 4% come vincolo di sopravvivenza + N onesto = top-3 finestre ×
+> qty (18 curve uniche con qty 1). Fase 3/4 sbloccate.
+
 > 📋 Proposta re-spec PREPARATA 2026-08-03 sera (in attesa di approvazione
 > utente — evidenze da probe P1a/P1d, NON ancora decisa):
 > - **Timeframe**: daily primario (2913 bar ≥ 2015); ES 1h (13.7K bar, solo
