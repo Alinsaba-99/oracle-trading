@@ -175,6 +175,9 @@ class EventDrivenQualificationRunner:
         quantity: Decimal = Decimal("1"),
         seed: int = 42,
         stop_distance_points: Decimal = Decimal("5"),
+        stop_mode: str = "fixed",
+        atr_multiple: float = 2.0,
+        atr_period: int = 14,
         fill_config: FillModelConfig | None = None,
         prop_profile: FirmProgramProfile = TOPSTEP_TC_50K,
         profile_certified: bool = False,
@@ -187,6 +190,12 @@ class EventDrivenQualificationRunner:
             raise ValueError("Qualification quantity must be a positive whole contract count")
         if stop_distance_points <= 0:
             raise ValueError("stop_distance_points must be positive")
+        if stop_mode not in ("fixed", "atr"):
+            raise ValueError("stop_mode must be 'fixed' or 'atr'")
+        if atr_multiple <= 0:
+            raise ValueError("atr_multiple must be positive")
+        if atr_period < 2:
+            raise ValueError("atr_period must be at least 2")
         if periods_per_year <= 0:
             raise ValueError("periods_per_year must be positive")
         self._signal = signal
@@ -196,6 +205,9 @@ class EventDrivenQualificationRunner:
         self._quantity = quantity
         self._seed = seed
         self._stop_distance_points = stop_distance_points
+        self._stop_mode = stop_mode
+        self._atr_multiple = atr_multiple
+        self._atr_period = atr_period
         self._periods_per_year = periods_per_year
         self._liquidate_on_hard_breach = liquidate_on_hard_breach
         self._prop_profile = prop_profile
@@ -305,6 +317,10 @@ class EventDrivenQualificationRunner:
                     strategy_id=strategy_id,
                 )
             if target != 0 and position.quantity == 0:
+                # BL-023 P1a: ATR is computed point-in-time on the data
+                # prefix (bars strictly before the current execution bar),
+                # never on the full slice — no lookahead.
+                atr_value = _atr(prefix, self._atr_period) if self._stop_mode == "atr" else None
                 position = await self._open_position(
                     target=target,
                     reference_price=reference_price,
@@ -315,6 +331,7 @@ class EventDrivenQualificationRunner:
                     risk=risk,
                     audit=audit,
                     strategy_id=strategy_id,
+                    atr_value=atr_value,
                 )
             stop_fill_price = _stop_fill_price(position, row)
             if stop_fill_price is not None:
@@ -508,9 +525,10 @@ class EventDrivenQualificationRunner:
         risk: PropFirmOrderRiskAdapter,
         audit: _Audit,
         strategy_id: str,
+        atr_value: Decimal | None = None,
     ) -> _Position:
         side = "buy" if target > 0 else "sell"
-        stop_price = self._protective_stop(reference_price, target)
+        stop_price = self._protective_stop(reference_price, target, atr_value)
         request = OrderRequest(
             instrument_id=self._symbol,
             side=side,
@@ -700,10 +718,19 @@ class EventDrivenQualificationRunner:
         )
         return result, realized_pnl
 
-    def _protective_stop(self, entry_price: Decimal, target: int) -> Decimal:
-        ticks = (self._stop_distance_points / self._contract.tick_size).to_integral_value(
-            rounding=ROUND_CEILING
-        )
+    def _protective_stop(
+        self, entry_price: Decimal, target: int, atr_value: Decimal | None = None
+    ) -> Decimal:
+        # BL-023 P1a: in ATR mode the stop distance is atr_multiple * ATR
+        # (point-in-time, computed on the prefix), falling back to the
+        # fixed-point distance only when no ATR value is available (e.g.
+        # insufficient history) — the fixed distance is still the explicit
+        # floor so a degenerate ATR can never produce a zero-distance stop.
+        if self._stop_mode == "atr" and atr_value is not None and atr_value > 0:
+            distance = atr_value * Decimal(str(self._atr_multiple))
+        else:
+            distance = Decimal(str(self._stop_distance_points))
+        ticks = (distance / self._contract.tick_size).to_integral_value(rounding=ROUND_CEILING)
         distance = max(ticks, Decimal("1")) * self._contract.tick_size
         return entry_price - distance if target > 0 else entry_price + distance
 
@@ -759,6 +786,32 @@ def _stop_fill_price(position: _Position, row: dict[str, Any]) -> Decimal | None
     if open_price >= position.stop_price:
         return open_price
     return position.stop_price if _price(row, "high") >= position.stop_price else None
+
+
+def _atr(data: pl.DataFrame, period: int) -> Decimal | None:
+    """Point-in-time Average True Range on the last bar of a prefix slice.
+
+    True range is max(high-low, |high-prev_close|, |low-prev_close|),
+    smoothed with a simple rolling mean over ``period`` bars. Only bars
+    already in the prefix are used, so there is no lookahead. Returns
+    ``None`` when the prefix is too short to produce a value.
+    """
+    if data.height < 2:
+        return None
+    prev_close = data["close"].shift(1)
+    tr = pl.DataFrame(
+        {
+            "tr1": data["high"] - data["low"],
+            "tr2": (data["high"] - prev_close).abs(),
+            "tr3": (data["low"] - prev_close).abs(),
+        }
+    ).max_horizontal()
+    window = min(period, data.height)
+    atr_series = tr.rolling_mean(window_size=window, min_samples=window)
+    value = atr_series[-1]
+    if value is None:
+        return None
+    return Decimal(str(value))
 
 
 def _realized_pnl(

@@ -1,0 +1,87 @@
+{
+  "title": "BL-023 P1a \u2014 stop sensitivity probe (ES 1d lake)",
+  "timestamp": "2026-08-03T08:07:33.263993+00:00",
+  "dataset": "lake:ES:1d (6522 bars)",
+  "periods": [
+    "bear-2008-11-20",
+    "bull-2009-05-04",
+    "high_volatility-2008-12-02",
+    "liquidity_shock-2008-11-13",
+    "sideways-2019-10-02"
+  ],
+  "quantities": [
+    1
+  ],
+  "results": {
+    "fixed:5": {
+      "observations": 5,
+      "skipped": 0,
+      "median_sharpe": -1.0499,
+      "worst_dd": 0.0038,
+      "total_breaches": 0,
+      "liquidated": 0,
+      "risk_rejections": 0,
+      "fills": 32
+    },
+    "fixed:15": {
+      "observations": 5,
+      "skipped": 0,
+      "median_sharpe": -2.245,
+      "worst_dd": 0.0059,
+      "total_breaches": 0,
+      "liquidated": 0,
+      "risk_rejections": 0,
+      "fills": 28
+    },
+    "fixed:30": {
+      "observations": 5,
+      "skipped": 0,
+      "median_sharpe": -2.9171,
+      "worst_dd": 0.0073,
+      "total_breaches": 0,
+      "liquidated": 0,
+      "risk_rejections": 0,
+      "fills": 26
+    },
+    "fixed:60": {
+      "observations": 5,
+      "skipped": 0,
+      "median_sharpe": -2.751,
+      "worst_dd": 0.0072,
+      "total_breaches": 0,
+      "liquidated": 0,
+      "risk_rejections": 0,
+      "fills": 18
+    },
+    "atr:1x": {
+      "observations": 5,
+      "skipped": 0,
+      "median_sharpe": -2.8849,
+      "worst_dd": 0.0077,
+      "total_breaches": 0,
+      "liquidated": 0,
+      "risk_rejections": 0,
+      "fills": 20
+    },
+    "atr:2x": {
+      "observations": 5,
+      "skipped": 0,
+      "median_sharpe": 0.0,
+      "worst_dd": 0.0059,
+      "total_breaches": 0,
+      "liquidated": 0,
+      "risk_rejections": 15,
+      "fills": 6
+    },
+    "atr:3x": {
+      "observations": 5,
+      "skipped": 0,
+      "median_sharpe": 0.0,
+      "worst_dd": 0.0013,
+      "total_breaches": 0,
+      "liquidated": 0,
+      "risk_rejections": 23,
+      "fills": 2
+    }
+  }
+}

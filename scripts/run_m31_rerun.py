@@ -46,7 +46,7 @@ import polars as pl
 from analytics.backtest.providers import read_from_lake
 from analytics.qualification.execution import EventDrivenQualificationRunner
 from analytics.qualification.intelligence import build_offline_intelligence_artifact
-from analytics.qualification.models import ReplayVariant
+from analytics.qualification.models import MacroSurpriseEvent, ReplayVariant
 from analytics.qualification.periods import select_replay_periods, slice_period
 from analytics.strategy.lorentzian import LorentzianKNN
 from analytics.strategy.regime_ensemble import RegimeAwareEnsemble, SpecialistId
@@ -117,6 +117,18 @@ def _data_hash(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _load_macro_events(path: Path) -> list[MacroSurpriseEvent]:
+    """Load point-in-time macro events (BL-023 P1d: NASDaq consensus source).
+
+    Empty when the file is missing — the macro blocker then keeps the run
+    INVALID (fail-closed), exactly as before.
+    """
+    if not path.exists():
+        return []
+    payload = json.loads(path.read_text())
+    return [MacroSurpriseEvent(**event) for event in payload.get("events", [])]
+
+
 def _load_data(args: argparse.Namespace) -> tuple[pl.DataFrame, str, str]:
     """Load OHLCV from lake (DataRegistry force) or legacy parquet.
 
@@ -178,6 +190,12 @@ def main() -> int:
         help="config segnale (BL-200 edge candidates)",
     )
     parser.add_argument(
+        "--macro-events",
+        type=Path,
+        default=Path("data/macro/m31-events.json"),
+        help="point-in-time macro events (BL-023 P1d); missing file => run INVALIDO",
+    )
+    parser.add_argument(
         "--periods-slice", type=int, default=6, help="max periods from select_replay_periods"
     )
     parser.add_argument(
@@ -200,7 +218,9 @@ def main() -> int:
     print(f"Signal: {args.specialists} (RegimeAwareEnsemble, min_conf=0.5)")
     print()
 
-    selection = select_replay_periods(data, window_bars=args.window_bars)
+    selection = select_replay_periods(
+        data, window_bars=args.window_bars, macro_events=_load_macro_events(args.macro_events)
+    )
     # BL-023 F-10: blockers non vuoti (es. macro_surprise mancante) => run
     # INVALIDO, non APPROVED/REJECTED.
     if selection.blockers:
@@ -228,6 +248,9 @@ def main() -> int:
         prop_profile=TOPSTEP_TC_50K,
         profile_certified=True,
         stop_distance_points=stop_points,
+        stop_mode=args.stop_mode,
+        atr_multiple=args.atr_multiple,
+        atr_period=args.atr_period,
         periods_per_year=ppy,
         liquidate_on_hard_breach=True,
     )

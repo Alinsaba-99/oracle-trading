@@ -218,8 +218,33 @@ diventa probe stop-sensitivity + warmup-placement.
 > in run_m31_rerun.py), P1c ✅ (N onesto = periodi × qty), P1e ✅ (6522 bar
 > reali via read_from_lake, guard row-count), P1f ✅ (probe riformulato +
 > liquidazione), **11bis ✅ fix contabile futures** (ledger/broker: cash =
-> P&L+commissione, niente nozionale). Ancora aperti: P1a (stop ATR probe) e
-> P1d (probe macro consensus).
+> P&L+commissione, niente nozionale).
+>
+> ✅ Stato 2026-08-03 sera (P1a + P1d completati, commit `87a5de4` + working
+> tree):
+> - **P1a ✅ stop ATR-based**: `stop_mode=atr|fixed`, `atr_multiple`,
+>   `atr_period` nel runner (point-in-time sul prefix, mai lookahead) +
+>   test dedicati (5 nuovi in `test_m31_stop_sensitivity.py`, verdi) +
+>   probe sensitivity `scripts/probe_stop_sensitivity.py` su ES 1d lake
+>   (fixed 5/15/30/60pt, ATR 1/2/3x) → JSON in
+>   `docs/reports/m31-rerun/stop-probe.json`.
+> - **P1d ✅ probe macro consensus**: fonte NASDaq economic calendar API
+>   (costo zero, no auth) verificata su 2008/2009/2019 con actual+consensus;
+>   `scripts/fetch_macro_events.py` + `data/macro/m31-events.json` (13 eventi
+>   high-impact point-in-time) → blocker macro_surprise RISOLTO, 6/6 regimi.
+> - **FINDING P1a (critico)**: con il fix contabile, 0 hard breaches in
+>   TUTTE le config stop (prima: 96). Il problema breach è risolto alla
+>   radice — MA il segnale ensemble v2 (min_conf 0.5) produce ZERO trade
+>   nelle finestre M31 (tutti i target cadono nel warmup) → Sharpe 0.0.
+>   Questo spiega il run "30/30 con 0 trade" di BL-024: non è lo stop, è
+>   il SEGNALE che non emette nelle finestre selezionate.
+> - **FINDING P1a (risk gate)**: stop ATR 2x/3x vengono RIFIUTATI dal risk
+>   gate (rischio/trade > 1% budget $500: 130pt×$5=$650) → con qty 1 solo
+>   ATR 1x e fixed ≤60pt sono eseguibili. Vincolo reale da portare al
+>   decision point (qty 1-only di fatto con ATR, o re-spec stop).
+> - **Runner cablato**: `--stop-mode atr`, `--atr-multiple`,
+>   `--macro-events` → run lake completo: 6/6 regimi, 0 breach, REJECTED
+>   onesto (0 trade), non più INVALIDO.
 
 - P1a. **Fix F1 — stop ATR-based**: probe sensitivity (5/15/30/60pt,
   ATR-multiple 1/2/3) su ES 1d lake; scegliere la regola stop con
@@ -248,6 +273,28 @@ diventa probe stop-sensitivity + warmup-placement.
 ### Fase 2 — DECISION POINT G5 RE-SPEC (prima dell'infra, ~2h)
 
 > ⛔ GATE UTENTE: nessuna Fase 3 finché non è deciso.
+
+> 📋 Proposta re-spec PREPARATA 2026-08-03 sera (in attesa di approvazione
+> utente — evidenze da probe P1a/P1d, NON ancora decisa):
+> - **Timeframe**: daily primario (2913 bar ≥ 2015); ES 1h (13.7K bar, solo
+>   dal 2024) come cross-check obbligatorio dichiarato (F-20).
+> - **Stop**: ATR 1x (period 14, point-in-time) default — unico multiplo ATR
+>   eseguibile col risk gate (2x/3x = $650/$975 rischio > budget $500 →
+>   rifiutati, verificato su 4/5 regimi 2008). Fixed 30pt alternativa con
+>   qty 2 (passa il gate ovunque: $150×2 = $300).
+> - **Quantità**: qty 1-only con stop ATR (qty 2 + ATR = rifiutata nei
+>   periodi stress: $540-590 > $500). N onesto = regimi × finestre × qty.
+> - **Soglie**: Sharpe ≥ 0.5 resta; `luck_p_value` nel gate (calcolato ma
+>   ignorato oggi); DD ≤ 4% ridefinito come vincolo di sopravvivenza
+>   (liquidazione attiva) + report troncato + controfattuale (F-15).
+> - **Regimi**: 6/6 ora fattibili (macro risolto via NASDaq, P1d) — resta 6.
+> - **N onesto**: top-3 finestre per regime × 1 qty = 18 curve uniche, o
+>   30-36 con qty 1-2 + stop 30pt (F-08).
+> - **FINDING segnale (critico, guida la Fase 4)**: ensemble v2 min_conf=0.5
+>   produce ZERO trade nelle finestre M31 (target solo nel warmup) → run
+>   onesto REJECTED/0 trade. La Fase 4 (segnale) è il vero lavoro: candidati
+>   BL-200 ri-derivati su train pre-2023, validati su holdout 2023+, MAI
+>   sulla finestra M31.
 
 - P2a. Proposta re-spec: timeframe primario (daily vs 1h vs both),
   soglie (Sharpe ≥ 0.5 resta? luck_p_value nel gate? DD ≤ 4% vs
