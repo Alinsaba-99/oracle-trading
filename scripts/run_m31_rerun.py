@@ -1,5 +1,13 @@
 """BL-022 part 2 — replay qualification con regime ribilanciato + ensemble v2.
 
+DEPRECATED (BL-023 F-05, 2026-08-03): consolidato in
+`scripts/run_replay_qualification.py`, che ora ha lo stesso stack di fix
+(--data-source lake, --stop-mode atr, warmup >= 100, macro events,
+periods_per_year) MA con il gate ufficiale QualificationThresholds +
+QualificationEvidence + luck test + determinism check + report
+strutturato. Non aggiungere feature a questo script: portale nel runner
+ufficiale.
+
 Stesso flow di `scripts/run_replay_qualification.py` ma:
 - signal = RegimeAwareEnsemble con hysteresys (BL-010..014)
 - 4 specialist (trend/mean_rev/breakout/lorentzian)

@@ -98,3 +98,44 @@ def test_legacy_parity_run_18a6836_smoke() -> None:
     assert result.returncode in (0, 1, 2), (
         f"stdout={result.stdout[-800:]}\nstderr={result.stderr[-800:]}"
     )
+
+
+def test_official_runner_has_bl023_fix_stack() -> None:
+    """BL-023 F-05/P3d: the consolidated official runner must expose the
+    full BL-023 fix stack (lake source, ATR stop, warmup >= 100, macro
+    events, per-timeframe annualization) so the deprecated duplicate can
+    stay deprecated."""
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(REPO / "scripts" / "run_replay_qualification.py"),
+            "--data-source",
+            "lake",
+            "--symbol",
+            "ES",
+            "--timeframe",
+            "1d",
+            "--stop-mode",
+            "atr",
+            "--atr-multiple",
+            "1.0",
+            "--warmup-bars",
+            "100",
+            "--json-output",
+            "/tmp/m31-consolidated.json",
+            "--markdown-output",
+            "/tmp/m31-consolidated.md",
+        ],
+        capture_output=True,
+        text=True,
+        timeout=600,
+        cwd=REPO,
+    )
+    # The official runner runs the lake (6522 bars) with the macro events
+    # present in the repo, so 6/6 regimes are selected and the gate is
+    # exercised end-to-end. Exit 0 with a REJECTED verdict (the ensemble
+    # signal makes 0 trades on M31 windows — documented finding) is the
+    # expected honest outcome; exit 2 would mean blockers (regression).
+    assert result.returncode == 0, f"stdout={result.stdout[-800:]}\nstderr={result.stderr[-800:]}"
+    assert "M31 decision: REJECTED" in result.stdout
+    assert "Periods: 6" in result.stdout

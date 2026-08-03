@@ -344,6 +344,12 @@ diventa probe stop-sensitivity + warmup-placement.
 - P3a. `scripts/run_m31_rerun.py`: `--data-source lake|legacy` +
   `--specialists` + `--stop-distance-points`/`--stop-mode atr`
   (F-18) (refactor, non duplicazione).
+  ✅ 2026-08-03: fix stack portato nel runner UFFICIALE
+  `run_replay_qualification.py` (--data-source lake, --stop-mode atr,
+  --atr-multiple, --atr-period, warmup >= 100, macro events,
+  periods_per_year per timeframe, liquidate_on_hard_breach=True);
+  `run_m31_rerun.py` DEPRECATO (F-05, header nel docstring). Test:
+  `test_official_runner_has_bl023_fix_stack` (test_m31_runner_lake.py).
 - P3b. **Slicing con `slice_period`** (F-02/F-19): niente bug
   calendario-vs-barre, niente fallback `start_offset=0` silenzioso —
   search_sorted + fail esplicito. Warmup ≥ 100 bar (F-03) o scarto
@@ -361,6 +367,11 @@ diventa probe stop-sensitivity + warmup-placement.
 - P3f. Report: config segnale completa, regime distribution, liquidated
   count, luck test (curva troncata o non — esplicito, F-15),
   controfattuale senza liquidazione (F-15).
+  ✅ Parziale 2026-08-03: report ufficiale ha regime distribution, luck
+  test pooled+worst nel gate, liquidated nel summary. ⏳ Residuo non
+  bloccante: controfattuale senza liquidazione (banale oggi — 0
+  liquidazioni in tutti i run post-fix; da aggiungere al report builder
+  quando la liquidazione torna rilevante).
 
 ### Fase 4 — Segnale (condizionato da AC1+AC2, ~1 giornata)
 

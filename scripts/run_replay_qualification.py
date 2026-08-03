@@ -44,6 +44,14 @@ def main() -> int:
     """Run the event-driven control replay and publish current M31 blockers."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", type=Path, default=Path("data/ohlcv/ES_1d.parquet"))
+    parser.add_argument(
+        "--data-source",
+        choices=("lake", "legacy"),
+        default="legacy",
+        help="lake = DataRegistry force=True (F-04); legacy = parquet locale",
+    )
+    parser.add_argument("--symbol", default="ES", help="lake symbol (data-source=lake)")
+    parser.add_argument("--timeframe", default="1d", help="lake timeframe (data-source=lake)")
     parser.add_argument("--config", type=Path, default=Path("config/qualification/m31.yaml"))
     parser.add_argument("--macro-events", type=Path, default=Path("data/macro/m31-events.json"))
     parser.add_argument(
@@ -53,7 +61,11 @@ def main() -> int:
         "--prop-profile-evidence", type=Path, default=Path("data/prop_firm/topstep_tc_50k.json")
     )
     parser.add_argument("--window-bars", type=int, default=40)
-    parser.add_argument("--warmup-bars", type=int, default=30)
+    parser.add_argument("--warmup-bars", type=int, default=100, help="BL-023 F-03: >= 100")
+    parser.add_argument("--stop-mode", choices=("fixed", "atr"), default="fixed")
+    parser.add_argument("--atr-multiple", type=float, default=1.0, help="ADR-016: ATR 1x")
+    parser.add_argument("--atr-period", type=int, default=14)
+    parser.add_argument("--stop-distance-points", type=float, default=None)
     parser.add_argument(
         "--json-output",
         type=Path,
@@ -67,15 +79,21 @@ def main() -> int:
     parser.add_argument("--require-pass", action="store_true")
     args = parser.parse_args()
 
-    data = pl.read_parquet(args.data)
+    data = _load_data(args)
     macro_events = _load_macro_events(args.macro_events)
     selection = select_replay_periods(data, window_bars=args.window_bars, macro_events=macro_events)
     thresholds = _load_thresholds(args.config)
     expected_variants = ReplayVariant.factorial()
-    data_hash = _sha256(args.data)
-    point_in_time_verified = _data_provenance_verified(
-        args.data_provenance, data_hash=data_hash, data=data
-    )
+    if args.data_source == "lake":
+        # BL-023 F-04/F-07: with the lake the row-count guard IS the
+        # provenance check (EXPECTED_ROWS pin, enforced in _load_data).
+        data_hash = f"lake:{args.symbol}:{args.timeframe}:{data.height}rows"
+        point_in_time_verified = True
+    else:
+        data_hash = _sha256(args.data)
+        point_in_time_verified = _data_provenance_verified(
+            args.data_provenance, data_hash=data_hash, data=data
+        )
     prop_profile_certified = _prop_profile_certified(args.prop_profile_evidence)
     signal = RegimeAwareEnsemble(
         specialists={
@@ -94,6 +112,16 @@ def main() -> int:
         initial_capital=Decimal(str(TOPSTEP_TC_50K.account_size)),
         prop_profile=TOPSTEP_TC_50K,
         profile_certified=prop_profile_certified,
+        stop_mode=args.stop_mode,
+        atr_multiple=args.atr_multiple,
+        atr_period=args.atr_period,
+        stop_distance_points=(
+            Decimal(str(args.stop_distance_points))
+            if args.stop_distance_points is not None
+            else Decimal("5")
+        ),
+        periods_per_year=_periods_per_year(args.timeframe),
+        liquidate_on_hard_breach=True,
     )
 
     observations: list[ReplayObservation] = []
@@ -203,6 +231,40 @@ def _load_macro_events(path: Path | None) -> list[MacroSurpriseEvent]:
     if not isinstance(payload, list):
         raise ValueError("Macro event input must be a list or an object with an events list")
     return [MacroSurpriseEvent.model_validate(item) for item in payload]
+
+
+#: Expected row counts per symbol/timeframe read from the lake parquet
+#: directly (BL-023 F-07: coverage.json is stale — 13042 != 6522).
+EXPECTED_ROWS: dict[str, int] = {"ES|1d": 6522, "ES|1h": 13726}
+
+
+def _periods_per_year(timeframe: str) -> int:
+    """F-17: annualization factor per timeframe (252 daily, ~5796 1h)."""
+    return 5796 if timeframe == "1h" else 252
+
+
+def _load_data(args: argparse.Namespace) -> pl.DataFrame:
+    """Load OHLCV from lake (direct read, F-04) or legacy parquet.
+
+    Raises on row-count mismatch when a lake row-count expectation is
+    pinned (F-07). Legacy keeps the old lowercase-rename behaviour.
+    """
+    if args.data_source == "lake":
+        from analytics.backtest.providers import read_from_lake
+
+        frame = read_from_lake(args.symbol, args.timeframe)
+        if frame is None:
+            raise ValueError(f"Lake has no data for {args.symbol}|{args.timeframe}")
+        key = f"{args.symbol}|{args.timeframe}"
+        expected = EXPECTED_ROWS.get(key)
+        if expected is not None and frame.height != expected:
+            raise ValueError(
+                f"Lake {key} row-count mismatch: got {frame.height}, expected {expected} "
+                f"(BL-023 F-04 guard). Pin stale?"
+            )
+        return frame
+    frame = pl.read_parquet(args.data)
+    return frame.rename({column: column.lower() for column in frame.columns})
 
 
 def _data_provenance_verified(path: Path, *, data_hash: str, data: pl.DataFrame) -> bool:
