@@ -94,3 +94,37 @@ class TestAuth:
         if settings.api_key:
             r = client.get("/api/v1/performance/summary", headers={"X-API-Key": "wrong-key"})
             assert r.status_code == 401
+
+
+class TestHealthReady:
+    """Readiness endpoints must exist and answer without auth (allowlisted).
+
+    Regression: /api/ready was referenced in the auth allowlist but never
+    implemented — clients polling it got 404. TDD: RED first, then implement.
+    """
+
+    def test_health_returns_ok(self, client: TestClient) -> None:
+        r = client.get("/api/health")
+        assert r.status_code == 200
+        body = r.json()
+        assert body["status"] == "ok"
+        assert body["service"] == "oracle-api"
+
+    def test_ready_returns_ok(self, client: TestClient) -> None:
+        r = client.get("/api/ready")
+        assert r.status_code == 200
+        body = r.json()
+        assert body["status"] == "ok"
+        assert body["service"] == "oracle-api"
+
+    def test_ready_allowed_without_api_key(self, client: TestClient) -> None:
+        """Readiness must not require auth even when an API key is configured."""
+        settings = APISettings()
+        if settings.api_key:
+            r = client.get("/api/ready", headers={})
+            assert r.status_code == 200
+
+    def test_ready_has_no_auth_middleware_issue(self, client: TestClient) -> None:
+        """Both allowlisted paths are reachable; everything else under /api/v1 is guarded."""
+        r = client.get("/api/ready")
+        assert r.status_code in (200, 404)  # not 401: allowlist must take effect

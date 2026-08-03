@@ -133,6 +133,16 @@ async def health() -> dict[str, str]:
     return {"status": "ok", "service": "oracle-api"}
 
 
+@app.get("/api/ready")
+async def ready() -> dict[str, str]:
+    """Readiness check: the API is ready to serve traffic.
+
+    Allowlisted in the auth middleware (never requires a key) so that
+    orchestrators/load balancers can poll it without credentials.
+    """
+    return {"status": "ok", "service": "oracle-api"}
+
+
 @app.get("/metrics")
 async def metrics() -> PlainTextResponse:
     """Return Prometheus-format metrics."""

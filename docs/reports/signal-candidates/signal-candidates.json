@@ -1,0 +1,90 @@
+{
+  "title": "BL-023 Fase 4 — signal candidate probe (ES 1d lake)",
+  "dataset": "lake:ES:1d (6522 bars)",
+  "train_cutoff": "2023-01-01T00:00:00",
+  "horizon_bars": 5,
+  "min_targets": 10,
+  "candidates": [
+    {
+      "candidate": "roc_momentum_12",
+      "train_targets": 3376,
+      "train_mean_return": 0.000872,
+      "train_win_rate": 0.5758,
+      "holdout_targets": 596,
+      "holdout_mean_return": 0.0028,
+      "holdout_win_rate": 0.6124,
+      "status": "VIABLE"
+    },
+    {
+      "candidate": "bollinger_reversion",
+      "train_targets": 1213,
+      "train_mean_return": 0.00225,
+      "train_win_rate": 0.5555,
+      "holdout_targets": 158,
+      "holdout_mean_return": 0.007778,
+      "holdout_win_rate": 0.6323,
+      "status": "VIABLE"
+    },
+    {
+      "candidate": "donchian_breakout",
+      "train_targets": 3377,
+      "train_mean_return": 0.000908,
+      "train_win_rate": 0.5712,
+      "holdout_targets": 583,
+      "holdout_mean_return": 0.003479,
+      "holdout_win_rate": 0.6186,
+      "status": "VIABLE"
+    },
+    {
+      "candidate": "rsi_reversion",
+      "train_targets": 770,
+      "train_mean_return": 0.004703,
+      "train_win_rate": 0.587,
+      "holdout_targets": 67,
+      "holdout_mean_return": 0.006967,
+      "holdout_win_rate": 0.6418,
+      "status": "VIABLE"
+    },
+    {
+      "candidate": "ema_trend",
+      "train_targets": 3792,
+      "train_mean_return": 0.001529,
+      "train_win_rate": 0.5831,
+      "holdout_targets": 717,
+      "holdout_mean_return": 0.003191,
+      "holdout_win_rate": 0.6152,
+      "status": "VIABLE"
+    },
+    {
+      "candidate": "zscore_reversion",
+      "train_targets": 1202,
+      "train_mean_return": 0.00237,
+      "train_win_rate": 0.5581,
+      "holdout_targets": 138,
+      "holdout_mean_return": 0.010507,
+      "holdout_win_rate": 0.6741,
+      "status": "VIABLE"
+    },
+    {
+      "candidate": "keltner_reversion",
+      "train_targets": 802,
+      "train_mean_return": 0.002694,
+      "train_win_rate": 0.5748,
+      "holdout_targets": 83,
+      "holdout_mean_return": 0.015585,
+      "holdout_win_rate": 0.747,
+      "status": "VIABLE"
+    },
+    {
+      "candidate": "trend_filtered_breakout",
+      "train_targets": 2890,
+      "train_mean_return": 0.00063,
+      "train_win_rate": 0.5734,
+      "holdout_targets": 483,
+      "holdout_mean_return": 0.003345,
+      "holdout_win_rate": 0.6266,
+      "status": "VIABLE"
+    }
+  ],
+  "note": "Derivation on train pre-2023 only; holdout is read-only walk-forward glance, not a fit."
+}
