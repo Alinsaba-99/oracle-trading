@@ -138,6 +138,7 @@ class ReplayMetrics(BaseModel):
     max_drawdown: float
     hard_breaches: int = Field(ge=0)
     soft_breaches: int = Field(ge=0)
+    liquidated: bool = Field(default=False)
     turnover: float = Field(ge=0)
     execution_cost: float = Field(ge=0)
     execution_cost_ratio: float = Field(ge=0)

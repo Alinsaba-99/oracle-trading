@@ -109,16 +109,20 @@ class InMemoryLedger:
         commission: Decimal = Decimal("0"),
         realized_pnl: Decimal = Decimal("0"),
         side: str = "buy",
+        futures: bool = False,
     ) -> list[LedgerEntry]:
         """Record a fill and update the account balance.
 
         The fill creates up to three entries that together preserve the
         accounting invariant ``current_balance + unrealized_pnl = equity``:
 
-        1. **Notional entry** (always): ``-price * quantity`` for BUY
-           (cash decreases by the asset value) or ``+price * quantity``
-           for SELL (cash increases).  This models the cash side of the
-           trade.
+        1. **Notional entry** (unless ``futures``): ``-price * quantity``
+           for BUY (cash decreases by the asset value) or ``+price *
+           quantity`` for SELL (cash increases).  This models the cash
+           side of an equity trade.  For FUTURES the notional is NOT a
+           cash flow (margin is separate; only P&L and commission move
+           cash), so the entry is skipped and the balance moves by
+           ``realized_pnl - commission`` only.
         2. **P&L entry** (if ``realized_pnl != 0``): records realized
            profit/loss from closing (part of) a position.
         3. **Commission entry** (if ``commission > 0``): always a debit.
@@ -133,23 +137,28 @@ class InMemoryLedger:
             raise ValueError(f"Account {account_id} not found")
 
         # Calculate net cash impact:
-        # notional + realized_pnl - commission
-        notional_amount = -(price * quantity) if side == "buy" else (price * quantity)
+        # notional + realized_pnl - commission  (equities)
+        # realized_pnl - commission             (futures)
+        if futures:
+            notional_amount = Decimal("0")
+        else:
+            notional_amount = -(price * quantity) if side == "buy" else (price * quantity)
         total_impact = notional_amount + realized_pnl - commission
 
         written: list[LedgerEntry] = []
 
-        # 1. Notional entry (always)
-        notional_entry = LedgerEntry(
-            account_id=account_id,
-            order_id=order_id,
-            fill_id=fill_id,
-            amount=notional_amount,
-            entry_type="notional",
-            description=f"Notional {side}: {quantity} @ {price}",
-        )
-        self._entries.append(notional_entry)
-        written.append(notional_entry)
+        # 1. Notional entry (equities only — futures have no notional cash flow)
+        if not futures:
+            notional_entry = LedgerEntry(
+                account_id=account_id,
+                order_id=order_id,
+                fill_id=fill_id,
+                amount=notional_amount,
+                entry_type="notional",
+                description=f"Notional {side}: {quantity} @ {price}",
+            )
+            self._entries.append(notional_entry)
+            written.append(notional_entry)
 
         # 2. P&L entry (only if non-zero)
         if realized_pnl != 0:

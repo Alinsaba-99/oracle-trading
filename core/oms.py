@@ -108,13 +108,19 @@ class InMemoryOMS:
     stores orders, fills, and outbox events in Python dicts.
     """
 
-    def __init__(self, ledger: Any | None = None, idempotency_store: Any | None = None) -> None:
+    def __init__(
+        self, ledger: Any | None = None, idempotency_store: Any | None = None, futures: bool = False
+    ) -> None:
         self._orders: dict[str, Order] = {}
         self._fills: dict[str, Fill] = {}
         self._broker_fill_index: dict[str, str] = {}
         self._outbox: list[OutboxEvent] = []
         self._idempotency: dict[str, str] = {}  # client_order_id → order_id
         self._ledger = ledger
+        # Futures fills do not debit/credit the full notional — only P&L
+        # and commission move cash (margin is separate). See
+        # InMemoryLedger.record_fill(futures=True).
+        self._futures = futures
         # Durable idempotency: if provided, cross-process restarts are safe.
         # The in-memory dict still serves as the fast-path cache; the
         # durable store is read on miss, written on every put.
@@ -284,6 +290,7 @@ class InMemoryOMS:
                     commission=fill.commission,
                     realized_pnl=fill.realized_pnl,
                     side=fill.side,
+                    futures=self._futures,
                 )
 
         return fill

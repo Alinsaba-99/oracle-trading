@@ -8,6 +8,7 @@ from decimal import ROUND_CEILING, Decimal
 from math import sqrt
 from time import perf_counter
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import numpy as np
 import polars as pl
@@ -131,14 +132,13 @@ class QualificationPaperBroker:
         else:
             average = result.fill_price
         self._positions[order.instrument_id] = _Position(new_quantity, average)
-        # Mirror the corrected ledger model: cash = realized_pnl - commission
-        # ± notional (debited on buy, credited on sell).
-        notional_delta = (
-            -result.fill_price * abs(result.fill_quantity)
-            if order.side == "buy"
-            else result.fill_price * abs(result.fill_quantity)
-        )
-        self._cash += realized_pnl - result.commission + notional_delta
+        # BL-023: futures fills do NOT move the full notional — only P&L
+        # and commission are cash flows (margin is separate). The previous
+        # cash-equity model (price*quantity) debited the entire contract
+        # value on entry, which pushed the balance below the prop-firm
+        # floor on the first fill of any MES/ES observation and produced
+        # bogus hard breaches and drawdowns.
+        self._cash += realized_pnl - result.commission
         self._open_orders.pop(str(order.broker_order_id), None)
 
     async def positions(self) -> list[BrokerPosition]:
@@ -178,6 +178,8 @@ class EventDrivenQualificationRunner:
         fill_config: FillModelConfig | None = None,
         prop_profile: FirmProgramProfile = TOPSTEP_TC_50K,
         profile_certified: bool = False,
+        periods_per_year: int = 252,
+        liquidate_on_hard_breach: bool = True,
     ) -> None:
         if initial_capital <= 0:
             raise ValueError("initial_capital must be positive")
@@ -185,6 +187,8 @@ class EventDrivenQualificationRunner:
             raise ValueError("Qualification quantity must be a positive whole contract count")
         if stop_distance_points <= 0:
             raise ValueError("stop_distance_points must be positive")
+        if periods_per_year <= 0:
+            raise ValueError("periods_per_year must be positive")
         self._signal = signal
         self._contract = contract
         self._initial_capital = initial_capital
@@ -192,6 +196,8 @@ class EventDrivenQualificationRunner:
         self._quantity = quantity
         self._seed = seed
         self._stop_distance_points = stop_distance_points
+        self._periods_per_year = periods_per_year
+        self._liquidate_on_hard_breach = liquidate_on_hard_breach
         self._prop_profile = prop_profile
         self._profile_certified = profile_certified
         self._fill_config = fill_config or replace(
@@ -232,7 +238,7 @@ class EventDrivenQualificationRunner:
         account = ledger.create_account(
             account_type="paper", initial_balance=self._initial_capital, mode="qualification"
         )
-        oms = InMemoryOMS(ledger=ledger)
+        oms = InMemoryOMS(ledger=ledger, futures=True)
         broker = QualificationPaperBroker(
             engine=RealisticPaperFillEngine(self._fill_config, seed=self._seed),
             initial_cash=self._initial_capital,
@@ -249,15 +255,26 @@ class EventDrivenQualificationRunner:
         if period_start_index is None:
             raise ValueError("Replay data does not reach the requested period start")
         execution_start_index = max(1, period_start_index)
-        current_day = _as_utc(rows[execution_start_index]["timestamp"]).date()
+        profile_tz = (
+            ZoneInfo(self._prop_profile.daily_loss_reset_timezone)
+            if self._prop_profile.daily_loss_reset_timezone
+            else UTC
+        )
+        current_day = (
+            _as_utc(rows[execution_start_index]["timestamp"]).astimezone(profile_tz).date()
+        )
         strategy_id = f"m31-{variant.name}"
+        liquidated = False
 
         for execution_index in range(execution_start_index, len(rows)):
             decision_started = perf_counter()
             execution_time = _as_utc(rows[execution_index]["timestamp"])
-            if execution_time.date() != current_day:
+            # BL-307/ENG F-09: daily-loss rollover must fire in the profile's
+            # reset timezone (Topstep: America/Chicago), not UTC — otherwise
+            # the intraday session is split at midnight UTC on 1h data.
+            if execution_time.astimezone(profile_tz).date() != current_day:
                 governor.rollover()
-                current_day = execution_time.date()
+                current_day = execution_time.astimezone(profile_tz).date()
 
             prefix = data.slice(0, execution_index)
             signal_values = self._signal.compute(prefix)
@@ -266,6 +283,11 @@ class EventDrivenQualificationRunner:
             target = int(signal_values[-1])
             if target not in (-1, 0, 1):
                 raise ValueError(f"Signal emitted invalid target position {target}")
+
+            # BL-307/ENG F-01: after a hard breach the account is liquidated —
+            # no new trades, position forced flat for the rest of the period.
+            if liquidated:
+                target = 0
 
             row = rows[execution_index]
             reference_price = _price(row, "open")
@@ -313,8 +335,36 @@ class EventDrivenQualificationRunner:
                 position, _price(row, "close"), self._contract.point_value
             )
             governor.update(float(balance), float(equity))
-            breaches.extend(governor.evaluate())
+            bar_breaches = governor.evaluate()
+            breaches.extend(bar_breaches)
             audit.rule_evaluations += 1
+
+            # BL-307/ENG F-01: hard breach → liquidate immediately. Close any
+            # open position at the current close, force flat, no new trades
+            # for the rest of the period (target forced to 0 above).
+            if (
+                self._liquidate_on_hard_breach
+                and not liquidated
+                and any(b.severity == "hard" for b in bar_breaches)
+            ):
+                liquidated = True
+                if position.quantity != 0:
+                    position = self._close_position(
+                        position=position,
+                        reference_price=_price(row, "close"),
+                        event_time=execution_time,
+                        account_id=account.account_id,
+                        broker=broker,
+                        oms=oms,
+                        governor=governor,
+                        audit=audit,
+                        strategy_id=strategy_id,
+                    )
+                balance = ledger.get_balance(account.account_id)
+                equity = balance
+                governor.update(float(balance), float(equity))
+                audit.rule_evaluations += 1
+
             equity_values.append(float(equity))
             audit.decision_latencies_ms.append((perf_counter() - decision_started) * 1000.0)
 
@@ -373,6 +423,11 @@ class EventDrivenQualificationRunner:
             warnings.append(f"Paper broker rejected {audit.fill_rejections} submitted orders.")
         if position.quantity != 0:
             warnings.append(f"Replay ended with unflattened position {position.quantity}.")
+        if liquidated:
+            warnings.append(
+                "Observation liquidated on hard breach — position closed at "
+                "bar close, trading halted for the remainder of the period."
+            )
 
         return ReplayObservation(
             period_name=period.name,
@@ -382,16 +437,23 @@ class EventDrivenQualificationRunner:
             component_path="signal-prefix->next-bar->risk->oms->paper->ledger->reconciliation",
             metrics=ReplayMetrics(
                 net_return=net_return,
-                sharpe_ratio=_sharpe(strategy_returns),
-                sortino_ratio=_sortino(strategy_returns),
-                calmar_ratio=_calmar(net_return, max_drawdown, len(strategy_returns)),
-                max_drawdown=max_drawdown,
-                hard_breaches=len(
-                    {breach.type for breach in breaches if breach.severity == "hard"}
+                sharpe_ratio=_sharpe(strategy_returns, periods_per_year=self._periods_per_year),
+                sortino_ratio=_sortino(strategy_returns, periods_per_year=self._periods_per_year),
+                calmar_ratio=_calmar(
+                    net_return,
+                    max_drawdown,
+                    len(strategy_returns),
+                    periods_per_year=self._periods_per_year,
                 ),
+                max_drawdown=max_drawdown,
+                # BL-307/ENG F-10: count events, not distinct breach types.
+                # With liquidation, an observation is either liquidated (1
+                # hard breach, the first one) or not (0).
+                hard_breaches=1 if liquidated else 0,
                 soft_breaches=len(
                     {breach.type for breach in breaches if breach.severity == "soft"}
                 ),
+                liquidated=liquidated,
                 turnover=float(audit.turnover_notional) / initial_capital,
                 execution_cost=execution_cost,
                 execution_cost_ratio=execution_cost / initial_capital,
@@ -402,7 +464,9 @@ class EventDrivenQualificationRunner:
                 ),
                 decision_latency_ms_p95=_p95(audit.decision_latencies_ms),
                 factor_attribution=factor_attribution(strategy_returns, market_returns),
-                luck_p_value=bootstrap_luck_p_value(strategy_returns),
+                luck_p_value=bootstrap_luck_p_value(
+                    strategy_returns, periods_per_year=self._periods_per_year
+                ),
                 total_trades=audit.closed_trades,
                 bars=len(rows) - execution_start_index,
                 engine_runtime_ms=(perf_counter() - started) * 1000.0,
@@ -718,25 +782,27 @@ def _max_drawdown(values: list[float]) -> float:
     return worst
 
 
-def _sharpe(returns: np.ndarray[Any, Any]) -> float:
+def _sharpe(returns: np.ndarray[Any, Any], *, periods_per_year: int = 252) -> float:
     if returns.size < 2:
         return 0.0
     deviation = float(np.std(returns, ddof=1))
-    return float(np.mean(returns)) / deviation * sqrt(252) if deviation > 0 else 0.0
+    return float(np.mean(returns)) / deviation * sqrt(periods_per_year) if deviation > 0 else 0.0
 
 
-def _sortino(returns: np.ndarray[Any, Any]) -> float:
+def _sortino(returns: np.ndarray[Any, Any], *, periods_per_year: int = 252) -> float:
     if returns.size < 2:
         return 0.0
     downside = returns[returns < 0]
     deviation = float(np.std(downside, ddof=1)) if downside.size > 1 else 0.0
-    return float(np.mean(returns)) / deviation * sqrt(252) if deviation > 0 else 0.0
+    return float(np.mean(returns)) / deviation * sqrt(periods_per_year) if deviation > 0 else 0.0
 
 
-def _calmar(net_return: float, max_drawdown: float, periods: int) -> float:
+def _calmar(
+    net_return: float, max_drawdown: float, periods: int, *, periods_per_year: int = 252
+) -> float:
     if max_drawdown <= 0 or periods <= 0 or net_return <= -1:
         return 0.0
-    annualized = float((1.0 + net_return) ** (252.0 / periods) - 1.0)
+    annualized = float((1.0 + net_return) ** (periods_per_year / periods) - 1.0)
     return float(annualized / max_drawdown)
 
 
