@@ -33,6 +33,7 @@ def render_markdown(report: QualificationReport) -> str:
         f"- Config hash: `{evidence.config_hash}`",
         f"- Discovery engine: `{evidence.discovery_engine}`",
         f"- Qualification engine: `{evidence.qualification_engine or 'not-configured'}`",
+        f"- Segnale: `{evidence.signal_name}`",
         "",
         "## Decisione",
         "",

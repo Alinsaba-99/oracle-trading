@@ -10,6 +10,7 @@ Verifies ENG F-02/F-04/F-14/F-19:
 
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 from datetime import UTC, datetime, timedelta
@@ -133,11 +134,18 @@ def test_official_runner_has_bl023_fix_stack() -> None:
         timeout=600,
         cwd=REPO,
     )
-    # The official runner runs the lake (6522 bars) with the macro events
+    # The official runner runs the lake (6523 bars) with the macro events
     # present in the repo, so 6/6 regimes are selected and the gate is
     # exercised end-to-end. Exit 0 with a REJECTED verdict (the ensemble
     # signal makes 0 trades on M31 windows — documented finding) is the
     # expected honest outcome; exit 2 would mean blockers (regression).
+    # ADR-016 §6: default top-3 windows per regime. The macro regime
+    # provides as many independent windows as the data supports (13 events
+    # clustered in 2008-09 and 2019-10 -> 2 windows at window_bars=1000),
+    # so the honest N is 17, not 18 — assert the upgrade (5 regimes x 3
+    # + macro >= 1) rather than a brittle exact count.
     assert result.returncode == 0, f"stdout={result.stdout[-800:]}\nstderr={result.stderr[-800:]}"
     assert "M31 decision: REJECTED" in result.stdout
-    assert "Periods: 6" in result.stdout
+    match = re.search(r"Periods: (\d+)", result.stdout)
+    assert match, result.stdout
+    assert 15 <= int(match.group(1)) <= 18, result.stdout

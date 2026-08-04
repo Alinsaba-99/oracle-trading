@@ -210,6 +210,7 @@ class QualificationEvidence(BaseModel):
 
     discovery_engine: str
     qualification_engine: str | None = None
+    signal_name: str = "ensemble"
     qualification_engine_certified: bool = False
     selected_before_strategy_execution: bool = False
     point_in_time_data_verified: bool = False

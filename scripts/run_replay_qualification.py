@@ -35,7 +35,16 @@ from analytics.qualification import (
 from analytics.qualification.models import MacroSurpriseEvent
 from analytics.strategy.lorentzian import LorentzianKNN
 from analytics.strategy.regime_ensemble import RegimeAwareEnsemble, SpecialistId
-from analytics.strategy.signals import DonchianBreakout, EmaTrend, RsiReversion
+from analytics.strategy.signals import (
+    BbandReversion,
+    DonchianBreakout,
+    EmaTrend,
+    KeltnerReversion,
+    RocMomentum,
+    RsiReversion,
+    TrendFilteredBreakout,
+    ZscoreReversion,
+)
 from market.contracts import MES
 from policy.prop_firm.fixtures import TOPSTEP_TC_50K
 
@@ -61,6 +70,28 @@ def main() -> int:
         "--prop-profile-evidence", type=Path, default=Path("data/prop_firm/topstep_tc_50k.json")
     )
     parser.add_argument("--window-bars", type=int, default=40)
+    parser.add_argument(
+        "--windows-per-regime",
+        type=int,
+        default=3,
+        help="ADR-016 §6: top-N non-overlapping windows per regime (3 = 18 curves)",
+    )
+    parser.add_argument(
+        "--signal",
+        choices=(
+            "ensemble",
+            "roc_momentum_12",
+            "bollinger_reversion",
+            "donchian_breakout",
+            "rsi_reversion",
+            "ema_trend",
+            "zscore_reversion",
+            "keltner_reversion",
+            "trend_filtered_breakout",
+        ),
+        default="ensemble",
+        help="signal to qualify (BL-023 Fase 4 candidates; ensemble = default)",
+    )
     parser.add_argument("--warmup-bars", type=int, default=100, help="BL-023 F-03: >= 100")
     parser.add_argument("--stop-mode", choices=("fixed", "atr"), default="fixed")
     parser.add_argument("--atr-multiple", type=float, default=1.0, help="ADR-016: ATR 1x")
@@ -81,7 +112,12 @@ def main() -> int:
 
     data = _load_data(args)
     macro_events = _load_macro_events(args.macro_events)
-    selection = select_replay_periods(data, window_bars=args.window_bars, macro_events=macro_events)
+    selection = select_replay_periods(
+        data,
+        window_bars=args.window_bars,
+        macro_events=macro_events,
+        windows_per_regime=args.windows_per_regime,
+    )
     thresholds = _load_thresholds(args.config)
     expected_variants = ReplayVariant.factorial()
     if args.data_source == "lake":
@@ -95,17 +131,7 @@ def main() -> int:
             args.data_provenance, data_hash=data_hash, data=data
         )
     prop_profile_certified = _prop_profile_certified(args.prop_profile_evidence)
-    signal = RegimeAwareEnsemble(
-        specialists={
-            SpecialistId.TREND: EmaTrend(fast=10, slow=30),
-            SpecialistId.MEAN_REVERSION: RsiReversion(period=14),
-            SpecialistId.BREAKOUT: DonchianBreakout(period=20),
-            SpecialistId.LORENTZIAN: LorentzianKNN(
-                k=4, lookahead=4, max_bars_back=80, feature_count=3
-            ),
-        },
-        min_confidence=0.5,
-    )
+    signal = _build_signal(args.signal)
     runner = EventDrivenQualificationRunner(
         signal=signal,
         contract=MES,
@@ -167,6 +193,7 @@ def main() -> int:
     evidence = QualificationEvidence(
         discovery_engine="oracle-regime-selector-v1",
         qualification_engine="oracle-event-driven-paper-v1",
+        signal_name=args.signal,
         qualification_engine_certified=engine_certified,
         selected_before_strategy_execution=True,
         point_in_time_data_verified=point_in_time_verified,
@@ -213,6 +240,41 @@ def main() -> int:
     if args.require_pass and report.decision != GateDecision.APPROVED:
         return 2
     return 0
+
+
+def _build_signal(name: str) -> Any:
+    """Build the qualification signal by name (BL-023 Fase 4 candidates).
+
+    Candidates mirror scripts/probe_signal_candidates.py — same constructors
+    and parameters used for the train-pre-2023 derivation, so the gate
+    verdict applies to the exact signal that the probe called VIABLE.
+    """
+    if name == "ensemble":
+        return RegimeAwareEnsemble(
+            specialists={
+                SpecialistId.TREND: EmaTrend(fast=10, slow=30),
+                SpecialistId.MEAN_REVERSION: RsiReversion(period=14),
+                SpecialistId.BREAKOUT: DonchianBreakout(period=20),
+                SpecialistId.LORENTZIAN: LorentzianKNN(
+                    k=4, lookahead=4, max_bars_back=80, feature_count=3
+                ),
+            },
+            min_confidence=0.5,
+        )
+    signals: dict[str, Any] = {
+        "roc_momentum_12": RocMomentum(period=12),
+        "bollinger_reversion": BbandReversion(),
+        "donchian_breakout": DonchianBreakout(),
+        "rsi_reversion": RsiReversion(),
+        "ema_trend": EmaTrend(),
+        "zscore_reversion": ZscoreReversion(),
+        "keltner_reversion": KeltnerReversion(),
+        "trend_filtered_breakout": TrendFilteredBreakout(),
+    }
+    try:
+        return signals[name]
+    except KeyError as exc:
+        raise ValueError(f"Unknown signal: {name}") from exc
 
 
 def _load_thresholds(path: Path) -> QualificationThresholds:

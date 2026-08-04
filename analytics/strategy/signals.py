@@ -61,6 +61,10 @@ class RsiReversion:
         self.exit_level = exit_level
 
     def compute(self, data: pl.DataFrame) -> pl.Series:
+        close = _close(data)
+        if len(close) < self.period + 1:
+            # Insufficient bars for the first RSI value: stay flat.
+            return pl.Series("signal", [0] * len(close), dtype=pl.Int8)
         r = _to_np(rsi(_close(data), self.period))
         pos = 0
         sig = np.zeros(len(r), dtype=np.int8)

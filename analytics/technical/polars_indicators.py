@@ -21,6 +21,9 @@ def ema(close: pl.Series, period: int = 20) -> pl.Series:
     arr = close.to_numpy().astype(np.float64, copy=True)
     out = np.full_like(arr, np.nan)
     alpha = 2.0 / (period + 1.0)
+    if len(arr) < period:
+        # Insufficient data: fail soft with NaN (aligned), never IndexError.
+        return pl.Series("ema", out)
 
     # Seed with SMA of the first `period` elements
     out[period - 1] = np.nanmean(arr[:period])
@@ -44,6 +47,10 @@ def rsi(close: pl.Series, period: int = 14) -> pl.Series:
 
     avg_gain = np.full_like(arr, np.nan)
     avg_loss = np.full_like(arr, np.nan)
+    if len(arr) < period + 1:
+        # Insufficient data: fail soft with NaN (aligned), never IndexError.
+        # The first valid RSI needs `period + 1` bars (period deltas).
+        return pl.Series("rsi", avg_gain)
 
     # First smoothed values: SMA of first `period` entries
     avg_gain[period] = np.mean(gains[1 : period + 1])
@@ -73,6 +80,9 @@ def atr(high: pl.Series, low: pl.Series, close: pl.Series, period: int = 14) -> 
 
     tr = np.maximum(h - low_arr, np.maximum(np.abs(h - prev_c), np.abs(low_arr - prev_c)))
     out = np.full_like(tr, np.nan)
+    if len(tr) < period:
+        # Insufficient data: fail soft with NaN (aligned), never IndexError.
+        return pl.Series("atr", out)
 
     # First ATR = SMA of first `period` TR values
     out[period - 1] = np.nanmean(tr[:period])
