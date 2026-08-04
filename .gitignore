@@ -48,6 +48,7 @@ checkpoints/*.json
 .omc/
 .omo/
 .lean-ctx/
+.superpowers/
 
 # TypeScript incremental build cache
 *.tsbuildinfo
