@@ -63,9 +63,10 @@ from market.contracts import MES
 from policy.prop_firm.fixtures import TOPSTEP_TC_50K
 
 #: Expected row counts per symbol/timeframe read from the lake parquet
-#: directly (BL-023 F-07: coverage.json is stale — 13042 != 6522).
-#: Verified 2026-08-03 against data/lake/normalized.
-EXPECTED_ROWS: dict[str, int] = {"ES|1d": 6522, "ES|1h": 13726}
+#: directly (BL-023 F-07: coverage.json is stale — 13042 != 6523).
+#: Verified 2026-08-04 against data/lake/normalized (lake is LIVE — bump
+#: when it grows; 2026-08-04: ES|1d 6523, ES|1h 13747).
+EXPECTED_ROWS: dict[str, int] = {"ES|1d": 6523, "ES|1h": 13747}
 
 #: Periods per year per timeframe (F-17). ~5796 = 23h * 252 trading days.
 PERIODS_PER_YEAR: dict[str, int] = {"1d": 252, "1h": 5796}

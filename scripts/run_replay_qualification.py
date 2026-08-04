@@ -234,8 +234,10 @@ def _load_macro_events(path: Path | None) -> list[MacroSurpriseEvent]:
 
 
 #: Expected row counts per symbol/timeframe read from the lake parquet
-#: directly (BL-023 F-07: coverage.json is stale — 13042 != 6522).
-EXPECTED_ROWS: dict[str, int] = {"ES|1d": 6522, "ES|1h": 13726}
+#: directly (BL-023 F-07: coverage.json is stale — 13042 != 6523).
+#: NOTE: the lake is LIVE (daily ingestion) — the pin tracks the current
+#: row count; bump it when the lake grows (2026-08-04: 6523, new bar).
+EXPECTED_ROWS: dict[str, int] = {"ES|1d": 6523, "ES|1h": 13747}
 
 
 def _periods_per_year(timeframe: str) -> int:

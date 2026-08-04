@@ -14,11 +14,13 @@ from analytics.qualification.periods import select_replay_periods
 
 
 def test_lake_es_1d_has_expected_row_count() -> None:
-    # BL-023 F-04/F-07: the lake is the source of truth (6522 bars), not
+    # BL-023 F-04/F-07: the lake is the source of truth, not
     # the 503-bar legacy cache and not coverage.json (stale: says 13042).
+    # Lake is LIVE (daily ingestion) — assert a floor, not exact count
+    # (2026-08-04: 6523 bars; grows each trading day).
     df = read_from_lake("ES", "1d")
     assert df is not None
-    assert df.height == 6522
+    assert df.height >= 6523
 
 
 def test_replay_periods_without_macro_events_are_blocked() -> None:

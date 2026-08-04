@@ -41,7 +41,7 @@ from analytics.strategy.signals import DonchianBreakout, RocMomentum, RsiReversi
 from market.contracts import MES
 from policy.prop_firm.fixtures import TOPSTEP_TC_50K
 
-EXPECTED_ROWS = 6522  # ES|1d lake pin (BL-023 F-07)
+EXPECTED_ROWS = 6523  # ES|1d lake pin (BL-023 F-07); lake live, 2026-08-04
 
 FIXED_STOPS: tuple[float, ...] = (5.0, 15.0, 30.0, 60.0)
 ATR_MULTIPLES: tuple[float, ...] = (1.0, 2.0, 3.0)

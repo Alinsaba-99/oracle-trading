@@ -63,11 +63,13 @@ def test_slice_period_warmup_length() -> None:
 def test_lake_read_returns_6522_not_503() -> None:
     # BL-023 F-04: the cache data/ohlcv/ES/1d.parquet has 503 bars and must
     # NOT shadow the lake. Direct lake read is the only trusted path.
+    # The lake is LIVE (daily ingestion) — assert a floor, not exact count
+    # (2026-08-04: 6523 bars; grows each trading day).
     from analytics.backtest.providers import read_from_lake
 
     df = read_from_lake("ES", "1d")
     assert df is not None
-    assert df.height == 6522
+    assert df.height >= 6523
 
 
 def test_legacy_parity_run_18a6836_smoke() -> None:

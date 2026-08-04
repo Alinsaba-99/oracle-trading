@@ -37,7 +37,7 @@ from analytics.strategy.signals import (
     ZscoreReversion,
 )
 
-EXPECTED_ROWS = 6522  # ES|1d lake pin (BL-023 F-07)
+EXPECTED_ROWS = 6523  # ES|1d lake pin (BL-023 F-07); lake live, 2026-08-04
 TRAIN_CUTOFF = datetime(2023, 1, 1)
 REPORT_DIR = Path("docs/reports/signal-candidates")
 
