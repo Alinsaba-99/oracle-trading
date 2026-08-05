@@ -3,7 +3,7 @@ name = "oracle"
 version = "0.1.0"
 description = "Systematic Trading Intelligence Platform"
 requires-python = ">=3.12,<3.14"
-authors = [{ name = "Oracle Team" }]
+authors = [{ name = "Alin Danut Chinaglia Rudaru" }]
 license = { text = "MIT" }
 
 dependencies = [
