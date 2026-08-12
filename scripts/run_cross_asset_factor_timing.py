@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -23,7 +24,7 @@ from analytics.strategy.lorentzian import LorentzianKNN
 from analytics.strategy.signals import DonchianBreakout, EmaTrend, RsiReversion
 
 
-def _human_factors() -> dict[str, callable]:
+def _human_factors() -> dict[str, Callable[[pl.DataFrame], pl.Series]]:
     return {
         "ema_10_30_close_minus_open": lambda df: (df["close"] - df["open"]).rolling(10).mean(),
         "rsi_14_close": lambda df: df["close"],

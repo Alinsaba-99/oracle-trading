@@ -60,7 +60,7 @@ def main() -> int:
     counts: Counter[RegimeLabel] = Counter()
     specialist_counts: Counter[SpecialistId] = Counter()
     confidences: list[float] = []
-    per_window: list[dict] = []
+    per_window: list[dict[str, object]] = []
 
     for i in range(args.windows):
         start = i * win_size

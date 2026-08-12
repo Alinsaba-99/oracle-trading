@@ -121,7 +121,7 @@ class _PropFirmAllow:
         return bool(ok)
 
 
-def _build_ensemble(memory=None, asset: str = "ES", timeframe: str = "1d") -> Any:
+def _build_ensemble(memory: Any = None, asset: str = "ES", timeframe: str = "1d") -> Any:
     """Factory: returns AdaptiveEnsemble when asset is known, else basic."""
     try:
         from analytics.strategy.adaptive_ensemble import AdaptiveEnsemble
@@ -172,11 +172,11 @@ async def _run_session(
     ledger: _Any
     oms: _Any
     if storage == "postgres":
-        from apps.cli.trade_commands import _resolve_dsn
+        from core.config.settings import OracleSettings
         from core.ledger_postgres import PostgresLedger
         from core.oms_postgres import PostgresOMS
 
-        actual_dsn = dsn or _resolve_dsn(None)
+        actual_dsn = dsn or OracleSettings().postgres.dsn
         ledger = await PostgresLedger.create(dsn=actual_dsn)
         oms = await PostgresOMS.create(ledger=ledger, dsn=actual_dsn)
         # RecoveryService smoke per session
@@ -469,7 +469,7 @@ async def main() -> int:
     print(f"{'=' * 70}\n")
 
     # ── Factor Timing Report ──────────────────────────────────────────
-    ic_results: dict[str, list] = {}
+    ic_results: dict[str, list[Any]] = {}
     for res in results:
         spec = res.get("specialist", "unknown")
         sig = np.array(res.get("_signal_series", []), dtype=float)
@@ -509,7 +509,7 @@ async def main() -> int:
     try:
         import pandas as pd_util
 
-        spec_pnls = {}
+        spec_pnls: dict[str, list[float]] = {}
         for res_ in results:
             spec = res_.get("specialist", "unknown")
             pnl = res_.get("total_pnl", 0.0)
