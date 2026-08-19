@@ -2,6 +2,8 @@
 
 > Stato: living architecture
 > Data: 2026-07-18; aggiornamenti mirati al 25-lug-2026 (post audit-remediation-beta)
+> Aggiornamento 2026-08-19: chiusura fail-open API/risk e cicli core↔execution,
+> market↔analytics (fase P0 — chore/p0-architecture-hygiene)
 > Decisioni normative: [ADR/README.md](ADR/README.md)
 > Stato gate-by-gate: [STATUS.md](../ROADMAP.md) / [ORACLE_AUTOPILOT_STATUS.md](ORACLE_AUTOPILOT_STATUS.md)
 > Audit secco: [AUDIT_FINDINGS.md](AUDIT_FINDINGS.md)
@@ -47,11 +49,16 @@ Nessuno è ancora un ledger account autorevole.
 
 ### 2.3 Fail-open
 
-- OrderManager accetta risk_manager assente;
+- ~~OrderManager accetta risk_manager assente~~ → chiuso (ValueError, commit 6c8c280);
 - la CLI aveva un percorso verso broker live senza risk, ora bloccato;
-- API authentication è disabilitata quando ORACLE_API_KEY è vuota;
+- ~~API authentication è disabilitata quando ORACLE_API_KEY è vuota~~ → chiuso il
+  2026-08-19 (P0): bind default loopback + `verify_auth_bind_safety()` blocca
+  all'avvio un'API senza chiave su interfaccia non-loopback
+  (`apps/api/config.py`, opt-in esplicito `ORACLE_ALLOW_OPEN_BIND`);
 - alcuni backtest e feature read ignorano eccezioni o usano fallback;
-- il grafo MAS usa assessment permissivi quando componenti mancano.
+- ~~il grafo MAS usa assessment permissivi quando componenti mancano~~ → chiuso
+  il 2026-08-19 (P0): il nodo risk senza risk_manager è fail-closed
+  (`approved=False`, reason esplicita) in `agents/orchestrator/graph.py`.
 
 ### 2.4 Architettura aspirazionale
 
@@ -246,11 +253,11 @@ Il Compose attuale è development scaffolding, non produzione.
 
 | Priorità | Deviazione |
 |---|---|
-| P0 | risk opzionale e bypass composition root |
-| P0 | API production fail-open senza key |
+| ~~P0~~ ✅ | ~~risk opzionale e bypass composition root~~ — chiuso (OrderManager ValueError + MAS risk node fail-closed) |
+| ~~P0~~ ✅ | ~~API production fail-open senza key~~ — chiuso 2026-08-19 (`verify_auth_bind_safety`, bind loopback default) |
 | P1 | OMS/ledger in-memory di default (Postgres disponibile solo con `--storage=postgres`; G3 attivo dal 25-lug) |
 | P1 | contratti execution nel package agents |
-| P1 | cicli analytics/market/execution |
+| P1 | cicli analytics/market/execution — parzialmente chiuso 2026-08-19: core↔execution e market↔analytics risolti (tipi broker in `core/domain/broker.py`, `IngestionError` in `core/errors/data_errors.py`); restano analytics→execution/policy e genetics↔analytics (porte previste in P2) |
 | P1 | Docker non riproducibile e non-root assente |
 | P1 | motore qualification non certificato |
 | P1 | config environment non rappresenta replay/paper/shadow/evaluation/funded |

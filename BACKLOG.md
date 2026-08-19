@@ -349,6 +349,48 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
   (Sharpe 0.93). AC: report in `docs/reports/lane-b-composite/` con DSR, PBO,
   CPCV su 2020→2025 (incluso bear 2022 separato); verdict registrato.
 
+## P0 Architecture Hygiene — BL-600..606 (dossier architetturale 2026-08-19)
+
+> Audit Principal Architect 2026-08-19 (branch
+> `chore/p0-architecture-hygiene`): 18 findings (4 critici, 9 alti). La
+> fase P0 chiude i fail-open, i cicli di dipendenza e il repo churn; non
+> tocca la ricerca edge. Report: `~/oracle-architecture-audit.html`.
+
+- [x] **BL-600** P0 — Fail-closed API auth/bind (C1/C2 del fail-open report).
+  ✅ DONE 2026-08-19 (commit b0cd87a). `verify_auth_bind_safety()` in
+  `apps/api/config.py`: bind default `127.0.0.1`; API senza chiave su
+  interfaccia non-loopback = SystemExit salvo opt-in esplicito
+  `ORACLE_ALLOW_OPEN_BIND`. 6 test in `tests/api/test_config.py`.
+- [x] **BL-601** P0 — MAS risk node fail-closed (C3). ✅ DONE 2026-08-19
+  (commit b0cd87a). `agents/orchestrator/graph.py`: senza risk_manager il
+  nodo ritorna `approved=False` + reason + warning structlog (era
+  `approved=True, max_position_size=0.25` silenzioso).
+- [x] **BL-602** P0 — Rottura cicli core↔execution e market↔analytics.
+  ✅ DONE 2026-08-19 (commit b0cd87a). Tipi broker in
+  `core/domain/broker.py` (shim in `execution/brokers/types.py`),
+  `IngestionError` in `core/errors/data_errors.py`.
+- [x] **BL-603** P0 — Enforcement automatico dei confini. ✅ DONE 2026-08-19.
+  `tests/unit/test_architecture_boundaries.py` (AST, 14 test) + contratto
+  import-linter in pyproject.toml (4 contratti, verificati 4/4 kept) + job
+  CI `architecture` blocking.
+- [x] **BL-604** P0 — CI security blocking (F-14). ✅ DONE 2026-08-19
+  (commit 3ae6fb2). gitleaks senza `continue-on-error`, pip-audit senza
+  `|| echo WARNING`.
+- [x] **BL-605** P0 — Machine state fuori da git (F-05). ✅ DONE 2026-08-19
+  (commit 3ae6fb2). `data/lake/metadata/`, `data/ohlcv/**/*.parquet`,
+  `data/intraday/` untracked (baseline M31 resta in `data/pinned/`);
+  `.lint_venv/` gitignorato; RUF006 riabilitato (0 violazioni);
+  51 branch merged eliminati; `git gc` (garbage 5.2 MB → 0);
+  mypy --strict full path pulito (type-ignore puntuale lane_d_vrp).
+- [ ] **BL-606** P0 — Rotazione credenziali METAAPI_TOKEN + LLM_KEY
+  (`docs/CREDENTIALS.md`, aperte dal 2026-07-19). Richiede accesso umano
+  ai provider; nessuna azione eseguibile da script.
+- [ ] **BL-607** P0 — History rewrite dei blob pesanti (opzionale,
+  ~100 MB+): `experiments/experiments.db` 11.8 MB, `data/lake/normalized`
+  BTCUSDT 1m committato in history, modelli `.pth` 1.7 MB. Solo con
+  `git-filter-repo` + force-push coordinato (remote = backup locale
+  no-mistakes). Differito: non bloccante, distruttivo.
+
 ## Knowledge Base — 13 domini (BL-KB-01..115, 2026-08-17)
 
 > 68 file in `docs/knowledge-base/` + audit critico. 98 items originali
