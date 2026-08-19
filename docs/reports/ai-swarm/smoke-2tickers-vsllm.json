@@ -1,0 +1,35 @@
+{
+  "results": [
+    {
+      "ticker": "AAPL",
+      "company_name": "APPLE INC",
+      "as_of": "2020-01-01",
+      "risk_decision": "REDUCE_SIZE",
+      "confidence": 0.45,
+      "final_size_pct": 0.0125,
+      "catalyst": "XLK sector rotation inflows lifting AAPL with positive 1m/3m/12m momentum",
+      "invalidation": "XLK sector rotation reverses OR revenue YoY declines further below -1.4% for 2 consecutive quarters",
+      "horizon_days": 90,
+      "skeptic_findings_count": 5,
+      "forward_return": 0.796234831665519,
+      "spy_return": 0.1664258240948513,
+      "alpha_vs_spy": 0.6298090075706677
+    },
+    {
+      "ticker": "MSFT",
+      "company_name": "MICROSOFT CORP",
+      "as_of": "2020-01-01",
+      "risk_decision": "REDUCE_SIZE",
+      "confidence": 0.45,
+      "final_size_pct": 0.0125,
+      "catalyst": "XLK sector rotation in + positive 12m momentum continuation",
+      "invalidation": "XLK sector rotation reverses out OR F-Score deteriorates below 4/9 with declining revenue growth",
+      "horizon_days": 365,
+      "skeptic_findings_count": 5,
+      "forward_return": 0.39477278124551196,
+      "spy_return": 0.1664258240948513,
+      "alpha_vs_spy": 0.22834695715066067
+    }
+  ],
+  "spy_return": 0.1664258240948513
+}

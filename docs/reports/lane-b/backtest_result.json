@@ -1,0 +1,47 @@
+{
+  "config": {
+    "initial_capital": 100000.0,
+    "rebalance_months": 3,
+    "top_n_holdings": 25,
+    "min_f_score": 6,
+    "magic_rank_max": 50,
+    "return_12m_min": -0.2,
+    "return_12m_max": 0.5,
+    "benchmark_simfin_id": 1072401
+  },
+  "start": "2020-01-01",
+  "end": "2024-12-31",
+  "result": {
+    "n_rebalances": 20,
+    "n_holdings_per_rebalance": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      10,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25,
+      25
+    ],
+    "total_return": 0.6966929713589414,
+    "annual_return": 0.18046963846582953,
+    "sharpe": 1.5393420779909106,
+    "max_drawdown": 0.11269438480670785,
+    "n_unique_tickers": 175,
+    "hit_rate": 0.5,
+    "benchmark_return": 0.31295481551898185,
+    "alpha_vs_benchmark": 0.3837381558399595
+  }
+}

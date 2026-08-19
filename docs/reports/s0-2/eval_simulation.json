@@ -1,0 +1,109 @@
+{
+  "schema": "s0-2-eval-simulation-v1",
+  "generated_by": "scripts/run_eval_simulation.py",
+  "date": "2026-08-05",
+  "method": "replay bar-by-bar su dati reali lake; eval 6%/4% EOD trailing ratchet; sizing 1 contratto ES/$50K (pre-registrato S1.4); daily loss e consistency opzionali; attempts walk-forward step=63",
+  "params": {
+    "symbol": "ES",
+    "timeframe": "1d",
+    "rows": 6524,
+    "account_size_usd": 50000,
+    "target_frac": 0.06,
+    "max_loss_frac": 0.04,
+    "daily_loss_frac": 0.0,
+    "consistency_frac": 0.5,
+    "cost_per_rt_usd": 8.4,
+    "contracts": 1,
+    "multiplier_usd_per_pt": 50.0,
+    "warmup_bars": 250,
+    "step_bars": 63,
+    "max_bars": 750,
+    "min_bars": 60
+  },
+  "results": {
+    "donchian_breakout": {
+      "attempts": 99,
+      "p_pass": 0.2626,
+      "wilson_95_ci": [
+        0.186,
+        0.357
+      ],
+      "n_pass": 26,
+      "n_breach": 73,
+      "n_daily_loss": 0,
+      "n_timeout": 0,
+      "n_no_trades": 0,
+      "passes_consistency_blocked": 10,
+      "mean_days_to_pass": 24.8,
+      "median_days_to_pass": 17.5,
+      "p90_days_to_pass": 44.0,
+      "bars": 6524,
+      "bars_in_position": 3974,
+      "position_share": 0.6091,
+      "mean_leverage": 2.4
+    },
+    "trend_filtered_breakout": {
+      "attempts": 99,
+      "p_pass": 0.303,
+      "wilson_95_ci": [
+        0.2213,
+        0.3995
+      ],
+      "n_pass": 30,
+      "n_breach": 69,
+      "n_daily_loss": 0,
+      "n_timeout": 0,
+      "n_no_trades": 0,
+      "passes_consistency_blocked": 8,
+      "mean_days_to_pass": 51.1,
+      "median_days_to_pass": 22.5,
+      "p90_days_to_pass": 149.6,
+      "bars": 6524,
+      "bars_in_position": 3481,
+      "position_share": 0.5336,
+      "mean_leverage": 2.4
+    },
+    "ema_trend": {
+      "attempts": 99,
+      "p_pass": 0.2626,
+      "wilson_95_ci": [
+        0.186,
+        0.357
+      ],
+      "n_pass": 26,
+      "n_breach": 73,
+      "n_daily_loss": 0,
+      "n_timeout": 0,
+      "n_no_trades": 0,
+      "passes_consistency_blocked": 6,
+      "mean_days_to_pass": 29.8,
+      "median_days_to_pass": 13.5,
+      "p90_days_to_pass": 70.0,
+      "bars": 6524,
+      "bars_in_position": 4553,
+      "position_share": 0.6979,
+      "mean_leverage": 2.4
+    },
+    "buy_hold": {
+      "attempts": 99,
+      "p_pass": 0.2323,
+      "wilson_95_ci": [
+        0.1601,
+        0.3246
+      ],
+      "n_pass": 23,
+      "n_breach": 76,
+      "n_daily_loss": 0,
+      "n_timeout": 0,
+      "n_no_trades": 0,
+      "passes_consistency_blocked": 9,
+      "mean_days_to_pass": 11.7,
+      "median_days_to_pass": 9.0,
+      "p90_days_to_pass": 22.2,
+      "bars": 6524,
+      "bars_in_position": 6524,
+      "position_share": 1.0,
+      "mean_leverage": 2.4
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "results": [
+    {
+      "ticker": "AAPL",
+      "company_name": "APPLE INC",
+      "as_of": "2020-01-01",
+      "risk_decision": "REJECT",
+      "confidence": 0.0,
+      "final_size_pct": 0.0,
+      "catalyst": "",
+      "invalidation": "",
+      "horizon_days": 365,
+      "skeptic_findings_count": 1,
+      "forward_return": 0.7962350427968483,
+      "spy_return": 0.16642615041501285,
+      "alpha_vs_spy": 0.6298088923818355
+    },
+    {
+      "ticker": "MSFT",
+      "company_name": "MICROSOFT CORP",
+      "as_of": "2020-01-01",
+      "risk_decision": "REJECT",
+      "confidence": 0.0,
+      "final_size_pct": 0.0,
+      "catalyst": "",
+      "invalidation": "",
+      "horizon_days": 365,
+      "skeptic_findings_count": 5,
+      "forward_return": 0.3947727415710598,
+      "spy_return": 0.16642615041501285,
+      "alpha_vs_spy": 0.22834659115604694
+    }
+  ],
+  "spy_return": 0.16642615041501285
+}

@@ -1,0 +1,24 @@
+{
+  "generated_at": "2026-08-16T00:28:43.354629+00:00",
+  "underlying": "SPY",
+  "underlying_price": 776.01,
+  "strike": 737.21,
+  "dte": 30,
+  "estimated_premium": 0.0,
+  "implied_vol": null,
+  "realised_vol_30d": null,
+  "vrp": null,
+  "edge_signal": "PASS",
+  "confidence": 0.0,
+  "thesis": "Failed to fetch option chain (IBKR data subscription?)",
+  "invalidation": "",
+  "config": {
+    "target_dte": 30,
+    "target_delta": 0.2,
+    "position_size_pct": 0.02,
+    "max_positions": 5,
+    "exit_at_dte": 7,
+    "take_profit_pct": 0.5,
+    "roll_threshold": 0.2
+  }
+}
