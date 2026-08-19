@@ -144,11 +144,13 @@ select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "ARG", "C4", "RUF"]
 #
 # RUF001/002/003 (ambiguous-unicode) — we use ✓ → etc in docstrings
 #   and comments.  The repo is py312-only, so no Python 2 ambiguity.
+# RUF006 (asyncio dangling task) — re-enabled at P0 (2026-08-19): the
+#   codebase is now clean and a lost task is a defect class in a
+#   trading system, not a style preference.
 ignore = [
     "RUF001",
     "RUF002",
     "RUF003",
-    "RUF006",  # asyncio dangling task — pre-existing in core async paths
 ]
 
 [tool.ruff.lint.isort]
@@ -318,6 +320,7 @@ dev = [
     "duckdb>=1.5.4",
     "hmmlearn>=0.3.3",
     "httpx>=0.28.1",
+    "import-linter>=2.0",
     "mypy>=2.2.0",
     "polars>=1.42.1",
     "pydantic-settings>=2.14.2",
@@ -327,8 +330,95 @@ dev = [
     "ruff>=0.15.20",
     "ruptures>=1.1.10",
     "websockets>=15.0.1",
-    "yfinance>=1.5.1"
+    "yfinance>=1.5.1",
 ]
 genetics = [
     "deap>=1.4.4"
+]
+
+# ── Architecture contracts (P0, ARCHITECTURE.md §3.1) ──────────────────
+# The inward-only dependency rule used to live only in docs; it is now
+# verified by `lint-imports` (CI job: architecture) and mirrored by
+# tests/unit/test_architecture_boundaries.py (AST-based, zero-dep).
+#
+# Layers, inward → outward:
+#   core / application          (kernel + contracts: import nothing)
+#   market, execution           (market -> core only; execution -> core/application)
+#   policy                      (TODO(P2): OrderRequest port in application)
+#   analytics, genetics         (TODO(P2): parity port, SearchStrategy port)
+#   agents                      (intelligence plane)
+#   apps                        (composition root — unrestricted)
+
+[tool.importlinter]
+root_packages = [
+    "core",
+    "application",
+    "market",
+    "execution",
+    "policy",
+    "analytics",
+    "genetics",
+    "agents",
+    "apps",
+]
+
+# core is the kernel: it must not import any other first-party package.
+[[tool.importlinter.contracts]]
+name = "core is a leaf (kernel imports nothing)"
+type = "forbidden"
+source_modules = ["core"]
+forbidden_modules = [
+    "application",
+    "market",
+    "execution",
+    "policy",
+    "analytics",
+    "genetics",
+    "agents",
+    "apps",
+]
+
+# application/contracts are inward-facing types owned by nobody else.
+[[tool.importlinter.contracts]]
+name = "application contracts import nothing first-party"
+type = "forbidden"
+source_modules = ["application"]
+forbidden_modules = [
+    "core",
+    "market",
+    "execution",
+    "policy",
+    "analytics",
+    "genetics",
+    "agents",
+    "apps",
+]
+
+# market data is below research: it may depend on core only.
+[[tool.importlinter.contracts]]
+name = "market depends on core only"
+type = "forbidden"
+source_modules = ["market"]
+forbidden_modules = [
+    "application",
+    "execution",
+    "policy",
+    "analytics",
+    "genetics",
+    "agents",
+    "apps",
+]
+
+# execution may depend on core and application contracts only.
+[[tool.importlinter.contracts]]
+name = "execution depends on core and contracts only"
+type = "forbidden"
+source_modules = ["execution"]
+forbidden_modules = [
+    "market",
+    "policy",
+    "analytics",
+    "genetics",
+    "agents",
+    "apps",
 ]

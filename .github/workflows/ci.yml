@@ -64,6 +64,25 @@ jobs:
           file: ./coverage.xml
           fail_ci_if_error: false
 
+  # P0 (F-03): the inward-only dependency rule from ARCHITECTURE.md §3.1
+  # is now machine-verified.  Blocking — a new cross-layer import fails CI.
+  architecture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv and Python
+        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Sync locked dependencies
+        run: uv sync --frozen --all-extras --all-groups
+
+      - name: Architecture boundary contracts (import-linter)
+        run: uv run --frozen lint-imports
+
   frontend:
     runs-on: ubuntu-latest
     defaults:
@@ -96,18 +115,36 @@ jobs:
   security:
     runs-on: ubuntu-latest
     steps:
+      # Full history so gitleaks can scan every commit (P0: secret scan
+      # must be blocking — was continue-on-error, which defeated it).
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Secret scan (gitleaks)
         uses: gitleaks/gitleaks-action@v2
         with:
           config-path: .gitleaks.toml
-        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Python dependency audit
+      - name: Install uv and Python
+        uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Sync locked dependencies
+        run: uv sync --frozen --all-extras --all-groups
+
+      - name: Python dependency audit (blocking)
+        # P0 (F-14): the old job swallowed pip-audit failures with
+        # `|| echo "WARNING..."`.  Vulnerabilities now fail the build;
+        # triage real findings instead of muting the gate.
         run: |
-          uv tool install pip-audit || true
-          uv run pip-audit --strict --require-hashes --desc .venv/ 2>&1 || echo "WARNING: pip-audit found vulnerabilities — review before merge"
+          uv tool install pip-audit
+          uv export --frozen --format requirements-txt --no-hashes > /tmp/audit-requirements.txt
+          pip-audit --strict -r /tmp/audit-requirements.txt
 
       - name: SBOM generation (uv export)
         run: |
