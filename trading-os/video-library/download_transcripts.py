@@ -21,14 +21,17 @@ TSV = BASE / "moondev_videos.tsv"
 OUT = BASE / "transcripts"
 OUT.mkdir(exist_ok=True)
 
+import shutil
+
+YDL_BIN = shutil.which("yt-dlp") or "/home/alin/.local/bin/yt-dlp"
+
 YDL_ARGS = [
-    sys.executable,
-    "-m",
-    "yt_dlp",
+    YDL_BIN,
     "--skip-download",
+    "--write-subs",
     "--write-auto-subs",
     "--sub-lang",
-    "en",
+    "en.*",
     "--sub-format",
     "srt",
     "--convert-subs",
