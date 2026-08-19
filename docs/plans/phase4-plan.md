@@ -1,3 +1,9 @@
+> **ARCHIVIO STORICO.** Documento del modello Phase, deprecato da ADR-012
+> e sostituito dai capability gate G0-G9. Roadmap canonica:
+> [ROADMAP.md](../../ROADMAP.md). Stato corrente:
+> [ORACLE_AUTOPILOT_STATUS.md](../ORACLE_AUTOPILOT_STATUS.md).
+> **Non aggiornare** — solo git archaeology.
+
 # Phase 4 — Multi-Agent System (LangGraph)
 
 > 6 settimane · 9 task · Orchestrazione multi-agente LLM con debate, risk management e portfolio decision

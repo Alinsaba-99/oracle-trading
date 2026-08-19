@@ -1,3 +1,9 @@
+> **ARCHIVIO STORICO.** Documento del modello Phase, deprecato da ADR-012
+> e sostituito dai capability gate G0-G9. Roadmap canonica:
+> [ROADMAP.md](../../ROADMAP.md). Stato corrente:
+> [ORACLE_AUTOPILOT_STATUS.md](../ORACLE_AUTOPILOT_STATUS.md).
+> **Non aggiornare** — solo git archaeology.
+
 # Oracle Phase 2: Backtesting — Implementation Plan (REVISED v2)
 
 > **Status:** REVISED v2 — All Architect (R1-R7) and Critic (F1-F6) findings applied

@@ -1,7 +1,7 @@
 # Oracle Autopilot — Capability-Gated Master Roadmap
 
-> Versione: 3.0 — Mutageno
-> Ultimo aggiornamento: 2026-07-28
+> Versione: 3.1 — Mutageno + Opzione C
+> Ultimo aggiornamento: 2026-08-18 (allineamento post-Opzione C 2026-08-17 + knowledge base 13 domini)
 > Stato: roadmap canonica
 > Modello di avanzamento: capability gate con evidenza, non phase temporali
 > Gerarchia fonti: ROADMAP (perché) → STATUS (cosa) → BACKLOG (come) → ADR (decisioni) → report (evidenza).
@@ -34,14 +34,16 @@ Come un organismo mutageno, il sistema:
 
 ### Risultato immediato (pre-G6)
 
-L'edge su cui ci si basa è **regime-conditional mean-reversion su RSI in
-choppy daily ES**, verificato in 23/30 sessioni paper indipendenti
-([logs/g6_wp2_paper_sessions.json](logs/g6_wp2_paper_sessions.json), commit
-`ffe91b4`). È un edge di piccola taglia — pass_rate 77%, mean_sharpe -0.31
-borderline — sufficiente forse per 1 ciclo prop-firm evaluation su MES, non
-per 10 consecutive. Vedi [docs/AUDIT_FINDINGS.md](docs/AUDIT_FINDINGS.md) §3.3
-per il sizing corretto e i limiti reali. Questo edge è il punto di partenza,
-non il traguardo.
+La base di partenza era **regime-conditional mean-reversion su RSI in choppy
+daily ES** (23/30 sessioni paper, commit `ffe91b4`). La verifica S0
+(BL-093 autopsia + BL-094 modello economico) ha mostrato che quell'edge era
+in realtà **beta scambiato per alpha**: alpha residuo misurato +2.3%..+6.1%
+lordo/anno, netto costi → verso lo zero. La lane daily è **economicamente
+morta** (€3K/mese netti richiedono alpha 5-16× il soffitto misurato). Quindi
+oggi **non esiste un edge sfruttabile**: prima di G5/G6 serve un cambio di
+canale (multi-asset, sweep candidati, orizzonte >1d), non più tuning della
+mean-reversion. Vedi [docs/reports/s0-1-bl023-autopsy.md](docs/reports/s0-1-bl023-autopsy.md)
+e [docs/reports/s0-2-economic-model.md](docs/reports/s0-2-economic-model.md).
 
 Il risultato finale della **Fase Fondazione** richiede contemporaneamente:
 
@@ -72,14 +74,14 @@ Non sono obiettivi validi:
 | [`BACKLOG.md`](BACKLOG.md) | **Task atomiche per gate** (ID stabile BL-NNN) |
 | [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md) | Gerarchia documentale e regole |
 | [`docs/AUDIT_FINDINGS.md`](docs/AUDIT_FINDINGS.md) | Audit secco 25-lug, gap e stato reale vs dichiarato |
-| [`docs/PROP_FIRM_READINESS_ROADMAP.md`](PROP_FIRM_READINESS_ROADMAP.md) | Regole di supporto e certificazione prop-firm (da rinominare) |
+| [`docs/PROP_FIRM_READINESS_ROADMAP.md`](docs/PROP_FIRM_READINESS_ROADMAP.md) | Regole di supporto e certificazione prop-firm (da rinominare) |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Architettura corrente, target e confini di autorità |
 | [`docs/RUNBOOK.md`](docs/RUNBOOK.md) | Operatività (dev + paper) |
 | [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md) | Coverage matrix per asset class / TF |
 | [`docs/ADR/`](docs/ADR/) | Decisioni normative immutabili |
 | [`docs/plans/`](docs/plans/) | Archivio dei vecchi piani Phase, **non eseguibile** |
 
-I file `phase*-plan.md` in root, `docs/phase6-plan.md`, e i vecchi backlog
+I file `phase*-plan.md` in `docs/plans/` (archiviati qui) e i vecchi backlog
 (`docs/plans/oracle-autopilot-*-backlog-*.md`) sono solo archivio. Non
 possono cambiare stato, architettura o priorità del programma.
 
@@ -235,7 +237,7 @@ La UI osserva lo stato autorevole; non lo ricostruisce da artefatti ad hoc.
 ## 6. Capability gate
 
 I gate sono descritti nei deliverable e exit evidence sottostanti.
-**Lo stato attuale di ogni gate è in [ORACLE_AUTOPILOT_STATUS.md](ORACLE_AUTOPILOT_STATUS.md).**
+**Lo stato attuale di ogni gate è in [ORACLE_AUTOPILOT_STATUS.md](docs/ORACLE_AUTOPILOT_STATUS.md).**
 
 ## G0 — Baseline veritiera e riproducibile
 
@@ -425,19 +427,19 @@ un sistema che impara e migliora autonomamente.
 
 | Milestone | Cosa | Riferimento |
 |:---------:|------|:-----------:|
-| I-01 | Factor Timing — 50 fattori classificati per Rank IC corrente | `plan-integration-inalpha-varrd.md §3` |
-| I-02 | Research Memory — decisioni registrate, confidence calibrata | `plan-integration-inalpha-varrd.md §5` |
-| I-03 | HMM + Lorenzian Ensemble — regime detection ibrida | `plan-integration-inalpha-varrd.md §6` |
-| I-04 | Strategy Evolution Loop — LLM scrive strategie, 3 sandbox, cross-val | `plan-integration-inalpha-varrd.md §4` |
-| I-05 | Edge Discovery — event study per nuovi pattern (VARRD) | `plan-integration-inalpha-varrd.md §7` |
-| I-06 | Three-step Orders — propose→approve→execute con token | `plan-integration-inalpha-varrd.md §4` |
+| I-01 | Factor Timing — 50 fattori classificati per Rank IC corrente | `docs/plan-integration-inalpha-varrd.md §3` |
+| I-02 | Research Memory — decisioni registrate, confidence calibrata | `docs/plan-integration-inalpha-varrd.md §5` |
+| I-03 | HMM + Lorenzian Ensemble — regime detection ibrida | `docs/plan-integration-inalpha-varrd.md §6` |
+| I-04 | Strategy Evolution Loop — LLM scrive strategie, 3 sandbox, cross-val | `docs/plan-integration-inalpha-varrd.md §4` |
+| I-05 | Edge Discovery — event study per nuovi pattern (VARRD) | `docs/plan-integration-inalpha-varrd.md §7` |
+| I-06 | Three-step Orders — propose→approve→execute con token | `docs/plan-integration-inalpha-varrd.md §4` |
 
 **Nota:** M32 "rolling paper replay" (60 finestre sovrapposte su storico) è diagnostico,
 non costituisce le 30 sessioni paper indipendenti richieste da G6.
 
 ## G7 — Certificazione di uno specifico programma
 
-**Dipendenze:** G6 e policy di [PROP_FIRM_READINESS_POLICY.md](PROP_FIRM_READINESS_POLICY.md).
+**Dipendenze:** G6 e policy di [PROP_FIRM_READINESS_ROADMAP.md](docs/PROP_FIRM_READINESS_ROADMAP.md).
 
 **Obiettivo:** promuovere un solo firm/program/stage/platform/account profile.
 
@@ -835,3 +837,40 @@ in tempo reale senza intervento umano (con kill switch remoto).
 
 Qualunque dubbio su dati, regole, ledger, risk, broker o licenza mantiene il
 sistema in RESEARCH_ONLY, PAPER o ASSISTED_ONLY.
+
+## 13. Opzione C — Zero-cost workflow (2026-08-17)
+
+**PIVOT 2026-08-15 → formalizzato 2026-08-17**:
+dopo l'audit `live-readiness-assessment` (2026-08-10) + il `comprehensive-state-report`
+(2026-08-15) + il `deep-research-synthesis` (2026-08-15 con 102 agenti / 20 fonti),
+il verdetto è: **bloccante è l'edge, non l'architettura**. Lo stack istituzionale
+(nautilus/vectorbt/polars/cvxpy) è già installato. Pivot a "Opzione C" = workflow
+gratuito Phase 1+2 per validare 3 lane su dati free, prima di spendere budget per
+architettura aggiuntiva. Vedi [ADR-020](docs/ADR/ADR-020-zero-cost-data-strategy.md)
+per l'inventario fonti verificate.
+
+| Step | Cosa | Stato | Output |
+|---|---|---|---|
+| Pre | BinanceVisionHistorical adapter per lake crypto 1m | ✅ DONE | 27 test, BTCUSDT 1m 2880 bars smoke |
+| 1 | AI swarm storico 50 ticker (as-of 2020-01-01, 12mo fwd) | ✅ DONE 2026-08-17 | REDUCE_SIZE 66.7% beat SPY (edge real, Haiku synthesis ~30% vuote) — `docs/reports/ai-swarm/historical-2020-01-01-50tickers.md` |
+| 2 | VRP BS backtest su SPY+VIX 2010-2025 reale | ✅ DONE 2026-08-17 | Sharpe -0.08 (vs 7.36 deep-research claim = 95× inflated, stesso bug R5 BL-503). 69/798 tail events = 8.6% abbattono premium. NON tradabile senza regime filter + tail cap. `docs/reports/lane-d-vrp/2026-08-17-spy-vix-2010-2025.md` |
+| 3 | Composite Lane B vs Legacy AND su SimFin real 185 tickers | ✅ DONE 2026-08-17 | Sharpe 0.93 vs 0.25, alpha +59% vs -32%. Composite adottato come default `use_composite=True`. `docs/reports/lane-b-composite/2026-08-17-compare.md` |
+| 4 | Paper trading orchestrator (signal→order→fill, slippage ledger) | ✅ MVP DONE 2026-08-17 | `execution/paper_orchestrator.py` + 14 test. Real-time loop + Lane B/D signal adapters deferred |
+| 5 | Docs update (ADR-020 + ROADMAP Opzione C + BACKLOG items) | ✅ DONE 2026-08-17 | questo ADR-020 + sezione ROADMAP §13 + BACKLOG BL-OPC-1..5 |
+| 6 | Backfill IBKR paper 1m cron (ES/NQ/GC/CL going forward) | 🟡 MVP DONE, timer NON installato | `scripts/backfill_1m_ibkr_paper.py` validato 2026-08-17 (equities 1m); timer systemd non ancora in `~/.config/systemd/user/`; futures = expiry resolution TODO (BL-OPC-6) |
+
+**Verdetto intermedio Opzione C (aggiornato 2026-08-18):**
+- Lane B composite **edge reale confermato** (Sharpe 0.93, alpha +59%) —
+  prima della promozione paper serve qualificazione DSR/PBO/CPCV (ADR-017, BL-OPC-12).
+- Lane D VRP **edge assente** senza regime filter + tail cap — non deployable.
+- AI swarm **edge condizionale** (REDUCE_SIZE 66.7% beat SPY su 2020-2021
+  bull market) — da validare su 2022 bear + fix Haiku parsing.
+
+**Cosa NON risolve Opzione C**:
+- Edge su Lane D VRP (manca OPRA options real, sostituito da BS synthetic);
+- Futures 1m storico pre-2025 (solo going forward via Step 6 cron);
+- Validazione AI swarm 2022 bear (todo Step 1 followup).
+
+**Prossimo gate richiesto**: G5 (Research truth + strategy qualification) —
+le 3 lane di Opzione C devono superare DSR/PBO/CPCV (ADR-017) prima
+di promozione paper → shadow → evaluation → funded.

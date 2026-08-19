@@ -17,8 +17,9 @@ Oracle è oggi un monorepo con:
 - analytics, backtest e genetic research;
 - adapter broker e policy prop-firm;
 - storage locale SQLite/JSON/Parquet;
-- infrastruttura NATS, Redis, PostgreSQL, QuestDB, Loki, Prometheus e Qdrant
-  descritta in Compose ma non ancora integrata come deployment applicativo.
+- infrastruttura Compose (`infra/docker/docker-compose.yml`) con PostgreSQL,
+  Redis, API e Dashboard. NATS, QuestDB, Loki, Prometheus e Qdrant restano
+  aspirazionali/DEFERRED: presenti solo in configurazione, NON in Compose.
 
 La forma reale è un **modular monolith in evoluzione**, non un insieme di
 microservizi. Le chiamate in-process dominano; NATS è implementato ma non è il
@@ -247,7 +248,7 @@ Il Compose attuale è development scaffolding, non produzione.
 |---|---|
 | P0 | risk opzionale e bypass composition root |
 | P0 | API production fail-open senza key |
-| P0 | OMS/ledger in-memory |
+| P1 | OMS/ledger in-memory di default (Postgres disponibile solo con `--storage=postgres`; G3 attivo dal 25-lug) |
 | P1 | contratti execution nel package agents |
 | P1 | cicli analytics/market/execution |
 | P1 | Docker non riproducibile e non-root assente |
@@ -263,4 +264,7 @@ Il Compose attuale è development scaffolding, non produzione.
 - ADR-010 — execution safety boundary;
 - ADR-011 — separazione discovery/qualification backtest;
 - ADR-012 — capability gate al posto delle Phase;
-- ADR-013 — rule catalog prop-firm versionato.
+- ADR-013 — rule catalog prop-firm versionato;
+- ADR-014 — M31 evidence loss (G5 REGRESSED, dataset lineage GAP);
+- ADR-015 — Topstep automation / VPS / device policy;
+- ADR-016 — G5 re-spec: stop ATR 1.0, qty 1, N onesto (anti-beta benchmark).

@@ -33,7 +33,11 @@ supersede e l'indice viene aggiornato.
 | [013](ADR-013-versioned-prop-firm-rule-catalog.md) | Rule catalog prop-firm versionato | ACCEPTED | Support mode fail-closed |
 | [014](ADR-014-m31-evidence-loss.md) | M31 replay/regime evidence loss | ACCEPTED | G5 dichiarato REGRESSED, dataset lineage GAP |
 | [015](ADR-015-topstep-automation-policy.md) | Topstep automation / VPS / device policy | ACCEPTED | Local-only deployment; vedi BL-071 |
-| [015 - proposto](template.md) | (placeholder) | — | superseded dalla riga precedente |
+| [016](ADR-016-g5-respec-stop-atr-qty1.md) | G5 re-spec: stop ATR 1.0, qty 1, N onesto | ACCEPTED | Anti-beta benchmark; BL-023 Fase 5; `luck_p_value` clause partial superseded by ADR-017 |
+| [017](ADR-017-backtest-overfitting-validation-upgrade.md) | Backtest overfitting validation upgrade — DSR + PBO + CPCV mandatory | ACCEPTED | Supersede ADR-016 `luck_p_value` clause; deprecates mlfinlab aspirational reference |
+| [018](ADR-018-prop-firm-structural-ev-deployment-gate.md) | Prop-firm structurally negative EV — funded capital deployment gate | ACCEPTED | 250+ sessioni paper pass≥90% + DSR/PSR ≥0.95 + PBO <0.5 prerequisite; max 1-3 account focused |
+| [019](ADR-019-lane-b-priority-personal-portfolio.md) | Lane B priority — portafoglio personale operatore, NON prop-firm | ACCEPTED | SimFin PIT data; 20-30 titoli turnaround; trial ledger S0.3; hit rate ≥50% target; brokerage account personale |
+| [020](ADR-020-zero-cost-data-strategy.md) | Zero-cost data strategy — verified free sources only | ACCEPTED | $0/mo hard rule; inventario fonti verificate 2026-08-16; gap dichiarati onestamente; IBKR paper unica eccezione |
 
 ## Come creare un ADR
 

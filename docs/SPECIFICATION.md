@@ -3,7 +3,7 @@
 > **FROZEN — Documento storico.** Questa specifica descrive un'architettura
 > precedente alla roadmap capability-gate (ADR-012). La living architecture è in
 > [ARCHITECTURE.md](ARCHITECTURE.md); la roadmap è
-> [ORACLE_AUTOPILOT_MASTER_ROADMAP.md](ORACLE_AUTOPILOT_MASTER_ROADMAP.md).
+> [ROADMAP.md](../ROADMAP.md).
 > ADR-008 (modular monolith), ADR-009 (storage strategy) e ADR-010 (execution safety)
 > supersedono i principi NATS universali, plugin-first e services/libraries/plugins.
 > Modifiche solo tramite ADR.
@@ -337,7 +337,7 @@ PostgreSQL per contenuti strutturati, Qdrant per retrieval semantico.
 - **v1.0**: 2026-07-06. **FROZEN come specifica research storica**.
 - La living architecture è mantenuta in [ARCHITECTURE.md](ARCHITECTURE.md).
 - La roadmap production/autopilot è mantenuta in
-  [ORACLE_AUTOPILOT_MASTER_ROADMAP.md](ORACLE_AUTOPILOT_MASTER_ROADMAP.md).
+  [ROADMAP.md](../ROADMAP.md).
 - Ogni modifica normativa richiede un nuovo ADR; gli ADR accettati vengono
   superseded, non riscritti.
 - I principi safety-critical prevalgono sulle intenzioni v1 quando un ADR più

@@ -401,10 +401,11 @@
 ## 14. Enumerazioni
 
 ```python
+OracleMode = Enum("research", "replay", "paper", "shadow", "evaluation", "funded")
 AssetClass = Enum("equity", "crypto", "fx", "option", "future")
 Timeframe = Enum("tick", "1m", "5m", "15m", "30m", "1h", "4h", "1d", "1w", "1M")
 OrderSide = Enum("buy", "sell")
-OrderType = Enum("market", "limit", "stop")
+OrderType = Enum("market", "limit", "stop")  # paper broker accetta anche "stop_limit" a runtime
 TimeInForce = Enum("day", "gtc", "ioc", "fok")
 OrderStatus = Enum("pending", "submitted", "partially_filled", "filled", "cancelled", "rejected")
 TradeDirection = Enum("long", "short")
@@ -418,6 +419,11 @@ RegimeCorrelation = Enum("risk_on", "risk_off", "mixed")
 MarketPhase = Enum("accumulation", "markup", "distribution", "markdown")
 PolicyType = Enum("hard_limit", "soft_limit", "compliance", "market_condition", "governance")
 ```
+
+> Fonti reali: `core/domain/enums.py` (AssetClass..PolicyType) e
+> `core/domain/mode.py:17` (OracleMode, transizioni irregressibili
+> research→…→funded). `stop_limit` non è nell'enum `OrderType` ma è accettato
+> dal paper broker (`execution/brokers/paper.py`).
 
 ---
 

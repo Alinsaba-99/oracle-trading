@@ -1,3 +1,9 @@
+> **ARCHIVIO STORICO.** Documento del modello Phase, deprecato da ADR-012
+> e sostituito dai capability gate G0-G9. Roadmap canonica:
+> [ROADMAP.md](../../ROADMAP.md). Stato corrente:
+> [ORACLE_AUTOPILOT_STATUS.md](../ORACLE_AUTOPILOT_STATUS.md).
+> **Non aggiornare** — solo git archaeology.
+
 # Phase 5 — Execution Engine (v2)
 
 > 5 settimane · 8 task · Broker connectors, Order Manager, Execution Algos, Market Data

@@ -7,7 +7,7 @@
 
 Questa policy definisce quando Oracle può modellare, assistere o automatizzare
 uno specifico programma. L'implementazione è governata dai gate G0-G9 in
-[ORACLE_AUTOPILOT_MASTER_ROADMAP.md](ORACLE_AUTOPILOT_MASTER_ROADMAP.md).
+[ROADMAP.md](../ROADMAP.md).
 
 ## 1. Principio
 

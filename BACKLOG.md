@@ -1,8 +1,9 @@
 # Oracle — Execution Backlog
 
-> Single source of truth per task atomiche. Versione: 2026-07-30 (audit
-> remediation — BACKLOG audit). Sostituisce `docs/ORACLE_AUTOPILOT_BACKLOG.md` (rimosso
-> il 25-lug) e `docs/plans/oracle-autopilot-*-backlog-*.md`.
+> Single source of truth per task atomiche. Versione: 2026-08-18 (allineamento
+> post-Opzione C). Sostituisce
+> `docs/ORACLE_AUTOPILOT_BACKLOG.md` (rimosso il 25-lug) e
+> `docs/plans/oracle-autopilot-*-backlog-*.md`.
 >
 > Ogni task ha un ID stabile **BL-NNN**, una priorità, owner suggerito, AC
 > (acceptance criteria) e link al gate di appartenenza. Le task che
@@ -87,7 +88,16 @@
 ## S0 Diagnosi e governance (piano production-grade, commit `3bdef58`)
 
 - [x] **BL-093** (S0.1) — **Autopsia BL-023**: decomposizione fallimento sui 6 assi del piano. ✅ `docs/reports/s0-1-bl023-autopsy.md`. Verdetto: benchmark = causa principale (misuravamo beta come alpha; anti-beta ADR-016 ha corretto il metro), orizzonte incompatibile col canale prop-firm; dati e implementazione assolti (2 difetti registrati: candidati duplicati bollinger≡zscore = 7 ipotesi non 8; matrice 2×2×2 byte-identica = teatro). Costi = aggravante. Regime = unica via aperta, solo dopo post-mortem classificatore M32a. Mean-reversion ES daily archiviata (4/4, luck p=1.0). Alpha residuo trend +2-6% lordo = input di S0.2.
-- [ ] **BL-094** (S0.2) — Modello economico prop-firm one-page: costi eval/reset, payout, trailing DD, slippage/commissioni/tasse → capitale necessario per €3K/mese netti con alpha realistico (+2-6% lordo dall'autopsia).
+- [x] **BL-094** (S0.2) — **Modello economico prop-firm one-page** ✅ `docs/reports/s0-2-economic-model.md` + evidenza MC `docs/reports/s0-2/eval_economics.json` (`scripts/run_eval_economics.py`, seed 42, N=10K; test `tests/unit/test_eval_economics.py`). Verdetto: **€3K/mese richiede alpha ≥ 30-120%/anno su un account (o 5-20 account a α=6%): 5-16× il soffitto misurato +2-6% lordo → lane daily economicamente morta (meta-kill scattata per l'orizzonte daily)**. MC: p(pass) eval 6%/4% = 30.1% random-walk vs 33.7% a α=6% (σ=1.2%): l'alpha misurato vale +3.6 punti; la leva vera è σ (53.4% a σ=0.4%). Requisiti pre-registrati riapertura S1.1: p≥0.60, α netto ≥15%/anno, E[giorni a passare]≤60, DD≤4% ADR-016. Obiettivo sostenibile: €1-1.5K/mese con 2-3 account 150-200K (90/10). Fee P90 percorso: ~$400-1.100. **Verifica empirica aggiunta**: `scripts/run_eval_simulation.py` replaya i segnali reali sul lake con le regole eval (6%/4% trailing EOD, consistency 50%, costi $8.4/RT, 1 contratto ES/$50K) — ES 1d (N=99): donchian 26.3%, trend_filtered 30.3%, ema 26.3%, buy_hold 23.2% (CI95 max sup 40%); ES 1h (N=214): 23.4-29.9%. **Nessun candidato supera il base rate senza edge (30.1%) né si avvicina al requisito 0.60 → family trend falsificata anche nel canale prop-firm** (`docs/reports/s0-2/eval_simulation.json`, `eval_simulation_1h.json`; test `tests/unit/test_eval_simulation.py`). Nota dati: lake ha solo ~8 giorni di 1m/5m/15m futures → requisito 5-30m non testabile oggi (BL-052).
+- [~] **BL-095** P2 — **Aggiornare i fixture prop-firm stale** (trovati in BL-094).
+  ✅ FATTO 2026-08-15/18: `policy/prop_firm/fixtures.py` MFFU_NEWS_RESTRICTED
+  allineato regole 2026 (target 6%, daily loss rimosso, consistency rimossa,
+  rule_version 2026-08-15) + golden test aggiornati (2903 suite verde).
+  ⏳ RESTANTE: `scripts/simulate_mff_challenge.py` (target $5.000=10% →
+  $3.000=6% 2026; daily loss 5% → assente) e `data/prop_firm/topstep_tc_50k.json`
+  (profit_target $5.000 → $3.000). AC: parametri allineati alle fonti 2026
+  (snapshot hash), profilo rinominato con vintage. ~1h. Da fare dentro S0.5.
+- [x] **BL-096** P1 — **Accuratezza metadata lake: coverage.json conteggia doppio/divergente**. ✅ Root cause: `pipeline._update_coverage` accumulava `rows += len(bars)` — ogni refresh incrementale che ri-merge barre già presenti gonfiava il contatore (ES|1d: 13.044 dichiarate vs 6.524 reali). Fix in due punti: (1) `pipeline._actual_rows()` conta dalle parquet normalizzate; (2) `scripts/audit_lake_metadata.py` ora verifica `coverage.rows` contro il conteggio reale (`coverage_row_mismatch` nel report, `--fix` riscrive i rows, exit code 1 su mismatch) + nuovo test gate `tests/unit/test_lake_metadata_audit.py::test_coverage_rows_match_actual_partitions`. **Applicato: 203/488 record corretti** (tutte le serie FX/crypto/futures gonfiate dal refresh perpetuo), re-audit pulito exit 0.
 
 ## G6 Paper & shadow operations
 
@@ -176,6 +186,20 @@ Non iniziato. Dipende da G5 + G6.
 - [x] **BL-305** P2 — **ES 1h + EURUSD 1m + BTCUSDT 1m backfill prioritario**: asset critici per G6/G10. ✅ completato: EURUSD 1m 8.67M righe 2003→2026 (Dukascopy), BTCUSDT 1m 4.69M righe 2017→2026 (Binance), ES 1h 36.6K righe; curation 1m estesa a FX+crypto+metalli (58 serie curated, `build_curated_contracts.py` ora auto-discover + gap threshold tf-aware).
 - [ ] **BL-306** P3 — **Polygon.io integration** (opzionale, $29/mo): per US equities 1m se necessario. ~2gg.
 - [x] **BL-307** P1 — **Ripristinare completezza metadata e lineage del lake**. ✅ completato 02-ago: nuovo `scripts/audit_lake_metadata.py` (audit + `--fix` ripetibile, exit code 0/1) ricostruisce provenance **dal dato stesso** (colonna `source` dentro ogni parquet normalizzato, mai per inferenza), normalizza le chiavi lineage al formato canonico lake-root-relative (`normalized/...`) e rimuove i riferimenti pendenti. Risultato: 68.975 partizioni → 0 senza lineage, 0 dangling, 484 record coverage schema completo (0 incompleti). Fix classificazione weekend: `NO_DATA_WEEKEND` → `fresh` (FX/metalli non quotano sab/dom — il refresh perpetuo non avvelena più `failed`); timeout lettura Binance 30s→120s (i fetch 1m dal listing andavano in timeout). Test bloccanti: `tests/unit/test_lake_metadata_audit.py` (3 gate sul lake reale) + `test_orchestrator_classify.py` (weekend range).
+
+### Data lake enrichment program (S0.6 — "TradingView Ultimate" interno, decisioni 2026-08-05: IBKR+Databento, core ETF+indici, universi mancanti principali)
+
+> Target: tutte le asset class del canale (CME futures, equities/ETF, FX, crypto) con
+> storia 1m profonda + resample. Infrastruttura BL-301 già pronta; fonti free-first.
+> Fasi A (futures intraday, sblocca S1.1) → B (equities intraday) → C (universi) → D (accuratezza).
+
+- [ ] **BL-097** P1 — **Fase A1 — Futures intraday via IBKR Client Portal**: riattivare `IBKRRestSource` (gateway TWS porta 7497 — **setup manuale utente ~1h**: Client Portal login, `start_ibkr_gateway.sh`), estendere la mappa con_id oltre i 6 esistenti (MES MNQ RTY 6E ZN ZB + equities per Fase B), backfill 5m/15m/1m 2010→ per i core (ES NQ GC CL YM), **roll methodology coerente con G2** (`market/roll.py`) per la serie continua intraday. AC: ES|5m ≥ 100K barre, lineage completo, `run_eval_simulation.py --timeframe 5m` testabile. BLOCCO: setup gateway manuale.
+- [ ] **BL-098** P1 — **Fase A2 — Futures CME via Databento free tier**: **utente: registrazione gratuita + DATABENTO_API_KEY**, riattivare `DatabentoHistorical`, backfill incrementale 1m/5m (1GB/mese ≈ 2 mesi di 1m ES al mese, 12 mesi di 5m) + cron giornaliero (Tier 4 del free-1m strategy). AC: copertura 1m ES/NQ/GC/CL ≥ 12 mesi entro 6 mesi di calendario; ridondanza con IBKR. BLOCCO: API key.
+- [ ] **BL-099** P1 — **Fase B — Equities/ETF/indici intraday** (dopo BL-097): SPY QQQ DIA IWM TLT GLD + 11 settoriali + ^GSPC ^DJI ^NDX ^RUT ^VIX, 1m/5m 2000→ via IBKR (con_id equities da estendere). AC: SPY|5m ≥ 50K barre; coverage equities intraday completo.
+- [x] **BL-101** P2 — **Fase C — SOL/BNB 1m via Binance** ✅ 2026-08-06 (con BL-104: finestre mensili resumable — i timeout finali non perdono dato): SOLUSDT 1m 3.101.332 barre (2020-08-11→), BNBUSDT 1m 4.547.680 barre (2017-11-06→). Crypto 1m ora completo su 10+ coin dal listing.
+- [ ] **BL-102** P2 — **Fase C — Futures CME mancanti 1d/1h via yahoo**: BZ VX LBS ZR ZQ HE M2K (entry già aggiunte). AC: 7 nuovi simboli in coverage con lineage.
+- [ ] **BL-103** P3 — **Fase D — Calendario macro economico**: espandere `data/macro/m31-events.json` (3 eventi) in calendario continuo 2008-2026 (Nasdaq API free, schema con event_time/available_at/source_sha256 già definito) per il regime modeling. AC: ≥ 500 eventi, schema invariato.
+- [x] **BL-104** P1 — **Fetch a finestre mensili con persistenza incrementale** (prerequisito backfill profondi: Binance 1m dal listing E futuro IBKR 1m dal 2010). Root cause: `fetch_range` è un generatore ma il pipeline accumulava tutto prima di scrivere → timeout a metà = in=0 e ritenta da zero (SOLUSDT 1m fallito dopo 29 min con 0 barre scritte). Fix: `_month_windows` (slicing mensile) + `_fetch_all_windows`/`_fetch_window` (persistenza per finestra: merge, coverage, lineage e save DOPO ogni mese; finestra fallita marcata e non bloccante — i mesi mancanti vengono ripresi da coverage.latest al ciclo successivo). Test `tests/unit/test_pipeline_windows.py` (slicing, persistenza parziale su fallimento, resume da coverage, weekend-only). ✅ applicato 2026-08-06.
 
 ## G10 — Strategy Catalog (100+ strategie)
 
@@ -272,6 +296,67 @@ Non iniziato. Dipende da G5 + G6.
 
 - [x] **ADR-015** proposta — Automation policy per Topstep ToS (vietato VPS) e
   posizione Oracle. ✅ completato in `8f590d8` (ACCEPTED). Owner: lead.
+- [x] **ADR-020** proposta — Zero-cost data strategy — verified free sources only.
+  ✅ ACCEPTED 2026-08-17. Vedi [ADR-020](docs/ADR/ADR-020-zero-cost-data-strategy.md).
+  Codifica l'inventario fonti verificate 2026-08-16: Tiingo/Massive/Alpaca/SimFin/
+  FRED/yfinance/Binance Vision/IBKR paper. Gap dichiarati onestamente. Owner: Alin.
+
+## Opzione C — Zero-cost workflow (BL-OPC-1..5, 2026-08-17)
+
+Pivot formalizzato in [ROADMAP §13](ROADMAP.md) + [ADR-020](docs/ADR/ADR-020-zero-cost-data-strategy.md).
+Obiettivo: validare 3 lane su dati free prima di spendere budget per architettura.
+
+- [x] **BL-OPC-1** P1 — AI swarm storico 50-ticker (as-of 2020-01-01, 12mo fwd).
+  ✅ DONE 2026-08-17. REDUCE_SIZE 66.7% beat SPY (edge real). Haiku synthesis ~30%
+  vuote → REJECT default. Output `docs/reports/ai-swarm/historical-2020-01-01-50tickers.md`.
+- [x] **BL-OPC-2** P1 — VRP backtest su storico reale SPY+VIX 2010-2025.
+  ✅ DONE 2026-08-17. Sharpe -0.08 (vs 7.36 deep-research = 95× inflated). NON tradabile.
+  Fix: regime filter VIX>30 + tail cap 3× premium. Output `docs/reports/lane-d-vrp/2026-08-17-spy-vix-2010-2025.md`.
+- [x] **BL-OPC-3** P1 — Composite Lane B vs Legacy AND su SimFin real 185 tickers.
+  ✅ DONE 2026-08-17. Sharpe 0.93 vs 0.25, alpha +59% vs -32%. Composite adottato default.
+  Output `docs/reports/lane-b-composite/2026-08-17-compare.md`.
+- [x] **BL-OPC-4** P1 — Paper trading orchestrator MVP (signal→order→fill, slippage ledger).
+  ✅ DONE MVP 2026-08-17. `execution/paper_orchestrator.py` + 14 test. Real-time loop +
+  Lane B/D adapters deferred a follow-up P2.
+- [x] **BL-OPC-5** P2 — Docs update (ADR-020 + ROADMAP §13 + BACKLOG Opzione C).
+  ✅ DONE 2026-08-17. Questo ADR-020 + sezione ROADMAP §13 + sezione BACKLOG.
+- [~] **BL-OPC-6** P2 — Backfill IBKR paper 1m cron (ES/NQ/GC/CL going forward).
+  In progress. `scripts/backfill_1m_ibkr_paper.py` + systemd timer + backfill.conf entry.
+  ✅ MVP validato 2026-08-17 (SPY/QQQ/AAPL/MSFT 1m, window 1 mese/run, 19k bars smoke).
+  ⚠️ GAP 2026-08-18: timer systemd NON installato in `~/.config/systemd/user/`
+  (solo lake-refresh è attivo) → nessun nuovo 1m dal 17-ago. Futures ES/NQ/GC/CL
+  bloccati su expiry resolution (`reqContractDetails`). AC chiusura: timer enabled
+  + 1 run verificato + futures almeno 1 simbolo.
+- [ ] **BL-OPC-7** P2 — Paper orchestrator followup: real-time loop (cron systemd
+  `oracle-paper-trader.service`) + yfinance delayed 15min price feed adapter + Lane B
+  signal adapter (`LaneBSignalAdapter.from_screen_at_date`) + Lane D signal adapter.
+  Sblocca promozione Lane B composite a paper trading live IBKR.
+- [ ] **BL-OPC-8** P3 — AI swarm 2022 bear market validation. Refuta/sostiene il
+  66.7% hit-rate osservato su 2020-2021 bull. Fix Haiku parsing (SSE fallback).
+- [ ] **BL-OPC-9** P3 — Lane D VRP followup: regime filter VIX>30 + term structure
+  inverted + tail cap 3× premium. Ri-run backtest su 2010-2025. Target: Sharpe > 0.5.
+- [ ] **BL-OPC-10** P3 — Combine Composite Lane B + BL-505d aggressivo (stop-loss 5%
+  + vol target 40%) per target Sharpe > 1.5 su base reale SimFin.
+- [ ] **BL-OPC-11** P1 — **Hygiene: commit strutturati del working tree 2026-08-15→18**.
+  Tutto il pivot Opzione C (ADR-017..020, Lane A/B/D, AI swarm, paper
+  orchestrator, IBKR backfill, knowledge base 13 domini, ~80 file nuovi) non è
+  in git. AC: commit atomici per area (docs/ADR, code, report, tests), suite
+  verde (2903 passed), gitleaks pulito. Blocca qualunque lavoro successivo
+  riproducibile.
+- [ ] **BL-OPC-12** P1 — **Qualificazione Lane B composite via ADR-017** (DSR/PBO/CPCV,
+  `analytics/qualification/dsr.py` già presente). È il prerequisito per promuovere
+  la lane da research → paper (BL-OPC-7) e l'unico edge reale del progetto
+  (Sharpe 0.93). AC: report in `docs/reports/lane-b-composite/` con DSR, PBO,
+  CPCV su 2020→2025 (incluso bear 2022 separato); verdict registrato.
+
+## Knowledge Base — 13 domini (BL-KB-01..115, 2026-08-17)
+
+> 68 file in `docs/knowledge-base/` + audit critico. 98 items originali
+> (BL-KB-01..98, uno per paper/metrica studiata) + 14 items da audit
+> (BL-KB-99..115, definiti in `docs/knowledge-base/AUDIT-2026-08-17.md`).
+> Non duplicati qui — il registro atomico vive nei README dei singoli domini.
+> Priorità immediata: **BL-KB-99** (Haircut Sharpe) e **BL-KB-102** (VPIN,
+> sblocca order flow L1 US su dati free).
 
 ## Note operative
 
@@ -280,14 +365,13 @@ Non iniziato. Dipende da G5 + G6.
   `fix(BL-NNN): ...`.
 - Ogni PR deve avere `pytest`, `ruff`, `mypy --strict` verdi sul path
   toccato.
-- **Mutageno priority chain:**
-|  ```
-  BL-001/002/003 (dataset pin) ✅ → BL-010..014 (regime) ✅ → BL-020/021/022 (sessions) ✅
-  → BL-070 (risk wiring) ✅ → **G6 ❌ (REJECTED — pass_rate 0.77 vs 0.90)**
-  → BL-090 (research memory) ✅ → BL-400..408 (strategy catalog) → G10
-  → BL-420 (meta-optimizer) → G12
-  → BL-430 (evolution loop) → G13
-  → BL-440 (edge discovery) → G14
+- **Priority chain aggiornata (2026-08-18, post-Opzione C):**
+  ```
+  BL-OPC-11 (committare il working tree) → BL-OPC-6 chiusura (timer IBKR)
+  → BL-OPC-12 (DSR/PBO Lane B composite — qualificazione dell'edge reale)
+  → BL-OPC-7 (paper real-time loop Lane B) → BL-024 (G6 run qualificante)
+  → BL-201 (ensemble v2) → G6-WP3 shadow → G7 → G8
+  → poi mutageno: BL-400..408 → G10 → BL-420 → G12 → G13 → G14
   ```
 - I task P1 sono sequenziali. I P2/P3 sono paralleli dove indipendenti.
 - Una volta passati a G6-WP2 verde, si procede con G6-WP3 shadow → G7

@@ -1,3 +1,9 @@
+> **ARCHIVIO STORICO.** Documento del modello Phase, deprecato da ADR-012
+> e sostituito dai capability gate G0-G9. Roadmap canonica:
+> [ROADMAP.md](../../ROADMAP.md). Stato corrente:
+> [ORACLE_AUTOPILOT_STATUS.md](../ORACLE_AUTOPILOT_STATUS.md).
+> **Non aggiornare** — solo git archaeology.
+
 # Phase 3.5 — Signal Optimization & GA Convergence
 
 > 3 settimane · 4 task · Obiettivo: Sharpe > 0.8 in WalkForward su SPY

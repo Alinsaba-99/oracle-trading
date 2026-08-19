@@ -1,8 +1,14 @@
+> **ARCHIVIO STORICO.** Documento del modello Phase, deprecato da ADR-012
+> e sostituito dai capability gate G0-G9. Roadmap canonica:
+> [ROADMAP.md](../../ROADMAP.md). Stato corrente:
+> [ORACLE_AUTOPILOT_STATUS.md](../ORACLE_AUTOPILOT_STATUS.md).
+> **Non aggiornare** — solo git archaeology.
+
 # Oracle Autopilot — Gate-Aligned Execution Backlog v2
 
 > Versione: 2.0
 > Sostituisce: `docs/plans/oracle-autopilot-atomic-backlog-v1.md` (deprecato)
-> Allineato a: `docs/ORACLE_AUTOPILOT_MASTER_ROADMAP.md` (capability gate G0-G9)
+> Allineato a: `ROADMAP.md` (capability gate G0-G9)
 > Stato al: 2026-07-20
 > HEAD: `13c4a35` (M30 security consolidata + M31 closeout in working tree)
 

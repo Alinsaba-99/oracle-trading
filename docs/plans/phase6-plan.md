@@ -1,8 +1,7 @@
 > **ARCHIVIO STORICO.** Questo documento era parte del modello Phase,
 > deprecato da ADR-012 e sostituito dai capability gate G0-G9.
-> Vedi [docs/ORACLE_AUTOPILOT_MASTER_ROADMAP.md](docs/ORACLE_AUTOPILOT_MASTER_ROADMAP.md)
-> per la roadmap canonica e [docs/ORACLE_AUTOPILOT_STATUS.md](docs/ORACLE_AUTOPILOT_STATUS.md)
-> per lo stato corrente. Non aggiornare — solo git archaeology.
+> Roadmap canonica: [ROADMAP.md](../../ROADMAP.md). Stato corrente:
+> [ORACLE_AUTOPILOT_STATUS.md](../ORACLE_AUTOPILOT_STATUS.md). Non aggiornare — solo git archaeology.
 
  6 — Oracle Dashboard: Piano di Sviluppo (rev. 2)
 

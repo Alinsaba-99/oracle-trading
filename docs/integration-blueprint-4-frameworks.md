@@ -46,7 +46,7 @@
 ```
 QLib Alpha101/158/360 → QLibFactorAdapter(BaseSignal)
                          ↓
-                   alpha101_0001() ... alpha101_0101() 
+                   alpha101_0001() ... alpha101_0101()
                          ↓              come funzioni pure
                    signals_r3.py         che prendono OHLCV
                          ↓              e restituiscono segnale [-1,0,1]
@@ -77,6 +77,16 @@ def alpha_001(data: pl.DataFrame) -> pl.Series:
 
 ## 2. Inalpha (25⭐, AGPL-3.0) — Overfitting Defenses + CV
 
+> **UPDATE 2026-08-15 (BL-508 / ADR-017)**: i moduli CPCV, PurgedKFold, PBO,
+> DSR sono ora **implementati e cablati** in `analytics/qualification/dsr.py`
+> come wrapper del MIT-licensed `purgedcv` (eslazarev/purged-cross-validation,
+> v0.1.3 PyPI 1-ago-2026) + Apache-2.0 `mnemox-ai/deflated-sharpe`. **NON
+> reimplementare da Inalpha** (AGPL-3.0, vincoli copyleft pesanti).
+> `mlfinlab` (Hudson & Thames) è deprecato come aspirational reference:
+> licenza "all rights reserved" (non più OSI), repo pubblico esiste solo come
+> bug tracker, NON incorporabile senza licenza commerciale Business/Enterprise.
+> Vedi ADR-017 per dettagli.
+
 ### Cosa NON portare
 | Modulo Inalpha | Perché NO |
 |----------------|-----------|
@@ -89,13 +99,19 @@ def alpha_001(data: pl.DataFrame) -> pl.Series:
 
 ### Cosa PORTARE
 
-| Cosa | File Inalpha | File Oracle Target | Stima |
-|------|-------------|-------------------|-------|
-| **Combinatorial Purged CV** | `cv.py` → `CombinatorialPurgedCV` | `analytics/backtest/cv.py` (esiste walk_forward.py parziale) | 2gg |
-| **PurgedKFold** | `cv.py` → `PurgedKFold` | `analytics/backtest/cv.py` | 1gg |
-| **PBO (Prob. of Backtest Overfitting)** | `robustness.py` → `pbo()` | `analytics/metrics/pbo.py` | 2gg |
-| **Deflated Sharpe Ratio** | `robustness.py` → `deflated_sharpe()` | `analytics/metrics/deflated_sharpe.py` | 1gg |
-| **Bootstrap Sharpe CI** | `robustness.py` → `bootstrap_sharpe_ci()` | `analytics/metrics/bootstrap_sharpe.py` | 1gg |
+> **UPDATE 2026-08-15 (BL-508)**: la tabella sottostante è **STORICA** e
+> riflette il pre-BL-500 piano di reimplementazione da Inalpha. La realtà
+> attuale: i 5 moduli sono già disponibili via `purgedcv` (MIT) +
+> `mnemox-ai/deflated-sharpe` (Apache-2.0) → wrapper in
+> `analytics/qualification/dsr.py`. NON serve reimplementare da Inalpha.
+
+| Cosa | File Inalpha | File Oracle Target | Stato 2026-08-15 | Stima originale |
+|------|-------------|-------------------|-------|-------|
+| **Combinatorial Purged CV** | `cv.py` → `CombinatorialPurgedCV` | `analytics/qualification/dsr.py::combinatorial_purged_cv()` | ✅ DONE via `purgedcv` (BL-500) | 2gg |
+| **PurgedKFold** | `cv.py` → `PurgedKFold` | `analytics/qualification/dsr.py::purged_k_fold()` | ✅ DONE via `purgedcv` (BL-500) | 1gg |
+| **PBO (Prob. of Backtest Overfitting)** | `robustness.py` → `pbo()` | `analytics/qualification/dsr.py::probability_of_backtest_overfitting()` | ✅ DONE via `purgedcv` (BL-500) | 2gg |
+| **Deflated Sharpe Ratio** | `robustness.py` → `deflated_sharpe()` | `analytics/qualification/dsr.py::deflated_sharpe_ratio()` | ✅ DONE via `purgedcv` + `mnemox-ai/deflated-sharpe` fallback (BL-500) | 1gg |
+| **Bootstrap Sharpe CI** | `robustness.py` → `bootstrap_sharpe_ci()` | `analytics/metrics/bootstrap_sharpe.py` | ⏳ TODO (non bloccante; `purgedcv` non lo include, va implementato o preso da `arch` package) | 1gg |
 
 ### Pattern d'integrazione
 
