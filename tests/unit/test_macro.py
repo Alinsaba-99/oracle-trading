@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
@@ -31,15 +32,15 @@ def _fred_observations(*values: float, start: str = "2024-01-01") -> list[dict[s
     return obs
 
 
-def _mock_fred_response(*values: float, start: str = "2024-01-01") -> dict:
+def _mock_fred_response(*values: float, start: str = "2024-01-01") -> dict[str, Any]:
     return {"observations": _fred_observations(*values, start=start)}
 
 
-def _mock_fred_empty_response() -> dict:
+def _mock_fred_empty_response() -> dict[str, Any]:
     return {"observations": []}
 
 
-def _mock_fred_missing_response() -> dict:
+def _mock_fred_missing_response() -> dict[str, Any]:
     return {}
 
 
@@ -236,6 +237,39 @@ class TestFREDClientFetchSeries:
         assert _call_params["file_type"] == "json"
         assert _call_params["observation_start"] == "2023-01-01"
         assert _call_params["observation_end"] == "2023-12-31"
+
+    @pytest.mark.asyncio
+    async def test_vintage_sends_vintage_dates(self) -> None:
+        """vintage= maps to ALFRED vintage_dates (point-in-time, no lookahead)."""
+        client = FREDClient(api_key="secret")
+        mock_resp = MagicMock()
+        mock_resp.json = MagicMock(return_value=_mock_fred_empty_response())
+        mock_resp.raise_for_status = MagicMock()
+        mock_client = AsyncMock()
+        mock_client.get = AsyncMock(return_value=mock_resp)
+        client._client = mock_client
+
+        await client.fetch_series("GDP", vintage="2023-06-01")
+
+        mock_client.get.assert_called_once()
+        _call_params = mock_client.get.call_args[1]["params"]
+        assert _call_params["vintage_dates"] == "2023-06-01"
+
+    @pytest.mark.asyncio
+    async def test_no_vintage_omits_vintage_dates(self) -> None:
+        """Without vintage the request is NOT point-in-time (safe only live)."""
+        client = FREDClient(api_key="secret")
+        mock_resp = MagicMock()
+        mock_resp.json = MagicMock(return_value=_mock_fred_empty_response())
+        mock_resp.raise_for_status = MagicMock()
+        mock_client = AsyncMock()
+        mock_client.get = AsyncMock(return_value=mock_resp)
+        client._client = mock_client
+
+        await client.fetch_series("GDP")
+
+        _call_params = mock_client.get.call_args[1]["params"]
+        assert "vintage_dates" not in _call_params
 
     @pytest.mark.asyncio
     async def test_multiple_fetch(self) -> None:

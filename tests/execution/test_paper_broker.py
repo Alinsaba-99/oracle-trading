@@ -512,6 +512,65 @@ class TestLimitOrders:
         assert await broker.order_status(limit_id) == "filled"
 
 
+class TestPessimisticFill:
+    """Gap #3 live-readiness: fill-on-touch without queue position.
+
+    With ``paper_limit_penetration_ticks > 0`` a resting limit/stop only
+    fills when the market trades *through* the trigger, not when it merely
+    touches it — otherwise DEAP could learn to exploit free fills.
+    """
+
+    def _pessimistic_broker(self, ticks: int) -> PaperBroker:
+        return PaperBroker(BrokerConfig(paper_limit_penetration_ticks=ticks))
+
+    async def test_touch_does_not_fill_with_penetration(self) -> None:
+        """Limit touched exactly → rests; market must trade through."""
+        broker = self._pessimistic_broker(ticks=2)  # 2 * 0.01 = 0.02
+        await broker.on_price_update(Decimal("100"))
+        limit_id = await broker.submit_order(_LimitOrder(price=Decimal("95")))
+        fills = await broker.on_price_update(Decimal("95"))  # touch only
+        assert len(fills) == 0
+        assert await broker.order_status(limit_id) == "submitted"
+
+    async def test_fills_after_penetration(self) -> None:
+        """Buy limit fills once price trades 0.02 below the trigger."""
+        broker = self._pessimistic_broker(ticks=2)
+        await broker.on_price_update(Decimal("100"))
+        limit_id = await broker.submit_order(_LimitOrder(price=Decimal("95")))
+        fills = await broker.on_price_update(Decimal("94.98"))
+        assert len(fills) == 1
+        assert await broker.order_status(limit_id) == "filled"
+
+    async def test_sell_limit_needs_penetration(self) -> None:
+        """Sell limit fills only above trigger + penetration."""
+        broker = self._pessimistic_broker(ticks=1)  # 0.01
+        await broker.on_price_update(Decimal("100"))
+        limit_id = await broker.submit_order(_LimitOrder(side="sell", price=Decimal("105")))
+        assert await broker.on_price_update(Decimal("105")) == []  # touch
+        fills = await broker.on_price_update(Decimal("105.01"))
+        assert len(fills) == 1
+        assert await broker.order_status(limit_id) == "filled"
+
+    async def test_stop_needs_penetration(self) -> None:
+        """Sell stop triggers only below stop - penetration."""
+        broker = self._pessimistic_broker(ticks=2)
+        await broker.on_price_update(Decimal("100"))
+        stop_id = await broker.submit_order(_StopOrder(stop_price=Decimal("95")))
+        assert await broker.on_price_update(Decimal("95")) == []  # touch
+        fills = await broker.on_price_update(Decimal("94.98"))
+        assert len(fills) == 1
+        assert await broker.order_status(stop_id) == "filled"
+
+    async def test_zero_penetration_preserves_fill_on_touch(self) -> None:
+        """Legacy default: touch still fills."""
+        broker = self._pessimistic_broker(ticks=0)
+        await broker.on_price_update(Decimal("100"))
+        limit_id = await broker.submit_order(_LimitOrder(price=Decimal("95")))
+        fills = await broker.on_price_update(Decimal("95"))
+        assert len(fills) == 1
+        assert await broker.order_status(limit_id) == "filled"
+
+
 class TestBracketOrders:
     """M32-010: bracket entry (stop + take-profit) semantics."""
 

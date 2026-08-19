@@ -59,3 +59,21 @@ def test_coverage_schema_complete() -> None:
         f"`uv run python scripts/audit_lake_metadata.py --fix`:\n"
         + "\n".join(f"  {k}" for k in incomplete[:10])
     )
+
+
+@pytest.mark.skipif(not (REPO / "data/lake/normalized").exists(), reason="lake not present")
+def test_coverage_rows_match_actual_partitions() -> None:
+    """BL-096: coverage 'rows' must equal the real normalized partition count.
+
+    The pipeline used to accumulate rows += len(bars), inflating the count on
+    incremental refreshes that re-merged already-stored bars (ES|1d showed
+    13.044 declared vs 6.524 actual). The parquet is the truth.
+    """
+    mod = _load_audit_module()
+    report = mod.audit()
+    mismatches = report["coverage_row_mismatch"]
+    assert not mismatches, (
+        f"{len(mismatches)} coverage row-count(s) diverge from the partitions — "
+        f"run `uv run python scripts/audit_lake_metadata.py --fix`:\n"
+        + "\n".join(f"  {m}" for m in mismatches[:10])
+    )

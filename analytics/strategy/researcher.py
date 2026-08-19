@@ -33,7 +33,7 @@ from analytics.strategy.spec import (
 
 logger = logging.getLogger("oracle.strategy.researcher")
 
-DEFAULT_MODEL = os.environ.get("LLM_MODEL", "claude-sonnet-4-6")
+DEFAULT_MODEL = os.environ.get("LLM_MODEL", "glm-5.3")
 DEFAULT_BASE = os.environ.get("LLM_BASE", "https://api.vsllm.com/v1")
 
 

@@ -369,21 +369,29 @@ class PaperBroker(BaseBroker):
     # Internals
     # ------------------------------------------------------------------
     def _is_marketable(self, order: BrokerOrder, current: Decimal) -> bool:
-        """Decide whether an order should fill at ``current``."""
+        """Decide whether an order should fill at ``current``.
+
+        With ``paper_limit_penetration_ticks > 0`` (pessimistic-fill) the
+        market must trade *through* the trigger by at least that many ticks
+        before a resting limit/stop fills. This models queue position: a
+        price that merely touches the level does not guarantee a fill. With
+        ``0`` the legacy fill-on-touch behaviour is preserved.
+        """
+        penetration = self._config.paper_limit_penetration_ticks * self._config.paper_tick_size
         if order.order_type == "market":
             return True
         if order.order_type == "limit":
             if order.price is None:
                 return False
             if order.side == "buy":
-                return current <= order.price
-            return current >= order.price
+                return current <= Decimal(str(order.price)) - Decimal(str(penetration))
+            return current >= Decimal(str(order.price)) + Decimal(str(penetration))
         if order.order_type in ("stop", "stop_limit"):
             if order.stop_price is None:
                 return False
             if order.side == "buy":
-                return current >= order.stop_price
-            return current <= order.stop_price
+                return current >= Decimal(str(order.stop_price)) + Decimal(str(penetration))
+            return current <= Decimal(str(order.stop_price)) - Decimal(str(penetration))
         return False
 
     def _maybe_trigger(self, order: BrokerOrder, current: Decimal) -> BrokerFill | None:

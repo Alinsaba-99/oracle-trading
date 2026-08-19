@@ -1,0 +1,13 @@
+[Unit]
+Description=Daily trigger for Oracle IBKR paper 1m backfill (Step 6 Opzione C)
+Documentation=file:///home/alin/_repos/oracle-trading/docs/ADR/ADR-020-zero-cost-data-strategy.md
+
+[Timer]
+# Run at 18:00 UTC every day (after US market close at 21:00 UTC, allows
+# IB Gateway to settle the final 1m bars before fetching).
+OnCalendar=*-*-* 18:00:00 UTC
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

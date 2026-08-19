@@ -247,17 +247,22 @@ class TestMFFU_NEWS_RESTRICTED:  # noqa: N801
     """Automation non-HFT, blackout Tier-1 news."""
 
     def test_profile_basics(self):
+        # BL-095 (2026-08-15): MFFU 2026 rules — consistency rule removed,
+        # no minimum profitable days, profit target 6% ($3K on $50K),
+        # daily loss limit removed. See fixtures.py comment.
         assert MFFU_NEWS_RESTRICTED.news_blackout is not None
-        assert MFFU_NEWS_RESTRICTED.consistency_pct == 0.30
-        assert MFFU_NEWS_RESTRICTED.min_profitable_days == 5
+        assert MFFU_NEWS_RESTRICTED.consistency_pct == 0.0
+        assert MFFU_NEWS_RESTRICTED.min_profitable_days == 0
+        assert MFFU_NEWS_RESTRICTED.profit_target_pct == 0.06
 
-    def test_consistency_breach(self):
-        """30% consistency enforced."""
+    def test_consistency_rule_disabled(self):
+        """BL-095: consistency rule removed on 2026 MFFU plans — a
+        profit-concentrated day must NOT raise a consistency breach."""
         gov = _make_gov(MFFU_NEWS_RESTRICTED, balance=50_000)
         gov.record_trade(4_000)
-        gov.record_trade(1_000)  # max = 4k/5k = 80% > 30%
+        gov.record_trade(1_000)  # max = 4k/5k = 80%; rule removed -> no breach
         breaches = gov.evaluate()
-        assert any(b.type == BreachType.CONSISTENCY for b in breaches)
+        assert not any(b.type == BreachType.CONSISTENCY for b in breaches)
 
 
 # =========================================================================

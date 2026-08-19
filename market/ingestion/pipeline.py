@@ -23,6 +23,7 @@ import logging
 import time
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta, timezone
+from typing import Any
 
 UTC = UTC, timezone
 UTC = timezone.utc
@@ -51,6 +52,25 @@ class CoverageReport:
     missing: list[str] = field(default_factory=list)
     total_rows: int = 0
     total_files: int = 0
+
+
+def _month_windows(start: date, end: date) -> list[tuple[date, date]]:
+    """Slice [start, end] into calendar-month windows (BL-104).
+
+    The first window starts at ``start`` (partial month), the rest are full
+    calendar months. Per-window persistence makes deep backfills resumable:
+    a mid-fetch failure loses at most the current month (the pipeline
+    merges per (year, month) partition, so windows map 1:1 to files).
+    """
+    windows: list[tuple[date, date]] = []
+    cursor = start
+    while cursor <= end:
+        last_of_month = date(cursor.year, cursor.month, 28) + timedelta(days=4)
+        last_of_month -= timedelta(days=last_of_month.day)
+        w_end = min(last_of_month, end)
+        windows.append((cursor, w_end))
+        cursor = w_end + timedelta(days=1)
+    return windows
 
 
 def _is_weekend_only_range(start: date, end: date) -> bool:
@@ -134,16 +154,13 @@ class Pipeline:
             start = self._infer_start(symbol, timeframe, source, full=full)
         report = FetchReport(source=str(source), symbol=symbol, timeframe=timeframe)
         try:
-            raw_iter = src.fetch_range(symbol, timeframe, start, end)
-            batch = make_batch(spec, source, raw_iter)
-            report.rows_in = batch.source_rows_total
-            report.rows_rejected = batch.source_rejected
-            partitions = self._write_normalized(spec, source, timeframe, batch.bars)
-            report.rows_out = sum(df.height for df in partitions.values())
-            report.partitions_written = len(partitions)
-            self._update_coverage(spec, timeframe, batch.bars, source)
-            self._update_lineage(spec, timeframe, partitions, source)
-            meta.save_coverage(self.coverage)
+            # BL-104: finestre mensili con persistenza per finestra — un fetch
+            # profondo (1m dal listing, anni) non abortisce piu' con in=0.
+            outcomes = self._fetch_all_windows(
+                src, spec, source, symbol, timeframe, start, end, report
+            )
+            if "bars" not in outcomes and not report.note:
+                report.note = "NO_DATA_WEEKEND" if "weekend" in outcomes else "NO_DATA"
         except Exception as exc:
             report.note = f"FAILED: {type(exc).__name__}: {exc}"
             logger.exception("fetch failed: %s", report)
@@ -189,6 +206,65 @@ class Pipeline:
             note=report.note,
         )
         return report
+
+    def _fetch_all_windows(
+        self,
+        src: Any,
+        spec: AssetSpec,
+        source: SourceId,
+        symbol: str,
+        timeframe: str,
+        start: date,
+        end: date,
+        report: FetchReport,
+    ) -> list[str]:
+        """Fetch every month window; a failing window does not stop the rest.
+
+        BL-104: each completed month is written and covered before the next
+        starts; failures are recorded on the report and retried from
+        coverage.latest on the next cycle.
+        """
+        outcomes: list[str] = []
+        for w_start, w_end in _month_windows(start, end):
+            try:
+                outcomes.append(
+                    self._fetch_window(src, spec, source, symbol, timeframe, w_start, w_end, report)
+                )
+            except Exception as exc:
+                report.note = f"FAILED: {type(exc).__name__}: {exc}"
+                logger.exception("fetch failed: %s", report)
+                outcomes.append("error")
+        return outcomes
+
+    def _fetch_window(
+        self,
+        src: Any,
+        spec: AssetSpec,
+        source: SourceId,
+        symbol: str,
+        timeframe: str,
+        w_start: date,
+        w_end: date,
+        report: FetchReport,
+    ) -> str:
+        """Fetch and persist one month window (BL-104).
+
+        Returns "bars" when data landed, "weekend" for an empty weekend-only
+        window (expected for FX/metals), "empty" otherwise.
+        """
+        raw_iter = src.fetch_range(symbol, timeframe, w_start, w_end)
+        batch = make_batch(spec, source, raw_iter)
+        report.rows_in += batch.source_rows_total
+        report.rows_rejected += batch.source_rejected
+        if not batch.bars:
+            return "weekend" if _is_weekend_only_range(w_start, w_end) else "empty"
+        partitions = self._write_normalized(spec, source, timeframe, batch.bars)
+        report.rows_out += sum(df.height for df in partitions.values())
+        report.partitions_written += len(partitions)
+        self._update_coverage(spec, timeframe, batch.bars, source)
+        self._update_lineage(spec, timeframe, partitions, source)
+        meta.save_coverage(self.coverage)
+        return "bars"
 
     def _infer_start(self, symbol: str, timeframe: str, source: SourceId, *, full: bool) -> date:
         if full:
@@ -255,13 +331,24 @@ class Pipeline:
             {
                 "earliest": earliest,
                 "latest": latest,
-                "rows": int(cov.get("rows", 0)) + len(bars),
+                # BL-096: count from the merged partitions, not an accumulator —
+                # rows += len(bars) inflated on re-merged incremental refreshes.
+                "rows": self._actual_rows(spec.symbol, timeframe),
                 "sources": list(set(cov.get("sources", []) + [str(source)])),
                 "last_touch": datetime.now(UTC).isoformat(),
                 "version": int(cov.get("version", 0)) + 1,
             }
         )
         self.coverage[key] = cov
+
+    def _actual_rows(self, symbol: str, timeframe: str) -> int:
+        """Row-count truth of a series from its normalized partitions."""
+        glob = NORM_ROOT / f"symbol={symbol}" / f"tf={timeframe}" / "**" / "*.parquet"
+        try:
+            frame = pl.scan_parquet(str(glob)).select(pl.len()).collect()
+            return int(frame.item())
+        except Exception:
+            return 0
 
     def _update_lineage(
         self,

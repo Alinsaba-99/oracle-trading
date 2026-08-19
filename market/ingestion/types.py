@@ -33,6 +33,7 @@ class SourceId(StrEnum):
     """
 
     BINANCE_REST = "binance_rest"
+    BINANCE_VISION = "binance_vision"
     CRYPTODATA = "cryptodata"
     DATABENTO = "databento"
     HISTDATA = "histdata"

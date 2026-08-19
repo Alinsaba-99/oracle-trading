@@ -28,6 +28,9 @@ class BrokerConfig(BaseModel):
     paper_slippage_bps: int = 50  # 0.5 %
     paper_partial_fill_prob: float = 0.0  # 0 = always full fill
     paper_latency_ms: int = 0  # 0 = no simulated latency
+    paper_limit_penetration_ticks: int = 0  # pessimistic-fill: N ticks past trigger
+    # (0 = legacy fill-on-touch)
+    paper_tick_size: float = 0.01  # reference tick for penetration (ES=0.25, eq=0.01)
     paper_commission_per_contract: float = 0.0  # e.g. 0.85 for ES
 
     # -- Reconnection (exponential back-off) -------------------------------

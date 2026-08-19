@@ -1,0 +1,54 @@
+# SearXNG settings — Oracle local instance
+# Free metasearch aggregator (Google/Bing/DuckDuckGo/Yandex/etc.), no API key
+# Run via docker-compose in same dir. Accessible at http://localhost:8888
+
+use_default_settings: true
+
+server:
+  bind_address: "127.0.0.1"
+  port: 8888
+  secret_key: "oracle-searxng-2026-local"  # local only, no auth
+  limiter: false  # local, no rate-limit
+  image_proxy: false
+
+search:
+  safe_search: 0
+  autocomplete: ""
+  default_lang: "en"
+  formats:
+    - html
+    - json
+
+engines:
+  - name: google
+    engine: google
+    shortcut: g
+    disabled: false
+  - name: bing
+    engine: bing
+    shortcut: b
+    disabled: false
+  - name: duckduckgo
+    engine: duckduckgo
+    shortcut: ddg
+    disabled: false
+  - name: brave
+    engine: brave
+    shortcut: br
+    disabled: false
+  - name: wikipedia
+    engine: wikipedia
+    shortcut: wp
+    disabled: false
+  - name: arxiv
+    engine: arxiv
+    shortcut: ax
+    disabled: false
+  - name: github
+    engine: github
+    shortcut: gh
+    disabled: false
+
+outgoing:
+  request_timeout: 10
+  max_request_timeout: 15

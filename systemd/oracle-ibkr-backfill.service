@@ -1,0 +1,15 @@
+[Unit]
+Description=Oracle IBKR paper 1m backfill (going forward — Step 6 Opzione C)
+Documentation=file:///home/alin/_repos/oracle-trading/docs/ADR/ADR-020-zero-cost-data-strategy.md
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/alin/_repos/oracle-trading
+Environment=IBKR_HOST=127.0.0.1
+Environment=IBKR_PORT=4002
+ExecStart=/home/alin/.local/bin/uv run --env-file .env python scripts/backfill_1m_ibkr_paper.py --days 1
+StandardOutput=append:/home/alin/_repos/oracle-trading/logs/ibkr-backfill.log
+StandardError=append:/home/alin/_repos/oracle-trading/logs/ibkr-backfill.err
+TimeoutStartSec=600

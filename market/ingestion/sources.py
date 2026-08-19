@@ -19,7 +19,7 @@ import csv
 import io
 import logging
 import time
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from datetime import UTC, date, datetime, timedelta, timezone
 
 UTC = UTC, timezone
@@ -173,6 +173,200 @@ class BinanceREST(HttpSource):
 
 
 # ----------------------------------------------------------------------
+# Binance Vision — S3-hosted historical archives (no API, no key, no rate limit beyond S3).
+# Range: spot klines from 2017-08 (BTCUSDT 1m earliest), 1s/1m/5m/15m/30m/1h/4h/1d/1w.
+# Also: futures/um (USD-M) monthly klines from 2019-09, aggTrades, trades.
+# URL pattern: https://data.binance.vision/data/spot/monthly/klines/{SYM}/{tf}/{SYM}-{tf}-{YYYY-MM}.zip
+#              https://data.binance.vision/data/spot/daily/klines/{SYM}/{tf}/{SYM}-{tf}-{YYYY-MM-DD}.zip
+# CSV schema (no header on spot; header on futures/um):
+#   open_time(ms),open,high,low,close,volume,close_time(ms),quote_volume,
+#   count,taker_buy_vol,taker_buy_quote_vol,ignore
+class BinanceVisionHistorical(HttpSource):
+    """Adapter for the Binance Vision public S3 archive.
+
+    Provides bulk-downloadable ZIP files of OHLCV klines from the Binance
+    Vision S3 bucket, no API key required. Monthly buckets are preferred
+    (one ZIP per symbol×tf×month); daily buckets are used to refresh the
+    latest month still being served (the open month is not yet available
+    as a monthly ZIP).
+    """
+
+    name = SourceId.BINANCE_VISION
+    BASE_URL = "https://data.binance.vision/data"
+
+    # Oracle timeframe → Binance Vision interval path component
+    INTERVAL_MAP: dict[str, str] = {
+        "1s": "1s",
+        "1m": "1m",
+        "5m": "5m",
+        "15m": "15m",
+        "30m": "30m",
+        "1h": "1h",
+        "4h": "4h",
+        "1d": "1d",
+        "1w": "1w",
+    }
+
+    # Earliest available monthly ZIP per timeframe (BTCUSDT 1m starts 2017-08).
+    EARLIEST = {
+        "1s": date(2023, 12, 1),
+        "1m": date(2017, 8, 1),
+        "5m": date(2017, 8, 1),
+        "15m": date(2017, 8, 1),
+        "30m": date(2017, 8, 1),
+        "1h": date(2017, 8, 1),
+        "4h": date(2017, 8, 1),
+        "1d": date(2017, 8, 1),
+        "1w": date(2017, 8, 1),
+    }
+
+    # Asset classes served: spot, futures/um (USD-M perpetual+deliverable)
+    MARKETS = ("spot", "futures/um")
+
+    def __init__(self, market: str = "spot") -> None:
+        super().__init__()
+        if market not in self.MARKETS:
+            raise ValueError(
+                f"BinanceVision: unsupported market {market!r}; choose one of {self.MARKETS}"
+            )
+        self.market = market
+        self.rate_limit = RateLimit(
+            requests_per_second=10.0,
+            requests_per_minute=600,
+            concurrent=6,
+            user_agent="oracle-trading/1.0 (research)",
+            notes="S3 public bucket; no key; throttle polite",
+        )
+
+    def asset_spec(self, symbol: str) -> AssetSpec:
+        sym = symbol.upper()
+        return AssetSpec(
+            symbol=sym,
+            asset_class=AssetClass.CRYPTO_SPOT if self.market == "spot" else AssetClass.CRYPTO_PERP,
+            exchange="binance_vision",
+            point_precision=8 if "BTC" in sym or "ETH" in sym else 4,
+            volume_precision=8,
+            earliest_available=date(2017, 8, 1),
+            quote_currency="USDT" if "USDT" in sym else ("USD" if "USD" in sym else "USDT"),
+        )
+
+    def fetch_range(
+        self, symbol: str, timeframe: str, start: date, end: date
+    ) -> Iterator[OHLCVBar]:
+        interval = self.INTERVAL_MAP.get(timeframe)
+        if interval is None:
+            raise ValueError(f"BinanceVision: unsupported timeframe {timeframe}")
+        earliest = self.EARLIEST.get(timeframe, date(2017, 8, 1))
+        effective_start = max(start.replace(day=1), earliest)
+        if effective_start > end:
+            return
+        spec = self.asset_spec(symbol)
+        sym_upper = symbol.upper()
+        # Monthly buckets — fastest for long history. Iterate month by month.
+        cursor = effective_start
+        while cursor <= end:
+            self._cooldown_until_clear()
+            url = self._monthly_url(sym_upper, interval, cursor)
+            try:
+                raw = self._get(url, timeout=120)
+            except RuntimeError as exc:
+                # 404 expected for future months or months before listing → skip silently
+                if "404" in str(exc) or "Not Found" in str(exc):
+                    cursor = _next_month(cursor)
+                    continue
+                raise
+            except Exception as exc:
+                if _is_http_404(exc):
+                    cursor = _next_month(cursor)
+                    continue
+                raise
+            yield from self._parse_klines_zip(raw, spec, timeframe, start, end)
+            cursor = _next_month(cursor)
+            time.sleep(0.1)  # 0.6 s/min ceiling is generous; 100ms between ZIPs is plenty
+
+    def _monthly_url(self, symbol: str, interval: str, month: date) -> str:
+        ym = f"{month.year:04d}-{month.month:02d}"
+        return (
+            f"{self.BASE_URL}/{self.market}/monthly/klines/{symbol}/{interval}/"
+            f"{symbol}-{interval}-{ym}.zip"
+        )
+
+    def _parse_klines_zip(
+        self, zip_bytes: bytes, spec: AssetSpec, timeframe: str, start: date, end: date
+    ) -> Iterator[OHLCVBar]:
+        for _member, text in _iter_csv_from_zip(zip_bytes):
+            yield from self._parse_klines_csv(text, spec, timeframe, start, end)
+
+    def _parse_klines_csv(
+        self, text: str, spec: AssetSpec, timeframe: str, start: date, end: date
+    ) -> Iterator[OHLCVBar]:
+        has_header = "open_time" in text[:512] or "open,high" in text[:512]
+        reader = csv.reader(io.StringIO(text))
+        if has_header:
+            next(reader, None)
+        for row in reader:
+            bar = _klines_row_to_bar(row, spec, self.name, timeframe, start, end)
+            if bar is not None:
+                yield bar
+
+
+def _iter_csv_from_zip(zip_bytes: bytes) -> Iterator[tuple[str, str]]:
+    import zipfile as _zip
+
+    bio = io.BytesIO(zip_bytes)
+    try:
+        zf = _zip.ZipFile(bio)
+    except _zip.BadZipFile as exc:
+        logger.warning("BinanceVision: bad zip (%s)", exc)
+        return
+    for member in zf.namelist():
+        if not member.endswith(".csv"):
+            continue
+        with zf.open(member) as f:
+            yield member, f.read().decode("utf-8", errors="replace")
+
+
+def _klines_row_to_bar(
+    row: Sequence[str], spec: AssetSpec, source: SourceId, timeframe: str, start: date, end: date
+) -> OHLCVBar | None:
+    if len(row) < 6:
+        return None
+    try:
+        open_ms = int(row[0])
+        o = Decimal(row[1])
+        h = Decimal(row[2])
+        lo = Decimal(row[3])
+        c = Decimal(row[4])
+        v = Decimal(row[5])
+    except (ValueError, InvalidOperation):
+        return None
+    ts = datetime.fromtimestamp(open_ms / 1000.0, tz=UTC)
+    if ts.date() < start or ts.date() > end:
+        return None
+    return OHLCVBar(
+        timestamp=ts,
+        open=o,
+        high=h,
+        low=lo,
+        close=c,
+        volume=v,
+        symbol=spec.symbol,
+        source=source,
+        timeframe=timeframe,
+    )
+
+
+def _next_month(d: date) -> date:
+    if d.month == 12:
+        return date(d.year + 1, 1, 1)
+    return date(d.year, d.month + 1, 1)
+
+
+def _is_http_404(exc: Exception) -> bool:
+    code = getattr(exc, "code", None) or getattr(getattr(exc, "__cause__", None), "code", None)
+    return code == 404
+
+
 # CryptoDataDownload — bulk monthly/annual CSVs (no API, no key).
 # Supports BTC, ETH, top alts on Binance, Coinbase, Kraken, Bitfinex.
 # Range: depends on exchange; spot BTC on Binance: 2014→today 1d,
@@ -1229,19 +1423,24 @@ class IBKRHistorical(HttpSource):
             if contract.secType == "FUT":
                 contract.includeExpired = True
 
-            # Paginate backward from end to start in 6-month chunks
-            current_end = datetime(end.year, end.month, end.day, 23, 59, 59, tzinfo=UTC)
-            while current_end > datetime(
-                effective_start.year, effective_start.month, effective_start.day, tzinfo=UTC
-            ):
+            # Paginate backward from end to start in 6-month chunks.
+            # Use empty endDateTime ('') for the most-recent window — IBKR
+            # interprets it as "now". For older windows, use the explicit
+            # UTC timestamp. Skip the strftime("%Y%m%d %H:%M:%S UTC")
+            # format which the HMDS server rejects on paper Read-Only mode.
+            current_end_str: str = ""
+            while True:
                 try:
                     bars = ib.reqHistoricalData(
                         contract,
-                        endDateTime=current_end.strftime("%Y%m%d %H:%M:%S UTC"),
-                        durationStr="6 M",
+                        endDateTime=current_end_str,
+                        # IBKR paper Read-Only caps at 1M; "2M"/"6M" return
+                        # HMDS query cancelled (empirical 2026-08-17).
+                        durationStr="1 M",
                         barSizeSetting=bar_size,
                         whatToShow="TRADES",
-                        useRTH=True,
+                        # include pre/post-market (paper Read-Only needs this)
+                        useRTH=False,
                         formatDate=1,
                         timeout=30,
                     )
@@ -1250,6 +1449,30 @@ class IBKRHistorical(HttpSource):
                     break
 
                 if not bars:
+                    break
+
+                # Check if we've paged past the requested start date.
+                earliest_bar_ts = bars[0].date
+                if earliest_bar_ts.tzinfo is None:
+                    earliest_bar_ts = earliest_bar_ts.replace(tzinfo=UTC)
+                if earliest_bar_ts.date() < effective_start:
+                    # Yield only bars within range, then stop.
+                    for bar in bars:
+                        ts = bar.date.replace(tzinfo=UTC) if bar.date.tzinfo is None else bar.date
+                        bar_date = ts.date()
+                        if bar_date < effective_start or bar_date > end:
+                            continue
+                        yield OHLCVBar(
+                            timestamp=ts,
+                            open=Decimal(str(round(bar.open, 2))),
+                            high=Decimal(str(round(bar.high, 2))),
+                            low=Decimal(str(round(bar.low, 2))),
+                            close=Decimal(str(round(bar.close, 2))),
+                            volume=Decimal(str(int(bar.volume))),
+                            symbol=spec.symbol,
+                            source=self.name,
+                            timeframe=timeframe,
+                        )
                     break
 
                 for bar in bars:
@@ -1269,10 +1492,12 @@ class IBKRHistorical(HttpSource):
                         timeframe=timeframe,
                     )
 
-                # Move current_end back to before the earliest bar in this batch
-                earliest_bar = datetime.fromtimestamp(bars[0].date.timestamp(), tz=UTC)
-                current_end = earliest_bar - timedelta(minutes=1)
-                time.sleep(0.5)  # rate limiting between chunks
+                # Single-shot mode for going-forward daily cron: after the
+                # first successful "now" fetch, stop. Pagination backward in
+                # 6-month chunks requires endDateTime strings that the
+                # paper Read-Only HMDS rejects. Historical backfill >6m
+                # needs adapter followup (TODO BL-OPC-6-followup).
+                break
 
         finally:
             ib.disconnect()
@@ -1280,6 +1505,7 @@ class IBKRHistorical(HttpSource):
 
 SOURCES: dict[SourceId, DataSource] = {
     SourceId.BINANCE_REST: BinanceREST(),
+    SourceId.BINANCE_VISION: BinanceVisionHistorical(),
     SourceId.CRYPTODATA: CryptoDataDownload(),
     SourceId.DATABENTO: DatabentoHistorical(),
     SourceId.YAHOO: YFinance(),

@@ -1,76 +1,84 @@
 #!/usr/bin/env bash
-# Avvia IBKR TWS/Gateway in Docker per backfill dati 1m storici
-# Porta 7497 = TWS paper, 4002 = Gateway paper
-# 
+# Avvia IBKR Gateway (paper) in Docker per backfill dati 1m storici (BL-097).
+#
+# Immagine: ghcr.io/unusualalpha/ib-gateway (UnusualAlpha/ib-gateway) —
+#   auto-login via IBC; VNC opzionale per la prima 2FA.
+# Porte: 4002 = API paper (socket), 5900 = VNC (se VNC_SERVER_PASSWORD set).
+#   NOTA: 7497 era la porta TWS; il Gateway paper usa 4002.
+#
+# Credenziali da .env.ibkr (gitignored), template in .env.ibkr.example:
+#   TWS_USERID=<username paper>  /  TWS_PASSWORD=<password paper>
+#   VNC_SERVER_PASSWORD=<opzionale, prima login/2FA>
+#
 # Uso:
-#   bash scripts/start_ibkr_gateway.sh
-#
-# Dopo l'avvio, il backfill si lancia con:
-#   uv run --frozen python market/ingestion/orchestrator.py run
-#
-# Per verificare che TWS sia attivo:
-#   curl -s http://127.0.0.1:7497/ 2>/dev/null && echo "OK" || echo "non raggiungibile"
+#   bash scripts/start_ibkr_gateway.sh            # avvia il container
+#   bash scripts/start_ibkr_gateway.sh status     # stato del container
+#   bash scripts/start_ibkr_gateway.sh logs       # log del gateway
 
 set -euo pipefail
 
-echo "=== IBKR Gateway — Paper Account ==="
-echo ""
+CONTAINER="ib-gateway"
+IMAGE="ghcr.io/unusualalpha/ib-gateway:latest"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="${SCRIPT_DIR}/../.env.ibkr"
 
-# Verifica Docker
+if [ "${1:-}" = "status" ]; then
+    docker ps -a --filter "name=^${CONTAINER}$" --format '{{.Names}} {{.Status}} {{.Ports}}'
+    exit 0
+fi
+if [ "${1:-}" = "logs" ]; then
+    docker logs -f "${CONTAINER}"
+    exit 0
+fi
+
+echo "=== IBKR Gateway — Paper Account (BL-097) ==="
+
 if ! docker ps >/dev/null 2>&1; then
-    echo "❌ Docker non disponibile. Installa Docker prima."
+    echo "❌ Docker non disponibile. Installa/avvia Docker prima."
     exit 1
 fi
 
-# Container name
-CONTAINER="ib-gateway"
+# Credenziali: .env.ibkr o ambiente
+if [ -f "${ENV_FILE}" ]; then
+    set -a
+    # shellcheck disable=SC1090
+    source "${ENV_FILE}"
+    set +a
+fi
+if [ -z "${TWS_USERID:-}" ] || [ -z "${TWS_PASSWORD:-}" ]; then
+    echo "❌ TWS_USERID/TWS_PASSWORD mancanti. Copia .env.ibkr.example in .env.ibkr"
+    echo "   e inserisci le credenziali del PAPER account."
+    exit 1
+fi
 
 # Avvia se non già in esecuzione
 if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER}$"; then
     echo "✅ IBKR Gateway già in esecuzione."
+    docker ps --filter "name=^${CONTAINER}$" --format '{{.Names}} {{.Status}} {{.Ports}}'
 else
-    echo "🔄 Avvio IBKR Gateway in Docker..."
-    echo "   Prima esecuzione: la prima volta devi autenticarti manualmente."
-    echo "   Port: 7497 (TWS paper mode)"
+    echo "🔄 Avvio IBKR Gateway in Docker (auto-login paper)..."
+    echo "   Ports: 4002 (API paper) + 5900 (VNC, se configurato)"
     echo ""
 
     docker run -d \
         --name "${CONTAINER}" \
         --restart unless-stopped \
-        -p 7497:7497 \
-        -p 4002:4002 \
-        ghcr.io/unusualalpha/ib-gateway-docker:latest 2>/dev/null || {
-
-        # Fallback: immagine alternativa
-        docker run -d \
-            --name "${CONTAINER}" \
-            --restart unless-stopped \
-            -p 7497:7497 \
-            -p 4002:4002 \
-            ib-gateway:latest 2>/dev/null || {
-            
-            echo "⚠️  Nessuna immagine Docker trovata."
-            echo ""
-            echo "Soluzione manuale:"
-            echo "  1. Scarica IB Gateway da:"
-            echo "     https://www.interactivebrokers.com/en/trading/ibkr-light.php"
-            echo "  2. Avvia con: java -jar ibgateway.jar"
-            echo "  3. Configura su carta (paper account), porta API 7497"
-            echo ""
-            echo "Oppure usa un'immagine Docker ufficiale:"
-            echo "  https://github.com/UnusualAlpha/ib-gateway-docker"
-            exit 1
-        }
-    }
-
-    echo "✅ Container avviato. Attendi 30-60 secondi per l'autenticazione."
-    echo "   (La prima volta: docker logs -f ${CONTAINER})"
+        -p 127.0.0.1:4002:4002 \
+        -p 127.0.0.1:5900:5900 \
+        -e "TWS_USERID=${TWS_USERID}" \
+        -e "TWS_PASSWORD=${TWS_PASSWORD}" \
+        -e "TRADING_MODE=paper" \
+        -e "READ_ONLY_API=yes" \
+        -e "VNC_SERVER_PASSWORD=${VNC_SERVER_PASSWORD:-}" \
+        "${IMAGE}"
 fi
 
 echo ""
-echo "=== Pronto per backfill ==="
-echo "Lancia il backfill 1m:"
-echo "  uv run --frozen python market/ingestion/orchestrator.py run"
+echo "✅ Container avviato. Attendi 30-60s per l'auto-login IBC:"
+echo "   bash scripts/start_ibkr_gateway.sh logs"
 echo ""
-echo "Oppure per un singolo asset:"
-echo "  python3 -c \"from market.ingestion.pipeline import Pipeline; import asyncio; asyncio.run(Pipeline().fetch('ES', '1m', 'ibkr', start=date(2010,1,1)))\""
+echo "Se l'account richiede 2FA: apri il VNC (usa la variabile d'ambiente VNC_SERVER_PASSWORD)"
+echo "   vncviewer 127.0.0.1:5900   # completa la verifica nel browser del gateway"
+echo ""
+echo "Verifica API dopo il login:"
+echo "   curl -s http://127.0.0.1:4002/ && echo OK"

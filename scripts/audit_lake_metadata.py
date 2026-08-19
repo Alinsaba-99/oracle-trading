@@ -97,6 +97,57 @@ def read_sources(rel: str) -> list[str] | None:
         return None
 
 
+def _partition_pairs() -> list[tuple[str, Path]]:
+    """(coverage_key, normalized_tf_dir) pairs from the lake on disk."""
+    pairs: list[tuple[str, Path]] = []
+    if not NORM_ROOT.is_dir():
+        return pairs
+    for symbol_dir in sorted(NORM_ROOT.iterdir()):
+        if not symbol_dir.is_dir() or not symbol_dir.name.startswith("symbol="):
+            continue
+        symbol = symbol_dir.name.split("=", 1)[1]
+        for tf_dir in sorted(symbol_dir.iterdir()):
+            if not tf_dir.is_dir() or not tf_dir.name.startswith("tf="):
+                continue
+            tf = tf_dir.name.split("=", 1)[1]
+            pairs.append((f"{symbol}|{tf}", tf_dir))
+    return pairs
+
+
+def coverage_row_mismatches(coverage: dict[str, Any]) -> list[str]:
+    """Coverage keys whose ``rows`` differ from the actual partition count."""
+    actual_rows = actual_rows_by_key()
+    mismatches: list[str] = []
+    for key, rec in coverage.items():
+        if not isinstance(rec, dict) or key not in actual_rows:
+            continue
+        actual = actual_rows[key]
+        if actual < 0:
+            continue
+        cov_rows = rec.get("rows")
+        if not isinstance(cov_rows, int) or cov_rows != actual:
+            mismatches.append(f"{key}: coverage={cov_rows} actual={actual}")
+    return mismatches
+
+
+def actual_rows_by_key() -> dict[str, int]:
+    """Row-count truth per coverage key, from the normalized partitions.
+
+    BL-096: the pipeline's ``rows`` was an accumulator (rows += len(bars)),
+    so incremental refreshes that re-merged already-stored bars inflated the
+    count (ES|1d: 13.044 dichiarate vs 6.524 reali). The parquet is the
+    truth; -1 marks an unreadable key (treated as unknown, not a mismatch).
+    """
+    result: dict[str, int] = {}
+    for key, tf_dir in _partition_pairs():
+        try:
+            frame = pl.scan_parquet(str(tf_dir / "**" / "*.parquet")).select(pl.len()).collect()
+            result[key] = int(frame.item())
+        except Exception:
+            result[key] = -1
+    return result
+
+
 def audit() -> dict[str, Any]:
     lineage = load_json(LINEAGE_PATH, {})
     if not isinstance(lineage, dict):
@@ -118,6 +169,9 @@ def audit() -> dict[str, Any]:
         if "rows" in rec and not all(c in rec for c in COVERAGE_REQUIRED):
             incomplete_cov.append(key)
 
+    # BL-096: coverage "rows" must match the actual normalized partitions.
+    row_mismatch = coverage_row_mismatches(coverage)
+
     # Partitions whose schema lacks the source column (cannot be repaired
     # from data — provenance would have to be guessed).
     bad_schema: list[str] = []
@@ -138,6 +192,7 @@ def audit() -> dict[str, Any]:
         "dangling_lineage": dangling,
         "coverage_total": len(coverage),
         "coverage_incomplete": incomplete_cov,
+        "coverage_row_mismatch": row_mismatch,
         "unrepairable_partitions": bad_schema,
     }
 
@@ -238,6 +293,11 @@ def repair() -> dict[str, Any]:
             "last_touch": datetime.now(UTC).isoformat(),
         }
         fixed_cov += 1
+
+    # BL-096: fix inflated row counts on otherwise-complete records — the
+    # accumulator (rows += len(bars)) over-counted on re-merged refreshes.
+    rows_fixed = fix_coverage_rows(coverage)
+    fixed_cov += rows_fixed
     atomic_write(COVERAGE_PATH, coverage)
 
     return {
@@ -245,8 +305,25 @@ def repair() -> dict[str, Any]:
         "lineage_rewritten": rewritten,
         "dangling_removed": len(dangling),
         "coverage_fixed": fixed_cov,
+        "rows_fixed": rows_fixed,
         "unrepairable": unrepairable,
     }
+
+
+def fix_coverage_rows(coverage: dict[str, Any]) -> int:
+    """Rewrite ``rows`` from the actual partition counts (BL-096)."""
+    fixed = 0
+    for key, actual in actual_rows_by_key().items():
+        if actual < 0 or key not in coverage:
+            continue
+        rec = coverage[key]
+        if not isinstance(rec, dict):
+            continue
+        if rec.get("rows") != actual:
+            rec["rows"] = actual
+            rec["last_touch"] = datetime.now(UTC).isoformat()
+            fixed += 1
+    return fixed
 
 
 def main() -> int:
@@ -257,7 +334,11 @@ def main() -> int:
 
     report = audit()
 
-    if args.fix and (report["missing_lineage"] or report["coverage_incomplete"]):
+    if args.fix and (
+        report["missing_lineage"]
+        or report["coverage_incomplete"]
+        or report["coverage_row_mismatch"]
+    ):
         fix = repair()
         report = audit()  # re-audit after repair
         report["repair"] = fix
@@ -270,6 +351,7 @@ def main() -> int:
         print(f"dangling lineage:        {len(report['dangling_lineage'])}")
         print(f"coverage total:          {report['coverage_total']}")
         print(f"coverage incomplete:     {len(report['coverage_incomplete'])}")
+        print(f"coverage row mismatch:   {len(report['coverage_row_mismatch'])}")
         print(f"unrepairable partitions: {len(report['unrepairable_partitions'])}")
         if "repair" in report:
             r = report["repair"]
@@ -278,14 +360,22 @@ def main() -> int:
                 f"rewritten={r['lineage_rewritten']} "
                 f"dangling_removed={r['dangling_removed']} "
                 f"coverage_fixed={r['coverage_fixed']} "
+                f"rows_fixed={r.get('rows_fixed', 0)} "
                 f"unrepairable={len(r['unrepairable'])}"
             )
         if report["missing_lineage"][:5]:
             print("sample missing:", *report["missing_lineage"][:5], sep="\n  ")
         if report["coverage_incomplete"][:5]:
             print("sample incomplete coverage:", *report["coverage_incomplete"][:5], sep="\n  ")
+        if report["coverage_row_mismatch"][:5]:
+            print("sample row mismatch:", *report["coverage_row_mismatch"][:5], sep="\n  ")
 
-    if report["missing_lineage"] or report["dangling_lineage"] or report["coverage_incomplete"]:
+    if (
+        report["missing_lineage"]
+        or report["dangling_lineage"]
+        or report["coverage_incomplete"]
+        or report["coverage_row_mismatch"]
+    ):
         return 1
     return 0
 

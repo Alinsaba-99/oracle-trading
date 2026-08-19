@@ -204,21 +204,24 @@ MFFU_NEWS_RESTRICTED = FirmProgramProfile(
     stage="evaluation",
     platform="Tradovate",
     account_size=50_000,
-    rule_version="2026-07-01",
-    effective_from="2026-01-01",
+    rule_version="2026-08-15",
+    effective_from="2026-06-01",
     source_url="https://help.myfundedfutures.com/en/articles/8230009-news-trading-policy",
-    source_checked_at="2026-07-17",
+    source_checked_at="2026-08-15",
     support_mode=SupportMode.RESEARCH_ONLY,
-    profit_target_pct=0.10,
-    max_daily_loss_pct=0.05,
-    max_overall_loss_pct=0.12,
+    # BL-095 (2026-08-15): MFFU 2026 rules updated — profit target $3.000 (6%) on $50K,
+    # daily loss limit removed on current plans, 5% overall loss remains.
+    # TODO: re-verify against https://help.myfundedfutures.com/ before live deployment.
+    profit_target_pct=0.06,
+    max_daily_loss_pct=0.0,  # removed on current 2026 plans
+    max_overall_loss_pct=0.05,
     dd_mode=DrawdownMode.STATIC,
     daily_loss_basis="equity",
     overall_loss_basis="equity",
     daily_loss_reset_timezone="America/New_York",
-    min_trading_days=5,
-    min_profitable_days=5,
-    consistency_pct=0.30,
+    min_trading_days=0,  # MFFU removed minimum trading days in 2026
+    min_profitable_days=0,
+    consistency_pct=0.0,  # MFFU removed consistency rule in 2026
     contract_cap=ContractCap(max_mini_eq=10),
     session_rule=SessionRule.STANDARD,
     news_blackout=NewsBlackout(before_minutes=3, after_minutes=3),

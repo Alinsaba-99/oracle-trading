@@ -41,9 +41,9 @@ from analytics.qualification.statistics import bootstrap_luck_p_value, factor_at
 from analytics.strategy.signals import DonchianBreakout, EmaTrend, TrendFilteredBreakout
 
 #: Lake row pins (BL-023 F-07 convention: the pin IS the provenance check;
-#: the lake is live — bump when it grows). Verified 2026-08-04:
-#: ES 6523, SPY 6679, BTCUSDT 3275 rows.
-EXPECTED_ROWS: dict[str, int] = {"ES": 6523, "SPY": 6679, "BTCUSDT": 3275}
+#: the lake is live — bump when it grows). Verified 2026-08-10:
+#: ES 6527, SPY 6684, BTCUSDT 3281 rows.
+EXPECTED_ROWS: dict[str, int] = {"ES": 6527, "SPY": 6684, "BTCUSDT": 3281}
 
 TRAIN_CUTOFF = datetime(2023, 1, 1)
 REPORT_DIR = Path("docs/reports/multiasset")

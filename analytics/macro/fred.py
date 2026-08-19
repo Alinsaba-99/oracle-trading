@@ -117,12 +117,20 @@ class FREDClient:
         series_id: str,
         start: str | date | datetime | None = None,
         end: str | date | datetime | None = None,
+        vintage: str | date | datetime | None = None,
     ) -> pl.DataFrame:
         """Fetch observations for a FRED time series.
 
         Returns a ``pl.DataFrame`` with columns ``date`` (``pl.Date``) and
         ``value`` (``pl.Float64``). Missing observations (``"."``) are
         excluded.
+
+        If ``vintage`` is set, the request goes through the ALFRED
+        point-in-time path (``vintage_dates``) so only revisions known as of
+        that date are returned — avoids lookahead bias when used in
+        backtests/walk-forwards. When ``vintage`` is ``None`` the fetch uses
+        the latest available revision (NOT point-in-time; only safe for live
+        or as-of-now macro snapshots).
 
         Raises:
             MacroError: On API errors, timeouts, or unexpected response shape.
@@ -143,6 +151,9 @@ class FREDClient:
             params["observation_start"] = start_str
         if end_str:
             params["observation_end"] = end_str
+        vintage_str = _to_fred_date(vintage)
+        if vintage_str:
+            params["vintage_dates"] = vintage_str
 
         await self._acquire()
 
@@ -186,6 +197,7 @@ class FREDClient:
         series_ids: list[str],
         start: str | date | datetime | None = None,
         end: str | date | datetime | None = None,
+        vintage: str | date | datetime | None = None,
     ) -> dict[str, pl.DataFrame]:
         """Fetch several FRED series concurrently.
 
@@ -194,7 +206,7 @@ class FREDClient:
         import asyncio
 
         async def _fetch_one(sid: str) -> tuple[str, pl.DataFrame]:
-            df = await self.fetch_series(sid, start=start, end=end)
+            df = await self.fetch_series(sid, start=start, end=end, vintage=vintage)
             return sid, df
 
         coros = [_fetch_one(sid) for sid in series_ids]
