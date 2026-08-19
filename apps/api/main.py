@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from apps.api.config import APISettings
+from apps.api.config import APISettings, verify_auth_bind_safety
 from apps.api.routers import router
 from core.domain.guard import current_mode, guard
 
@@ -39,22 +39,21 @@ settings = APISettings()
 # Every entry point verifies the operating mode at startup.
 guard(current_mode())
 
-# ── Production fail-closed guard ────────────────────────────────────
-# If running in production (debug=False) without an API key, refuse to
-# start rather than silently exposing an open API.
-if settings.is_production and not settings.auth_enabled:
-    msg = (
-        "FATAL: ORACLE_API_KEY is required in production mode. "
-        "Set the environment variable or run with debug=true for development."
-    )
-    raise SystemExit(msg)
+# ── Fail-closed auth/bind guard (P0) ────────────────────────────────
+# Replaces the old "warn and stay open" behaviour: production without a
+# key is fatal, and a key-less API can no longer bind to non-loopback
+# interfaces without an explicit opt-in.  See
+# apps/api/config.py:verify_auth_bind_safety.
+verify_auth_bind_safety(settings)
 
 if not settings.api_key:
     import logging
 
     logging.warning(
         "No ORACLE_API_KEY configured — API authentication is disabled. "
-        "Set ORACLE_API_KEY environment variable for production."
+        "Binding is restricted to loopback (%s); set ORACLE_API_KEY before "
+        "exposing this service.",
+        settings.host,
     )
 
 app = FastAPI(

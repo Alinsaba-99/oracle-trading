@@ -63,6 +63,11 @@ services:
       ORACLE_MODE: ${ORACLE_MODE:-research}
       ORACLE_API_KEY: ${ORACLE_API_KEY:-}
       ORACLE_DEBUG: "${ORACLE_DEBUG:-true}"
+      # The uvicorn CMD binds 0.0.0.0 inside the container; the published
+      # port is mapped to 127.0.0.1 on the host, so the trust boundary is
+      # the host loopback.  ALLOW_OPEN_BIND acknowledges a key-less dev API
+      # in this topology — remove it once ORACLE_API_KEY is set.
+      ORACLE_ALLOW_OPEN_BIND: "${ORACLE_ALLOW_OPEN_BIND:-true}"
     ports:
       - "127.0.0.1:8000:8000"  # Localhost only
     healthcheck:

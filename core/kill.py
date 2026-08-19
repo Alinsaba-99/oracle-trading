@@ -13,7 +13,7 @@ from decimal import Decimal
 from typing import Any
 from uuid import uuid4
 
-from execution.brokers.types import BrokerOrder, BrokerPosition
+from core.domain.broker import BrokerOrder, BrokerPosition
 
 logger = logging.getLogger("oracle.execution.kill")
 

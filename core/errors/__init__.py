@@ -2,6 +2,7 @@
 
 from core.errors.base import OracleError, OracleFatalError, RiskGateError, SafetyError
 from core.errors.config_errors import ConfigError, ConfigNotFoundError, ConfigValidationError
+from core.errors.data_errors import IngestionError
 from core.errors.event_errors import EventError, EventPublishError, EventSubscribeError
 from core.errors.logging_errors import LoggingConfigurationError
 from core.errors.nats_errors import NATSConnectionError, NATSDisconnectedError, NATSTimeoutError
@@ -20,6 +21,7 @@ __all__ = [
     "EventError",
     "EventPublishError",
     "EventSubscribeError",
+    "IngestionError",
     "LoggingConfigurationError",
     "NATSConnectionError",
     "NATSDisconnectedError",

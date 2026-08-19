@@ -82,15 +82,40 @@ class TestBuildMasGraph:
         assert result["decision"] is not None
         assert result["decision"]["direction"] == "hold"
 
-    def test_risk_assessment_populated_when_debate_has_consensus(self) -> None:
-        """Risk node is only reached when the debate produces consensus."""
+    def test_risk_assessment_fail_closed_without_risk_manager(self) -> None:
+        """Risk node is only reached when the debate produces consensus.
+
+        P0 security fix (C3): a graph built without a risk manager must be
+        fail-closed — the assessment is populated but NEVER approved.
+        """
         app = build_mas_graph()
         state = StateManager.initial()
         state["debate"] = {"consensus": {"direction": "buy"}}
         result = app.invoke(state)
         assert result["risk_assessment"] is not None
-        assert result["risk_assessment"]["approved"] is True
+        assert result["risk_assessment"]["approved"] is False
+        assert result["risk_assessment"]["max_position_size"] == 0.0
+        assert result["risk_assessment"]["reasons"]  # explicit fail-closed reason
         assert result["decision"] is not None
+
+    def test_risk_assessment_uses_real_risk_manager(self) -> None:
+        """With a configured RiskManager the assessment comes from the gate.
+
+        The real risk node is async, so the graph is invoked via ainvoke.
+        The assessment is a ``RiskAssessment`` model (not the stub dict).
+        """
+        from agents.decision import RiskManager
+        from agents.protocol import RiskAssessment
+
+        app = build_mas_graph(risk_manager=RiskManager())
+        state = StateManager.initial()
+        state["debate"] = {"consensus": {"direction": "buy", "confidence": 0.8}}
+        result = asyncio.run(app.ainvoke(state))
+        assessment = result["risk_assessment"]
+        assert assessment is not None
+        assert isinstance(assessment, RiskAssessment)
+        assert isinstance(assessment.approved, bool)
+        assert assessment.max_position_size == 0.25
 
     def test_empty_data_does_not_crash(self) -> None:
         app = build_mas_graph()
@@ -112,6 +137,7 @@ class TestBuildMasGraph:
 
     def test_router_defaults_to_portfolio(self) -> None:
         state: GraphState = {
+            "instrument": "SPY",
             "market_data": None,
             "market_state": None,
             "analyst_signals": [],
@@ -127,6 +153,7 @@ class TestBuildMasGraph:
 
     def test_router_routes_to_risk_on_consensus(self) -> None:
         state: GraphState = {
+            "instrument": "SPY",
             "market_data": None,
             "market_state": None,
             "analyst_signals": [],
@@ -142,6 +169,7 @@ class TestBuildMasGraph:
 
     def test_router_ends_on_critical_error(self) -> None:
         state: GraphState = {
+            "instrument": "SPY",
             "market_data": None,
             "market_state": None,
             "analyst_signals": [],

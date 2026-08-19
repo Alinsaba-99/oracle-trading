@@ -24,8 +24,8 @@ import contextlib
 import logging
 from typing import Any
 
-from analytics.common.errors import IngestionError
 from core.config.settings import OracleSettings
+from core.errors.data_errors import IngestionError
 from core.events.client import EventBusClient
 from core.events.market import MarketBarEvent, MarketTickEvent
 from market.normalizer import Normalizer

@@ -14,10 +14,18 @@ import asyncio
 from typing import Any, Literal, TypedDict
 
 import numpy as np
+import structlog
 from langgraph.graph import END, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
 __all__ = ["GraphState", "build_mas_graph", "router"]
+
+
+def _get_logger() -> structlog.stdlib.BoundLogger:
+    """Structured logger for graph-level safety events."""
+    return structlog.get_logger(  # type: ignore[no-any-return]
+        "oracle.agents.orchestrator"
+    )
 
 
 class GraphState(TypedDict):
@@ -252,15 +260,27 @@ def _make_debate_node(debate_team: Any | None) -> Any:
 
 def _make_risk_node(risk_manager: Any | None) -> Any:
     if risk_manager is None:
+        # Fail-closed (P0, closes security-failopen-report C3): a graph
+        # built without a risk manager must never approve a trade.  The
+        # old behaviour returned a permissive {"approved": True} default,
+        # silently bypassing the risk gate.  Assessments now carry
+        # approved=False with an explicit reason so downstream nodes and
+        # callers can detect the missing gate instead of trusting it.
+        logger = _get_logger()
 
         def risk_node_sync(_state: GraphState) -> dict[str, Any]:
+            logger.warning(
+                "mas.risk_node.no_risk_manager",
+                message="build_mas_graph() called without risk_manager — "
+                "risk gate is fail-closed (approved=False)",
+            )
             return {
                 "risk_assessment": {
-                    "approved": True,
-                    "max_position_size": 0.25,
+                    "approved": False,
+                    "max_position_size": 0.0,
                     "kelly_fraction": 0.0,
                     "var_95": 0.0,
-                    "reasons": [],
+                    "reasons": ["risk manager not configured — fail-closed"],
                 }
             }
 
@@ -408,8 +428,9 @@ def build_mas_graph(
         ``DebateTeam`` instance.  When ``None``, the debate node returns
         ``None``.
     risk_manager:
-        ``RiskManager`` instance.  When ``None``, the risk node returns a
-        permissive default assessment.
+        ``RiskManager`` instance.  When ``None``, the risk node is
+        fail-closed: it returns ``approved=False`` with an explicit
+        reason (a missing risk gate must never approve a trade).
     portfolio_manager:
         ``PortfolioManager`` instance.  When ``None``, the portfolio node
         returns a deterministic HOLD decision.

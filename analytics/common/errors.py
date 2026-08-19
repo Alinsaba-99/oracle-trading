@@ -2,6 +2,9 @@
 
 from core.errors import OracleError
 
+# Backward-compatible re-export: canonical home is core.errors.data_errors.
+from core.errors.data_errors import IngestionError
+
 
 class AnalyticsError(OracleError):
     """Base for all analytics errors."""
@@ -19,9 +22,15 @@ class StoreError(AnalyticsError):
     """Feature store error."""
 
 
-class IngestionError(AnalyticsError):
-    """Data ingestion error."""
-
-
 class MacroError(AnalyticsError):
     """Macro data fetch or processing error."""
+
+
+__all__ = [
+    "AnalyticsError",
+    "IndicatorError",
+    "IngestionError",
+    "MacroError",
+    "RegimeError",
+    "StoreError",
+]
