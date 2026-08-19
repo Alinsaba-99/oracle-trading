@@ -259,6 +259,13 @@ ignore_errors = true
 module = ["execution.brokers.ibkr"]
 disable_error_code = ["unused-ignore"]
 
+# lane_d_vrp.py has the same ib_insync constructor pattern (P0: full strict
+# path made clean on 2026-08-19); the ignore reads as unused to
+# single-file pre-commit runs.
+[[tool.mypy.overrides]]
+module = ["analytics.strategy.lane_d_vrp"]
+disable_error_code = ["unused-ignore"]
+
 # market/realtime.py uses ib_insync (no type stubs available).  Without
 # stubs mypy reports "IB has no attribute MarketDataType" and other
 # untyped-call errors.  The runtime code works; we acknowledge the

@@ -154,7 +154,7 @@ class VRPStrategy:
             from ib_insync import IB
 
             if self._ib is None or not self._ib.isConnected():
-                self._ib = IB()
+                self._ib = IB()  # type: ignore[no-untyped-call]
                 self._ib.connect(
                     "127.0.0.1", self.ibkr_port, clientId=self.ibkr_client_id, timeout=10
                 )
