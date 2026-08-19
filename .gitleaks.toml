@@ -32,6 +32,15 @@ tags = ["broker", "credentials"]
 
 [allowlist]
 description = "Allowlisted files and patterns"
+# Le regex di allowlist vengono matchate sulla riga intera (non solo sul
+# "secret" catturato), altrimenti identificatori come days_to_pass nella
+# riga non intercettano il falso positivo. Valori validi: "match" | "line".
+regexTarget = "line"
+regexes = [
+    # Falsi positivi: identificatori statistici Monte Carlo (p_pass, days_to_pass,
+    # pass_first, ...) matchano la regola broker-password
+    '''(?i)(p_pass|days_to_pass|pass_first|did_pass|pass_mask|first_pass)''',
+]
 paths = [
     # Test fixtures with example values
     '''(?i)\.test\..*''',

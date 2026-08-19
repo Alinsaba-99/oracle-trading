@@ -105,5 +105,19 @@ experiments.db
 # lake's shape is reviewable without the payload.
 data/lake/**/*.parquet
 
+# Raw downloaded source data (557 MB+, re-downloadable via SimFin API key):
+data/simfin/
+# Lane B screening run outputs (regenerable via scripts/run_lane_b_screen.py):
+data/lane-b/
+
 # Pinned datasets (track for reproducibility — see data/pinned/*provenance.json)
 !data/pinned/
+
+# trading-os study material (2026-08-19): keep the distilled study notes
+# (INDEX/NOTES/TASKS/DOMANDE/RISPOSTE), ignore the bulky raw sources:
+# 729MB of cloned third-party repos and 31MB of video transcripts,
+# re-downloadable from their origins. edge_cookies.txt = browser session
+# cookies, never commit.
+trading-os/knowledge/moondev-repos/*/
+trading-os/video-library/transcripts/
+trading-os/video-library/edge_cookies.txt

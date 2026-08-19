@@ -35,6 +35,12 @@ dependencies = [
     "lightgbm>=4.7.0",
     "ccxt>=4.5.64",
     "pyportfolioopt>=1.6.0",
+    "purgedcv>=0.1.3",
+    "deflated-sharpe",
+    "simfin>=1.0.2",
+    "transformers>=5.15.0",
+    "feedparser>=6.0.14",
+    "vix>=1.0.8",
 ]
 
 [project.scripts]
@@ -147,6 +153,36 @@ split-on-trailing-comma = false
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
+# Research-lane modules (Opzione C 2026-08): long lines are inside LLM prompt
+# templates and literature citations — rewriting them alters prompt text.
+"analytics/ai_analysts/*.py" = ["E501", "ARG002"]
+"analytics/research/trial_ledger_alerts.py" = ["E501", "ARG001", "SIM113"]
+"analytics/strategy/cta.py" = ["E501", "ARG002"]
+"analytics/strategy/dystopian_stress.py" = ["E501"]
+"analytics/strategy/catalog/value.py" = ["ARG004"]
+"analytics/strategy/lane_d_vrp_backtest.py" = ["N806", "F841"]
+"analytics/strategy/lane_d_vrp.py" = ["SIM105"]
+# Opzione C research scripts (2026-08): long lines in prompts/report text,
+# F401 imports are deliberate availability smoke checks.
+"scripts/run_lane_a_validation.py" = ["E501"]
+"scripts/run_ai_swarm.py" = ["E501"]
+"scripts/run_ai_swarm_historical.py" = ["E501"]
+"scripts/run_ai_swarm_batch.py" = ["E501"]
+"scripts/run_bl024_g6_qualifying.py" = ["E501"]
+"scripts/run_lane_b_backtest.py" = ["E501"]
+"scripts/run_lane_b_composite_compare.py" = ["E501"]
+"scripts/probe_long_prompt.py" = ["E501"]
+"scripts/generate_alert_report.py" = ["E501"]
+"scripts/register_thesis.py" = ["E501"]
+"scripts/smoke_dsr_packages.py" = ["F401"]
+"scripts/smoke_ibkr.py" = ["SIM105", "SIM108", "F841", "E501"]
+"tests/unit/test_dystopian_stress.py" = ["ARG001"]
+"tests/unit/test_edge_ensemble_v2.py" = ["B007"]
+"tests/unit/test_ingestion_binance_vision.py" = ["ARG001", "ARG002"]
+"tests/unit/test_lane_d_vrp_backtest.py" = ["C408"]
+"tests/unit/test_trial_ledger.py" = ["RUF043"]
+"tests/unit/test_composite_lane_b.py" = ["RUF043"]
+"tests/unit/test_trial_ledger_alerts.py" = ["E501"]
 "execution/brokers/ccxt_broker.py" = ["ARG001", "ARG002"]
 "execution/brokers/ibkr.py" = ["ARG001", "ARG002"]
 "genetics/signal/heikin_ashi.py" = ["F821"]
@@ -265,6 +301,9 @@ exclude_also = [
 [tool.setuptools.packages.find]
 include = ["application*", "core*", "market*", "analytics*", "execution*", "genetics*", "research*", "agents*", "audit*", "policy*", "orchestration*", "apps*"]
 exclude = ["tests*"]
+
+[tool.uv.sources]
+deflated-sharpe = { git = "https://github.com/mnemox-ai/deflated-sharpe.git" }
 
 [build-system]
 requires = ["setuptools>=69", "wheel"]
