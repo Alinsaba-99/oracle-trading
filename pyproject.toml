@@ -131,7 +131,10 @@ all = [
 [tool.ruff]
 target-version = "py312"
 line-length = 100
-extend-exclude = ["*.conf"]
+# *.conf = lake backfill plans; trading-os/video-library/* = studio
+# usa-e-getta importato (download/categorize trascrizioni MoonDev) —
+# non è codice Oracle, non va mantenuto agli standard della codebase.
+extend-exclude = ["*.conf", "trading-os/video-library/*"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "ARG", "C4", "RUF"]
@@ -238,6 +241,7 @@ disallow_untyped_defs = true
 disallow_any_unimported = false
 warn_return_any = true
 warn_unused_configs = true
+exclude = ["trading-os/video-library/"]
 
 # Genetics code uses numpy ndarray patterns that trigger no-any-return
 # across many files.  These are pre-existing and tracked separately.
