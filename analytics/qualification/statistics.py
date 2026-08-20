@@ -6,6 +6,8 @@ from math import sqrt
 
 import numpy as np
 
+from analytics.metrics import sharpe_ratio as _canonical_sharpe
+
 
 def returns_from_values(values: list[float]) -> np.ndarray:
     """Convert a value curve to finite periodic returns."""
@@ -85,8 +87,12 @@ def bootstrap_luck_p_value(
 
 
 def _sharpe(returns: np.ndarray, periods_per_year: int) -> float:
-    standard_deviation = float(np.std(returns, ddof=1))
-    mean_return = float(np.mean(returns))
-    if standard_deviation == 0:
-        return float("inf") if mean_return > 0 else 0.0
-    return mean_return / standard_deviation * sqrt(periods_per_year)
+    """Delegate to the canonical Sharpe (P1-A, ADR-021).
+
+    Historical note: this local version returned ``nan`` on empty input
+    and ``0.0`` for a constant-negative series while MetricsCalculator
+    returned ``-inf`` — the divergence the golden vectors now forbid.
+    Callers of ``bootstrap_luck_p_value`` guard ``size < 8`` upstream, so
+    the unified semantics are behaviour-preserving there.
+    """
+    return _canonical_sharpe(returns, periods_per_year=periods_per_year)

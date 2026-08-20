@@ -391,6 +391,49 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
   `git-filter-repo` + force-push coordinato (remote = backup locale
   no-mistakes). Differito: non bloccante, distruttivo.
 
+## P1 — Verità metrica e runner canonico (BL-610..619, branch feat/p1-metrics-truth)
+
+> Fase P1 del dossier architetturale 2026-08-19. Prerequisito dichiarato
+> per BL-OPC-12 (qualificazione DSR/PBO Lane B composite): i numeri dei
+> gate devono uscire da un'unica implementazione con semantica congelata.
+
+- [x] **BL-610** P1-A — Characterization delle 5 implementazioni Sharpe
+  divergenti. ✅ DONE 2026-08-20. Tabella edge-case caratterizzata
+  (statistics nan/+inf, execution 0.0, walkforward 0.0, MetricsCalculator
+  ±inf) e congelata nel docstring di `tests/unit/test_metrics_canonical.py`.
+- [x] **BL-611** P1-A — Modulo canonico + golden vectors. ✅ DONE
+  2026-08-20. `analytics/metrics/canonical.py` (Sharpe/Sortino/Calmar/
+  MaxDD, ppy esplicito, pulizia non-finiti, zero-var = segno della media)
+  + 22 golden vector test in `tests/unit/test_metrics_canonical.py`.
+- [x] **BL-612** P1-A — Delega di tutti i caller. ✅ DONE 2026-08-20.
+  `qualification/execution.py`, `qualification/statistics.py`,
+  `qualification/walkforward.py`, `backtest/metrics.py` (MetricsCalculator)
+  e `metrics/robustness.py` delegano al modulo canonico; eccezione
+  documentata: `engines/vectorized.py::_risk_metrics_from_equity` (input
+  equity curve, ppy derivato dalla spaziatura reale delle barre).
+  Un test pin aggiornato alla nuova semantica
+  (`test_multiasset_walkforward.py`, rif. ADR-021).
+- [x] **BL-613** P1-A — ADR-021 (semantica canonica) + indice ADR. ✅
+  DONE 2026-08-20.
+- [ ] **BL-614** P1-A — Estensione golden vectors a Sortino/Calmar nei
+  path Polars (`test_metrics.py` già verde per delega) + copertura
+  frequency-aware ppy (1h/15m/1m da `FREQ_TO_PERIODS_PER_YEAR`).
+- [ ] **BL-615** P1-B — Runner paper canonico `oracle paper run --spec`
+  (strangler dei 5 runner `run_paper_sessions*.py`); ogni run produce
+  manifest riproducibile (hash dati, spec, seed, versione).
+- [ ] **BL-616** P1-B — Suite integration catena ordini
+  (contract→risk→OMS→paper broker→ledger→reconciliation) con guasti
+  iniettati; target ≥12 scenari.
+- [ ] **BL-617** P1-C — Split `market/ingestion/sources.py` (1520 righe,
+  mypy ignore_errors=true) in un modulo per sorgente dietro il Protocol
+  esistente; mypy riacceso modulo per modulo.
+- [ ] **BL-618** P1-C — structlog/OTel wired sui 6 tratti della hot path
+  (contract.validate → risk.check → oms.persist → broker.submit →
+  ledger.record → reconcile); `print()` bandito dai package (ruff T201).
+- [ ] **BL-619** P1-D — PIT come tipo del dominio (`as_of` obbligatorio
+  nei fetcher macro/fundamental) con test di non-lookahead automatici
+  (precedente: macro.py calendari hardcoded + fred.py vintage=None).
+
 ## Knowledge Base — 13 domini (BL-KB-01..115, 2026-08-17)
 
 > 68 file in `docs/knowledge-base/` + audit critico. 98 items originali

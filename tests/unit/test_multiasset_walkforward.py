@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import math
 from datetime import datetime
 
 import numpy as np
@@ -50,10 +51,12 @@ class TestMaxDrawdown:
 
 
 class TestSharpe:
-    def test_constant_returns_zero_std(self) -> None:
-        # std=0 -> guard returns 0.0, never inf/nan
+    def test_constant_positive_returns_are_plus_inf(self) -> None:
+        # P1-A / ADR-021: canonical semantics — zero variance follows the
+        # sign-of-mean rule (+inf), no longer the old silent 0.0 collapse.
+        # Golden vectors live in tests/unit/test_metrics_canonical.py.
         returns = np.asarray([0.01, 0.01, 0.01], dtype=float)
-        assert sharpe(returns) == 0.0
+        assert sharpe(returns) == math.inf
 
     def test_positive_mean_positive_sharpe(self) -> None:
         # deterministic rising series with noise -> positive Sharpe

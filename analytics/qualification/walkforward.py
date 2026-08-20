@@ -37,6 +37,8 @@ import numpy as np
 import polars as pl
 
 from analytics.backtest.providers import read_from_lake
+from analytics.metrics.canonical import max_drawdown_from_returns
+from analytics.metrics.canonical import sharpe_ratio as _canonical_sharpe
 from analytics.qualification.statistics import bootstrap_luck_p_value, factor_attribution
 from analytics.strategy.signals import DonchianBreakout, EmaTrend, TrendFilteredBreakout
 
@@ -87,23 +89,19 @@ def strategy_returns(directions: np.ndarray, closes: np.ndarray) -> np.ndarray:
 
 
 def max_drawdown(returns: np.ndarray) -> float:
-    if returns.size == 0:
-        return 0.0
-    equity = np.cumprod(1.0 + returns)
-    peak = np.maximum.accumulate(equity)
-    drawdowns = 1.0 - equity / np.where(peak > 0, peak, 1.0)
-    return float(np.max(drawdowns)) if drawdowns.size else 0.0
+    """Canonical delegation (P1-A, ADR-021)."""
+    return max_drawdown_from_returns(returns)
 
 
 def sharpe(returns: np.ndarray) -> float:
-    if returns.size < 2:
-        return 0.0
-    std = float(np.std(returns, ddof=1))
-    if std <= 0:
-        return 0.0
-    mean: float = float(np.mean(returns))
-    result: float = mean / std * float(np.sqrt(PERIODS_PER_YEAR))
-    return result
+    """Daily-bar Sharpe over lake data (P1-A, ADR-021: canonical delegation).
+
+    The walkforward consumes 1d lake series, so the annualization factor
+    is pinned to 252 at this boundary.  Zero-variance series now follow
+    the canonical sign-of-mean rule (+/-inf) instead of the old silent
+    0.0 collapse.
+    """
+    return _canonical_sharpe(returns, periods_per_year=PERIODS_PER_YEAR)
 
 
 def evaluate(symbol: str, signal_name: str, df: pl.DataFrame) -> dict[str, Any]:

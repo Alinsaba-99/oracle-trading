@@ -7,6 +7,9 @@ Three indicators:
   1. PBO — Probability of Backtest Overfitting (CSCV algorithm)
   2. Deflated Sharpe Ratio — corrects Sharpe for N trials
   3. Bootstrap Sharpe CI — confidence interval via resampling
+
+Sharpe point estimates delegate to ``analytics.metrics.canonical``
+(P1-A, ADR-021): no local re-derivations of the ratio.
 """
 
 from __future__ import annotations
@@ -16,6 +19,8 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 import numpy as np
+
+from analytics.metrics.canonical import sharpe_ratio as _canonical_sharpe
 
 # ---------------------------------------------------------------------------
 # Bootstrap Sharpe confidence interval
@@ -52,7 +57,9 @@ def bootstrap_sharpe_ci(
         return BootstrapSharpeResult(sharpe=0.0, ci_lower=0.0, ci_upper=0.0, ci_includes_zero=True)
 
     n = len(arr)
-    sharpe = float(np.mean(arr) / np.std(arr, ddof=1) * np.sqrt(252))
+    # Canonical Sharpe (ADR-021); bootstrap operates on daily fold returns,
+    # so the daily factor 252 is pinned explicitly at this boundary.
+    sharpe = _canonical_sharpe(arr, periods_per_year=252)
 
     # Circular block bootstrap
     max(1, int(n**0.33))
@@ -62,7 +69,7 @@ def bootstrap_sharpe_ci(
         indices = [(start + j) % n for j in range(n)]
         boot_ret = arr[indices]
         if np.std(boot_ret, ddof=1) > 0:
-            boot_sharpes[i] = float(np.mean(boot_ret) / np.std(boot_ret, ddof=1) * np.sqrt(252))
+            boot_sharpes[i] = _canonical_sharpe(boot_ret, periods_per_year=252)
 
     alpha = 1.0 - ci
     lower = float(np.percentile(boot_sharpes, alpha / 2 * 100))

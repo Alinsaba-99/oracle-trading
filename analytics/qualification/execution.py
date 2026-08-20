@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from decimal import ROUND_CEILING, Decimal
-from math import sqrt
 from time import perf_counter
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -14,6 +13,8 @@ import numpy as np
 import polars as pl
 
 from analytics.backtest.protocol import BacktestSignal
+from analytics.metrics.canonical import sharpe_ratio as canonical_sharpe_ratio
+from analytics.metrics.canonical import sortino_ratio as canonical_sortino_ratio
 from analytics.qualification.models import (
     ExecutionEvidence,
     IntelligenceArtifact,
@@ -836,18 +837,17 @@ def _max_drawdown(values: list[float]) -> float:
 
 
 def _sharpe(returns: np.ndarray[Any, Any], *, periods_per_year: int = 252) -> float:
-    if returns.size < 2:
-        return 0.0
-    deviation = float(np.std(returns, ddof=1))
-    return float(np.mean(returns)) / deviation * sqrt(periods_per_year) if deviation > 0 else 0.0
+    """Delegate to the canonical Sharpe (P1-A, ADR-021).
+
+    Previously returned 0.0 for zero-variance positive series — the exact
+    silent-collapse F-01 documented; unified semantics return +/-inf there.
+    """
+    return canonical_sharpe_ratio(returns, periods_per_year=periods_per_year)
 
 
 def _sortino(returns: np.ndarray[Any, Any], *, periods_per_year: int = 252) -> float:
-    if returns.size < 2:
-        return 0.0
-    downside = returns[returns < 0]
-    deviation = float(np.std(downside, ddof=1)) if downside.size > 1 else 0.0
-    return float(np.mean(returns)) / deviation * sqrt(periods_per_year) if deviation > 0 else 0.0
+    """Delegate to the canonical Sortino (P1-A, ADR-021)."""
+    return canonical_sortino_ratio(returns, periods_per_year=periods_per_year)
 
 
 def _calmar(

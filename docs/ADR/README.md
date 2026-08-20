@@ -38,6 +38,7 @@ supersede e l'indice viene aggiornato.
 | [018](ADR-018-prop-firm-structural-ev-deployment-gate.md) | Prop-firm structurally negative EV — funded capital deployment gate | ACCEPTED | 250+ sessioni paper pass≥90% + DSR/PSR ≥0.95 + PBO <0.5 prerequisite; max 1-3 account focused |
 | [019](ADR-019-lane-b-priority-personal-portfolio.md) | Lane B priority — portafoglio personale operatore, NON prop-firm | ACCEPTED | SimFin PIT data; 20-30 titoli turnaround; trial ledger S0.3; hit rate ≥50% target; brokerage account personale |
 | [020](ADR-020-zero-cost-data-strategy.md) | Zero-cost data strategy — verified free sources only | ACCEPTED | $0/mo hard rule; inventario fonti verificate 2026-08-16; gap dichiarati onestamente; IBKR paper unica eccezione |
+| [021](ADR-021-canonical-performance-metrics.md) | Semantica canonica dei metrici di performance (P1-A) | ACCEPTED | Unifica le 5 implementazioni Sharpe divergenti (F-01); golden vectors in test_metrics_canonical |
 
 ## Come creare un ADR
 
