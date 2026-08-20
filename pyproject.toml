@@ -132,9 +132,12 @@ all = [
 target-version = "py312"
 line-length = 100
 # *.conf = lake backfill plans; trading-os/video-library/* = studio
-# usa-e-getta importato (download/categorize trascrizioni MoonDev) —
-# non è codice Oracle, non va mantenuto agli standard della codebase.
-extend-exclude = ["*.conf", "trading-os/video-library/*"]
+# usa-e-getta importato (download/categorize trascrizioni MoonDev);
+# trading-os/knowledge/** = materiale di studio importato (19+ repo
+# clonati + note distillate) — non è codice Oracle, non va mantenuto
+# agli standard della codebase (ruff 0.16 formatta anche i blocchi di
+# codice nei .md e rompe la CI su materiale di studio).
+extend-exclude = ["*.conf", "trading-os/video-library/*", "trading-os/knowledge/**"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "ARG", "C4", "RUF"]
