@@ -15,14 +15,25 @@ from typing import NoReturn
 import pytest
 
 # Errors that mean "provider unreachable / unavailable from here", not a
-# defect in the code under test.  ccxt wraps many transport failures;
-# BaseError covers ExchangeNotAvailable/NetworkError/etc.
+# defect in the code under test.  ccxt wraps transport failures in its own
+# exception hierarchy (BaseError covers ExchangeNotAvailable /
+# NetworkError / the 451 geo-block Binance returns from GitHub runners).
+# NB: `import ccxt.base.errors` fails on ccxt 4.x lazy submodules — import
+# the package first and use the re-exported BaseError.  yfinance surfaces
+# requests errors, so RequestException is included too.
 try:
-    import ccxt.base.errors as _ccxt_errors
+    import ccxt
 
-    _NETWORK_ERRORS: tuple[type[Exception], ...] = (_ccxt_errors.BaseError,)
+    _NETWORK_ERRORS: tuple[type[Exception], ...] = (ccxt.BaseError,)
 except ImportError:  # pragma: no cover - ccxt always present in dev env
     _NETWORK_ERRORS = ()
+
+try:
+    import requests
+
+    _NETWORK_ERRORS = (*_NETWORK_ERRORS, requests.exceptions.RequestException)
+except ImportError:  # pragma: no cover - requests always present in dev env
+    pass
 
 
 def _skip_on_network_error(exc: Exception) -> NoReturn:

@@ -142,7 +142,12 @@ def test_yfinance_daily_eurusd_caches(tmp_path: object) -> None:
 @network
 def test_ccxt_btc_1h_caches(tmp_path: object) -> None:
     dr = DataRegistry(root=tmp_path)  # type: ignore[arg-type]
-    df = dr.get_ohlcv("BTC", tf="1h")
+    try:
+        df = dr.get_ohlcv("BTC", tf="1h")
+    except Exception as exc:  # network smoke: skip, don't fail
+        if type(exc).__module__.startswith("ccxt"):
+            pytest.skip(f"ccxt network smoke skipped: {type(exc).__name__}: {exc}")
+        raise
     if df.is_empty():
         pytest.skip("ccxt returned no data for BTC")
     assert df.height > 0
