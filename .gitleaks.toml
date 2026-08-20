@@ -39,7 +39,10 @@ regexTarget = "line"
 regexes = [
     # Falsi positivi: identificatori statistici Monte Carlo (p_pass, days_to_pass,
     # pass_first, ...) matchano la regola broker-password
-    '''(?i)(p_pass|days_to_pass|pass_first|did_pass|pass_mask|first_pass)''',
+    '''(?i)(p_pass|days_to_pass|pass_first|did_pass|pass_mask|first_pass|monte_carlo_pass_rate|mc_pass)''',
+    # Falso positivo: URL di documentazione ("http://oracle-api:8000/api/...")
+    # letti da generic-api-key come secret (README ElizaOS).
+    '''http://oracle-api:8000/api/''',
 ]
 paths = [
     # Test fixtures with example values

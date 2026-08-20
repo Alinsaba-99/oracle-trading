@@ -318,6 +318,12 @@ exclude = ["tests*"]
 [tool.uv.sources]
 deflated-sharpe = { git = "https://github.com/mnemox-ai/deflated-sharpe.git" }
 
+[tool.uv]
+# P0 security: cryptography 49.0.0 has PYSEC-2026-3552 (fix: 50.0.0).
+# The only dependent is ccxt, whose constraint is permissive, so we pin
+# the floor here to keep pip-audit --strict green without waiting on ccxt.
+constraint-dependencies = ["cryptography>=50.0.0"]
+
 [build-system]
 requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"

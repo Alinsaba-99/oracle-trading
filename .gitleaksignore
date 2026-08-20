@@ -1,0 +1,30 @@
+# Gitleaks ignore file — triaged findings (P0, 2026-08-19/20)
+# One line per finding: {commit}:{file}:{rule}:{line}
+# Ogni entry è documentata sotto. Scadenza collettiva: 2026-08-31 — a
+# quella data ogni voce va o eliminata (fix alla radice) o rinnovata con
+# nuova motivazione. NESSUNA di queste voci disabilita il gate: il gate
+# gitleaks resta blocking in CI.
+
+# 1) Falso positivo: "monte_carlo_pass_rate(...)" — la regex
+#    broker-password matcha il suffisso "_pass...". Allowlist estesa in
+#    .gitleaks.toml (monte_carlo) così la classe è coperta anche in futuro.
+70d33495fb5593aaf77bf0f31876de58cca25219:scripts/run_edge_portfolio.py:broker-password:173
+
+# 2+3) Falso positivo storico: commit bf0501d7 aveva una chiave DEV
+#    fittizia ("-dev-key-changeme") come default ORACLE_API_KEY nel compose.
+#    Nel tree corrente il default è vuoto (fail-closed BL-600) e la chiave
+#    non è mai stata usata su alcun ambiente.
+bf0501d7f7ee0314a7f1dc6e86c35fc1ca817338:infra/docker/docker-compose.yml:oracle-api-key:70
+bf0501d7f7ee0314a7f1dc6e86c35fc1ca817338:infra/docker/docker-compose.yml:oracle-api-key:121
+
+# 4+5) Falso positivo: l'URL "http://oracle-api:8000/api/v1/..." nella
+#    documentazione ElizaOS viene letto da generic-api-key come secret.
+b98af407ca0550665cc94ff4a095965d5bd1f967:integrations/eliza-intelligence/README.md:generic-api-key:57
+555a7de8ec7beac13533fa4bd61e48d7aa2aab24:integrations/eliza-intelligence/README.md:generic-api-key:57
+
+# 6) Dev default reale ma confinato: POSTGRES_PASSWORD default "oracle_dev"
+#    nel compose di sviluppo. Il container pubblica solo su 127.0.0.1:5432
+#    (vedi ports nel compose) e non esiste deployment pubblico. Azione:
+#    un deployment reale deve usare un secrets manager e nessun default
+#    (già previsto in ARCHITECTURE.md §8). Voce in scadenza 2026-08-31.
+2c2b254ad738b864ab9818d6e5585a77afe5eb74:infra/docker/docker-compose.yml:broker-password:66

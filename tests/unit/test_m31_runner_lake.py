@@ -17,10 +17,23 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import polars as pl
+import pytest
 
 from analytics.qualification.periods import select_replay_periods, slice_period
 
 REPO = Path(__file__).resolve().parent.parent.parent
+# Both the lake and the M31 legacy cache are gitignored machine state
+# (P0, F-05); on a fresh CI checkout they are absent and the dependent
+# tests skip instead of failing.  The pinned dataset stays tracked
+# (data/pinned/ES_1d_m31.parquet).
+_LAKE_ES_1D = REPO / "data" / "lake" / "normalized" / "symbol=ES" / "tf=1d"
+_LEGACY_ES_1D = REPO / "data" / "ohlcv" / "ES_1d.parquet"
+_lake_required = pytest.mark.skipif(
+    not _LAKE_ES_1D.exists(), reason="data lake not present (gitignored)"
+)
+_legacy_cache_required = pytest.mark.skipif(
+    not _LEGACY_ES_1D.exists(), reason="legacy ES_1d cache not present (gitignored)"
+)
 
 
 def _legacy_data() -> pl.DataFrame:
@@ -61,6 +74,7 @@ def test_slice_period_warmup_length() -> None:
     assert in_period.height >= 40
 
 
+@_lake_required
 def test_lake_read_returns_6522_not_503() -> None:
     # BL-023 F-04: the cache data/ohlcv/ES/1d.parquet has 503 bars and must
     # NOT shadow the lake. Direct lake read is the only trusted path.
@@ -73,6 +87,7 @@ def test_lake_read_returns_6522_not_503() -> None:
     assert df.height >= 6523
 
 
+@_legacy_cache_required
 def test_legacy_parity_run_18a6836_smoke() -> None:
     """Refactor smoke: script runs end-to-end on legacy data without
     regressions (the full numeric parity vs 18a6836 is pinned in the
@@ -103,6 +118,7 @@ def test_legacy_parity_run_18a6836_smoke() -> None:
     )
 
 
+@_lake_required
 def test_official_runner_has_bl023_fix_stack() -> None:
     """BL-023 F-05/P3d: the consolidated official runner must expose the
     full BL-023 fix stack (lake source, ATR stop, warmup >= 100, macro

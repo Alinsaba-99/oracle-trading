@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from core.domain.guard import ModeGuardError, check_credential_isolation, current_mode, guard
 from core.domain.mode import OracleMode
+
+# Repo root — was a hardcoded /home/alin path (P0: broke the CI runner).
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 class TestCredentialIsolation:
@@ -91,7 +96,7 @@ class TestModeWiringAPI:
             ["uv", "run", "--frozen", "python", "-c", "from apps.api.main import app; print('ok')"],
             capture_output=True,
             text=True,
-            cwd="/home/alin/_repos/oracle-trading",
+            cwd=REPO_ROOT,
             env={"ORACLE_MODE": "research", "PATH": os.environ.get("PATH", "")},
         )
         assert result.returncode == 0, f"stderr: {result.stderr}"
@@ -105,7 +110,7 @@ class TestModeWiringAPI:
             ["uv", "run", "--frozen", "python", "-c", "from apps.api.main import app; print('ok')"],
             capture_output=True,
             text=True,
-            cwd="/home/alin/_repos/oracle-trading",
+            cwd=REPO_ROOT,
             env={"ORACLE_MODE": "funded", "PATH": os.environ.get("PATH", "")},
         )
         assert result.returncode != 0

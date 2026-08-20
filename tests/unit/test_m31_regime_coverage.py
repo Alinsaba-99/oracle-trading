@@ -4,15 +4,30 @@ Verifies ENG F-08/F-10: `select_replay_periods` without macro_events
 always leaves a blocker ("Macro surprise regime missing"), so a run must
 be INVALID (exit 2), never APPROVED/REJECTED, when blockers are present.
 Also pins the honest-N accounting: unique curves == periods × quantities.
+
+Lake-dependent tests skip when the data lake is absent (CI checkout has
+no lake: it is 11 GB of gitignored parquet).  The synthetic tests below
+still run everywhere.
 """
 
 from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
 
 from analytics.backtest.providers import read_from_lake
 from analytics.qualification.models import ReplayRegime
 from analytics.qualification.periods import select_replay_periods
 
+_REPO = Path(__file__).resolve().parents[2]
+_LAKE_ES_1D = _REPO / "data" / "lake" / "normalized" / "symbol=ES" / "tf=1d"
+_lake_required = pytest.mark.skipif(
+    not _LAKE_ES_1D.exists(), reason="data lake not present (gitignored)"
+)
 
+
+@_lake_required
 def test_lake_es_1d_has_expected_row_count() -> None:
     # BL-023 F-04/F-07: the lake is the source of truth, not
     # the 503-bar legacy cache and not coverage.json (stale: says 13042).
@@ -23,6 +38,7 @@ def test_lake_es_1d_has_expected_row_count() -> None:
     assert df.height >= 6523
 
 
+@_lake_required
 def test_replay_periods_without_macro_events_are_blocked() -> None:
     df = read_from_lake("ES", "1d")
     assert df is not None
