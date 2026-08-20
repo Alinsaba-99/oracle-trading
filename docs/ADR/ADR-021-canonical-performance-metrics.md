@@ -72,3 +72,24 @@ mensili/intraday.
   stati aggiornati alla nuova semantica, con riferimento a questo ADR.
 - Prossimi passi della migrazione P1-A: `analytics/metrics/robustness.py`
   (point estimate delegato), runner paper canonico (P1-B).
+
+## Emendamento 1 (BL-614, 2026-08-20) — semantica frequency-aware congelata
+
+BL-614 estende i golden vectors al path Polars e congela la tabella di
+annualizzazione per frequenza:
+
+- **Tabella canonica** `analytics/backtest/metrics.py::
+  FREQ_TO_PERIODS_PER_YEAR` — `1d=252`, `1h=6048`, `30m=12096`,
+  `15m=24192`, `5m=72576`, `1m=362880` (252 sessioni × ore/minuti per
+  sessione). È l'unica fonte di verità per il mapping freq → ppy;
+  aggiungere una frequenza richiede un emendamento a questo ADR.
+- **Golden vectors Polars**: `tests/unit/test_metrics_canonical_polars.py`
+  pinna Sortino/Calmar attraverso `MetricsCalculator` con gli stessi
+  numeri hand-computed del modulo canonico, più vettori su serie oraria
+  (6048 punti, seed deterministico) e lo scaling `sqrt(ppy)` su tutta la
+  tabella — la classe di bug dell'incidente R5 (annualizzazione errata)
+  non è reintroducibile silenziosamente su nessuno dei due path.
+- `MetricsCalculator.calmar_ratio` accetta ora `annualization_factor`
+  (default 252): la formula canonica già annualizzava il growth composto
+  con `periods_per_year`; il path Polars ora può passarlo esplicitamente
+  come gli altri metrici.

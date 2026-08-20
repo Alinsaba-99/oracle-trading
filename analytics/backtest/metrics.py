@@ -94,7 +94,9 @@ class MetricsCalculator:
         return _canonical_sortino(returns.to_numpy(), periods_per_year=annualization_factor)
 
     @staticmethod
-    def calmar_ratio(returns: pl.Series, max_drawdown: float | None = None) -> float:
+    def calmar_ratio(
+        returns: pl.Series, max_drawdown: float | None = None, annualization_factor: int = 252
+    ) -> float:
         """Compute the Calmar ratio (annualised return / max drawdown).
 
         Delegates to ``analytics.metrics.canonical.calmar_ratio`` (P1-A,
@@ -106,12 +108,18 @@ class MetricsCalculator:
             max_drawdown: Pre-computed max drawdown (positive, e.g. 0.25
                 for 25 % drawdown). If None, it is calculated from the
                 equity curve implied by cumulative returns.
+            annualization_factor: Number of periods per year used to
+                annualise the compounded growth (default 252 for daily;
+                use ``periods_per_year_for_freq`` for intraday data —
+                BL-614: the factor must match the bar frequency).
 
         Returns:
             The Calmar ratio, or 0.0 if the max drawdown is zero or there
             are fewer than 2 observations.
         """
-        return _canonical_calmar(returns.to_numpy(), max_drawdown=max_drawdown)
+        return _canonical_calmar(
+            returns.to_numpy(), max_drawdown=max_drawdown, periods_per_year=annualization_factor
+        )
 
     @staticmethod
     def max_drawdown(equity: pl.Series) -> float:

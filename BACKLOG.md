@@ -415,9 +415,15 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
   (`test_multiasset_walkforward.py`, rif. ADR-021).
 - [x] **BL-613** P1-A — ADR-021 (semantica canonica) + indice ADR. ✅
   DONE 2026-08-20.
-- [ ] **BL-614** P1-A — Estensione golden vectors a Sortino/Calmar nei
+- [x] **BL-614** P1-A — Estensione golden vectors a Sortino/Calmar nei
   path Polars (`test_metrics.py` già verde per delega) + copertura
   frequency-aware ppy (1h/15m/1m da `FREQ_TO_PERIODS_PER_YEAR`).
+  ✅ DONE 2026-08-20. `tests/unit/test_metrics_canonical_polars.py`
+  (13 golden vectors: Sortino/Calmar via `MetricsCalculator` con numeri
+  hand-computed, serie oraria seed=7, scaling `sqrt(ppy)` su tutta la
+  tabella 1h/15m/1m); `MetricsCalculator.calmar_ratio` ora accetta
+  `annualization_factor`; semantica congelata nell'Emendamento 1 di
+  ADR-021.
 - [ ] **BL-615** P1-B — Runner paper canonico `oracle paper run --spec`
   (strangler dei 5 runner `run_paper_sessions*.py`); ogni run produce
   manifest riproducibile (hash dati, spec, seed, versione).
