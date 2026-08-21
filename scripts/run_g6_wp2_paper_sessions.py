@@ -368,7 +368,13 @@ async def main() -> int:
         "--point-value", type=float, default=None, help="Auto-detect: 5.0 for MES, 50.0 for ES"
     )
     parser.add_argument("--max-dd-pct", type=float, default=3.0)
-    parser.add_argument("--storage", choices=["memory", "postgres"], default="memory")
+    parser.add_argument(
+        "--storage",
+        choices=["memory", "postgres"],
+        default=None,
+        help="Default: postgres when DATABASE_URL/ORACLE_POSTGRES__DSN is "
+        "configured, else memory (with a warning) — BL-060",
+    )
     parser.add_argument("--dsn", default=None)
     parser.add_argument("--output", default="logs/g6_wp2_paper_sessions.json")
     parser.add_argument(
@@ -380,6 +386,20 @@ async def main() -> int:
 
     if args.point_value is None:
         args.point_value = 5.0 if args.instrument.upper() == "MES" else 50.0
+
+    # BL-060: --storage defaults to postgres when a DSN is configured.
+    from core.config.storage import resolve_storage_default
+
+    resolved_storage, env_dsn = resolve_storage_default(args.storage)
+    if args.storage is None and resolved_storage == "memory":
+        print(
+            "WARNING: no DATABASE_URL/ORACLE_POSTGRES__DSN configured — "
+            "using in-memory storage; state will NOT survive a restart "
+            "(BL-060)"
+        )
+    if resolved_storage == "postgres":
+        args.dsn = args.dsn or env_dsn
+    args.storage = resolved_storage
 
     # ── Parse timeframe from filename ───────────────────────────
     import re as _re

@@ -69,7 +69,14 @@
 - [x] G3-013 PG ledger production ✅
 - [x] G3-014 Periodic reconcile ✅
 - [~] G3-017 Recovery idempotency dopo restart (in progress; merge commit ffe91b4)
-- [ ] **BL-060** P2 — CLI default `--storage=postgres` quando DATABASE_URL presente in .env. AC: `--storage` flag opzionale, default = `postgres` se DSN env altrimenti `memory` con warning. ~30min.
+- [x] **BL-060** P2 — CLI default `--storage=postgres` quando DATABASE_URL presente
+  in .env. ✅ DONE 2026-08-21. `core/config/storage.py::resolve_storage_default()`
+  (env > .env, DATABASE_URL → ORACLE_POSTGRES__DSN); wired in
+  `run_g6_wp2_paper_sessions.py` e `run_regime_paper_smoke.py`; esplicito
+  `--storage memory` vince sempre; fallback memory con warning esplicito.
+  `_resolve_dsn` in `apps/cli/trade_commands.py` fallisce loud se postgres
+  richiesto senza DSN. 14 test (`tests/unit/test_storage_default.py`),
+  connettività PostgresLedger verificata sul DSN di default.
 
 ## G4 Hard risk non bypassabile
 

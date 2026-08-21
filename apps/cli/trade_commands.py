@@ -39,6 +39,27 @@ def _get_broker(broker_type: str = "paper", **kwargs: Any) -> Any:
     raise ValueError(msg)
 
 
+def _resolve_dsn(explicit: str | None) -> str:
+    """Resolve the PostgreSQL DSN for durable storage (BL-060).
+
+    Explicit ``--dsn`` wins; otherwise the first configured env var
+    (``DATABASE_URL`` → ``ORACLE_POSTGRES__DSN``).  Raises when nothing
+    is configured — durable storage was requested but no DSN exists,
+    and silently downgrading to memory would lose economic state.
+    """
+    from core.config.storage import find_dsn
+
+    if explicit:
+        return explicit
+    dsn = find_dsn()
+    if dsn is None:
+        raise ValueError(
+            "postgres storage requested but no DSN configured "
+            "(set DATABASE_URL or ORACLE_POSTGRES__DSN, or pass --dsn)"
+        )
+    return dsn
+
+
 def _get_order_manager(
     broker_type: str = "paper",
     broker_kwargs: dict[str, Any] | None = None,
