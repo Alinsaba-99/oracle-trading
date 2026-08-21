@@ -19,3 +19,11 @@ class BrokerTimeoutError(OrderError):
 
 class InvalidOrderError(OrderError):
     """Order request failed validation."""
+
+
+class RiskRequiredError(OrderError):
+    """OrderManager was constructed without a risk gate (BL-040).
+
+    A missing risk gate is a safety violation: the order path must be
+    fail-closed, never fail-open.
+    """

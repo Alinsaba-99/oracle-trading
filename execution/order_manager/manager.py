@@ -10,7 +10,7 @@ import structlog
 
 from core.domain.enums import OrderSide, OrderStatus, OrderType, TimeInForce
 from core.domain.order import Order
-from execution.order_manager.errors import InvalidOrderError
+from execution.order_manager.errors import InvalidOrderError, RiskRequiredError
 from execution.order_manager.inventory import InventoryTracker
 from execution.order_manager.types import FillReport, OrderRequest, OrderResult
 
@@ -23,12 +23,15 @@ class OrderManager:
     Flow: OrderRequest -> RiskManager gate #2 -> Create Order -> Submit to Broker
 
     The ``risk_manager`` parameter is required.  Passing ``None`` raises
-    ``ValueError`` — a missing risk gate is a safety violation.
+    :class:`RiskRequiredError` — a missing risk gate is a safety
+    violation (BL-040: fail-closed, never fail-open).
     """
 
     def __init__(self, broker: Any, risk_manager: Any) -> None:
         if risk_manager is None:
-            raise ValueError("risk_manager is required — a missing risk gate is a safety violation")
+            raise RiskRequiredError(
+                "risk_manager is required — a missing risk gate is a safety violation (BL-040)"
+            )
         self._broker = broker
         self._risk = risk_manager
         self._orders: dict[str, Order] = {}
