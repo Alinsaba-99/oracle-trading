@@ -21,7 +21,7 @@
 
 | Comando | Esito |
 |---|---|
-| `pytest tests/` | **✅ 2973 passed**, 7 skipped, 0 failed (run completo 2026-08-21, 6m34s; +70 test vs 2026-08-18: BL-OPC-12 qualification, BL-040 RiskRequired, BL-060 storage) |
+| `pytest tests/` | **✅ 2989 passed**, 7 skipped, 0 failed (run completo 2026-08-21, 6m26s; +86 test vs 2026-08-18: BL-OPC-12 qualification, BL-040 RiskRequired, BL-060 storage) |
 | Lake coverage (`coverage.json`) | ✅ refresh perpetuo systemd attivo (07:00); IBKR 1m cron ora installato (vedi sotto) |
 | IBKR backfill timer | ✅ installato e enabled 2026-08-21 (`~/.config/systemd/user/oracle-ibkr-backfill.timer`, run 18:00 UTC); futures ES/NQ/GC/CL via CONTFUT + equities, 1 run verificato exit 0 |
 | Live-readiness gaps | ✅ 3/3 chiusi il 2026-08-10 (vedi §5) |
