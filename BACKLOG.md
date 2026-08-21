@@ -586,6 +586,16 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
   exchange (websocket + historical replay) — sblocco order-flow crypto
   (KB-04). AC: limiti/ToS verificati, sample L2 salvato, formato definito.
 
+- [ ] **BL-718** P1 — **Distillazione trading-os (greenfield kit)**:
+  BOM `trading-os/DISTILL-BOM.md`. Distillare i repo MoonDev in 8
+  artefatti autoportanti in `trading-os/knowledge/kit/` (D1 factor
+  bb_squeeze, D2 funding_extremum, D3 registry seed 19 strategie
+  Trading-Algos, D4 data-source spec, D5 exchange-client contract,
+  D6 metodologia RBI+preregistrazione, D7 battle harness, D8 literature
+  notes), poi cancellare i repo originali (821 MB → ~3 MB, junk 629 MB
+  subito). AC: nessun parametro/soglia perso; seed D3 caricabile dal
+  registry BL-700; repo grezzi e transcripts restano gitignored.
+
 ## Knowledge Base — 13 domini (BL-KB-01..115, 2026-08-17)
 
 > 68 file in `docs/knowledge-base/` + audit critico. 98 items originali
