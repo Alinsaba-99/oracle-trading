@@ -1,33 +1,33 @@
 # Oracle Autopilot — Execution Status
 
-> Checkpoint operativo. Aggiornato: 2026-08-18 (allineamento post-Opzione C;
-> baseline test fresca).
+> Checkpoint operativo. Aggiornato: 2026-08-21 (working tree committato;
+> BL-OPC-11/12/6, BL-040, BL-095, BL-060 chiusi; baseline test fresca).
 > La gerarchia documentale è: ROADMAP (perché) → STATUS (cosa) → BACKLOG
 > (come) → ADR (decisioni) → report (evidenza). Solo STATUS riporta la
 > matrice gate/stato.
 
 ## 1. Identità del checkpoint
 
-- **Branch**: `main`
-- **HEAD**: `d645a3d` (chore(docs): riorganizzazione piani in docs/plans/)
-- **Working tree**: modificato — work-in-progress 2026-08-15→18 non ancora
-  committato: pivot Opzione C (ADR-017..020, Lane A/B/D results, AI swarm,
-  paper orchestrator, IBKR backfill, knowledge base 13 domini, ~80 file nuovi)
+- **Branch**: `feat/p1-metrics-truth` (main = `b1f0ac7`; merge P1-A +
+  BL-OPC quando si chiude la fase)
+- **HEAD**: `67ecc7c` (feat(BL-060): --storage default postgres)
+- **Working tree**: ✅ pulito — il pivot Opzione C è interamente in git
+  (BL-OPC-11 chiuso: commit `e5ef5b6`→`1fe33fd`, suite verde, gitleaks
+  su hook pre-commit)
 - **Modalità autorizzata**: RESEARCH, REPLAY, PAPER
 - **PAPER, SHADOW, EVALUATION, FUNDED**: PAPER parziale (gate rejected). SHADOW/EVALUATION/FUNDED: DISABLED
 
-## 2. Baseline verificata (2026-08-18)
+## 2. Baseline verificata (2026-08-21)
 
 | Comando | Esito |
 |---|---|
-| `pytest tests/` | **✅ 2903 passed**, 7 skipped, 0 failed (3 regressioni 2026-08-18 fissate: pin lake runner 6533/13973 righe, golden MFFU allineato a BL-095) |
-| Lake coverage (`coverage.json`) | ✅ 497 serie / ~101 simboli / ~344M righe; refresh perpetuo systemd attivo (ultimo run 2026-08-18 07:13 UTC) |
-| IBKR backfill timer | ⚠️ NON installato — `systemd/oracle-ibkr-backfill.timer` è nel repo ma non in `~/.config/systemd/user/` (vedi §4.1) |
+| `pytest tests/` | **✅ 2973 passed**, 7 skipped, 0 failed (run completo 2026-08-21, 6m34s; +70 test vs 2026-08-18: BL-OPC-12 qualification, BL-040 RiskRequired, BL-060 storage) |
+| Lake coverage (`coverage.json`) | ✅ refresh perpetuo systemd attivo (07:00); IBKR 1m cron ora installato (vedi sotto) |
+| IBKR backfill timer | ✅ installato e enabled 2026-08-21 (`~/.config/systemd/user/oracle-ibkr-backfill.timer`, run 18:00 UTC); futures ES/NQ/GC/CL via CONTFUT + equities, 1 run verificato exit 0 |
 | Live-readiness gaps | ✅ 3/3 chiusi il 2026-08-10 (vedi §5) |
 
-> Storico: il run 2026-08-10 contava 2697 passed; il run fresco 2026-08-18
-> (post Opzione C: +108 test Lane A/B/D + orchestrator + DSR + finestre
-> pipeline) conta 2903 passed.
+> Storico: il run 2026-08-18 contava 2903 passed; il run fresco 2026-08-21
+> conta 2973 passed.
 
 ## 3. Gate status (unica tabella gate/stato autoritativa)
 
@@ -81,13 +81,13 @@ Eseguito: `python scripts/run_g6_wp2_paper_sessions.py --sessions 30 --data data
 
 | Lane | Verdetto | Evidenza |
 |---|---|---|
-| **B — Composite value (Piotroski 40% + Greenblatt 40% + Lakonishok 20%, thr 0.65)** | 🟢 **EDGE REALE** — Sharpe 0.93, annual +19.2%, MaxDD 24.7%, alpha +59% vs SPY (185 ticker SimFin, 23 rebalance, 2020→2025). Default `use_composite=True` | `docs/reports/lane-b-composite/2026-08-17-compare.md`; BL-505d aggressivo (stop 5% + vol tgt 40%): Sharpe 1.49; ADR-019: Lane B prioritaria come personal portfolio |
+| **B — Composite value (Piotroski 40% + Greenblatt 40% + Lakonishok 20%, thr 0.65)** | 🟡 **EDGE ESISTENTE MA NON QUALIFICATO** — Sharpe 0.93, annual +19.2%, MaxDD 24.7%, alpha +59% vs SPY (185 ticker SimFin, 23 rebalance, 2020→2025), ma qualificazione ADR-017 **REJECTED** 2026-08-20: DSR 0.967 ✅ / PSR 0.969 ✅ / **PBO 0.635 ❌** (≥0.5, selection overfitting-prone su 8 trial) / bear 2022 Sharpe 0.05 (edge bull-only). Promozione paper **bloccata** | `docs/reports/lane-b-composite/2026-08-20-qualification.md`; prossima via preregistrata: variante unica senza selection post-hoc, o pivot crypto factors |
 | **D — VRP (variance risk premium)** | 🔴 **NO EDGE** — Sharpe -0.08 su SPY+VIX 2010-2025 reale (vs claim deep-research 7.36 = 95× inflated, stesso bug R5 BL-503). 69/798 tail events abbattono premium. Non deployable senza regime filter + tail cap | `docs/reports/lane-d-vrp/2026-08-17-spy-vix-2010-2025.md` |
 | **AI swarm storico** | 🟡 **EDGE CONDIZIONALE** — REDUCE_SIZE 66.7% beat SPY su 2020-2021 (bull bias); Haiku synthesis ~30% vuote. Serve validazione 2022 bear | `docs/reports/ai-swarm/historical-2020-01-01-50tickers.md` |
 | Paper orchestrator | 🟡 MVP — `execution/paper_orchestrator.py` (signal→order→fill, slippage ledger, 14 test); manca real-time loop + adapter Lane B/D | BACKLOG BL-OPC-7 |
-| IBKR backfill 1m | 🟡 MVP funzionante (SPY/QQQ/AAPL/MSFT, 1m, window 1 mese, going forward) ma **timer systemd NON installato**; futures bloccati su expiry resolution | BACKLOG BL-OPC-6 |
+| IBKR backfill 1m | ✅ **OPERATIVO** (2026-08-21, BL-OPC-6 chiuso): timer systemd installato, futures ES/NQ/GC/CL via CONTFUT + equities SPY/QQQ/AAPL/MSFT, 1m going forward; readonly connect; nota: `docker start ib-gateway` dopo reboot | commit `c1e41dc` |
 
-**Infrastruttura abilitante (2026-08-15→18, tutta nel working tree non committato):**
+**Infrastruttura abilitante (2026-08-15→21, ora interamente in git — BL-OPC-11 chiuso):**
 - SimFin loader + cache (557 MB `data/simfin/`, gitignored) + `analytics/fundamental/simfin_loader.py`
 - `analytics/qualification/dsr.py` (DSR/PBO, base ADR-017)
 - `analytics/ai_analysts/` (5 analysts + Synthesizer + Skeptic + Risk Manager; LLM via OmniRoute 127.0.0.1:20128)
@@ -130,37 +130,35 @@ Report: `docs/reports/live-readiness-gap-analysis.md` (status aggiornato in §2.
 
 ## 7. Cosa NON è stato risolto
 
-- **G5**: nessun edge futures/daily sfruttabile. Il problema non è la soglia
-  ma l'edge stesso: alpha residuo trend +2-6% lordo → ~0 netto costi
-  (BL-093/BL-094). L'edge ora esiste su un altro canale: Lane B composite
-  (Sharpe 0.93) — ma **non è ancora qualificato** DSR/PBO/CPCV (ADR-017).
+- **G5**: nessun edge futures/daily sfruttabile (BL-093/BL-094). La Lane B
+  composite (Sharpe 0.93) è stata qualificata ADR-017 il 2026-08-20:
+  **REJECTED** (PBO 0.635 ≥ 0.5; bear 2022 Sharpe 0.05 = edge bull-only).
+  L'edge esiste nel campione ma non è qualificabile così com'è: la prossima
+  via è preregistrata (variante unica senza selection post-hoc, oppure
+  pivot crypto factors). **BL-OPC-7 resta bloccato.**
 - **G6**: necessita un run indipendente che produca trade e P&L reali (BL-024).
 - **Lane daily**: economicamente morta per il canale prop-firm (S0.2). La via
   aperta è il cambio di canale (orizzonti >1d, multi-asset, sweep candidati).
-- `OrderManager` ammette ancora il percorso `risk_manager=None` (BL-040).
-- **Working tree non committato**: tutto il lavoro 2026-08-15→18 (Opzione C,
-  ADR-017..020, Lane A/B/D, AI swarm, knowledge base, ~80 file nuovi) non è
-  in git. Ripristino = commit strutturati (vedi §8 punto 0).
-- **IBKR cron non attivo**: il timer systemd del backfill 1m non è installato
-  → dal 2026-08-17 nessun nuovo dato 1m sta entrando nel lake.
-- **BL-095 residuo**: fixture MFFU aggiornate, ma restano stale
-  `scripts/simulate_mff_challenge.py` e `data/prop_firm/topstep_tc_50k.json`.
+- **BL-606**: rotazione credenziali METAAPI_TOKEN + LLM_KEY (richiede accesso
+  umano ai provider — non eseguibile da script).
+- **BL-607**: history rewrite dei blob pesanti (opzionale, distruttivo,
+  differito).
+- P1-B/C/D (BL-615..619): runner paper canonico, suite integration catena
+  ordini, split sources.py, structlog hot path, PIT domain type — tutti aperti.
 
 ## 8. Prossimo lavoro eseguibile (single source of truth: BACKLOG.md)
 
-Vedi `BACKLOG.md` per le task atomiche. Ordine proposto (allineato 2026-08-18):
+Vedi `BACKLOG.md` per le task atomiche. Ordine proposto (allineato 2026-08-21):
 
-0. **Hygiene**: commit strutturati del working tree (prima il resto, poi il
-   lavoro nuovo) — il progetto non è riproducibile finché il pivot Opzione C
-   non è in git
-1. **BL-OPC-6 chiusura**: installare `systemd/oracle-ibkr-backfill.timer` +
-   futures expiry resolution
-2. **P1**: BL-201 — ensemble multi-segnale v2 (o in alternativa qualificazione
-   DSR/PBO della Lane B composite, prerequisito per qualunque promozione)
-3. **P1**: BL-024 — G6 re-run qualificante con trade e P&L reali
-4. **P2**: BL-OPC-7 — paper orchestrator real-time loop + adapter Lane B/D
-5. **P2**: BL-040 — rendere obbligatorio il RiskManager
-6. **P2**: BL-095 residuo — fixture stale rimanenti (dentro S0.5)
+0. ✅ **Hygiene**: working tree committato (BL-OPC-11 chiuso 2026-08-21)
+1. ✅ **BL-OPC-6 chiusura**: timer IBKR installato + futures CONTFUT (2026-08-21)
+2. ✅ **BL-OPC-12**: qualificazione DSR/PBO Lane B eseguita — REJECTED (2026-08-20)
+3. **P1**: decisione preregistrata — (a) variante unica Lane B senza selection
+   post-hoc + ri-qualificazione ADR-017, oppure (b) pivot crypto factors;
+   senza APPROVED, BL-OPC-7 (paper real-time) resta bloccato
+4. **P1**: BL-024 — G6 re-run qualificante con trade e P&L reali
+5. **P1**: BL-201 — ensemble multi-segnale v2
+6. **P1**: BL-615/616 — runner paper canonico + suite integration ordini
 7. **P2**: BL-052 — intraday futures dataset (requisito canali 5-30m)
 8. **P3**: BL-OPC-8/9/10 — validazioni AI swarm bear, VRP regime filter,
    Lane B aggressiva combinata; G7 readiness dopo G5 e G6 verdi
