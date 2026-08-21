@@ -343,11 +343,23 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
   in git. AC: commit atomici per area (docs/ADR, code, report, tests), suite
   verde (2903 passed), gitleaks pulito. Blocca qualunque lavoro successivo
   riproducibile.
-- [ ] **BL-OPC-12** P1 — **Qualificazione Lane B composite via ADR-017** (DSR/PBO/CPCV,
+- [x] **BL-OPC-12** P1 — **Qualificazione Lane B composite via ADR-017** (DSR/PBO/CPCV,
   `analytics/qualification/dsr.py` già presente). È il prerequisito per promuovere
   la lane da research → paper (BL-OPC-7) e l'unico edge reale del progetto
   (Sharpe 0.93). AC: report in `docs/reports/lane-b-composite/` con DSR, PBO,
   CPCV su 2020→2025 (incluso bear 2022 separato); verdict registrato.
+  ✅ ESEGUITO 2026-08-20 — **verdetto: REJECTED**.
+  `analytics/qualification/lane_b.py` + `scripts/run_lane_b_qualification.py`
+  + 13 test; report `docs/reports/lane-b-composite/2026-08-20-qualification.{json,md}`.
+  Finestra 2020-01→2025-08, n_trials=8 (documentato, non ottimizzato).
+  Observed Sharpe 0.90 (canonico); **DSR 0.967 ✅ / PSR 0.969 ✅ /
+  CPCV OOS median 1.03 / PBO 0.635 ❌ (≥ 0.5)**; bear 2022 separato:
+  Sharpe 0.05, DSR 0.497, REJECTED. L'edge esiste nel campione ma la
+  selezione tra varianti è overfitting-prone (PBO) e il rendimento è
+  interamente dipendente dal bull market. **BL-OPC-7 (promozione paper)
+  resta bloccato.** Prossimo: criterio preregistrato 2026-08-19 —
+  o fix strutturale (variante unica pre-registrata, niente selection
+  post-hoc) o pivot alla track fattori crypto.
 
 ## P0 Architecture Hygiene — BL-600..606 (dossier architetturale 2026-08-19)
 
