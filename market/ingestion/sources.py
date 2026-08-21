@@ -1391,7 +1391,12 @@ class IBKRHistorical(HttpSource):
         connection_attempts = 3
         for attempt in range(connection_attempts):
             try:
-                ib.connect(self._host, self._port, clientId=42 + attempt)
+                # readonly=True: the IB Gateway paper account runs with the
+                # API in Read-Only mode; a read/write handshake issues
+                # open/completed-order requests that Error 321 rejects and
+                # then stall until timeout (observed 2026-08-21). A
+                # read-only connection skips them entirely.
+                ib.connect(self._host, self._port, clientId=42 + attempt, readonly=True)
                 break
             except Exception as exc:
                 if attempt == connection_attempts - 1:
@@ -1406,7 +1411,11 @@ class IBKRHistorical(HttpSource):
                 time.sleep(1.0)
 
         try:
-            # Build contract
+            # Build contract.  IBKR rejects a generic FUT (needs a specific
+            # expiry/localSymbol); the going-forward lake wants the CONTINUOUS
+            # front month, which is secType=CONTFUT — verified 2026-08-21 to
+            # return 1m bars for ES/NQ/GC/CL without any expiry resolution
+            # (closes the BL-OPC-6 futures gap).
             contract = Contract()
             contract.symbol = symbol.upper()
             info = self._SYMBOL_MAP.get(symbol.upper())
@@ -1419,15 +1428,21 @@ class IBKRHistorical(HttpSource):
                 contract.exchange = "SMART"
                 contract.currency = "USD"
 
-            # For futures, use continuous contract via generic ticks
+            # Continuous contract: CONTFUT needs no expiry/localSymbol.
             if contract.secType == "FUT":
-                contract.includeExpired = True
+                contract.secType = "CONTFUT"
 
-            # Paginate backward from end to start in 6-month chunks.
+            # Paginate backward from end to start in month chunks.
             # Use empty endDateTime ('') for the most-recent window — IBKR
             # interprets it as "now". For older windows, use the explicit
             # UTC timestamp. Skip the strftime("%Y%m%d %H:%M:%S UTC")
             # format which the HMDS server rejects on paper Read-Only mode.
+            # Duration tracks the requested window: a going-forward cron
+            # (1-2 days) must not pull a full month of 1m bars — that
+            # overshoots the request budget and timed out at 30s
+            # (empirical 2026-08-21: "1 D" 1m ≈ 1s, "1 M" pre/post ≈ 42s).
+            range_days = (end - effective_start).days + 1
+            duration_str = f"{range_days} D" if range_days <= 29 else "1 M"
             current_end_str: str = ""
             while True:
                 try:
@@ -1436,13 +1451,13 @@ class IBKRHistorical(HttpSource):
                         endDateTime=current_end_str,
                         # IBKR paper Read-Only caps at 1M; "2M"/"6M" return
                         # HMDS query cancelled (empirical 2026-08-17).
-                        durationStr="1 M",
+                        durationStr=duration_str,
                         barSizeSetting=bar_size,
                         whatToShow="TRADES",
                         # include pre/post-market (paper Read-Only needs this)
                         useRTH=False,
                         formatDate=1,
-                        timeout=30,
+                        timeout=120,
                     )
                 except Exception as exc:
                     logger.warning("IBKR fetch failed: %s", exc)

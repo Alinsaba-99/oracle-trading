@@ -15,18 +15,17 @@ Run once for testing:
     uv run python scripts/backfill_1m_ibkr_paper.py --days 7
 
 Prerequisite: ib-gateway container running on port 4002 (paper alinsaba99).
-Note (2026-08-17 smoke test): IB Gateway container is in Read-Only mode
-AND futures contract resolution requires explicit expiry/localSymbol —
-the IBKRHistorical adapter passes a generic ES FUT contract without
-expiry, IBKR rejects with "Please enter a local symbol or an expiry".
-Equities (SPY/AAPL/MSFT/QQQ) work without this complication. So the
-default symbol set here is US equities; futures are commented until the
-adapter supports expiry resolution (TODO BL-OPC-6-followup).
+Note (2026-08-21): futures ES/NQ/GC/CL now resolve via secType=CONTFUT
+(continuous front month) — no explicit expiry needed; verified 450 bars/day
+per symbol (BL-OPC-6 gap closed in market/ingestion/sources.py). Equities
+SPY/QQQ/AAPL/MSFT also fetched. The adapter connects with readonly=True
+because the IB Gateway paper API runs in Read-Only mode.
 """
 
 from __future__ import annotations
 
 import argparse
+import logging
 import os
 import sys
 from datetime import date, timedelta
@@ -36,8 +35,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 # Equities work with IBKR paper Read-Only + generic SMART contract.
-# Futures need explicit expiry (TODO adapter followup).
-DEFAULT_SYMBOLS = ("SPY", "QQQ", "AAPL", "MSFT")
+# Futures resolve via CONTFUT (verified 2026-08-21) — no expiry followup
+# needed for going-forward accumulation.
+DEFAULT_SYMBOLS = ("SPY", "QQQ", "AAPL", "MSFT", "ES", "NQ", "GC", "CL")
 DEFAULT_PORT = "4002"  # IB Gateway paper mode (not 7497)
 
 
@@ -46,7 +46,8 @@ def main() -> int:
     parser.add_argument(
         "--symbols",
         default=",".join(DEFAULT_SYMBOLS),
-        help=f"Comma-separated futures symbols (default: {','.join(DEFAULT_SYMBOLS)})",
+        help="Comma-separated symbols, equities + CONTFUT futures "
+        f"(default: {','.join(DEFAULT_SYMBOLS)})",
     )
     parser.add_argument(
         "--days",
@@ -66,6 +67,10 @@ def main() -> int:
         help="IB Gateway host (default 127.0.0.1). Env: IBKR_HOST",
     )
     args = parser.parse_args()
+
+    # The orchestrator reports per-entry results via logging (ok/fresh/
+    # failed) — surface it, otherwise the run is a silent black box.
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
     symbols = [s.strip().upper() for s in args.symbols.split(",") if s.strip()]
     end = date.today()
@@ -100,12 +105,30 @@ def main() -> int:
     src_mod.get_source = _patched_get_source
 
     entries = [
-        BackfillEntry(symbol=sym, timeframe="1m", source="ibkr", start=start, end=end)
+        # end=None: the orchestrator re-keys these by date.today() and,
+        # once today's entry completes, clears stale failed keys for the
+        # same (symbol|tf|source) series — a pre-fix NO_DATA from an
+        # earlier day must not fail the cron forever (2026-08-21).
+        BackfillEntry(symbol=sym, timeframe="1m", source="ibkr", start=start, end=None)
         for sym in symbols
     ]
 
-    exit_code = run_plan(entries)
-    return exit_code
+    run_plan(entries)
+
+    # run_plan's exit code reflects the WHOLE persisted state (any source's
+    # old failure fails it). The cron must judge only its own entries:
+    # today's key completed (or already fresh) = success.
+    from market.ingestion import metadata_io as meta
+
+    state = meta.load_state()
+    completed = set(state.get("completed", []))
+    today_keys = {f"{e.symbol}|1m|ibkr|{end.isoformat()}" for e in entries}
+    missing = [k for k in sorted(today_keys) if k not in completed]
+    if missing:
+        print(f"FATAL: today's entries not completed: {missing}")
+        return 1
+    print(f"OK: all {len(entries)} entries completed for {end.isoformat()}")
+    return 0
 
 
 if __name__ == "__main__":
