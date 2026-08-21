@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """MyFundedFutures 50K Challenge Simulation — BTC alpha_003.
 
-Regole MFF:
-  - Max daily loss: 5% of initial balance ($2,500)
-  - Max overall loss: 10% of initial balance ($5,000)
-  - Profit target: 10% ($5,000) per phase
-  - Min trading days: 4 per phase
-  - Max drawdown: 4% on trailing high-water mark
-  - Leverage: max 1:30 crypto, 1:10 intraday
+Regole MFFU (Rapid plan 50K, 2026 — allineate BL-095 2026-08-21;
+snapshot fonte: docs/firm_sources/myfundedfutures/2026-08-21-rapid-plan-page.html):
+  - Daily loss limit: NESSUNO (rimosso sui piani Rapid 2026)
+  - Max overall loss: $2,000 (4% di $50K) — EOD trailing
+  - Profit target: $3,000 (6%)
+  - Min trading days: 2
+  - Consistency: 50% eval-only (soft: estende l'evaluation, non breach)
+    — diagnostic-only in questo script (best_day_share report).
 
 Questo script simula il challenge usando il paper runner ufficiale
 e verifica se BTC alpha_003 passa tutti i gate.
@@ -22,9 +23,10 @@ import asyncio
 import json
 import statistics
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
@@ -36,15 +38,17 @@ from scripts.run_g6_wp2_paper_sessions import _run_session
 # ── MFF 50K rules ─────────────────────────────────────────────────────
 
 INITIAL_CAPITAL = Decimal("50000")
-MAX_DAILY_LOSS_PCT = 5.0  # $2500/day
-MAX_OVERALL_LOSS_PCT = 10.0  # $5000 total
-PROFIT_TARGET = 5000  # $5000 (10%)
-MIN_TRADING_DAYS = 4
+# BL-095 (2026-08-21): MFFU Rapid 2026 — daily loss limit removed,
+# overall loss $2,000 EOD trailing, target $3,000, 2 min days.
+MAX_OVERALL_LOSS_PCT = 4.0  # $2000 total (EOD trailing in real plan;
+# this script approximates with HWM trailing — diagnostic, documented)
+PROFIT_TARGET = 3000  # $3000 (6%)
+MIN_TRADING_DAYS = 2
+CONSISTENCY_EVAL_PCT = 0.50  # best day <= 50% of total profit (eval, soft)
 POINT_VALUE = Decimal("1.0")  # 1 contract = 1 BTC USD
 SYMBOL = "BTCUSDT"
 TIMEFRAME = "1d"
 
-MAX_DAILY_LOSS = float(INITIAL_CAPITAL) * (MAX_DAILY_LOSS_PCT / 100)
 MAX_OVERALL_LOSS = float(INITIAL_CAPITAL) * (MAX_OVERALL_LOSS_PCT / 100)
 
 
@@ -55,7 +59,7 @@ async def simulate_challenge() -> int:
     print("MFF 50K CHALLENGE SIMULATION — BTC alpha_003")
     print(f"{'=' * 70}")
     print(f"  Initial capital:  ${INITIAL_CAPITAL:>8,.0f}")
-    print(f"  Max daily loss:   ${MAX_DAILY_LOSS:>8,.0f}")
+    print("  Daily loss limit: NONE (Rapid 2026)")
     print(f"  Max overall loss: ${MAX_OVERALL_LOSS:>8,.0f}")
     print(f"  Profit target:    ${PROFIT_TARGET:>8,.0f}")
     print(f"  Min trading days: {MIN_TRADING_DAYS}")
@@ -77,15 +81,15 @@ async def simulate_challenge() -> int:
     max_sessions = (n_total - window) // 1  # slide by 1 bar each session
     n_sessions = min(100, max_sessions)
 
-    results: list[dict] = []
+    results: list[dict[str, Any]] = []
     peak = float(INITIAL_CAPITAL)
     total_pnl = 0.0
     daily_pnl = 0.0
-    last_bar_date = None
+    best_day_profit = 0.0  # consistency diagnostic (50% eval rule)
+    last_bar_date: date | None = None
     phase_passed = False
     days_traded = 0
     overall_breach = False
-    daily_breach = False
 
     for s in range(n_sessions):
         start = s
@@ -113,14 +117,12 @@ async def simulate_challenge() -> int:
         total_pnl += pnl
         daily_pnl += pnl
 
-        # Track daily loss (new trading day?)
+        # Track per-day profit for the 50% consistency diagnostic
+        # (Rapid 2026 has NO daily loss limit — BL-095).
         bar_date = df_slice[-1, "timestamp"].date()
         if last_bar_date is not None and bar_date != last_bar_date:
-            if abs(daily_pnl) > MAX_DAILY_LOSS:
-                daily_breach = True
+            best_day_profit = max(best_day_profit, daily_pnl)
             daily_pnl = 0.0
-            if daily_breach:
-                break
 
         last_bar_date = bar_date
         peak = max(peak, float(INITIAL_CAPITAL) + total_pnl)
@@ -154,6 +156,9 @@ async def simulate_challenge() -> int:
         if (s + 1) % 10 == 0:
             print(f"  Session {s + 1}: PnL=${total_pnl:>+.2f}  DD={results[-1]['dd']:.2f}%")
 
+    # Fold the last (possibly partial) day into the consistency stat.
+    best_day_profit = max(best_day_profit, daily_pnl)
+
     # ── Verdict ───────────────────────────────────────────────────────
     print(f"\n{'=' * 70}")
     print("CHALLENGE RESULT")
@@ -163,7 +168,15 @@ async def simulate_challenge() -> int:
     print(f"  Days traded:     {days_traded}")
     print(f"  Profit target:   ${PROFIT_TARGET} -> {'✅ HIT' if phase_passed else '❌ NOT HIT'}")
     print(f"  Overall breach:  {'🔴 BREACHED' if overall_breach else '✅ NONE'}")
-    print(f"  Daily breach:    {'🔴 BREACHED' if daily_breach else '✅ NONE'}")
+    # Consistency 50% (eval-only, soft): diagnostic only, per Rapid 2026
+    # rules it extends the evaluation instead of breaching the account.
+    if total_pnl > 0:
+        share = best_day_profit / total_pnl
+        label = "✅ OK" if share <= CONSISTENCY_EVAL_PCT else "⚠️ EXTENDS EVAL"
+        print(
+            f"  Best-day share:  {share:.1%} of total profit -> {label} "
+            f"(limit {CONSISTENCY_EVAL_PCT:.0%})"
+        )
 
     sharpes = [r["sharpe"] for r in results if r["trades"] > 0]
     if sharpes:
@@ -184,9 +197,7 @@ async def simulate_challenge() -> int:
         overfit_label = "🟢 LOW" if pbo.pbo < 0.5 else "🟡 MEDIUM" if pbo.pbo < 0.7 else "🔴 HIGH"
         print(f"  Overfit risk:      {overfit_label}")
 
-    passed = (
-        phase_passed and not overall_breach and not daily_breach and days_traded >= MIN_TRADING_DAYS
-    )
+    passed = phase_passed and not overall_breach and days_traded >= MIN_TRADING_DAYS
     print(f"\n  -> {'✅ CHALLENGE PASSATO' if passed else '❌ CHALLENGE FALLITO'}")
 
     # Save
@@ -199,9 +210,13 @@ async def simulate_challenge() -> int:
             {
                 "metadata": {
                     "firm": "MyFundedFutures",
-                    "program": "50K",
+                    "program": "Rapid 50K (2026 rules, BL-095)",
                     "capital": float(INITIAL_CAPITAL),
-                    "max_daily_loss": MAX_DAILY_LOSS,
+                    "daily_loss_limit": None,  # removed on Rapid 2026 plans
+                    "consistency_eval_pct": CONSISTENCY_EVAL_PCT,
+                    "best_day_share_of_profit": (
+                        best_day_profit / total_pnl if total_pnl > 0 else None
+                    ),
                     "max_overall_loss": MAX_OVERALL_LOSS,
                     "profit_target": PROFIT_TARGET,
                     "min_days": MIN_TRADING_DAYS,

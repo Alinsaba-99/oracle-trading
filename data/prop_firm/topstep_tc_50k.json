@@ -1,30 +1,40 @@
 {
   "schema_version": "oracle-prop-profile-evidence-v1",
-  "profile_key": "TOPSTEP/Trading Combine/evaluation/TopstepX/50000/2026-07-01",
-  "checked_at": "2026-07-19T00:00:00Z",
+  "profile_key": "TOPSTEP/Trading Combine/evaluation/TopstepX/50000/2026-08-21",
+  "checked_at": "2026-08-21T00:00:00Z",
   "sources": [
     {
       "url": "https://help.topstep.com/en/articles/8284197-trading-combine-parameters",
-      "sha256": "f254222e97b1a36e2a98d35fd9e5ccd90e569eaf21e59d46c0929d131ad9dd8a"
+      "sha256": "4e34e632d6267a9753932a52b989a6c684afbfa67be44361a63a048fb6a72d80",
+      "local_snapshot": "docs/firm_sources/topstep/2026-08-21-trading-combine-parameters.html"
     },
     {
       "url": "https://help.topstep.com/en/articles/8284204-what-is-the-maximum-loss-limit",
-      "sha256": "d028a99c2e856ee2b81f4bfe84e4956560378d7727c4fdd2e59eaba5235e8c69"
+      "sha256": "4bad764a36a9997a0cd0989de569bf04efc4442efdb245a6c2cd4098a65601cc",
+      "local_snapshot": "docs/firm_sources/topstep/2026-08-21-maximum-loss-limit.html"
     },
     {
       "url": "https://help.topstep.com/en/articles/10490293-daily-loss-limit-in-the-trading-combine-and-express-funded-account",
-      "sha256": "14a3c2269d1555bfdf60ef39f6791659e558bf1b5c4a90b06f03f5afea8793ce"
+      "sha256": "239ca3f95300435694d977fc4f0e8afa1ff69edfc171b8956dd084412a210da9",
+      "local_snapshot": "docs/firm_sources/topstep/2026-08-21-daily-loss-limit.html"
+    },
+    {
+      "url": "https://www.topstep.com/no-activation-fee",
+      "sha256": "c3b1f8ec9e2581e1b3ab3429955ff647c75fab3341debad77c02bb34e6c5428c",
+      "local_snapshot": "docs/firm_sources/topstep/2026-08-21-no-activation-fee-page.html"
     }
   ],
   "rules": {
     "account_size": 50000,
-    "profit_target": 5000,
+    "profit_target": 3000,
     "maximum_loss_limit": 2000,
     "maximum_loss_mode": "trailing_eod",
     "maximum_loss_locks_at_initial_balance": true,
     "optional_daily_loss_limit": 1000,
+    "consistency_target_pct": 50,
     "max_minis": 5,
     "max_micros": 50
   },
+  "notes": "BL-095 (2026-08-21): 2026 vintage — profit target lowered to $3,000 (6%) from $5,000 (10%); 50% Consistency Target (best day < 50% of profit target, soft) documented but not modeled in the governor (consistency_pct=0.0 declared gap). Sources re-verified 2026-08-21; HTML snapshots + sha256 in docs/firm_sources/topstep/.",
   "authority_boundary": "RESEARCH_ONLY: evidence certifies historical rule replay only and grants no live automation authority."
 }

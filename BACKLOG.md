@@ -47,7 +47,13 @@
 ## G1 Autorità/ambienti
 
 - [x] G1-001..008 — OracleMode, startup guard, cred isolation, API auth, CLI guard, contratti
-- [ ] **BL-040** P2 — `OrderManager` rifiuta `risk_manager=None` (lancia `RiskRequired`). AC: rimosso path `OrderManager(broker, risk_manager=None)` da tutti gli script untracked; test in `tests/unit/test_order_manager.py::test_no_risk_manager_raises`. ~1h.
+- [x] **BL-040** P2 — **`OrderManager` rifiuta `risk_manager=None`** (lancia
+  `RiskRequiredError` tipizzata). ✅ DONE 2026-08-21 (commit `26c92a9`).
+  Già fail-closed dal P0 (ValueError); ora eccezione tipizzata
+  `RiskRequiredError` sottoclasse di `OrderError`. Test
+  `tests/unit/test_order_manager.py::test_no_risk_manager_raises` +
+  no-regression. Nessun caller costruisce più con `risk_manager=None`
+  (verificato grep su repo).
 
 ## G2 Verità futures e point-in-time
 
@@ -89,14 +95,18 @@
 
 - [x] **BL-093** (S0.1) — **Autopsia BL-023**: decomposizione fallimento sui 6 assi del piano. ✅ `docs/reports/s0-1-bl023-autopsy.md`. Verdetto: benchmark = causa principale (misuravamo beta come alpha; anti-beta ADR-016 ha corretto il metro), orizzonte incompatibile col canale prop-firm; dati e implementazione assolti (2 difetti registrati: candidati duplicati bollinger≡zscore = 7 ipotesi non 8; matrice 2×2×2 byte-identica = teatro). Costi = aggravante. Regime = unica via aperta, solo dopo post-mortem classificatore M32a. Mean-reversion ES daily archiviata (4/4, luck p=1.0). Alpha residuo trend +2-6% lordo = input di S0.2.
 - [x] **BL-094** (S0.2) — **Modello economico prop-firm one-page** ✅ `docs/reports/s0-2-economic-model.md` + evidenza MC `docs/reports/s0-2/eval_economics.json` (`scripts/run_eval_economics.py`, seed 42, N=10K; test `tests/unit/test_eval_economics.py`). Verdetto: **€3K/mese richiede alpha ≥ 30-120%/anno su un account (o 5-20 account a α=6%): 5-16× il soffitto misurato +2-6% lordo → lane daily economicamente morta (meta-kill scattata per l'orizzonte daily)**. MC: p(pass) eval 6%/4% = 30.1% random-walk vs 33.7% a α=6% (σ=1.2%): l'alpha misurato vale +3.6 punti; la leva vera è σ (53.4% a σ=0.4%). Requisiti pre-registrati riapertura S1.1: p≥0.60, α netto ≥15%/anno, E[giorni a passare]≤60, DD≤4% ADR-016. Obiettivo sostenibile: €1-1.5K/mese con 2-3 account 150-200K (90/10). Fee P90 percorso: ~$400-1.100. **Verifica empirica aggiunta**: `scripts/run_eval_simulation.py` replaya i segnali reali sul lake con le regole eval (6%/4% trailing EOD, consistency 50%, costi $8.4/RT, 1 contratto ES/$50K) — ES 1d (N=99): donchian 26.3%, trend_filtered 30.3%, ema 26.3%, buy_hold 23.2% (CI95 max sup 40%); ES 1h (N=214): 23.4-29.9%. **Nessun candidato supera il base rate senza edge (30.1%) né si avvicina al requisito 0.60 → family trend falsificata anche nel canale prop-firm** (`docs/reports/s0-2/eval_simulation.json`, `eval_simulation_1h.json`; test `tests/unit/test_eval_simulation.py`). Nota dati: lake ha solo ~8 giorni di 1m/5m/15m futures → requisito 5-30m non testabile oggi (BL-052).
-- [~] **BL-095** P2 — **Aggiornare i fixture prop-firm stale** (trovati in BL-094).
-  ✅ FATTO 2026-08-15/18: `policy/prop_firm/fixtures.py` MFFU_NEWS_RESTRICTED
-  allineato regole 2026 (target 6%, daily loss rimosso, consistency rimossa,
-  rule_version 2026-08-15) + golden test aggiornati (2903 suite verde).
-  ⏳ RESTANTE: `scripts/simulate_mff_challenge.py` (target $5.000=10% →
-  $3.000=6% 2026; daily loss 5% → assente) e `data/prop_firm/topstep_tc_50k.json`
-  (profit_target $5.000 → $3.000). AC: parametri allineati alle fonti 2026
-  (snapshot hash), profilo rinominato con vintage. ~1h. Da fare dentro S0.5.
+- [x] **BL-095** P2 — **Aggiornare i fixture prop-firm stale** (trovati in BL-094).
+  ✅ FATTO 2026-08-15/21: `policy/prop_firm/fixtures.py` MFFU_NEWS_RESTRICTED
+  allineato regole 2026 (target 6%, daily loss rimosso, rule_version
+  2026-08-15) + golden test aggiornati. ✅ RESIDUO 2026-08-21:
+  (1) `scripts/simulate_mff_challenge.py` allineato a Rapid 2026
+  (target $3.000/6%, daily loss rimosso, 2 giorni minimi, consistency
+  50% eval-only come diagnostic); (2) `data/prop_firm/topstep_tc_50k.json`
+  profit_target $5.000→$3.000 con sources ri-verificate e snapshot HTML
+  sha256 in `docs/firm_sources/topstep/`; `TOPSTEP_TC_50K` rinominato con
+  vintage `rule_version="2026-08-21"` (profile_key aggiornato). Gap
+  dichiarato: la 50% Consistency Target 2026 (soft, sul target) non è
+  modellata nel governor — semantica diversa da `consistency_pct`.
 - [x] **BL-096** P1 — **Accuratezza metadata lake: coverage.json conteggia doppio/divergente**. ✅ Root cause: `pipeline._update_coverage` accumulava `rows += len(bars)` — ogni refresh incrementale che ri-merge barre già presenti gonfiava il contatore (ES|1d: 13.044 dichiarate vs 6.524 reali). Fix in due punti: (1) `pipeline._actual_rows()` conta dalle parquet normalizzate; (2) `scripts/audit_lake_metadata.py` ora verifica `coverage.rows` contro il conteggio reale (`coverage_row_mismatch` nel report, `--fix` riscrive i rows, exit code 1 su mismatch) + nuovo test gate `tests/unit/test_lake_metadata_audit.py::test_coverage_rows_match_actual_partitions`. **Applicato: 203/488 record corretti** (tutte le serie FX/crypto/futures gonfiate dal refresh perpetuo), re-audit pulito exit 0.
 
 ## G6 Paper & shadow operations
@@ -320,13 +330,16 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
   Lane B/D adapters deferred a follow-up P2.
 - [x] **BL-OPC-5** P2 — Docs update (ADR-020 + ROADMAP §13 + BACKLOG Opzione C).
   ✅ DONE 2026-08-17. Questo ADR-020 + sezione ROADMAP §13 + sezione BACKLOG.
-- [~] **BL-OPC-6** P2 — Backfill IBKR paper 1m cron (ES/NQ/GC/CL going forward).
-  In progress. `scripts/backfill_1m_ibkr_paper.py` + systemd timer + backfill.conf entry.
-  ✅ MVP validato 2026-08-17 (SPY/QQQ/AAPL/MSFT 1m, window 1 mese/run, 19k bars smoke).
-  ⚠️ GAP 2026-08-18: timer systemd NON installato in `~/.config/systemd/user/`
-  (solo lake-refresh è attivo) → nessun nuovo 1m dal 17-ago. Futures ES/NQ/GC/CL
-  bloccati su expiry resolution (`reqContractDetails`). AC chiusura: timer enabled
-  + 1 run verificato + futures almeno 1 simbolo.
+- [x] **BL-OPC-6** P2 — Backfill IBKR paper 1m cron (ES/NQ/GC/CL going forward).
+  ✅ CLOSED 2026-08-21 (commit `c1e41dc`). Timer systemd installato e enabled
+  in `~/.config/systemd/user/oracle-ibkr-backfill.{service,timer}` (run 18:00 UTC);
+  1 run verificato exit 0. Futures risolti via secType=CONTFUT (front continuo,
+  niente expiry resolution): ES/NQ/GC/CL tutti nel lake 1m (12.6K righe dal
+  2026-07-24) + SPY/QQQ/AAPL/MSFT. Fix: connect readonly=True (API paper
+  Read-Only: handshake read/write stalla su Error 321), duration dinamica
+  N D per finestre corte, exit code giudicato sulle entry di oggi.
+  Nota operativa: dopo reboot serve `docker start ib-gateway` (login IBC
+  automatico, credenziali paper in env del container, porta 4002).
 - [ ] **BL-OPC-7** P2 — Paper orchestrator followup: real-time loop (cron systemd
   `oracle-paper-trader.service`) + yfinance delayed 15min price feed adapter + Lane B
   signal adapter (`LaneBSignalAdapter.from_screen_at_date`) + Lane D signal adapter.
@@ -337,12 +350,15 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
   inverted + tail cap 3× premium. Ri-run backtest su 2010-2025. Target: Sharpe > 0.5.
 - [ ] **BL-OPC-10** P3 — Combine Composite Lane B + BL-505d aggressivo (stop-loss 5%
   + vol target 40%) per target Sharpe > 1.5 su base reale SimFin.
-- [ ] **BL-OPC-11** P1 — **Hygiene: commit strutturati del working tree 2026-08-15→18**.
-  Tutto il pivot Opzione C (ADR-017..020, Lane A/B/D, AI swarm, paper
-  orchestrator, IBKR backfill, knowledge base 13 domini, ~80 file nuovi) non è
-  in git. AC: commit atomici per area (docs/ADR, code, report, tests), suite
-  verde (2903 passed), gitleaks pulito. Blocca qualunque lavoro successivo
-  riproducibile.
+- [x] **BL-OPC-11** P1 — **Hygiene: commit strutturati del working tree 2026-08-15→18**.
+  ✅ CLOSED 2026-08-21. Tutto il pivot Opzione C è in git: commit
+  `e5ef5b6` (deps+gitignore), `d15cc44` (codice Lane A/B/D, AI swarm,
+  paper orchestrator, DSR, SimFin, backfill), `8d5c2b1` (ADR-017..020 +
+  ROADMAP v3.1), `02a207b` (KB 13 domini), `712e2fc` (report verdetti),
+  `a2c7ac5`+`5553800` (studio trading-os/MoonDev), hardening CI
+  `b8ec98f`/`49b6493`/`b1f0ac7`, `1fe33fd` (residuo: gitleaks-action
+  pinnata, MIN_ROWS floor, output in logs/). Suite 2973 passed + 7 skipped
+  (2026-08-21), gitleaks pulito su ogni commit (hook pre-commit).
 - [x] **BL-OPC-12** P1 — **Qualificazione Lane B composite via ADR-017** (DSR/PBO/CPCV,
   `analytics/qualification/dsr.py` già presente). È il prerequisito per promuovere
   la lane da research → paper (BL-OPC-7) e l'unico edge reale del progetto
@@ -468,12 +484,14 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
   `fix(BL-NNN): ...`.
 - Ogni PR deve avere `pytest`, `ruff`, `mypy --strict` verdi sul path
   toccato.
-- **Priority chain aggiornata (2026-08-18, post-Opzione C):**
+- **Priority chain aggiornata (2026-08-21, post BL-OPC-12 REJECTED):**
   ```
-  BL-OPC-11 (committare il working tree) → BL-OPC-6 chiusura (timer IBKR)
-  → BL-OPC-12 (DSR/PBO Lane B composite — qualificazione dell'edge reale)
-  → BL-OPC-7 (paper real-time loop Lane B) → BL-024 (G6 run qualificante)
-  → BL-201 (ensemble v2) → G6-WP3 shadow → G7 → G8
+  BL-OPC-11 ✅ → BL-OPC-6 ✅ → BL-OPC-12 ✅ (REJECTED: PBO 0.635, bull-only)
+  → decisione preregistrata: (a) variante unica pre-registrata Lane B senza
+    selection post-hoc e ri-qualificazione, oppure (b) pivot crypto factors;
+    BL-OPC-7 resta bloccato finché la qualificazione non è APPROVED
+  → BL-024 (G6 run qualificante) → BL-201 (ensemble v2) → G6-WP3 shadow
+  → G7 → G8
   → poi mutageno: BL-400..408 → G10 → BL-420 → G12 → G13 → G14
   ```
 - I task P1 sono sequenziali. I P2/P3 sono paralleli dove indipendenti.

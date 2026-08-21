@@ -45,7 +45,10 @@ class TestTOPSTEP_TC_50K:  # noqa: N801
     def test_profile_basics(self):
         assert TOPSTEP_TC_50K.firm == "TOPSTEP"
         assert TOPSTEP_TC_50K.account_size == 50_000
-        assert TOPSTEP_TC_50K.profit_target_pct == 0.10
+        # BL-095 (2026-08-21): 2026 vintage — profit target $3,000 (6%)
+        # verified against docs/firm_sources/topstep/ snapshots.
+        assert TOPSTEP_TC_50K.profit_target_pct == 0.06
+        assert TOPSTEP_TC_50K.rule_version == "2026-08-21"
         assert TOPSTEP_TC_50K.max_daily_loss_pct == 0.02
         assert TOPSTEP_TC_50K.max_overall_loss_pct == 0.04
         assert TOPSTEP_TC_50K.max_daily_loss_amount == 1_000
@@ -80,7 +83,10 @@ class TestTOPSTEP_TC_50K:  # noqa: N801
         assert TOPSTEP_TC_50K.contract_cap.per_product["MES"] == 50
 
     def test_pass_on_target(self):
-        """Profit target 10% + any days -> passed."""
+        """Profit target 6% ($3,000 BL-095) + any days -> passed.
+
+        +$5,000 exceeds the lowered 2026 target, so the outcome holds.
+        """
         gov = _make_gov(TOPSTEP_TC_50K, balance=50_000)
         gov.update(balance=55_000, equity=55_000)
         # Need at least one trade to count as trading day
@@ -247,20 +253,23 @@ class TestMFFU_NEWS_RESTRICTED:  # noqa: N801
     """Automation non-HFT, blackout Tier-1 news."""
 
     def test_profile_basics(self):
-        # BL-095 (2026-08-15): MFFU 2026 rules — consistency rule removed,
-        # no minimum profitable days, profit target 6% ($3K on $50K),
-        # daily loss limit removed. See fixtures.py comment.
+        # BL-095 (2026-08-15, re-verified 2026-08-21): MFFU 2026 rules —
+        # profit target 6% ($3K on $50K), daily loss limit removed, no
+        # minimum profitable days. consistency_pct=0.0 is a DECLARED GAP:
+        # the 2026 "50% eval-only" soft rule has target-based semantics
+        # the governor does not model (fixtures.py comment).
         assert MFFU_NEWS_RESTRICTED.news_blackout is not None
         assert MFFU_NEWS_RESTRICTED.consistency_pct == 0.0
         assert MFFU_NEWS_RESTRICTED.min_profitable_days == 0
         assert MFFU_NEWS_RESTRICTED.profit_target_pct == 0.06
 
-    def test_consistency_rule_disabled(self):
-        """BL-095: consistency rule removed on 2026 MFFU plans — a
-        profit-concentrated day must NOT raise a consistency breach."""
+    def test_consistency_rule_not_modeled(self):
+        """BL-095: the 2026 eval-only consistency rule is deliberately not
+        modeled (declared gap) — a profit-concentrated day must NOT raise
+        a governor consistency breach."""
         gov = _make_gov(MFFU_NEWS_RESTRICTED, balance=50_000)
         gov.record_trade(4_000)
-        gov.record_trade(1_000)  # max = 4k/5k = 80%; rule removed -> no breach
+        gov.record_trade(1_000)  # max = 4k/5k = 80%; not modeled -> no breach
         breaches = gov.evaluate()
         assert not any(b.type == BreachType.CONSISTENCY for b in breaches)
 

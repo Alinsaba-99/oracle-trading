@@ -27,12 +27,20 @@ TOPSTEP_TC_50K = FirmProgramProfile(
     stage="evaluation",
     platform="TopstepX",
     account_size=50_000,
-    rule_version="2026-07-01",
+    # BL-095 (2026-08-21): vintage rename — 2026 sources verified 2026-08-21
+    # (snapshots in docs/firm_sources/topstep/): profit target $3,000 (6%),
+    # MLL $2,000 trailing EOD (locks at initial balance), optional daily
+    # loss $1,000, 5 mini / 50 micro, 50% consistency target. NOTE: the
+    # 2026 "Consistency Target" (best day < 50% of PROFIT TARGET) is a
+    # soft rule with different semantics than the governor's
+    # consistency_pct (share of TOTAL profit) — deliberately NOT modeled;
+    # treat consistency_pct=0.0 as a declared gap, not "no rule".
+    rule_version="2026-08-21",
     effective_from="2026-01-01",
     source_url="https://help.topstep.com/en/articles/8284197-trading-combine-parameters",
-    source_checked_at="2026-07-19",
+    source_checked_at="2026-08-21",
     support_mode=SupportMode.RESEARCH_ONLY,
-    profit_target_pct=0.10,
+    profit_target_pct=0.06,  # BL-095: $3,000 on $50K (era $5,000/10% pre-2026)
     max_daily_loss_pct=0.02,
     max_overall_loss_pct=0.04,
     max_daily_loss_amount=1_000,
@@ -209,11 +217,15 @@ MFFU_NEWS_RESTRICTED = FirmProgramProfile(
     source_url="https://help.myfundedfutures.com/en/articles/8230009-news-trading-policy",
     source_checked_at="2026-08-15",
     support_mode=SupportMode.RESEARCH_ONLY,
-    # BL-095 (2026-08-15): MFFU 2026 rules updated — profit target $3.000 (6%) on $50K,
-    # daily loss limit removed on current plans, 5% overall loss remains.
-    # TODO: re-verify against https://help.myfundedfutures.com/ before live deployment.
+    # BL-095 (2026-08-15, re-verified 2026-08-21): MFFU 2026 rules — profit
+    # target $3.000 (6%) on $50K, daily loss limit removed on Rapid plans,
+    # 5% overall loss remains. Gap dichiarato: the 2026 "50% consistency
+    # (Eval Only)" soft rule is NOT modeled here (governor's consistency_pct
+    # has share-of-total-profit semantics, not the eval rule's); the
+    # simulator scripts/simulate_mff_challenge.py reports it as diagnostic.
+    # Source snapshot: docs/firm_sources/myfundedfutures/.
     profit_target_pct=0.06,
-    max_daily_loss_pct=0.0,  # removed on current 2026 plans
+    max_daily_loss_pct=0.0,  # removed on Rapid 2026 plans
     max_overall_loss_pct=0.05,
     dd_mode=DrawdownMode.STATIC,
     daily_loss_basis="equity",
@@ -221,7 +233,8 @@ MFFU_NEWS_RESTRICTED = FirmProgramProfile(
     daily_loss_reset_timezone="America/New_York",
     min_trading_days=0,  # MFFU removed minimum trading days in 2026
     min_profitable_days=0,
-    consistency_pct=0.0,  # MFFU removed consistency rule in 2026
+    consistency_pct=0.0,  # BL-095: 2026 eval-only 50% soft rule NOT modeled
+    # (target-based semantics ≠ governor's share-of-total); documented gap
     contract_cap=ContractCap(max_mini_eq=10),
     session_rule=SessionRule.STANDARD,
     news_blackout=NewsBlackout(before_minutes=3, after_minutes=3),
