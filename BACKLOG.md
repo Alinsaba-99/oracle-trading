@@ -127,7 +127,18 @@
 - [x] **BL-020** P1 — **Ricalibrazione regime + run WP2 v2**. ✅ completato (commit `0716e1a`): vol-scaled regime heuristic (timeframe-invariant).
 - [x] **BL-021** P1 — **MES-aware sizing per prop-firm**. ✅ completato in `b4058e5`. Script: `scripts/check_mes_sizing.py`.
 - [x] **BL-022** P1 — **100 sessioni paper indipendenti**. ✅ completato (commit `3227804`): 100 session × 95-bar windows, pinned dataset, Monte Carlo opzione, gate criteria.
-- [ ] **BL-024** P1 — **G6 re-run qualificante con trade reali**. Il run post-fix 30/30 ha prodotto 0 trade, 0 P&L e Sharpe 0, quindi non costituisce evidenza di qualifica. AC: esecuzione indipendente con `scripts/run_g6_wp2_100_sessions.py`, almeno 10 finestre con trade, P&L aggregato > 0, Sharpe non-zero, pass rate ≥ 0.90, mean max DD ≤ 3%, reconcile clean = 100%; report versionato in `docs/reports/g6-wp2-final/`.
+- [x] **BL-024** P1 — **G6 re-run qualificante con trade reali**. ✅ ESEGUITO
+  2026-08-21 — **verdetto gate: REJECTED** (evidenza ora completa).
+  `scripts/run_g6_wp2_100_sessions.py --ensemble edge_v2` (EdgeEnsembleV2
+  BL-201 iniettato nella catena paper completa: OrderManager + risk adapter
+  PropFirm + PaperBroker + ledger/OMS + reconciliation). Risultato: 100/100
+  finestre con trade (390 trade), P&L aggregato **+$16.273** > 0 ✅,
+  Sharpe non-zero (mean -0.672) ✅, reconcile clean **100%** ✅, MA
+  pass rate **0.35** < 0.90 ❌ e mean max DD **5.53%** > 3% ❌.
+  Il fallimento "0 trade" di M32a è chiuso; l'evidenza negativa è ora
+  reale e versionata. Report `docs/reports/g6-wp2-final/bl024-edgev2-2026-08-21.md`
+  + JSON. Gate G6 resta REJECTED: serve un segnale che passi i due
+  criteri mancanti sulla stessa catena.
 
 ## Edge Portfolio (BL-200..202) — NUOVO dopo audit 25-lug
 
@@ -140,11 +151,16 @@
   edge > baseline: roc_momentum_12 (mc=41%, DD=3.47%), bollinger_20_2
   (mc=35.5%, DD=4.53%), bollinger_30_2.5 (mc=33%, DD=4.53%),
   donchian_breakout_10 (mc=32%, DD=3.57%).
-- [ ] **BL-201** P1 — **Ensemble multi-segnale v2** (roc_momentum_12 +
-  bollinger_20_2 + donchian_breakout_10) con hysteresys su
-  `RegimeAwareEnsemble`. AC: nuovo script `scripts/run_edge_ensemble.py`;
-  `mc_pass_rate > 0.45` su 200 sim; DD < 3% (MES sizing). Report in
-  `docs/reports/edge-portfolio/ensemble.md`. ~1 sessione.
+- [x] **BL-201** P1 — **Ensemble multi-segnale v2** (roc_momentum_12 +
+  bollinger_20_2 + donchian_breakout_10) con hysteresys. ✅ Implementato
+  `analytics/strategy/edge_ensemble_v2.py` (EdgeEnsembleV2, hysteresis 2
+  barre thr 0.60/0.50) e **validato 2026-08-21** sulla catena paper
+  completa via `run_g6_wp2_100_sessions.py --ensemble edge_v2` (invece
+  di un ennesimo runner isolato, coerente con la direzione BL-615):
+  100 sessioni, 390 trade, P&L agg +$16.273, MA pass rate 0.35 e DD
+  5.53% → **AC di performance REJECTED** (target mc_pass > 0.45, DD < 3%).
+  Report: `docs/reports/g6-wp2-final/bl024-edgev2-2026-08-21.md`.
+  L'ensemble produce trade; l'edge manca (stesso verdetto di BL-023/BL-024).
 - [ ] **BL-202** P2 — **Cross-asset factor timing** (factor catalog port
   da ES a BTC/USDT, EURUSD, GC via `DataRegistry`). AC:
   `FactorTimingEngine` con `instrument` parameter, test su almeno 2
@@ -491,14 +507,14 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
   `fix(BL-NNN): ...`.
 - Ogni PR deve avere `pytest`, `ruff`, `mypy --strict` verdi sul path
   toccato.
-- **Priority chain aggiornata (2026-08-21, post BL-OPC-12 REJECTED):**
+- **Priority chain aggiornata (2026-08-21, post BL-024 REJECTED):**
   ```
   BL-OPC-11 ✅ → BL-OPC-6 ✅ → BL-OPC-12 ✅ (REJECTED: PBO 0.635, bull-only)
+  → BL-024 ✅ eseguito (REJECTED: pass 0.35, DD 5.53%; 0-trade failure chiuso)
+  → BL-201 ✅ implementato+validato (REJECTED su AC performance)
   → decisione preregistrata: (a) variante unica pre-registrata Lane B senza
     selection post-hoc e ri-qualificazione, oppure (b) pivot crypto factors;
-    BL-OPC-7 resta bloccato finché la qualificazione non è APPROVED
-  → BL-024 (G6 run qualificante) → BL-201 (ensemble v2) → G6-WP3 shadow
-  → G7 → G8
+    BL-OPC-7 e G6-WP3 shadow restano bloccati finché un edge non è APPROVED
   → poi mutageno: BL-400..408 → G10 → BL-420 → G12 → G13 → G14
   ```
 - I task P1 sono sequenziali. I P2/P3 sono paralleli dove indipendenti.

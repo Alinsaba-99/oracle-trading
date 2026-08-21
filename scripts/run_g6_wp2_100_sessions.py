@@ -120,8 +120,15 @@ async def _run_paper_sessions(
     output: str,
     verify_pin: bool,
     monte_carlo: bool,
+    ensemble_name: str = "regime",
 ) -> int:
     """Run *n* independent paper sessions, write summary to *output*.
+
+    ``ensemble_name`` selects the signal engine (BL-024):
+    - ``regime``: the default RegimeAware/Adaptive ensemble;
+    - ``edge_v2``: EdgeEnsembleV2 (BL-201) — deterministic, trades on
+      every session where the hysteresis gate fires; used to produce
+      qualifying evidence with real trades.
 
     Returns 0 when gate criteria are met, 1 otherwise.
     """
@@ -136,6 +143,15 @@ async def _run_paper_sessions(
 
     point_value_dec = Decimal(str(point_value))
     capital_dec = Decimal(str(capital))
+
+    ensemble: Any = None
+    if ensemble_name == "edge_v2":
+        from analytics.strategy.edge_ensemble_v2 import EdgeEnsembleV2
+
+        ensemble = EdgeEnsembleV2()
+    elif ensemble_name != "regime":
+        print(f"ERROR: unknown ensemble {ensemble_name!r} (regime|edge_v2)")
+        return 1
 
     # Build windows.
     if monte_carlo:
@@ -164,6 +180,7 @@ async def _run_paper_sessions(
             max_dd_pct=5.0,
             storage="memory",
             dsn=None,
+            ensemble=ensemble,
         )
         results.append(res)
 
@@ -193,6 +210,7 @@ async def _run_paper_sessions(
             "point_value": point_value,
             "capital": capital,
             "monte_carlo": monte_carlo,
+            "ensemble": ensemble_name,
             "timestamp": datetime.now(UTC).isoformat(),
             "regime": "vol-scaled (BL-020)",
         },
@@ -252,6 +270,12 @@ def main() -> int:
         action="store_true",
         help="Random Monte Carlo window start positions instead of sequential",
     )
+    p.add_argument(
+        "--ensemble",
+        default="regime",
+        choices=["regime", "edge_v2"],
+        help="Signal engine: regime (default) or edge_v2 (BL-201/BL-024, trade-producing)",
+    )
     args = p.parse_args()
 
     return asyncio.run(
@@ -265,6 +289,7 @@ def main() -> int:
             output=args.output,
             verify_pin=args.verify_pin,
             monte_carlo=args.monte_carlo,
+            ensemble_name=args.ensemble,
         )
     )
 

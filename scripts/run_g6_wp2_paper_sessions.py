@@ -44,7 +44,7 @@ from analytics.portfolio.hrp import compute_hrp_weights
 from analytics.research.factor_timing import compute_per_session_ic
 from analytics.research.memory import ResearchMemory
 from analytics.strategy.lorentzian import LorentzianKNN
-from analytics.strategy.regime_ensemble import RegimeAwareEnsemble, SpecialistId
+from analytics.strategy.regime_ensemble import RegimeAwareEnsemble, RegimeLabel, SpecialistId
 from analytics.strategy.signals import DonchianBreakout, EmaTrend, RsiReversion
 from core.ledger_factory import create_ledger
 from core.oms_factory import create_oms
@@ -121,6 +121,20 @@ class _PropFirmAllow:
         return bool(ok)
 
 
+class _StaticRouting:
+    """RoutingDecision stand-in for injected ensembles without .route().
+
+    The report schema expects regime/regime_confidence/specialist on the
+    routing object; an injected signal engine (e.g. EdgeEnsembleV2,
+    BL-024) has no regime detector, so we record the honest "unknown".
+    """
+
+    regime = RegimeLabel.UNKNOWN
+    regime_confidence: float = 0.0
+    specialist = SpecialistId.FLAT
+    reason: str = "injected ensemble (no regime detector)"
+
+
 def _build_ensemble(memory: Any = None, asset: str = "ES", timeframe: str = "1d") -> Any:
     """Factory: returns AdaptiveEnsemble when asset is known, else basic."""
     try:
@@ -155,8 +169,14 @@ async def _run_session(
     memory: ResearchMemory | None = None,
     timeframe: str = "1d",
     weights_path: str | None = None,
+    ensemble: Any = None,
 ) -> dict[str, Any]:
-    """Run one paper session. Returns session report."""
+    """Run one paper session. Returns session report.
+
+    ``ensemble`` (optional) overrides the default regime ensemble —
+    any object with ``.compute(df) -> pl.Series`` (BL-024 uses
+    EdgeEnsembleV2 here to guarantee the harness produces trades).
+    """
     config = BrokerConfig(
         paper_spread_bps=10,
         paper_slippage_bps=5,
@@ -186,10 +206,11 @@ async def _run_session(
         ledger = create_ledger(storage="memory")
         oms = create_oms(storage="memory", ledger=ledger)
 
-    # Regime ensemble signal
-    ensemble = _build_ensemble(memory=memory, asset=instrument, timeframe=timeframe)
+    # Regime ensemble signal (or an injected ensemble — BL-024)
+    if ensemble is None:
+        ensemble = _build_ensemble(memory=memory, asset=instrument, timeframe=timeframe)
     signal_series = ensemble.compute(df_session)
-    routing = ensemble.route(df_session)
+    routing = ensemble.route(df_session) if hasattr(ensemble, "route") else _StaticRouting()
 
     # Apply GA-optimized weights if provided
     if weights_path:
