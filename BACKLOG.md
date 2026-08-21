@@ -478,9 +478,18 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
 - [ ] **BL-615** P1-B — Runner paper canonico `oracle paper run --spec`
   (strangler dei 5 runner `run_paper_sessions*.py`); ogni run produce
   manifest riproducibile (hash dati, spec, seed, versione).
-- [ ] **BL-616** P1-B — Suite integration catena ordini
+- [x] **BL-616** P1-B — Suite integration catena ordini
   (contract→risk→OMS→paper broker→ledger→reconciliation) con guasti
-  iniettati; target ≥12 scenari.
+  iniettati. ✅ DONE 2026-08-21. `tests/integration/test_order_chain_faults.py`
+  — **16 scenari** (target ≥12): catena pulita end-to-end con zero mismatch;
+  accounting equity e futures esatti; gate risk fail-closed (missing stop,
+  contract cap, budget, market input); submit duplicato idempotente; broker
+  failure → rejected pulito; overfill/ghost fill ignorati; partial fills;
+  resting limit trigger; divergenza posizioni FATAL + block; kill-all.
+  Hardening collaterale in `execution/order_manager/manager.py`: market
+  order senza price (invariante dominio core.domain.order) e ValidationError
+  → `InvalidOrderError` tipizzata (fail-closed, niente crash pydantic sulla
+  hot path). mypy --strict verde sui file toccati.
 - [ ] **BL-617** P1-C — Split `market/ingestion/sources.py` (1520 righe,
   mypy ignore_errors=true) in un modulo per sorgente dietro il Protocol
   esistente; mypy riacceso modulo per modulo.

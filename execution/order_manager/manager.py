@@ -7,6 +7,7 @@ from typing import Any
 from uuid import uuid4
 
 import structlog
+from pydantic import ValidationError
 
 from core.domain.enums import OrderSide, OrderStatus, OrderType, TimeInForce
 from core.domain.order import Order
@@ -65,18 +66,33 @@ class OrderManager:
             )
 
         # 3. Create Order
-        order = Order(
-            instrument_id=request.instrument_id,
-            side=OrderSide(request.side),
-            order_type=OrderType(request.order_type),
-            quantity=request.quantity,
-            price=Decimal(str(request.price)) if request.price is not None else None,
-            stop_price=Decimal(str(request.stop_price)) if request.stop_price is not None else None,
-            time_in_force=TimeInForce(request.time_in_force),
-            execution_algo=request.execution_algo,
-            strategy_id=request.strategy_id,
-            portfolio_id="",
-        )
+        order_type = OrderType(request.order_type)
+        try:
+            order = Order(
+                instrument_id=request.instrument_id,
+                side=OrderSide(request.side),
+                order_type=order_type,
+                quantity=request.quantity,
+                # Domain invariant (core.domain.order): a MARKET order carries
+                # no price — the request's reference price is consumed by the
+                # risk gate and broker pricing, never the order record.
+                price=(
+                    Decimal(str(request.price))
+                    if order_type != OrderType.market and request.price is not None
+                    else None
+                ),
+                stop_price=(
+                    Decimal(str(request.stop_price)) if request.stop_price is not None else None
+                ),
+                time_in_force=TimeInForce(request.time_in_force),
+                execution_algo=request.execution_algo,
+                strategy_id=request.strategy_id,
+                portfolio_id="",
+            )
+        except ValidationError as exc:
+            # Malformed request → typed, fail-closed rejection (BL-616):
+            # a raw pydantic error on the hot path is a crash, not a gate.
+            raise InvalidOrderError(f"Order validation failed: {exc.errors()}") from exc
         order.status = OrderStatus.submitted
         self._orders[order.order_id] = order
 
