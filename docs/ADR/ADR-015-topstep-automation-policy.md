@@ -91,3 +91,13 @@ Consente automation ma gli account sono più piccoli e il payout
 - [PROP_FIRM_READINESS_ROADMAP.md §9](../PROP_FIRM_READINESS_ROADMAP.md)
 - [BACKLOG.md BL-071](../../BACKLOG.md)
 - [BACKLOG.md BL-100](../../BACKLOG.md)
+
+## Verifica fonti (2026-08-21, BL-071 chiusura)
+
+Articolo TopstepX API access / third-party tools ri-verificato il
+2026-08-21 (snapshot + sha256 in
+`docs/firm_sources/topstep/2026-08-21-automation-third-party-tools.html`,
+sha256 `d1bc362f3f965837fc635b7877638b968d9259274e486cab0d2f7d7a35a8982f`):
+la policy 2026 conferma l'impostazione di questo ADR — automation e
+tool third-party consentiti **solo** dal personal device del trader;
+VPS/VPN/remote server vietati. Nessuna modifica alla decisione.

@@ -83,7 +83,7 @@
 - [x] G4-001..015 — FirmProgramProfile, SupportMode, RiskManager, property test, bypass audit
 - [x] G4-021 — PropFirmOrderRiskAdapter cablato in CLI ✅
 - [x] **BL-070** P1 — **Cablaggio PropFirmOrderRiskAdapter in paper sessions**. ✅ `_PropFirmAllow` già wired in `run_g6_wp2_paper_sessions.py` (commit `b4058e5`). Test di integrazione in `tests/integration/test_paper_session_risk.py` (9 test, tutti verdi). **[Paper è prop-firm compliant]**
-- [ ] **BL-071** P2 — Automation policy dettaglio per Topstep ToS (vietato VPS/VPN/residential bot). AC: ADR-015 (da scrivere) che documenta la posizione. ~2h.
+- [x] **BL-071** P2 — Automation policy dettaglio per Topstep ToS (vietato VPS/VPN/residential bot). ✅ DONE — ADR-015 scritto (commit `8f590d8`, ACCEPTED) e fonti ri-verificate 2026-08-21: snapshot articolo TopstepX API access salvato con sha256 in `docs/firm_sources/topstep/2026-08-21-automation-third-party-tools.html`; policy 2026 conferma la posizione dell'ADR (automation consentita solo da personal device).
 
 ## G5 Research truth
 
