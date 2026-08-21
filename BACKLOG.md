@@ -506,6 +506,56 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
   nei fetcher macro/fundamental) con test di non-lookahead automatici
   (precedente: macro.py calendari hardcoded + fred.py vintage=None).
 
+## Edge Research Factory — BL-700..709 (design 2026-08-21)
+
+> Sistema di ricerca edge: corpus mining (KB 13 domini + trading-os
+> MoonDev + 835 transcript) → amplificazione letteratura 2022-2026/web
+> → asset context adapter → qualificazione pre-registrata (IC screen +
+> gauntlet ADR-017) → dual channel (personal high-vol / funded σ-scaled).
+> Spec: `docs/plans/2026-08-21-edge-research-factory-design.md`.
+> Sostituisce Mutageno G10-G14 come motore di ricerca (che resta
+> congelato finché non c'è ≥1 edge APPROVED).
+
+- [ ] **BL-700** P1 — Schema registry + `analytics/research/factory/registry.py`
+  (append-only YAML per dominio, campi: meccanismo, origini, decay_atteso,
+  dati, stato) + golden test. AC: schema versione 1, test load/append/
+  transizioni stato, mypy --strict.
+- [ ] **BL-701** P1 — KB miner: 13 domini (68 file, 112 BL-KB) → registry.
+  Priorità dai gap audit 2026-08-17: BL-KB-102 VPIN, BL-KB-103 V&M
+  Everywhere, BL-KB-105/106 behavioral. AC: ≥1 ipotesi per dominio nel
+  registry, ognuna con meccanismo + dati richiesti.
+- [ ] **BL-702** P1 — MoonDev miner: `trading-os/knowledge/`
+  (RISPOSTE_D1-D15, NOTES, INDEX) → registry con flag origine=practitioner
+  e haircut conservativo. AC: i 5 fattori già triaged (funding extremum,
+  liq cascade, BB squeeze release, CVD divergence, session seasonality)
+  come entry verificabili.
+- [ ] **BL-703** P2 — Transcript miner: 835 transcript in
+  `trading-os/video-library/transcripts/` → entry confidence=bassa
+  (promosse in Stage 2 solo con riscontro letteratura). AC: ≥20 entry
+  con timestamp+riferimento video, dedup.
+- [ ] **BL-704** P1 — Amplificatore: batteria 5 search MCP (Tavily/Brave/
+  Exa/SearXNG/DDG) per ipotesi: conferma accademica + confutazione attiva
+  + gap hunting 2022-2026 + OSS ispezionabile. AC: ogni entry amplificata
+  ha citazioni con URL+data; web marcato untrusted; snapshot sha256 dove
+  possibile.
+- [ ] **BL-705** P1 — Asset adapter: verifica dati posseduti (lake/SimFin/
+  FRED/Binance Vision) + riscrittura contesto-specifica + matrice di test
+  (fattore × asset × timeframe) prioritizzata. AC: matrice JSON+MD, zero
+  ipotesi senza verifica dati.
+- [ ] **BL-706** P1 — IC screen: `analytics/research/factory/ic_screen.py`
+  (Spearman IC orizzonti non sovrapposti + block bootstrap); criteri
+  pre-registrati ICIR > 0.05, t-block > 2.5, haircut 30%. AC: golden
+  vector test su serie sintetiche note.
+- [ ] **BL-707** P1 — Haircut Sharpe (BL-KB-99, Bailey-Lopez de Prado
+  2018) come strumento del gauntlet. AC: formula + test, integrato nei
+  report di qualificazione.
+- [ ] **BL-708** P1 — Qualificazione primo lotto + report sprint 1
+  (`docs/reports/edge-factory/sprint-1.md`) con go/no-go scritto.
+  Kill: < 2 fattori superano IC screen → stop e rivalutazione.
+- [ ] **BL-709** P2 — Dual-channel promotion policy: spec personal
+  (high-vol, soglia haircut Sharpe) vs funded (σ-scaled G4, ≥100 sessioni
+  paper canoniche pass ≥ 0.90/DD ≤ 3% PRIMA di pagare eval) + ADR.
+
 ## Knowledge Base — 13 domini (BL-KB-01..115, 2026-08-17)
 
 > 68 file in `docs/knowledge-base/` + audit critico. 98 items originali

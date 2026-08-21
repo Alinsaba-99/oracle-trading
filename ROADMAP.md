@@ -874,3 +874,26 @@ per l'inventario fonti verificate.
 **Prossimo gate richiesto**: G5 (Research truth + strategy qualification) —
 le 3 lane di Opzione C devono superare DSR/PBO/CPCV (ADR-017) prima
 di promozione paper → shadow → evaluation → funded.
+
+## 14. Edge Research Factory (2026-08-21)
+
+**PIVOT nel motore di ricerca**: il sistema che genera le piste edge non è
+più il catalogo al buio (Mutageno G10-G14), ma una factory ancorata alle
+fonti: corpus mining (KB 13 domini + `trading-os/` MoonDev + 835
+transcript) → amplificazione ossessiva con letteratura 2022-2026 e web
+(5 search MCP, $0) → asset context adapter (ogni ipotesi riscritta sui
+dati che possiede davvero) → qualificazione pre-registrata (IC screen +
+gauntlet ADR-017 + runner canonico BL-615) → dual channel (personal
+high-vol / funded eval σ-scaled).
+
+Spec: [`docs/plans/2026-08-21-edge-research-factory-design.md`](docs/plans/2026-08-21-edge-research-factory-design.md).
+Backlog: **BL-700..709**.
+
+**Congelamento**: Mutageno G10-G14 (catalogo 100 strategie, meta-optimizer,
+evolution loop) resta congelato finché la factory non produce ≥ 1 edge
+APPROVED. Costruire moduli attorno a zero edge è debito, come stabilito
+dallo studio integrato 2026-08-19 §5.
+
+**Kill criteria** (anti-autoinganno, dettagli nella spec §8): sprint di
+4 settimane con go/no-go scritto; < 2 fattori oltre l'IC screen dopo il
+primo sprint → stop e rivalutazione onesta del canale.
