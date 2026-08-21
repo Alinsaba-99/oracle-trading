@@ -556,6 +556,36 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
   (high-vol, soglia haircut Sharpe) vs funded (σ-scaled G4, ≥100 sessioni
   paper canoniche pass ≥ 0.90/DD ≤ 3% PRIMA di pagare eval) + ADR.
 
+### Acquisizioni da awesome-systematic-trading (BOM 2026-08-21)
+
+> BOM: `docs/knowledge-base/BOM-AWESOME-SYSTRADE-2026-08-21.md`.
+> Ogni acquisizione: verifica licenza SPDX + smoke install py3.12 +
+> test minimo, poi integrazione nel punto factory indicato. Tutte $0.
+
+- [ ] **BL-710** P1 — **alphalens (fork wangzhe3224)**: analisi fattori
+  (IC, quantile return, turnover) come secondo parere in BL-706. AC:
+  install verde py3.12, smoke su serie sintetica, nessun conflitto con
+  metriche canoniche ADR-021 (alphalens solo diagnostico).
+- [ ] **BL-711** P1 — **quantstats + ffn**: tearsheet nei report factory
+  (`docs/reports/edge-factory/`). AC: render report da equity curve del
+  runner canonico; NON sostituisce `analytics/metrics/canonical.py`.
+- [ ] **BL-714** P1 — **edgartools**: SEC EDGAR fundamentals + 13F +
+  insider + 8-K free. AC: fetch 13F + Form 4 verificato su ticker noti,
+  PIT rispettato (filing date, non period date), note in dominio 01/06 KB.
+- [ ] **BL-716** P1 — **cryptofeed**: websocket feed handler multi-exchange
+  per raccolta going-forward (funding, trades, book) nel lake. AC: smoke
+  Binance/Bybit WS, persistenza in formato lake-compatibile, ToS verificato.
+- [ ] **BL-712** P2 — **tsfresh**: feature extraction automatica per la
+  matrice Stage 3. AC: smoke su finestra BTC 1h, costi tempo documentati.
+- [ ] **BL-713** P2 — **Riskfolio-Lib**: ottimizzazione HRP/CVaR per il
+  sizing dual-channel (BL-709). AC: smoke allocazione multi-asset.
+- [ ] **BL-715** P2 — **FinanceDatabase (+Toolkit se il path FMP free
+  basta)**: universo 300K+ simboli. AC: verifica copertura senza API key
+  paid; altrimenti solo FinanceDatabase.
+- [ ] **BL-717** P2 — **Microverse Systems L2 free**: order book 21
+  exchange (websocket + historical replay) — sblocco order-flow crypto
+  (KB-04). AC: limiti/ToS verificati, sample L2 salvato, formato definito.
+
 ## Knowledge Base — 13 domini (BL-KB-01..115, 2026-08-17)
 
 > 68 file in `docs/knowledge-base/` + audit critico. 98 items originali
