@@ -186,6 +186,21 @@ def main() -> None:
         help="Exit non-zero if any mismatch (fatal or recoverable) is found",
     )
 
+    # paper run — canonical spec-driven paper runner (BL-615)
+    paper_parser = subparsers.add_parser(
+        "paper", help="Canonical paper session runs (spec-driven, reproducible)"
+    )
+    paper_sub = paper_parser.add_subparsers(dest="paper_action", help="Paper command")
+    paper_run_parser = paper_sub.add_parser(
+        "run", help="Run paper sessions from a versioned spec file (YAML/JSON)"
+    )
+    paper_run_parser.add_argument(
+        "--spec",
+        type=str,
+        required=True,
+        help="Path to the run spec (YAML or JSON) — see apps/cli/paper_commands.py",
+    )
+
     args = parser.parse_args()
 
     if args.version:
@@ -228,6 +243,13 @@ def main() -> None:
             _handle_trade_reconcile(args)
         else:
             trade_parser.print_help()
+    elif args.command == "paper":
+        if args.paper_action == "run":
+            from apps.cli.paper_commands import handle_paper_run
+
+            sys.exit(handle_paper_run(args))
+        else:
+            paper_parser.print_help()
     else:
         parser.print_help()
 

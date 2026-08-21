@@ -475,9 +475,15 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
   tabella 1h/15m/1m); `MetricsCalculator.calmar_ratio` ora accetta
   `annualization_factor`; semantica congelata nell'Emendamento 1 di
   ADR-021.
-- [ ] **BL-615** P1-B — Runner paper canonico `oracle paper run --spec`
+- [~] **BL-615** P1-B — Runner paper canonico `oracle paper run --spec`
   (strangler dei 5 runner `run_paper_sessions*.py`); ogni run produce
   manifest riproducibile (hash dati, spec, seed, versione).
+  🟡 IN CORSO 2026-08-21: `apps/cli/paper_commands.py` + comando cablato
+  in `apps/cli/main.py`; 14 test unit (spec loading YAML/JSON, hash
+  dati/spec, windows sequential/MC, ensemble); smoke run end-to-end
+  verde (3 sessioni, manifest con sha256 dati/spec/git-commit); suite
+  completa 3019 passed. Mancano: migrazione dei 5 runner legacy a thin
+  wrapper e spec di riferimento in `config/qualification/`.
 - [x] **BL-616** P1-B — Suite integration catena ordini
   (contract→risk→OMS→paper broker→ledger→reconciliation) con guasti
   iniettati. ✅ DONE 2026-08-21. `tests/integration/test_order_chain_faults.py`
@@ -521,6 +527,8 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
   BL-OPC-11 ✅ → BL-OPC-6 ✅ → BL-OPC-12 ✅ (REJECTED: PBO 0.635, bull-only)
   → BL-024 ✅ eseguito (REJECTED: pass 0.35, DD 5.53%; 0-trade failure chiuso)
   → BL-201 ✅ implementato+validato (REJECTED su AC performance)
+  → BL-616 ✅ → BL-615 🟡 (runner canonico: engine+manifest+test+smoke fatti;
+    restano migrazione runner legacy + spec di riferimento)
   → decisione preregistrata: (a) variante unica pre-registrata Lane B senza
     selection post-hoc e ri-qualificazione, oppure (b) pivot crypto factors;
     BL-OPC-7 e G6-WP3 shadow restano bloccati finché un edge non è APPROVED

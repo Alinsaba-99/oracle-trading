@@ -1,7 +1,8 @@
 # Oracle Autopilot — Execution Status
 
 > Checkpoint operativo. Aggiornato: 2026-08-21 (working tree committato;
-> BL-OPC-11/12/6, BL-040, BL-095, BL-060 chiusi; baseline test fresca).
+> BL-OPC-11/12/6, BL-040, BL-095, BL-060, BL-616, BL-024/BL-201 eseguiti
+> con verdetto REJECTED; BL-615 in corso; baseline test fresca).
 > La gerarchia documentale è: ROADMAP (perché) → STATUS (cosa) → BACKLOG
 > (come) → ADR (decisioni) → report (evidenza). Solo STATUS riporta la
 > matrice gate/stato.
@@ -10,10 +11,12 @@
 
 - **Branch**: `feat/p1-metrics-truth` (main = `b1f0ac7`; merge P1-A +
   BL-OPC quando si chiude la fase)
-- **HEAD**: `67ecc7c` (feat(BL-060): --storage default postgres)
-- **Working tree**: ✅ pulito — il pivot Opzione C è interamente in git
+- **HEAD**: `c1d397a` (feat(BL-616): suite integration catena ordini) +
+  working tree con BL-615 in corso (`apps/cli/paper_commands.py`,
+  comando `oracle paper run --spec`)
+- **Working tree**: ✅ il pivot Opzione C è interamente in git
   (BL-OPC-11 chiuso: commit `e5ef5b6`→`1fe33fd`, suite verde, gitleaks
-  su hook pre-commit)
+  su hook pre-commit); 11 commit il 2026-08-21
 - **Modalità autorizzata**: RESEARCH, REPLAY, PAPER
 - **PAPER, SHADOW, EVALUATION, FUNDED**: PAPER parziale (gate rejected). SHADOW/EVALUATION/FUNDED: DISABLED
 
@@ -21,13 +24,14 @@
 
 | Comando | Esito |
 |---|---|
-| `pytest tests/` | **✅ 2989 passed**, 7 skipped, 0 failed (run completo 2026-08-21, 6m26s; +86 test vs 2026-08-18: BL-OPC-12 qualification, BL-040 RiskRequired, BL-060 storage) |
+| `pytest tests/` | **✅ 3019 passed**, 7 skipped, 0 failed (run completo 2026-08-21, 6m25s; +14 test BL-615 paper runner) |
+| Smoke runner canonico | ✅ `oracle paper run --spec` end-to-end: 3 sessioni edge_v2, manifest con sha256 dati/spec/git-commit (`logs/paper_canonical/bl615-smoke.*`) |
 | Lake coverage (`coverage.json`) | ✅ refresh perpetuo systemd attivo (07:00); IBKR 1m cron ora installato (vedi sotto) |
 | IBKR backfill timer | ✅ installato e enabled 2026-08-21 (`~/.config/systemd/user/oracle-ibkr-backfill.timer`, run 18:00 UTC); futures ES/NQ/GC/CL via CONTFUT + equities, 1 run verificato exit 0 |
 | Live-readiness gaps | ✅ 3/3 chiusi il 2026-08-10 (vedi §5) |
 
-> Storico: il run 2026-08-18 contava 2903 passed; il run fresco 2026-08-21
-> conta 2973 passed.
+> Storico: il run 2026-08-18 contava 2903 passed; il run 2026-08-21
+> contava 2989 passed (post BL-616); il run corrente 3019 passed.
 
 ## 3. Gate status (unica tabella gate/stato autoritativa)
 
@@ -39,7 +43,7 @@
 | G3 ledger/OMS | ✅ PASSED | PostgreSQL path attivo 25-lug; RecoveryService + ReconciliationWorker + idempotency; restart senza perdita/dup | persistenza Postgres solo in `--storage=postgres` |
 | G4 hard risk | ✅ PASSED | RiskManager, FirmProgramProfile, 35 property test, bypass audit | adapter PropFirm cablato in CLI ma **escluso dal paper harness** (BL-070 risolto) |
 | **G5 research truth** | ❌ **REJECTED** | run ufficiale ADR-016 (Fase 5, 48 obs): median Sharpe **-0.251** < 0.5, worst DD 3.98% ✅, **0 hard breach** ✅, luck p=1.0 → nessun edge statistico. Report canonico `m31-rerun-final` (ensemble v2, N onesto): median Sharpe **-2.51**, 0 breach, ma N=8 < 48 ⚠️. 0/9 multi-asset vs buy&hold, 8/8 candidati REJECTED | nessun edge sfruttabile oggi (S0.1/S0.2) |
-| G6 paper | 🟡 **REJECTED** | M32a originale 23/30; post-fix 30/30 ma con 0 trade, 0 P&L e Sharpe 0 | manca un run qualificante trade-producing; BL-024 aperto |
+| G6 paper | 🟡 **REJECTED** | BL-024 2026-08-21: 100 sessioni EdgeEnsembleV2, **390 trade reali**, P&L agg +$16.273, reconcile 100% — ma pass rate **0.35** < 0.90 e mean DD **5.53%** > 3% | il failure mode "0 trade" è chiuso; manca l'edge che passi i criteri |
 | G6-I feedback loop | 🟡 PARTIAL | Factor Timing v1 (26 test), Lorentzian causal-fix (6 test), Regime Ensemble (14 test) | nessun gate end-to-end; Lorentzian mai trigger dominante |
 | G7 programm prop-firm | ⚪ NOT_STARTED | dipende da G5+G6+poli cert | block su G5/G6 |
 | G8 funded limited | ⚪ NOT_STARTED | | |
@@ -136,15 +140,22 @@ Report: `docs/reports/live-readiness-gap-analysis.md` (status aggiornato in §2.
   L'edge esiste nel campione ma non è qualificabile così com'è: la prossima
   via è preregistrata (variante unica senza selection post-hoc, oppure
   pivot crypto factors). **BL-OPC-7 resta bloccato.**
-- **G6**: necessita un run indipendente che produca trade e P&L reali (BL-024).
+- **G6**: BL-024 eseguito 2026-08-21 — 100 sessioni EdgeEnsembleV2 con
+  390 trade reali nella catena paper completa (il failure mode "0 trade"
+  è chiuso per sempre), ma il gate resta REJECTED: pass rate 0.35 < 0.90,
+  mean max DD 5.53% > 3%. Report `docs/reports/g6-wp2-final/bl024-edgev2-2026-08-21.md`.
 - **Lane daily**: economicamente morta per il canale prop-firm (S0.2). La via
   aperta è il cambio di canale (orizzonti >1d, multi-asset, sweep candidati).
 - **BL-606**: rotazione credenziali METAAPI_TOKEN + LLM_KEY (richiede accesso
   umano ai provider — non eseguibile da script).
 - **BL-607**: history rewrite dei blob pesanti (opzionale, distruttivo,
   differito).
-- P1-B/C/D (BL-615..619): runner paper canonico, suite integration catena
-  ordini, split sources.py, structlog hot path, PIT domain type — tutti aperti.
+- **P1-B**: BL-616 chiuso (suite integration catena ordini, 16 scenari con
+  guasti iniettati). BL-615 in corso: runner canonico
+  `oracle paper run --spec` operativo con manifest riproducibile; restano
+  migrazione dei runner legacy e spec di riferimento.
+- **P1-C/D** (BL-617..619): split sources.py, structlog hot path, PIT
+  domain type — aperti.
 
 ## 8. Prossimo lavoro eseguibile (single source of truth: BACKLOG.md)
 
