@@ -28,7 +28,8 @@ BL-023 fix (2026-08-03, da /autoplan review):
 - F-18: `--stop-distance-points` / `--stop-mode atr`
 
 Output:
-- docs/reports/m31-rerun-final/{json,md}
+- logs/m31-rerun-final/{json,md} (gitignored; the canonical artifacts
+  under docs/reports/m31-rerun-final/ are committed deliberately)
 - AC: median Sharpe >= 0.5, worst DD <= 4%, hard breaches = 0
   altrimenti REJECTED con nota su cosa serve per green-light.
 """
@@ -62,11 +63,12 @@ from analytics.strategy.signals import DonchianBreakout, EmaTrend, RsiReversion
 from market.contracts import MES
 from policy.prop_firm.fixtures import TOPSTEP_TC_50K
 
-#: Expected row counts per symbol/timeframe read from the lake parquet
+#: Minimum row counts per symbol/timeframe read from the lake parquet
 #: directly (BL-023 F-07: coverage.json is stale — 13042 != 6523).
-#: Verified 2026-08-04 against data/lake/normalized (lake is LIVE — bump
-#: when it grows; 2026-08-04: ES|1d 6523, ES|1h 13747).
-EXPECTED_ROWS: dict[str, int] = {"ES|1d": 6523, "ES|1h": 13747}
+#: The lake is LIVE (daily ingestion) — enforce a FLOOR, not an exact
+#: pin (an exact pin breaks every night; see the official runner).
+#: Guard purpose: reject the 503-bar cache-shadow dataset.
+MIN_ROWS: dict[str, int] = {"ES|1d": 6523, "ES|1h": 13747}
 
 #: Periods per year per timeframe (F-17). ~5796 = 23h * 252 trading days.
 PERIODS_PER_YEAR: dict[str, int] = {"1d": 252, "1h": 5796}
@@ -153,11 +155,11 @@ def _load_data(args: argparse.Namespace) -> tuple[pl.DataFrame, str, str]:
         if df is None:
             raise ValueError(f"Lake has no data for {args.symbol}|{args.timeframe}")
         key = f"{args.symbol}|{args.timeframe}"
-        expected = EXPECTED_ROWS.get(key)
-        if expected is not None and df.height != expected:
+        expected = MIN_ROWS.get(key)
+        if expected is not None and df.height < expected:
             raise ValueError(
-                f"Lake {key} row-count mismatch: got {df.height}, expected {expected} "
-                f"(BL-023 F-04 guard). Pin stale?"
+                f"Lake {key} row-count below floor: got {df.height}, expected >= {expected} "
+                f"(BL-023 F-04 guard). Cache shadow or truncated lake?"
             )
         label = f"lake:{args.symbol}:{args.timeframe}"
         return df, "lake", label
@@ -207,12 +209,11 @@ def main() -> int:
     parser.add_argument(
         "--periods-slice", type=int, default=6, help="max periods from select_replay_periods"
     )
-    parser.add_argument(
-        "--json-output", type=Path, default=Path("docs/reports/m31-rerun-final/m31.json")
-    )
-    parser.add_argument(
-        "--markdown-output", type=Path, default=Path("docs/reports/m31-rerun-final/m31.md")
-    )
+    # Default outputs go to logs/ (gitignored machine state, P0 F-05):
+    # reruns (including the unit-test legacy-parity subprocess) must not
+    # rewrite the tracked docs/reports/m31-rerun-final/ artifacts.
+    parser.add_argument("--json-output", type=Path, default=Path("logs/m31-rerun-final/m31.json"))
+    parser.add_argument("--markdown-output", type=Path, default=Path("logs/m31-rerun-final/m31.md"))
     args = parser.parse_args()
 
     data, data_hash, data_label = _load_data(args)

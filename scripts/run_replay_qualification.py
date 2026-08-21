@@ -97,15 +97,19 @@ def main() -> int:
     parser.add_argument("--atr-multiple", type=float, default=1.0, help="ADR-016: ATR 1x")
     parser.add_argument("--atr-period", type=int, default=14)
     parser.add_argument("--stop-distance-points", type=float, default=None)
+    # Default outputs go to logs/ (gitignored machine state, P0 F-05):
+    # a rerun must not silently rewrite tracked report artifacts under
+    # docs/reports/. Promote a run to a report by committing it on
+    # purpose with an explicit --json-output/--markdown-output path.
     parser.add_argument(
         "--json-output",
         type=Path,
-        default=Path("docs/reports/m31-historical-replay-qualification.json"),
+        default=Path("logs/replay-qualification/m31-historical-replay-qualification.json"),
     )
     parser.add_argument(
         "--markdown-output",
         type=Path,
-        default=Path("docs/reports/m31-historical-replay-qualification.md"),
+        default=Path("logs/replay-qualification/m31-historical-replay-qualification.md"),
     )
     parser.add_argument("--require-pass", action="store_true")
     args = parser.parse_args()
@@ -122,7 +126,7 @@ def main() -> int:
     expected_variants = ReplayVariant.factorial()
     if args.data_source == "lake":
         # BL-023 F-04/F-07: with the lake the row-count guard IS the
-        # provenance check (EXPECTED_ROWS pin, enforced in _load_data).
+        # provenance check (MIN_ROWS floor, enforced in _load_data).
         data_hash = f"lake:{args.symbol}:{args.timeframe}:{data.height}rows"
         point_in_time_verified = True
     else:
@@ -295,12 +299,14 @@ def _load_macro_events(path: Path | None) -> list[MacroSurpriseEvent]:
     return [MacroSurpriseEvent.model_validate(item) for item in payload]
 
 
-#: Expected row counts per symbol/timeframe read from the lake parquet
+#: Minimum row counts per symbol/timeframe read from the lake parquet
 #: directly (BL-023 F-07: coverage.json was stale — 13042 != 6523).
-#: NOTE: the lake is LIVE (daily ingestion) — the pin tracks the current
-#: row count; bump it when the lake grows
-#: (2026-08-18: 6533 daily, 13973 1h; 2026-08-19: 6534 daily, 13993 1h).
-EXPECTED_ROWS: dict[str, int] = {"ES|1d": 6534, "ES|1h": 13993}
+#: NOTE: the lake is LIVE (daily ingestion) — an exact pin breaks every
+#: night as new bars land (the 6534/13993 pin went stale on 2026-08-20).
+#: Enforce a FLOOR instead: the guard exists to reject the 503-bar
+#: cache-shadow dataset, not to reject a growing lake.
+#: (2026-08-20: lake at 6535 daily, 14016 1h.)
+MIN_ROWS: dict[str, int] = {"ES|1d": 6534, "ES|1h": 13993}
 
 
 def _periods_per_year(timeframe: str) -> int:
@@ -321,11 +327,11 @@ def _load_data(args: argparse.Namespace) -> pl.DataFrame:
         if frame is None:
             raise ValueError(f"Lake has no data for {args.symbol}|{args.timeframe}")
         key = f"{args.symbol}|{args.timeframe}"
-        expected = EXPECTED_ROWS.get(key)
-        if expected is not None and frame.height != expected:
+        expected = MIN_ROWS.get(key)
+        if expected is not None and frame.height < expected:
             raise ValueError(
-                f"Lake {key} row-count mismatch: got {frame.height}, expected {expected} "
-                f"(BL-023 F-04 guard). Pin stale?"
+                f"Lake {key} row-count below floor: got {frame.height}, expected >= {expected} "
+                f"(BL-023 F-04 guard). Cache shadow or truncated lake?"
             )
         return frame
     frame = pl.read_parquet(args.data)
