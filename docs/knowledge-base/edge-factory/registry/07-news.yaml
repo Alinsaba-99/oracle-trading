@@ -1,0 +1,81 @@
+schema_version: 1
+domain: 07-news
+hypotheses:
+- id: EF-001
+  nome: google-trends-recession-reversal
+  meccanismo: spike di search volume per 'recession/unemployment/bankruptcy' predice
+    reversal short-term e spike di volatilità nei giorni successivi
+  perche_esiste: l'attenzione retail anticipa il panico di vendita e l'aumento di
+    hedging (Da et al 2015); l'informazione di attenzione è misurabile gratis
+  origine: kb
+  fonti:
+  - docs/knowledge-base/07-news/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - pytrends (Google Trends, free 2004+)
+  - SPY EOD lake
+  dati_posseduti: null
+  asset_candidati:
+  - SPY, QQQ
+  timeframe:
+  - 1D
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777619+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/07-news/README.md
+    ref: docs/knowledge-base/07-news/README.md
+- id: EF-002
+  nome: edgar-fulltext-negativity
+  meccanismo: negatività (dizionario Loughran-McDonald) dei filing 10-K/8-K sopra
+    la norma del ticker → drift negativo dei giorni successivi; long-short decili
+    di sentiment
+  perche_esiste: il testo dei filing contiene tono informativo che il prezzo assorbe
+    lentamente (Tetlock 2007, Garcia 2013); il dizionario LM è calibrato per il finance
+  origine: kb
+  fonti:
+  - docs/knowledge-base/07-news/README.md
+  - docs/knowledge-base/AUDIT-2026-08-17.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - SEC EDGAR full-text API (free, no key)
+  - prezzi EOD
+  dati_posseduti: null
+  asset_candidati:
+  - US equities
+  timeframe:
+  - event-driven (filing date)
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777636+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/07-news/README.md
+    ref: docs/knowledge-base/07-news/README.md
+- id: EF-003
+  nome: wsb-retail-positioning-contrarian
+  meccanismo: top-50 ticker menzionati WSB (Tradestie free) con sentiment estremo
+    unilaterale → fade a 2-5 giorni
+  perche_esiste: 'il crowding retail su singolo nome crea squeeze/overshoot che reverte
+    (Antweiler-Frank 2004 sui message board: i volumi predicono volatilità, non direzione
+    — confutazione attiva in Stage 2)'
+  origine: kb
+  fonti:
+  - docs/knowledge-base/07-news/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - Tradestie/ApeWisdom API (free)
+  - prezzi EOD
+  dati_posseduti: null
+  asset_candidati:
+  - US equities top-momentum
+  timeframe:
+  - 1D
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777655+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/07-news/README.md
+    ref: docs/knowledge-base/07-news/README.md

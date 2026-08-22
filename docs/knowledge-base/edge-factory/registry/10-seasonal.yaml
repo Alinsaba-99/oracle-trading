@@ -1,0 +1,74 @@
+schema_version: 1
+domain: 10-seasonal
+hypotheses:
+- id: EF-001
+  nome: halloween-sell-in-may
+  meccanismo: 'long SPY 31-ott → 1-mag, flat/cash il resto: winter (nov-apr) ha rendimenti
+    ~4.2% sopra summer su 323 anni e 89 paesi'
+  perche_esiste: vacanze, flussi di compenso e risk appetite stagionali (Bouman-Jacobsen
+    2002); edge robusto globalmente MA noto da decenni → decay atteso alto
+  origine: kb
+  fonti:
+  - docs/knowledge-base/10-seasonal/README.md
+  effect_size_dichiarata: +4.2% winter vs summer (Bouman-Jacobsen 2002, pre-decay)
+  decay_atteso_pct: 40.0
+  dati_richiesti:
+  - SPY EOD lake
+  dati_posseduti: null
+  asset_candidati:
+  - SPY, DAX proxy, SimFin equities
+  timeframe:
+  - 1D, regime stagionale
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777766+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/10-seasonal/README.md
+    ref: docs/knowledge-base/10-seasonal/README.md
+- id: EF-002
+  nome: turn-of-month-effect
+  meccanismo: 'long SPY primi 4 giorni trading del mese (TOM) + ultimi 2: i rendimenti
+    si concentrano lì (Hensel-Ziemba 1987)'
+  perche_esiste: flussi stipendi/pensioni ricorrenti entrano a inizio mese; documentato
+    ma crowded → decay alto
+  origine: kb
+  fonti:
+  - docs/knowledge-base/10-seasonal/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 45.0
+  dati_richiesti:
+  - SPY EOD lake
+  dati_posseduti: null
+  asset_candidati:
+  - SPY
+  timeframe:
+  - 1D calendar
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777787+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/10-seasonal/README.md
+    ref: docs/knowledge-base/10-seasonal/README.md
+- id: EF-003
+  nome: santa-claus-rally
+  meccanismo: 'long ultimi 5 giorni dicembre + primi 2 gennaio: S&P +1.3% medio dal
+    1950, 76% positivo'
+  perche_esiste: liquidità ridotta + anticipation January effect; crowded → decay
+  origine: kb
+  fonti:
+  - docs/knowledge-base/10-seasonal/README.md
+  effect_size_dichiarata: +1.3% medio sul periodo, 76% positivo (dal 1950)
+  decay_atteso_pct: 45.0
+  dati_richiesti:
+  - SPY EOD lake
+  dati_posseduti: null
+  asset_candidati:
+  - SPY
+  timeframe:
+  - 1D calendar
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777810+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/10-seasonal/README.md
+    ref: docs/knowledge-base/10-seasonal/README.md

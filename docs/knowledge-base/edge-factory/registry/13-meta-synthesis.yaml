@@ -1,0 +1,80 @@
+schema_version: 1
+domain: 13-meta-synthesis
+hypotheses:
+- id: EF-001
+  nome: meta-labeling-sizing
+  meccanismo: 'modello secondario (LightGBM) impara quando fidarsi del segnale primario:
+    features = regime + volatilità + confidenza segnale → output = sizing; solo trade
+    con meta-prob > soglia'
+  perche_esiste: 'separa la predizione (recall) dal sizing (precision): migliora Sharpe
+    senza inventare segnali nuovi (López de Prado 2018)'
+  origine: kb
+  fonti:
+  - docs/knowledge-base/13-meta-synthesis/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - segnali candidati factory + features regime (lake)
+  dati_posseduti: null
+  asset_candidati:
+  - per candidato factory
+  timeframe:
+  - per segnale
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777930+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/13-meta-synthesis/README.md
+    ref: docs/knowledge-base/13-meta-synthesis/README.md
+- id: EF-002
+  nome: hrp-portfolio-allocation
+  meccanismo: 'allocazione Hierarchical Risk Parity (clustering gerarchico sulle correlazioni)
+    per il portafoglio dei candidati APPROVED: robusta OOS, senza inversione di matrice
+    né stima rendimenti attesi'
+  perche_esiste: le stime di rendimenti attesi sono fragili; HRP sfrutta solo la struttura
+    di correlazione, più stabile (López de Prado 2016)
+  origine: kb
+  fonti:
+  - docs/knowledge-base/13-meta-synthesis/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - equity curve candidati (runner BL-615)
+  dati_posseduti: null
+  asset_candidati:
+  - portafoglio factory
+  timeframe:
+  - 1M rebalance
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777952+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/13-meta-synthesis/README.md
+    ref: docs/knowledge-base/13-meta-synthesis/README.md
+- id: EF-003
+  nome: crowded-strategy-detection
+  meccanismo: metrica crowding (correlazione incrociata tra lanes candidate + decay
+    IC rolling) sopra soglia → cap sizing delle strategie correlate (López de Prado
+    2019, BL-KB-109)
+  perche_esiste: 'strategie affollate condividono il rischio di liquidazione: la correlazione
+    esplode nei drawdown e l''ensemble sembra diversificato finché non serve'
+  origine: kb
+  fonti:
+  - docs/knowledge-base/13-meta-synthesis/README.md
+  - docs/knowledge-base/AUDIT-2026-08-17.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - equity curve candidati
+  - rolling IC (modulo I-E esistente)
+  dati_posseduti: null
+  asset_candidati:
+  - ensemble factory
+  timeframe:
+  - 1M
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777971+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/13-meta-synthesis/README.md
+    ref: docs/knowledge-base/13-meta-synthesis/README.md

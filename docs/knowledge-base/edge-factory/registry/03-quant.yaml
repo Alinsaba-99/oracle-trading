@@ -1,0 +1,80 @@
+schema_version: 1
+domain: 03-quant
+hypotheses:
+- id: EF-001
+  nome: deflated-sharpe-multiple-testing
+  meccanismo: 'metodo (non segnale): ogni candidato factory con N varianti testate
+    riceve DSR = Φ((SR − SR0)/SE) con SR0 atteso sotto null su N trial; gate DSR ≥
+    0.95'
+  perche_esiste: 'il massimo di N Sharpe random cresce con N: senza deflazione ogni
+    campione produce falsi champion (Bailey-López de Prado 2014; ADR-017 già adotta)'
+  origine: kb
+  fonti:
+  - docs/knowledge-base/03-quant/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - equity curve dei candidati factory (output runner BL-615)
+  dati_posseduti: null
+  asset_candidati:
+  - tutti i candidati factory
+  timeframe:
+  - per-candidato
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777394+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/03-quant/README.md
+    ref: docs/knowledge-base/03-quant/README.md
+- id: EF-002
+  nome: harvey-liu-zhu-t-threshold
+  meccanismo: 'metodo (non segnale): un fattore passa solo con t-stat > 3.0 (non 2.0)
+    per il multiple testing su 316+ fattori pubblicati; applicato all''IC t-block
+    dell''IC screen'
+  perche_esiste: con centinaia di fattori testati l'1% di falsi positivi a t=2 è un
+    esercito; la soglia si alza con il numero di ipotesi (Harvey-Liu-Zhu 2016)
+  origine: kb
+  fonti:
+  - docs/knowledge-base/03-quant/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - IC screen output (BL-706)
+  dati_posseduti: null
+  asset_candidati:
+  - tutti i fattori factory
+  timeframe:
+  - per-fattore
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777411+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/03-quant/README.md
+    ref: docs/knowledge-base/03-quant/README.md
+- id: EF-003
+  nome: hurst-regime-persistence
+  meccanismo: Hurst exponent > 0.5 (persistent) → strategia trend-following sull'asset;
+    < 0.5 → mean-reversion; stima rolling R/S su finestre 2-4 anni come router di
+    strategia
+  perche_esiste: long memory nei rendimenti è documentata e stabile OOS; il market
+    microstructure genera autocorrelazione di segno opposto nei due regimi (Hurst
+    1951; KB-09)
+  origine: kb
+  fonti:
+  - docs/knowledge-base/03-quant/README.md
+  - docs/knowledge-base/09-cyclical/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - OHLCV lake (ES 1h, BTCUSDT 1h, FX 1m resample)
+  dati_posseduti: null
+  asset_candidati:
+  - ES, BTCUSDT, EURUSD
+  timeframe:
+  - 1h, 1d
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777431+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/03-quant/README.md
+    ref: docs/knowledge-base/03-quant/README.md

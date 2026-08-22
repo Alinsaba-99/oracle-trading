@@ -1,0 +1,77 @@
+schema_version: 1
+domain: 11-onchain
+hypotheses:
+- id: EF-001
+  nome: mvrv-extreme-reversal
+  meccanismo: MVRV (market value / realized value) > 3.5 → de-risk BTC (top storico);
+    < 1.0 → accumulate (bottom); long/flat con soglie pre-registrate
+  perche_esiste: 'MVRV misura il profitto medio detenuto: agli estremi la propensione
+    a vendere (profit-taking) o la capitulation creano i turn di ciclo'
+  origine: kb
+  fonti:
+  - docs/knowledge-base/11-onchain/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - Btcscan/Etherscan free API (UTXO/realized cap)
+  - prezzo BTC lake
+  dati_posseduti: null
+  asset_candidati:
+  - BTC, ETH
+  timeframe:
+  - 1D/1W
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777828+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/11-onchain/README.md
+    ref: docs/knowledge-base/11-onchain/README.md
+- id: EF-002
+  nome: exchange-outflow-accumulation
+  meccanismo: outflow da exchange sostenuto (7d net outflow z-score alto) → rialzo
+    nei mesi successivi; inflow sostenuto → de-risk
+  perche_esiste: prelievi verso self-custody = accumulo a lungo termine (diamond hands),
+    depositi = intenzione di vendita
+  origine: kb
+  fonti:
+  - docs/knowledge-base/11-onchain/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - Etherscan/chain API exchange flows (free)
+  - prezzo lake
+  dati_posseduti: null
+  asset_candidati:
+  - BTC, ETH
+  timeframe:
+  - 1D
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777850+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/11-onchain/README.md
+    ref: docs/knowledge-base/11-onchain/README.md
+- id: EF-003
+  nome: sopr-regime
+  meccanismo: SOPR < 1 (vendite in perdita) in fase di discesa = capitulation → long;
+    SOPR > 1 e in crescita durante il rally = sano
+  perche_esiste: la percentuale di output spesi in perdita identifica capitulation
+    bottoms (sentiment on-chain verificabile, non dichiarativo)
+  origine: kb
+  fonti:
+  - docs/knowledge-base/11-onchain/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - Btcscan API (free) o Binance Vision aggTrades proxy
+  dati_posseduti: null
+  asset_candidati:
+  - BTC
+  timeframe:
+  - 1D
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777866+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/11-onchain/README.md
+    ref: docs/knowledge-base/11-onchain/README.md

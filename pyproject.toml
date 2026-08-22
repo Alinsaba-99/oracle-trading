@@ -184,6 +184,9 @@ split-on-trailing-comma = false
 "scripts/probe_long_prompt.py" = ["E501"]
 "scripts/generate_alert_report.py" = ["E501"]
 "scripts/register_thesis.py" = ["E501"]
+# BL-701/702: hypothesis text (mechanism/why) is Italian prose mined from the
+# KB — wrapping it would break diff-ability against the source documents.
+"scripts/build_edge_factory_registry.py" = ["E501"]
 "scripts/smoke_dsr_packages.py" = ["F401"]
 "scripts/smoke_ibkr.py" = ["SIM105", "SIM108", "F841", "E501"]
 "tests/unit/test_dystopian_stress.py" = ["ARG001"]

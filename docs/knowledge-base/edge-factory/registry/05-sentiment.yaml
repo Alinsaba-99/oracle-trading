@@ -1,0 +1,80 @@
+schema_version: 1
+domain: 05-sentiment
+hypotheses:
+- id: EF-001
+  nome: baker-wurgler-sentiment-contrarian
+  meccanismo: indice sentiment (closed-end discount, IPO volume, turnover...) alto
+    → sotto pesa small/growth/volatile stocks; long-short decile size/growth con condizione
+    di sentiment
+  perche_esiste: l'euforia gonfia i titoli hard-to-arbitrage; il sentiment alto è
+    stato predittore negativo a 1-3y (Baker-Wurgler 2006)
+  origine: kb
+  fonti:
+  - docs/knowledge-base/05-sentiment/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - FRED/Sentiment proxies free (AAII scraper, CBOE P/C CSV, IPO count proxy)
+  - prezzi decili SimFin/yfinance
+  dati_posseduti: null
+  asset_candidati:
+  - US equities SimFin (small/growth tilt)
+  timeframe:
+  - 1M
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777510+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/05-sentiment/README.md
+    ref: docs/knowledge-base/05-sentiment/README.md
+- id: EF-002
+  nome: cnn-fear-greed-extreme-contrarian
+  meccanismo: CNN Fear&Greed < 10 (extreme fear) → long SPY orizzonte 3-12m; > 90
+    non si verifica mai (0 giorni in 10y) → braccio long-only
+  perche_esiste: 'la paura estrema coincide con capitulation e premi rischiosi compressi;
+    statistiche 10y: avg 49 std 20, 16 giorni sotto 10'
+  origine: kb
+  fonti:
+  - docs/knowledge-base/05-sentiment/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - CNN Fear&Greed scraper (chrome-devtools-mcp/curl_cffi)
+  - SPY EOD lake
+  dati_posseduti: null
+  asset_candidati:
+  - SPY
+  timeframe:
+  - 1D signal
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777531+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/05-sentiment/README.md
+    ref: docs/knowledge-base/05-sentiment/README.md
+- id: EF-003
+  nome: variance-risk-premium-vrp
+  meccanismo: 'VRP = VIX² − realized var future: premium alto → attesi rendimenti
+    equity positivi (Bollerslev-Tauchen-Zhou 2009). NOTA: backtest Oracle Lane D reale
+    Sharpe −0.08 (2026-08-17) — serve regime filter + tail cap prima di riprovare'
+  perche_esiste: la domanda di assicurazione contro la volatilità fa pagare la varianza
+    più del suo valore atteso; il premium compensa chi la vende
+  origine: kb
+  fonti:
+  - docs/knowledge-base/05-sentiment/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - VIX (FRED VIXCLS)
+  - SPY 1m/1d per realized var (lake)
+  dati_posseduti: null
+  asset_candidati:
+  - SPY
+  timeframe:
+  - 1M
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777551+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/05-sentiment/README.md
+    ref: docs/knowledge-base/05-sentiment/README.md

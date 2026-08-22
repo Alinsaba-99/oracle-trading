@@ -1,0 +1,81 @@
+schema_version: 1
+domain: 12-behavioral
+hypotheses:
+- id: EF-001
+  nome: de-bondt-thaler-long-reversal
+  meccanismo: 'long i 35 loser 3-5y (decile più svalutato), short i winner: i loser
+    outperformano 3-5y dopo (asimmetrico, più forte a gennaio)'
+  perche_esiste: 'overreaction: il mercato estrapola troppo i risultati passati e
+    la correzione successiva genera il reversal (De Bondt-Thaler 1985)'
+  origine: kb
+  fonti:
+  - docs/knowledge-base/12-behavioral/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - SimFin/yfinance prezzi EOD (need 5y history)
+  - SimFin fundamentals
+  dati_posseduti: null
+  asset_candidati:
+  - US equities SimFin
+  timeframe:
+  - 1Y formation → 1-3Y holding
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777882+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/12-behavioral/README.md
+    ref: docs/knowledge-base/12-behavioral/README.md
+- id: EF-002
+  nome: dhs-overconfidence-underreaction
+  meccanismo: 'dopo run di risultati positivi (management overconfident) gli earnings
+    beat si allungano in drift più persistente: long i ticker con momentum fondamentale
+    + beat consecutivi'
+  perche_esiste: overconfidence + biased self-attribution rallenta l'aggiustamento
+    dei prezzi (Daniel-Hirshleifer-Subrahmanyam 1998, BL-KB-105)
+  origine: kb
+  fonti:
+  - docs/knowledge-base/12-behavioral/README.md
+  - docs/knowledge-base/AUDIT-2026-08-17.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - SimFin earnings + prices
+  - SEC EDGAR filing dates
+  dati_posseduti: null
+  asset_candidati:
+  - US equities SimFin
+  timeframe:
+  - 1Q
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777898+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/12-behavioral/README.md
+    ref: docs/knowledge-base/12-behavioral/README.md
+- id: EF-003
+  nome: 52-week-high-anchoring
+  meccanismo: 'prossimità al 52-week high (George-Hwang 2004): i titoli vicini al
+    massimo annuale continuano a outperformare (anchoring bias: il massimo è visto
+    come troppo caro)'
+  perche_esiste: gli investitori ancorano al massimo storico recente e vendono troppo
+    presto; l'aggiustamento avviene con drift
+  origine: kb
+  fonti:
+  - docs/knowledge-base/01-fundamental/README.md
+  - docs/knowledge-base/12-behavioral/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - prezzi EOD SimFin/yfinance
+  dati_posseduti: null
+  asset_candidati:
+  - US equities SimFin
+  timeframe:
+  - 1M
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777913+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/01-fundamental/README.md
+    ref: docs/knowledge-base/01-fundamental/README.md

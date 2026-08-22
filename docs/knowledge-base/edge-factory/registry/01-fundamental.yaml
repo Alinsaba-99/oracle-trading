@@ -1,0 +1,108 @@
+schema_version: 1
+domain: 01-fundamental
+hypotheses:
+- id: EF-001
+  nome: novy-marx-gross-profitability
+  meccanismo: 'aziende con alto profitto lordo su asset (GPA) sottoperformano le attese:
+    gross profitability è un fattore di qualità che predice rendimenti cross-sectional
+    mensili oltre value'
+  perche_esiste: costi di ingresso/uscita e vantaggi competitivi persistenti generano
+    profitti stabili che il mercato sconta troppo lentamente (friction del capitale
+    fisico)
+  origine: kb
+  fonti:
+  - docs/knowledge-base/01-fundamental/README.md
+  effect_size_dichiarata: documentata in Novy-Marx 2013 (gross profitability premium)
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - SimFin income statement + balance sheet (185 ticker)
+  - prezzi EOD SimFin/yfinance
+  dati_posseduti: null
+  asset_candidati:
+  - US equities SimFin 185 ticker
+  timeframe:
+  - 1M rebalance
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777056+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/01-fundamental/README.md
+    ref: docs/knowledge-base/01-fundamental/README.md
+- id: EF-002
+  nome: piotroski-fscore-value-long
+  meccanismo: 'F-Score 9-flagge (ROA, accruals, leverage, margin...) dentro il decile
+    value separa i value-trap dai recuperabili: long high-F value stocks, rebalance
+    annuale'
+  perche_esiste: mercato punisce troppo le azioni svalutate per inattenzione; i segnali
+    contabili ravvicinano la correzione dell'underpricing
+  origine: kb
+  fonti:
+  - docs/knowledge-base/01-fundamental/README.md
+  effect_size_dichiarata: +13.4% annuo su high-F value stocks (Piotroski 2000, pre-decay)
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - SimFin fundamentals
+  - prezzi EOD
+  dati_posseduti: null
+  asset_candidati:
+  - US equities SimFin
+  timeframe:
+  - 1Y rebalance
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777238+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/01-fundamental/README.md
+    ref: docs/knowledge-base/01-fundamental/README.md
+- id: EF-003
+  nome: sloan-accrual-anomaly
+  meccanismo: 'aziende con accruals elevati (utile cash-flow < utile contabile) hanno
+    rendimenti futuri inferiori: short high-accrual / long low-accrual, decili mensili'
+  perche_esiste: gli investitori ancorano all'earnings totale e ignorano la componente
+    accrual meno persistente (naive expectations)
+  origine: kb
+  fonti:
+  - docs/knowledge-base/01-fundamental/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - SimFin cashflow + income statement
+  - prezzi EOD
+  dati_posseduti: null
+  asset_candidati:
+  - US equities SimFin
+  timeframe:
+  - 1Q signals, 1M rebalance
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777275+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/01-fundamental/README.md
+    ref: docs/knowledge-base/01-fundamental/README.md
+- id: EF-004
+  nome: value-momentum-everywhere
+  meccanismo: 'combo value + momentum 8 asset class: segnali value (book-to-price)
+    e momentum (12-1) cross-sectional su indici/ETF multi-asset, long top-quintile
+    / short bottom'
+  perche_esiste: premi comuni a rischio di liquidità e comportamentali emergono in
+    ogni classe di asset (Asness-Moskowitz-Pedersen 2013, BL-KB-103)
+  origine: kb
+  fonti:
+  - docs/knowledge-base/AUDIT-2026-08-17.md
+  - docs/knowledge-base/01-fundamental/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - 'ETF EOD multi-asset (lake/yfinance: SPY, IEF, DBC, UUP, GLD...)'
+  - SimFin fundamentals per la parte equity
+  dati_posseduti: null
+  asset_candidati:
+  - SPY/IEF/DBC/UUP/GLD/USO + SimFin equities
+  timeframe:
+  - 1M rebalance
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777299+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/AUDIT-2026-08-17.md
+    ref: docs/knowledge-base/AUDIT-2026-08-17.md

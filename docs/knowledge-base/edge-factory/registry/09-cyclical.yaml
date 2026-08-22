@@ -1,0 +1,52 @@
+schema_version: 1
+domain: 09-cyclical
+hypotheses:
+- id: EF-001
+  nome: hurst-rs-regime-router
+  meccanismo: Hurst > 0.5 → asset persistent (alloca trend-following); < 0.5 → anti-persistent
+    (alloca mean-reversion); router ricalcolato mensile su 3y rolling
+  perche_esiste: la long memory è l'unico ciclo misurabile con rigore nel dominio
+    (Hurst 1951); Elliott/Gann sono soggettivi e scartati, Kondratieff ha troppo poche
+    osservazioni
+  origine: kb
+  fonti:
+  - docs/knowledge-base/09-cyclical/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - OHLCV lake multi-asset (ES, BTCUSDT, FX)
+  dati_posseduti: null
+  asset_candidati:
+  - ES, BTCUSDT, EURUSD
+  timeframe:
+  - 1d → stima 3y rolling
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777732+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/09-cyclical/README.md
+    ref: docs/knowledge-base/09-cyclical/README.md
+- id: EF-002
+  nome: fft-spectral-cycle-detector
+  meccanismo: spettro FFT dei rendimenti con picchi persistenti a periodi 40-200 giorni
+    → timing entrata/uscita su quei periodi; se spettro piatto → nessun trade
+  perche_esiste: alcuni asset mostrano periodicità debole ma misurabile; il filtro
+    spettrale la quantifica senza le pretese soggettive di Elliott
+  origine: kb
+  fonti:
+  - docs/knowledge-base/09-cyclical/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - OHLCV 1d lake
+  dati_posseduti: null
+  asset_candidati:
+  - ES, GC, BTCUSDT
+  timeframe:
+  - 1d
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777748+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/09-cyclical/README.md
+    ref: docs/knowledge-base/09-cyclical/README.md

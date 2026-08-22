@@ -1,0 +1,80 @@
+schema_version: 1
+domain: 02-macro
+hypotheses:
+- id: EF-001
+  nome: output-gap-equity-risk-premium
+  meccanismo: output gap negativo (produzione sotto trend HP-filter) predice excess
+    returns futuri di azioni e bond a 1 anno; long risk asset quando gap negativo
+  perche_esiste: la política monetaria accommoda e la confluenza di rendimenti spinge
+    premi rischiosi al massimo quando l'economia è deprimuta (Cooper-Priestley 2009)
+  origine: kb
+  fonti:
+  - docs/knowledge-base/02-macro/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - FRED INDPRO + FEDFUNDS vintage ALFRED (as_of)
+  - ETF EOD SPY/IEF
+  dati_posseduti: null
+  asset_candidati:
+  - SPY, IEF
+  timeframe:
+  - 1M signal, 1Y orizzonte
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777318+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/02-macro/README.md
+    ref: docs/knowledge-base/02-macro/README.md
+- id: EF-002
+  nome: yield-curve-inversion-regime
+  meccanismo: spread 10Y-2Y negativo anticipa recessione con lead 12-18 mesi; de-risking
+    graduale (riduzione equity beta) da inversione confermata 60 giorni
+  perche_esiste: il mercato anticipa il ciclo di tagli tassi che segue la recessione
+    attesa; le probabilità di recessione comprimono il multiplo equity con ritardo
+  origine: kb
+  fonti:
+  - docs/knowledge-base/02-macro/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - FRED DGS10 + DGS2 (T10Y2Y) vintage ALFRED
+  - ETF EOD SPY
+  dati_posseduti: null
+  asset_candidati:
+  - SPY, IEF
+  timeframe:
+  - 1D signal
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777339+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/02-macro/README.md
+    ref: docs/knowledge-base/02-macro/README.md
+- id: EF-003
+  nome: growth-inflation-4regime-allocation
+  meccanismo: 'classificatore 4 regimi (growth↑↓ × inflation↑↑ su dati PIT) rialloca:
+    stocks in growth↑infl↓, bonds in growth↓infl↓, commodities in growth↑infl↑, cash
+    in growth↓infl↑'
+  perche_esiste: ogni asset class incassa i flussi ottimali nel proprio regime macro
+    (framework Bridgewater All Weather); le transizioni di regime sono lente e rilevabili
+    su dati PIT
+  origine: kb
+  fonti:
+  - docs/knowledge-base/02-macro/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - FRED CPIAUCSL + INDPRO vintage ALFRED
+  - ETF EOD SPY/IEF/DBC/UUP
+  dati_posseduti: null
+  asset_candidati:
+  - SPY, IEF, DBC, UUP
+  timeframe:
+  - 1M rebalance
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777356+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/02-macro/README.md
+    ref: docs/knowledge-base/02-macro/README.md

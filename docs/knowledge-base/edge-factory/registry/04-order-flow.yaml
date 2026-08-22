@@ -1,0 +1,80 @@
+schema_version: 1
+domain: 04-order-flow
+hypotheses:
+- id: EF-001
+  nome: vpin-l1-informed-trading
+  meccanismo: VPIN (volume-binned probability of informed trading, bulk volume classification
+    con tick rule) alto preannuncia volatilità di prezzo; short-vol/de-risk quando
+    VPIN estremo
+  perche_esiste: 'il flusso informato si accumula prima dei movimenti: la classificazione
+    del volume per bucket sincronizzato rende visibile l''attività informata anche
+    senza L2 (Easley-López de Prado-O''Hara 2012, BL-KB-102 — sblocca il dominio su
+    dati L1 free)'
+  origine: kb
+  fonti:
+  - docs/knowledge-base/AUDIT-2026-08-17.md
+  - docs/knowledge-base/04-order-flow/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - aggTrades o OHLCV+volume 1m (lake BTCUSDT; HistData/IBKR per FX/US in going-forward)
+  dati_posseduti: false
+  asset_candidati:
+  - BTCUSDT, ETHUSDT (crypto ora); EURUSD going-forward
+  timeframe:
+  - 1m → VPIN bucket ~1/50 volume giornaliero
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777451+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/AUDIT-2026-08-17.md
+    ref: docs/knowledge-base/AUDIT-2026-08-17.md
+- id: EF-002
+  nome: ofi-cont-brown-l2
+  meccanismo: Order Flow Imbalance (net flow ai best quote) predice variazioni di
+    prezzo a orizzonte minuti; strategia momentum-ofi a bassa frequenza di revisione
+  perche_esiste: gli ordini aggressivi consumano liquidità e spostano il fair value
+    (Cont-Brown 2008); l'effetto inverte su orizzonti lunghi
+  origine: kb
+  fonti:
+  - docs/knowledge-base/04-order-flow/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - L2 order book (crypto free via Binance WS; US paywalled $75-100/mo — HARD RULE
+    ADR-020 esclude)
+  dati_posseduti: false
+  asset_candidati:
+  - BTCUSDT perp
+  timeframe:
+  - tick/100ms → 1m
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777470+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/04-order-flow/README.md
+    ref: docs/knowledge-base/04-order-flow/README.md
+- id: EF-003
+  nome: cumulative-delta-trend-crypto
+  meccanismo: 'cumulative delta (ask-bid volume) divergente dal prezzo segnala esaurimento
+    dell''aggressione: price new-high + delta non-confirm → reversal atteso'
+  perche_esiste: l'aggressione unilaterale esaurisce la liquidità disponibile; la
+    divergenza indica che il movimento non ha più combustibile (footprint/Dalton framework)
+  origine: kb
+  fonti:
+  - docs/knowledge-base/04-order-flow/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - Binance Vision aggTrades (delta da tick rule), OHLCV 1h lake
+  dati_posseduti: null
+  asset_candidati:
+  - BTCUSDT, ETHUSDT
+  timeframe:
+  - 1h
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777489+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/04-order-flow/README.md
+    ref: docs/knowledge-base/04-order-flow/README.md

@@ -1,0 +1,80 @@
+schema_version: 1
+domain: 08-intermarket
+hypotheses:
+- id: EF-001
+  nome: stock-bond-correlation-regime
+  meccanismo: correlazione stock-bond 60d che passa da negativa a positiva (inflation
+    regime) → ridurre diversificazione bond, alzare cash/commodities; detector di
+    flight-to-quality breakdown
+  perche_esiste: la correlazione negativa vale solo nel regime disinflattivo; il flip
+    2022 ha reso i bond un hedge inaffidabile (Baur-Lucey 2010 + 2022 flip documentato)
+  origine: kb
+  fonti:
+  - docs/knowledge-base/08-intermarket/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - ETF EOD SPY+IEF/AGG (lake)
+  - FRED T10YIE inflation
+  dati_posseduti: null
+  asset_candidati:
+  - SPY, IEF, DBC
+  timeframe:
+  - 1D rolling 60d
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777679+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/08-intermarket/README.md
+    ref: docs/knowledge-base/08-intermarket/README.md
+- id: EF-002
+  nome: credit-spread-equity-predictor
+  meccanismo: Baa-Aaa spread in allargamento → sotto pesa equity nei mesi successivi
+    (spread alto → rendimenti equity futuri bassi)
+  perche_esiste: 'lo spread credit è il termometro del rischio di default atteso:
+    anticipa il ciclo reale e comprime i multipli con 2-6 mesi di lead'
+  origine: kb
+  fonti:
+  - docs/knowledge-base/08-intermarket/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - FRED BAA_AAAA (vintage ALFRED)
+  - SPY EOD
+  dati_posseduti: null
+  asset_candidati:
+  - SPY
+  timeframe:
+  - 1M
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777699+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/08-intermarket/README.md
+    ref: docs/knowledge-base/08-intermarket/README.md
+- id: EF-003
+  nome: sector-rotation-business-cycle
+  meccanismo: 'classificatore 4 stadi ciclo (expansion/peak/contraction/recovery)
+    → rotazione settoriale con lead 6-9m: tech in expansion, energy in peak, utilities/staples
+    in contraction, financials in recovery'
+  perche_esiste: i settori hanno sensitività ciclica diversa e il mercato li prezza
+    con ritardo rispetto al ciclo reale (Stovall sector rotation)
+  origine: kb
+  fonti:
+  - docs/knowledge-base/08-intermarket/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - ETF settoriali EOD (XLK, XLE, XLU, XLP, XLF via yfinance)
+  - FRED INDPRO/CPIAUCSL
+  dati_posseduti: null
+  asset_candidati:
+  - XLK, XLE, XLU, XLP, XLF
+  timeframe:
+  - 1M
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777716+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/08-intermarket/README.md
+    ref: docs/knowledge-base/08-intermarket/README.md

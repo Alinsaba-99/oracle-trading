@@ -1,0 +1,80 @@
+schema_version: 1
+domain: 06-positioning
+hypotheses:
+- id: EF-001
+  nome: cot-smart-money-indicator
+  meccanismo: SMI = posizionamento non-commercial relativo ai commercial; estremi
+    commercial long → bottom market (long), estremi spec long crowded → caution. Long-or-flat
+    su futures
+  perche_esiste: 'gli hedger commerciano per business, gli speculatori ineriscono
+    al momentum: gli estremi degli hedger catturano i turn (Bhansali 2014, edge +4-6%/yr
+    dichiarato su commodity)'
+  origine: kb
+  fonti:
+  - docs/knowledge-base/06-positioning/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - CFTC COT historical compressed (free, 1986+)
+  - futures EOD (ES, GC, CL dal lake)
+  dati_posseduti: null
+  asset_candidati:
+  - ES, GC, CL
+  timeframe:
+  - 1W (COT cadence)
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777568+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/06-positioning/README.md
+    ref: docs/knowledge-base/06-positioning/README.md
+- id: EF-002
+  nome: cot-hedging-pressure-deroon
+  meccanismo: 'hedging pressure (net commercial position normalizzato) forecasta rendimenti
+    futures commodity: long i commodity con pressione hedger più corta'
+  perche_esiste: i producer-hedger pagano un premio a chi assume il rischio opposto
+    (theory of normal backwardation; De Roon et al 2000)
+  origine: kb
+  fonti:
+  - docs/knowledge-base/06-positioning/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - CFTC COT
+  - commodity futures EOD (GC, CL lake; DBC ETF)
+  dati_posseduti: null
+  asset_candidati:
+  - GC, CL, DBC
+  timeframe:
+  - 1M
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777584+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/06-positioning/README.md
+    ref: docs/knowledge-base/06-positioning/README.md
+- id: EF-003
+  nome: open-interest-hong-yogo
+  meccanismo: open interest in crescita con prezzo in crescita = trend sano; OI in
+    calo su rally = short-covering fragile → segnale di uscita
+  perche_esiste: 'l''interesse aperto misura l''impegno nuovo nel trend (Hong-Yogo
+    2012): i rally senza nuovo OI sono chiusure di short, non posizionamento direzionale'
+  origine: kb
+  fonti:
+  - docs/knowledge-base/06-positioning/README.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - CFTC COT OI
+  - OHLCV futures lake
+  dati_posseduti: null
+  asset_candidati:
+  - GC, CL, ES
+  timeframe:
+  - 1W
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777600+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/06-positioning/README.md
+    ref: docs/knowledge-base/06-positioning/README.md
