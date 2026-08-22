@@ -52,4 +52,9 @@ paths = [
     # Gitignored files
     '''\.env''',
     '''\.env\.example''',
+    # Snapshot ufficiali pagine prop-firm (BL-720): HTML grezzo di terzi
+    # archiviato immutabile come evidenza (sha256 in SNAPSHOTS.tsv). I
+    # "secret" matchati sono key analytics pubbliche dei siti stessi,
+    # non credenziali nostre; redigere romperebbe la prova d'integrità.
+    '''docs/firm_sources/.*''',
 ]

@@ -1,0 +1,87 @@
+Is EA allowed in FundedNext? | FundedNext Help Center
+Skip to main content
+Go to Website
+العربية
+Português do Brasil
+English
+Français
+Deutsch
+हिन्दी
+Italiano
+日本語
+fa-IR
+简体中文
+Español
+ภาษาไทย
+Türkçe
+Oʻzbekcha
+English
+Go to Website
+العربية
+Português do Brasil
+English
+Français
+Deutsch
+हिन्दी
+Italiano
+日本語
+fa-IR
+简体中文
+Español
+ภาษาไทย
+Türkçe
+Oʻzbekcha
+English
+Search for articles...
+All Collections
+Ongoing Offers and Updates
+Product Update: 12th January, 2026
+Is EA allowed in FundedNext?
+Is EA allowed in FundedNext?
+July 1, 2026
+Table of contents
+TL;DR:
+Yes, FundedNext allows the use of Expert Advisors (EAs), indicators, and trading bots on MetaTrader 4 (MT4) and MetaTrader 5 (MT5) platforms. However, there are important rules you must follow to avoid getting flagged for rule breaches, including customization of your EA, strategy uniqueness, and allocation limits. Please note that FundedNext does not allow the use of EAs or automated trading on the cTrader platform.
+At FundedNext, traders are welcome to use third-party Expert Advisors (EAs) and trading bots on the MetaTrader 4 and MetaTrader 5 platforms, with an additional
+EA usage fee to FundedNext.
+Please note that EA and bot trading are not allowed on cTrader and Match-Trader. To ensure a fair and transparent trading environment, we have specific guidelines for using EAs and trading bots:
+Traders are required to customize their EA or bot settings to align with their unique trading styles.
+Each EA or bot is required to employ a distinct strategy, avoiding identical trades across any accounts within FundedNext.
+There is a maximum allocation limit of $300,000 for each EA or trading bot's strategy.
+Using EA that incorporates third-party applications such as Telegram or WhatsApp is strictly prohibited.
+Any tools that do not execute trades but instead only modify trade parameters such as Stop Loss (SL), Take Profit (TP), or lot size calculations are also classified as EAs. Consequently, traders must comply with all existing FundedNext EA rules while using them.
+EAs or bots designed specifically to pass Prop firm challenges are strictly prohibited on FundedNext. Below are some examples of EAs that are banned on the FundedNext platform.
+​
+​
+List Of Some Banned EAs:
+The Prop Pilot EA
+PropEA – Fxblood Capital
+Gold OneShot EA MT5
+Forex Flex EA
+X Pass Bot
+If any of these guidelines are not followed, it may result in a soft breach, requiring the trader to restart the current phase. Repeated soft breaches may lead to account suspension and reward denial.
+If any suspicious activity related to EA usage is detected, FundedNext may request additional information about the EA or bot.
+EA rules for cTrader users:
+cTrader is built primarily for manual trading, offering an intuitive layout, advanced charting tools, and transparent order execution for a clean and efficient trading experience.
+Although cTrader Automate (cAlgo) supports algorithmic trading using C#, FundedNext does not allow any automated or algorithmic trading because of security; hence, all trades must be executed manually to ensure fairness and consistency.​
+EA usage on Match-Trader
+Expert Advisors (EAs) are a MetaTrader-specific concept and aren’t part of the native Match-Trader ecosystem. Match-Trader emphasizes a clean, intuitive, and transparent environment optimized for hands-on, discretionary decision-making rather than automated execution. Traders who prefer algorithmic approaches should use platforms built around EAs (such as MT4/MT5), while Match-Trader remains reserved for manual trading only.
+Note:
+For any kind of
+Free or BOGO accounts
+, "EA" and "VPS & EA" add-ons
+will not be included
+by default; however, a trader can choose to add them by
+paying the additional usage fee
+, after which the selected add-on will be activated on the account.
+Related Articles
+Which platforms can I use for trading at FundedNext?
+Which broker does FundedNext use?
+Trading with cTrader at FundedNext
+What's in the Utilities section of the FundedNext Dashboard?
+Can I Use EA in Stellar Instant?
+Did this answer your question?
+😞
+😐
+😃
+Table of contents

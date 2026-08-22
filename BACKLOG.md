@@ -605,10 +605,15 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
 > di un'opzione → eval solo se la simulazione canonica è ITM; bridge
 > MT5 unico generico ($0) come moltiplicatore multi-firm.
 
-- [ ] **BL-720** P1 — Snapshot ufficiali delle pagine regole di FTMO,
+- [~] **BL-720** P1 — Snapshot ufficiali delle pagine regole di FTMO,
   FundedNext, The5ers, Alpha Capital, E8 (HTML + sha256 in
-  `docs/firm_sources/`). Trasforma il registro regole UNTRUSTED in
-  VERIFIED; risolve la contraddizione EA-policy di Alpha Capital.
+  `docs/firm_sources/`). 🟡 PRIMA PASSATA ESEGUITA 2026-08-22:
+  10 snapshot + manifest `SNAPSHOTS.tsv` + testi estratti; verifiche
+  in `SISTEMA-PROP-FIRM.md` §11 (FTMO obiettivi ✅, FundedNext EA-policy
+  ✅, The5ers programmi ✅, Alpha T&C ✅ con contraddizione EA risolta,
+  E8 One ✅). RESTANO: FTMO news-ban/EA (FAQ JS-rendered), programmi
+  FundedNext, help-center E8, The5ers EA/VPS → seconda passata anche
+  via browser-automation.
 - [ ] **BL-721** P1 — Fixture dei programmi verificati in
   `policy/prop_firm/fixtures.py` (FTMO 1/2-Step, FundedNext CFD +
   futures Rapid/Flex, The5ers Bootcamp/High Stakes/Hyper Growth,

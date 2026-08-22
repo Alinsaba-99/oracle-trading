@@ -1,0 +1,371 @@
+Challenge Programs — Evaluation Structures Explained 2026 | The5ers
+Back to Blog
+Blog Forex
+Challenge Programs: Bootcamp, High Stakes & Hyper Growth Explained (2026)
+zeev
+Updated:
+June 25, 2026 | 3:20 PM
+Share:
+Share:
+zeev
+Updated:
+June 25, 2026 | 3:20 PM
+Share:
+Share:
+In 2026, traders face hundreds of prop firms competing for their attention. Aggressive marketing, misleading comparison sites, and headline-driven ads make
+genuine program evaluation
+harder than ever.
+The Challenge Programs add another layer of complexity: one firm, five distinct evaluation models, each with different rules, drawdown logic, and style requirements.
+How do The5ers challenge programs — Bootcamp 3-step, High Stakes 2-step, Hyper Growth and Pro Growth 1-step, and instant funding — differ in rules, drawdown logic, and style-fit?
+Which model should a trader choose? This article answers those questions through rule mechanics, drawdown type comparisons, trader persona checklists, and a practical selection framework. The goal is one outcome: traders buy the right program for their execution style, not the most appealing headline.
+What This Guide Covers
+Why trading style fit matters more than profit split when choosing a challenge program
+How drawdown types affect different trading strategies across The5ers models
+Which challenge models suit scalpers, swing traders, part-time traders, and beginners
+How to verify rule compatibility before paying a challenge fee
+How to build a style-fit shortlist and choose the right program with confidence
+Who This Article Is For
+Funnel Stage
+Search Intent
+Reader Profile
+Top-of-Funnel
+Understanding what 1-step, 2-step, 3-step, and instant funding mean
+Trader who discovered The5ers and wants a program overview before buying
+Mid-Funnel
+Comparing Bootcamp vs High Stakes vs Hyper Growth vs Pro Growth
+Trader aligning program rules with personal trading style and risk tolerance
+Bottom-of-Funnel
+Confirming the right program before purchase
+Trader ready to buy and looking for a clear, rule-based selection framework
+Why The5ers Challenge Program Choice Matters
+How The5ers Segments Traders by Evaluation Model
+The5ers evaluation structure separates traders by how much discipline and evaluation complexity they can handle. Bootcamp runs three steps. High Stakes compresses evaluation into two. Hyper Growth and Pro Growth complete it in one.
+Each model targets a different trader profile, risk tolerance, and strategy type. Therefore, picking the wrong program does not just slow progress — it creates a structural mismatch between the trader’s edge and the rules they must operate within.
+Why Style-Fit Matters More Than Marketing
+Many traders choose a The5ers program based on fee size or scaling headlines. However, those factors do not determine whether the rules match how a trader actually executes. A scalper who buys Bootcamp because it looks affordable will still face three evaluation steps and tighter daily loss exposure.
+A swing trader who buys High Stakes without reading the daily loss rule risks a breach that has nothing to do with their overall profitability.
+For example, a trader holding positions overnight can trigger a daily drawdown threshold mid-session even while running a positive week. As a result, the decision framework must start with rule mechanics, not marketing claims.
+Before buying any challenge program, check the following:
+What is the maximum daily loss rule, and does it apply to open positions?
+Does the program use a static stop-out or a trailing drawdown model?
+How many minimum profitable days does the program require?
+Does the program permit the trader’s strategy — news trading, EAs, copy trading, or overnight holds?
+What is the profit target at each evaluation step relative to the max loss ceiling?
+The5ers Program Overview
+Traders who choose wrong because of marketing headlines discover the mismatch after paying the fee. The question traders should be asking is: what are The5ers challenge programs and how do they differ in structure, rules, and style requirements?
+The5ers evaluation structure currently offers four CFD programs, Bootcamp, High Stakes, Hyper Growth, and Pro Growth, plus an Instant Funding option that skips evaluation entirely.
+Each model targets a different risk profile, execution pace, and discipline level. Therefore, understanding what separates them mechanically is the first step toward choosing correctly.
+The5ers Challenge Programs Comparison at a Glance
+Program
+Model
+Profit Target
+Max Loss
+Daily Rule
+Best Fit
+Bootcamp
+3-Step
+6% per step
+5% funded target
+5% per step
+4% funded
+3% daily pause (funded only)
+Consistent, disciplined traders
+High Stakes
+2-Step
+8% Step 1
+5% Step 2
+10% overall
+5% daily loss. Terminates account
+Experienced intraday traders
+Hyper Growth
+1-Step
+10%
+6% stop-out
+3% daily pause. Suspends day only
+Active traders, flexible styles
+Pro Growth
+1-Step
+10%
+6% stop-out
+3% daily loss. Terminates account
+Traders seeking higher starting split
+Instant Funding
+No Evaluation
+No target
+6% static max loss
+No daily rule
+Traders avoiding evaluation
+Bootcamp: The 3-Step Model
+The Bootcamp 3-step challenge
+rules run across three sequential demo phases before the trader accesses funded capital.
+Each step carries a 6% profit target and a 5% maximum loss limit.
+Leverage is set at 1:30 across all steps and the funded stage. Furthermore, a mandatory stop-loss is required on every position throughout the program.
+A 3% daily pause rule activates only after the trader reaches the funded stage, not during the evaluation steps.
+The funded stage then applies a tighter 4% maximum loss and a 5% profit target for scaling. As a result, Bootcamp rewards consistency over time rather than aggressive short-term performance.
+High Stakes: The 2-Step Model
+The High Stakes 2-step evaluation
+profit targets are structured as 10% in Phase 1 and 5% in Phase 2.
+The overall maximum loss is 10% of the initial balance.
+However, the critical rule is the 5% daily loss limit.
+Reaching it terminates the account immediately with no recovery. Leverage reaches 1:100, the highest in The5ers lineup. Three minimum profitable days are required in each step, defined as days where closed positions generate at least 0.5% of the initial balance. Meanwhile, news trading within two minutes of high-impact events is restricted.
+The profit split starts at 80% upon funding.
+The program suits traders who execute confidently and manage daily drawdown with precision.
+Hyper Growth and Pro Growth: The 1-Step Models
+Both
+Hyper Growth
+and Pro Growth complete evaluation in a single step, targeting 10% profit against a 6% stop-out level.
+The difference between the two lies in how daily losses are handled and what happens after a breach.
+Hyper Growth applies a 3% daily pause.
+The account is suspended for the day, but the trader returns the following session.
+In contrast, Pro Growth treats a 3% daily loss as a termination event, with no next-day recovery.
+Pro Growth also requires three minimum profitable days and starts the
+profit split at 75%, compared to Hyper Growth’s 50% starting split.
+For traders considering The5ers instant funding vs challenge programs, instant funding removes evaluation entirely
+but caps leverage and carries a 6% static max loss from day one.
+The5ers Rules That Change Program Fit
+Profit Targets and Max Loss by Program
+Traders often compare programs by headline profit split without examining the underlying profit-to-drawdown ratio
+. That ratio decides survivability more than any other metric. What profit targets and maximum loss levels apply to each The5ers program?
+Bootcamp requires a 6% profit target across each of its three evaluation steps, against a 5% maximum loss per step.
+High Stakes sets a 10% target in Phase 1 and 5% in Phase 2, with a 10% overall maximum loss. Hyper Growth and Pro Growth both require 10%, with a 6% stop-out level. Therefore, High Stakes offers the widest total drawdown buffer but pairs it with the strictest daily termination rule.
+Daily Pause vs Daily Loss vs Stop-Out
+Many traders buy a challenge without understanding how The5ers stop-out level vs daily loss limit works across programs. PAS logic applies here directly. Traders purchase Hyper Growth or High Stakes without mapping the daily rule to their intraday behavior, then breach a threshold they did not expect. The5ers Hyper Growth daily pause vs stop-out explained:
+Hyper Growth triggers a 3% daily pause that suspends trading for the rest of that session.
+The account survives. High Stakes and Pro Growth apply a 3% and 5% daily loss, respectively, and both terminate the account on breach, with no recovery. What happens if a trader breaches the stop-out level or daily loss limit? The account closes, and the trader must purchase a new challenge. Therefore, the real selection issue is not what happens after a breach, but which program makes a breach statistically less likely for the trader’s style.
+Daily Risk Rules by Program
+Program
+Daily Loss or Pause
+Stop-Out
+Minimum Days
+Holds Allowed
+Bootcamp
+3% pause (funded only)
+5% per step / 4% funded
+None in evaluation
+Overnight and weekend
+High Stakes
+5% daily loss. Terminates
+10% overall
+3 profit days
+Overnight and weekend
+Hyper Growth
+3% daily pause. Suspends
+6% from initial balance
+None
+Overnight and weekend
+Pro Growth
+3% daily loss. Terminates
+6% from initial balance
+3
+Overnight and weekend
+Minimum Profitable Days and Time Limits
+No challenge programs imposes a calendar deadline. Are there minimum trading days or time limits to pass The5ers challenges? All challenge programs offer unlimited time, provided the account remains active within any 30-day window. However, the minimum profitable days differ by program.
+High Stakes and Pro Growth both require three profitable days per step, defined as sessions where closed positions generate at least 0.5% of the initial balance.
+Hyper Growth and Bootcamp evaluation steps carry no minimum day requirement. As a result, traders who batch trades into short bursts should avoid programs with the minimum profitable day rule.
+News, EAs, Copy Trading, Hedging, and Holds
+Traders frequently assume their existing strategy transfers across every challenge programs without adjustment.
+Does The5ers allow news trading, EAs, copy trading, or hedging on challenge accounts? News trading is permitted on Bootcamp and Hyper Growth, excluding bracket strategies around high-impact events.
+High Stakes restricts order execution within two minutes before or after high-impact news. EAs are permitted across programs, but systems that exploit price feeds or latency are prohibited. However, strategy permission matters only after the trader checks whether the broader evaluation structure already clashes with the strategy.
+Verify the following before purchasing any program:
+News Trading:
+permitted on Bootcamp and Hyper Growth, restricted on High Stakes
+EAs:
+permitted, but no latency arbitrage, tick scalping, or rollover-scalping systems
+Copy Trading:
+internal copying between own accounts is permitted, excluding Bootcamp. External signal copying is prohibited
+Hedging:
+permitted across all programs with a stop-loss on every position
+Overnight and Weekend Holds:
+permitted on all programs. Index weekend swaps carry elevated costs
+Which The5ers Program Fits Which Trader
+Style-fit failure is the most common and most expensive mistake in prop firm selection. Traders pick a program based on the fee, the leverage headline, or the scaling ceiling. The rules follow only after the purchase. The question traders eventually ask is: which
+The5ers program is best for scalpers, intraday, and swing traders? Each program has a direct answer based on rule mechanics alone.
+However, the better question is not which program is “best” overall, but which rule set matches the trader’s actual execution style.
+Best-Fit Programs by Trading Style
+Trading Style
+Best Program
+Why
+Main Risk
+Scalper
+High-Frequency Intraday
+High Stakes
+1:100 leverage, no min days in evaluation phase 1 structure suits fast execution
+5% daily loss terminates the account. No recovery
+Swing
+Position Trader
+Bootcamp or Hyper Growth
+Overnight and weekend holds permitted. No daily termination rule in Hyper Growth
+Index weekend swap costs. Bootcamp mandatory stop-loss
+Part-Time
+Low-Frequency
+Hyper Growth
+No minimum days, unlimited time, 3% pause instead of termination
+Must stay active within a 30-day window
+Beginner
+Developing Trader
+Hyper Growth or High Stakes small account
+Lower starting capital options, structured rules, recoverable daily rule on Hyper Growth
+Pro Growth and High Stakes daily terminate rules punish inconsistency
+Best Fit for Scalpers and Intraday Traders
+The5ers best program for scalpers and day traders comes down to one variable: leverage. High Stakes offers 1:100 on forex, the highest in the lineup.
+Scalpers
+who execute multiple positions per session and manage tight daily risk can absorb the 5% daily loss ceiling if their position sizing stays disciplined.
+For example, a scalper running 0.5% risk per trade has ten losses of tolerance before a breach. Furthermore, High Stakes carries no time limit, so intraday traders can work through low-volatility periods without pressure. In contrast, Bootcamp’s mandatory stop-loss and lower leverage of 1:30 create friction for high-frequency execution styles.
+Best Fit for Swing and Position Traders
+The5ers best program for swing trading and weekend hold flexibility points toward Bootcamp and Hyper Growth. Both programs permit overnight and weekend holds across all assets. Neither applies a daily termination rule during the evaluation phase.
+Hyper Growth uses a 3% daily pause, meaning a single bad session suspends trading for the day rather than ending the account.
+Bootcamp applies the same daily pause logic, but only after the funded stage. Therefore, swing traders who hold positions across multiple sessions face lower breach risk on either program than on High Stakes or Pro Growth. Meanwhile, traders holding indices over weekends should account for elevated swap costs, which apply across all programs.
+Best Fit for Beginners and Part-Time Traders
+Many beginners assume Bootcamp suits them because the entry fee is lower than competing programs. In practice, three sequential evaluation steps and a mandatory stop-loss on every position make Bootcamp one of the more demanding structures for inexperienced traders to navigate.
+Can beginners realistically pass The5ers Bootcamp, or should they start with Hyper Growth or instant funding? Bootcamp is achievable for disciplined traders, but the three-step structure rewards consistency that most beginners have not yet built.
+In contrast, the smarter beginner question is not which program looks cheapest, but which structure gives the highest probability of surviving the rules. Hyper Growth offers a single evaluation step, no minimum profitable day requirement, and a recoverable daily rule. As a result, it gives developing traders more room to learn without an immediate account termination risk.
+Scaling, Payouts, and Long-Term Expectations
+Traders see The5ers’ scale-to-$4M headline and assume rapid account growth is the norm.
+That assumption creates a misalignment between expectations and the disciplined execution that scaling actually requires. Each milestone demands consistent profitability under the same risk rules that govern the evaluation. Missing a target or hitting a stop-out resets the growth clock and forces the trader back to square one. Therefore, the scaling path deserves the same scrutiny as the evaluation structure before a trader commits to any program.
+How The5ers Scaling Really Works
+How does The5ers scaling plan work up to $4,000,000 in funding? Each challenge programs follows a distinct scaling trigger and growth model.
+Bootcamp scales the funded account on every 5% profit target, with account size doubling progressively from the starting balance up to $4M. Hyper Growth doubles the account on every 10% target milestone, following the same $4M ceiling. Pro Growth uses an incremental scaling model rather than doubling, with a cap of $500K. High Stakes scales on every 10% target up to $500K. Furthermore, no program imposes a time limit on hitting targets, but inactive accounts beyond 30 consecutive days close automatically. As a result, the path to $4M is realistically available only through Bootcamp and Hyper Growth.
+Program
+Scaling Trigger
+Max Funding Path
+Starting Split
+Potential Split
+Bootcamp
+5% profit target on funded balance
+Up to $4,000,000
+50%
+Up to 100%
+High Stakes
+10% profit target
+Up to $500,000
+80%
+Up to 100%
+Hyper Growth
+10% profit target
+Up to $4,000,000
+50%
+Up to 100%
+Pro Growth
+10% profit target (incremental)
+Up to $500,000
+75%
+Up to 100%
+How Payouts and Profit Splits Change
+The5ers payout schedule and profit split per program follow a milestone-based progression across all four models.
+Bootcamp and Hyper Growth both start at a 50% split, moving to 75% at the next scale-up and reaching 100% at advanced milestones.
+High Stakes starts at 80% from the first funded stage. Pro Growth starts at 75% and scales incrementally toward 100%.
+Payouts are processed bi-weekly, with a minimum threshold of $150. For example, a Bootcamp trader starting at $20K who hits the first 5% scale target earns their split on $1,000 in profit. Meanwhile, a High Stakes trader starting at the same notional level earns the same bi-weekly cycle but at an 80% rate from the first payout.
+What Traders Misunderstand About Growth Speed
+The $4M ceiling attracts traders who underestimate how long the path takes under consistent risk rules. Each scaling step requires a clean profit target with no stop-out breach, no daily limit violation, and sustained activity within the 30-day window. A single breach at any stage means purchasing a new challenge and restarting.
+For example, a Hyper Growth trader doubling from $5K to $10K to $20K still needs several clean 10% cycles before reaching six-figure funding.
+In contrast, traders who prioritize survivability over speed, staying within the daily rules and compounding steadily, reach higher account sizes than those who push risk to accelerate growth. As a result, scaling speed is a function of rule compliance, not ambition.
+How to Choose the Right Challenge Programs
+The best challenge programs is the one whose rules match how a trader actually executes, not the one with the most aggressive scaling headline. Drawdown structure, daily controls, and evaluation complexity determine survivability far more than fee size or advertised account ceiling. Therefore, every selection decision should start with rule mechanics and work outward toward cost and scaling upside, never the reverse.
+Compare Rules Before Headlines
+Traders running a The5ers High Stakes vs Bootcamp vs Hyper Growth comparison often stall because they compare profit splits before comparing daily loss consequences.
+Furthermore, the account limit question adds another layer of confusion. How many The5ers challenge accounts and how much starting capital can one trader hold? Account limits vary by program. High Stakes allows multiple account sizes simultaneously under the Classic and New tier structures. Bootcamp permits up to four concurrent accounts across different sizes.
+Hyper Growth caps evaluation capital at $40,000 across combined account sizes.
+As a result, account limits should be treated as a scaling consideration, not as the first criterion for choosing a program.
+Final Challenge Programs Selection Checklist
+Before committing to any challenge, apply this checklist:
+Match the daily loss rule to your worst historical losing session, not your average session
+Confirm your strategy is permitted on the specific program, not just on The5ers in general
+Verify the minimum profitable day requirement against your actual trading frequency
+Choose the evaluation depth, one, two, or three steps, based on your consistency record
+Treat the scaling ceiling as a long-term target, not a near-term expectation
+Reinforcing this framework across every program decision reduces the risk of buying the wrong challenge based on marketing alone.
+Compare your trading style against Bootcamp, High Stakes, Hyper Growth, Pro Growth, and
+instant funding
+before you commit to any challenge.
+Share:
+Back to Blog
+more articles
+#
+Blog Forex
+Stop Loss Guide: How to Set Stops That Protect Your Trading Account
+Most traders don’t lose accounts by being wrong; they lose them by being wrong without a stop loss in place to call time on the trade. For example, a trade drifts against an open position, and the trader gives it “just a little more room.” However, that small 1% loss can quietly become a 6% […]
+Read more
+#
+Blog Forex
+Position Sizing in Trading: How to Calculate Trade Size (2026)
+A forex trader spots a clean setup and jumps in without sizing the trade, risking five percent of the account because the entry feels right. One oversized loss then wipes out weeks of gains in minutes, and no amount of good analysis saves it. This is why professionals treat position sizing as its own discipline, […]
+Read more
+#
+Blog Forex
+How Is Currency Valued? A Trader’s Guide to Exchange Rates
+You’ve heard a currency called “strong” or “weak” on the news, but probably never seen what decides that. Knowing how a currency is valued is the groundwork for the harder skill of sizing one up before you trade it. That question, how is currency valued, is where every serious evaluation begins. In short, this guide […]
+Read more
+get notified
+whenever we publish a new article
+I agree to receive marketing communications.
+You can unsubscribe at any time.
+Get Funded
+Learn to Trade
+Meet The5ers
+Get Engaged
+10 Year Anniversary
+Futures
+New
+Get Funded
+Join us
+The Secret of Getting Ahead  is Getting Started.
+Get Funded
+Subscribe for the latest updates and exclusive promotions
+I agree to receive marketing communications.
+You can unsubscribe at any time.
+Part of 5% group-
+Turn your trading passion into your trading career
+Turn your trading passion into your trading career
+Part of 5% group-
+CFD’s:
+FUTURES :
+Add as a preferred
+source on Google
+Get funded
+1 Step | Growth
+2 Step | High Stakes
+3 Step | Bootcamp
+Futures
+Stock Trading
+Learn to trade
+Blog
+Academy
+Performance Coach
+Forex To Futures
+Stocks To Futures
+Tools
+News Sentiment
+Economic Forex Calendar
+Trading Assets Specifications
+Indicators
+Charts
+Meet the5ers
+Company
+Community
+Careers
+The5ers partners
+Webinars
+Contest
+Refer a trader
+Press Room
+Press Kit
+FAQs
+Futures FAQs
+Get in touch!
+help@the5ers.com
+Start chat
+Privacy Policy
+Terms & Conditions
+The 5%ers Cookie Policy
+Copyright Infringement Policy
+AML Policy
+Prohibited Trading Practices
+Website disclaimers
+Five Percent Online Ltd. (“We”, “Our”, “Us”, or “Company”) operates as a proprietary trading firm. The Company is not a custodian, exchange, financial institution, trading platform, fiduciary or insurance business outside the purview of financial regulatory authorities. “The5%ers” is a brand name operated by the Company.
+All trading activities conducted through the Company Hub are executed in a simulated environment. Users should be aware that the trading results in this environment do not reflect real trading outcomes. The simulated trading environment in the Hub is designed for educational and evaluation purposes only. The “funds” provided to you for the evaluation are fictitious, do not represent any currency, and that you have no right to possess those fictitious funds beyond the scope of their use within the Hub and for the sole purpose of the evaluation, and in particular that they may not and cannot be used for any actual trading and that you are not entitled to any payment or other right in or of those funds.
+Becoming a funded user is not guaranteed. The eligibility for becoming a funded user is contingent upon meeting specific performance criteria and compliance with the Company’s evaluation processes. Not all users will qualify for funded accounts, and past performance in the simulated environment is not indicative of future success.
+All content published and distributed by Us and Our affiliates is to be treated as general information only. None of the information provided contained herein is intended as (a) investment advice, (b) an offer or solicitation of an offer to buy or sell, or (c) a recommendation, endorsement, or sponsorship of any security, company, or fund. Testimonials appearing on the website may not be representative of other clients or customers and is not a guarantee of future performance or success. Use of the information contained on the website is at your own risk and the Company and its partners, representatives, agents, employees, and contractors assume no responsibility or liability for any use or misuse of such information.
+Hypothetical or simulated performance results have certain limitations. Unlike an actual performance record, simulated results do not represent actual trading. Also, because the trades have not actually been executed, the results may have under-or-over compensated for the impact, if any, of certain market factors, such as lack of liquidity. Simulated trading programs, in general, are also subject to the fact that they are designed with the benefit of hindsight. No representation is being made that any account will or is likely to achieve profit or losses similar to those shown.
+Please note that Our Services are not available in certain jurisdictions, including but not limited to: Afghanistan, Belarus, Burundi, Central African Republic, Cuba, Congo Republic, Crimea, Democratic Republic of Congo, Eritrea, Guinea, Guinea-Bissau, Iraq, Iran, Israel, Laos, Lebanon, Liberia, Libya, Myanmar, North Korea, Palestinian Territory, Papua New Guinea, Russia, South Sudan, Sudan, Somalia, Syria, Vanuatu, Venezuela, and Yemen (the “Forbidden Territories”). Accessing or attempting to use Our Services from a Forbidden Territory is strictly prohibited.
+This website is operated by FIVE PERCENT ONLINE LTD, a company registered in Israel with company number 515864007 and registered office at 2 Ha'tidhar street, Raanana, Israel. Five Percent Online LTD - Copyright © 2026.
+THE5ERS

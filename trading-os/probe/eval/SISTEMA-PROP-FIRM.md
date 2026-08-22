@@ -307,3 +307,109 @@ Se la factory non produce almeno un segnale che (a) passa l'IC screen e
 (b) sta dentro la consistency rule in simulazione, **il farm non si
 compra**. Finché non c'è edge il lavoro è gratis (costruire), mai a
 pagamento (comprare eval).
+
+---
+
+## 11. BL-720 eseguito — verifica su fonti ufficiali (2026-08-22)
+
+10 snapshot ufficiali salvati in `docs/firm_sources/` con sha256 in
+`SNAPSHOTS.tsv` (script `scripts/fetch_firm_snapshots.py`, ripetibile;
+testo estratto in `.txt` affiancati). Verdetto per firm:
+
+### FTMO — ✅ VERIFICATO (obiettivi); news/EA = gap residuo
+Dalla pagina ufficiale *Trading Objectives*:
+- **1-Step**: target 10%, daily loss **3%**, max loss **10% trailing
+  EOD** (sul massimo balance di mezzanotte; "only increases, never
+  decreases"; reset al withdrawal), **Best Day ≤ 50% dei Positive Days'
+  Profit** (non è breach: si continua a tradare finché il ratio scende).
+- **2-Step**: target 10% + 5%, daily loss **5%**, max loss **10%
+  statico**, min **4 trading days**/fase, no time limit.
+- Daily reset 00:00 CE(S)T, misurato su equity (balance + open P/L
+  ± swap − commissioni).
+- **Gap**: la pagina obiettivi non contiene news-ban né policy EA (le
+  FAQ del sito sono JS-rendered: il contenuto non è nello snapshot).
+  Il news-ban ±2 min su funded Standard resta UNTRUSTED → verifica
+  manuale in dashboard prima della prima eval.
+
+### FundedNext — ✅ VERIFICATA la policy EA (ufficiale help center)
+- EA/bot **permessi su MT4/MT5 con fee aggiuntiva**; **vietati su
+  cTrader e Match-Trader** ("all trades must be executed manually").
+- Obblighi: EA customizzato; strategia distinta (niente trade identici
+  tra account); **cap $300.000 per EA/strategia**; vietate app terze
+  (Telegram/WhatsApp) nell'EA; **vietati gli EA "designed specifically
+  to pass Prop firm challenges"** (blacklist: Prop Pilot, PropEA
+  Fxblood, Gold OneShot, Forex Flex, X Pass).
+- Anche i tool che modificano solo SL/TP/lot-size sono classificati EA.
+- Violazione = soft breach (restart fase); ripetuti = sospensione.
+- **Implicazione design**: la nostra strategia non deve MAI avere la
+  forma di un challenge-hack; deve essere un sistema di trading genuino
+  che incidentalmente rispetta le regole. Il mietitore (distribuzione
+  costante) è esattamente questa forma.
+- Gap residuo: numeri dei programmi (drawdown/target per Legacy/Rapid/
+  Flex) da snapshot dedicato delle pagine prodotto.
+
+### The5ers — ✅ VERIFICATO (pagina programmi ufficiali)
+- **Bootcamp**: 3 step × **6% target**, **5% max loss/step**, funded
+  con **4% max loss** e 5% scaling target; consistency nel tempo, non
+  aggressività.
+- **High Stakes**: 10% P1 + 5% P2, **5% daily loss che TERMINA**,
+  10% overall.
+- **Pro Growth**: **3% daily loss = terminazione**, nessun recupero.
+- **Hyper Growth**: 3% daily loss = **pause** (sospende, non termina).
+- La pagina conferma esplicitamente il principio: scegliere il
+  programma per meccanica delle regole, non per fee o scaling headline.
+
+### Alpha Capital — ✅ VERIFICATO + contraddizione RISOLTA
+Dai Terms & Conditions ufficiali (snapshot completo):
+- **EA non vietati sui conti standard** — le uniche disabilitazioni
+  esplicite sono: **Alpha Direct** (instant funding) e conti
+  **swap-free** (riga 560 e 995 T&C). → La contraddizione delle fonti
+  terze si risolve a favore dell'automazione sui programmi standard.
+- **Prohibited strategies**: arbitraggio, latency, HFT, front-running,
+  reverse/group hedging, order book spamming, **group trading/signal
+  following**; account management vietato.
+- **News**: finestra **±5 minuti** (non ±2): niente nuove aperture o
+  chiusure sull'strumento target; gambling su news = breach anche su
+  account qualificato.
+- **Anti-HFT**: durata media trade > 2 min; ≥50% del profitto da trade
+  > 2 min.
+- **⚠️ "Account rolling" è esplicitamente vietato**: rischio pieno su
+  eval/funded per passare-fallire e **"large quantity of accounts
+  passing & failing within a short timeframe"** → fino a 30 giorni di
+  pausa servizi. **Correzione a D4**: il farm deve tenere gli account
+  VIVI e produttivi; il churn di account è una violazione.
+- Focused Trader Group (conti flaggati): max 1% rischio cumulativo,
+  cooling-off per simbolo dopo loss ≥1%, leverage ridotta, scalping
+  estremo/all-or-nothing vietati.
+- Max Risk Rule (post 21-lug-2026): open DD per asset 3% (≤$25K) /
+  2% (≥$50K) → chiusura account.
+
+### E8 Markets — ✅ VERIFICATO E8 One (pagina prodotto ufficiale)
+- **Drawdown/target/payout customizzabili** al checkout.
+- **Dynamic Drawdown**: NON è trailing classico — il loss level sale
+  **solo sui profitti chiusi** ("we count what you keep, not what you
+  almost had"): i floating profit non alzano il floor. Straordinario
+  per strategie con DD flottante.
+- **Challenge stage: nessuna consistency rule e nessun profit cap**
+  ("you can pass your challenge in one day"); la consistency (40%/35%)
+  si applica ai payout (da confermare su pagina Payouts).
+- Gap residuo: pagina help-center completa (26 articoli "Products &
+  Rules") non snapshot-pabile via URL diretto → seconda passata.
+
+### Correzioni alle decisioni §10 alla luce delle verifiche
+1. **D4 raffinato**: multi-farm sì, ma **zero account rolling/churn**
+   (Alpha Capital lo vieta esplicitamente; le altre hanno policy
+   analoghe). Il farm cresce per conti che durano, non per conti
+   sacrificati.
+2. **D5 confermato**: E8 One sale di posizione per via del dynamic
+   drawdown favorevole ai bot + challenge senza consistency; resta
+   dopo FundedNext Rapid (futures = casa nostra) e The5ers Bootcamp
+   ($22).
+3. **E8 One entra come terzo canale candidato forte** appena i numeri
+   dei programmi sono snapshot-pati.
+
+### Strumenti BL-720 (riutilizzabili, committati)
+- `scripts/fetch_firm_snapshots.py` — fetch + sha256 manifest
+  (idempotente; base per BL-725 monitor diff)
+- `scripts/extract_snapshot_text.py` — HTML → testo per verifica
+- `scripts/probe_firm_urls.py` — probe URL (JS-rendered vs static)
