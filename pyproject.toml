@@ -41,6 +41,8 @@ dependencies = [
     "transformers>=5.15.0",
     "feedparser>=6.0.14",
     "vix>=1.0.8",
+    "quantstats>=0.0.81",
+    "ffn>=1.1.5",
 ]
 
 [project.scripts]
