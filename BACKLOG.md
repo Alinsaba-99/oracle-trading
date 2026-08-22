@@ -596,6 +596,35 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
   subito). AC: nessun parametro/soglia perso; seed D3 caricabile dal
   registry BL-700; repo grezzi e transcripts restano gitignored.
 
+### Sistema multi-portale prop-firm (BL-720..725, APPROVATO 2026-08-22)
+
+> Decisioni D1-D5 + sequenza S1-S5 in
+> `trading-os/probe/eval/SISTEMA-PROP-FIRM.md` §10. Fondamento: le
+> regole della firm sono la specifica di ottimizzazione (strategia a
+> distribuzione costante, best-day < 35%); la challenge fee è il premio
+> di un'opzione → eval solo se la simulazione canonica è ITM; bridge
+> MT5 unico generico ($0) come moltiplicatore multi-firm.
+
+- [ ] **BL-720** P1 — Snapshot ufficiali delle pagine regole di FTMO,
+  FundedNext, The5ers, Alpha Capital, E8 (HTML + sha256 in
+  `docs/firm_sources/`). Trasforma il registro regole UNTRUSTED in
+  VERIFIED; risolve la contraddizione EA-policy di Alpha Capital.
+- [ ] **BL-721** P1 — Fixture dei programmi verificati in
+  `policy/prop_firm/fixtures.py` (FTMO 1/2-Step, FundedNext CFD +
+  futures Rapid/Flex, The5ers Bootcamp/High Stakes/Hyper Growth,
+  Alpha One/Pro, E8 One/Signature/Pro). Dopo BL-720.
+- [ ] **BL-722** P1 — Governor: consistency rule in tempo reale +
+  news blackout + daily pause-vs-terminate + durata minima trade
+  (anti-HFT) + buffer payout; test per ogni DrawdownMode/basis.
+- [ ] **BL-723** P1 — Spike fattibilità bridge MT5 su Linux: Wine +
+  mt5linux + conto demo gratuito vs MetaApi vs VPS Windows, con costi
+  reali e decision-doc. Esito atteso: Wine ($0) se regge.
+- [ ] **BL-724** P2 — Calendario macro economico (assorbe BL-103):
+  ≥500 eventi 2008-2026 con event_time/available_at/source_sha256,
+  per il news blackout di BL-722.
+- [ ] **BL-725** P2 — Cron monitor regole firm: diff periodico delle
+  pagine ufficiali snapshot in BL-720 + alert su cambiamento.
+
 ## Knowledge Base — 13 domini (BL-KB-01..115, 2026-08-17)
 
 > 68 file in `docs/knowledge-base/` + audit critico. 98 items originali

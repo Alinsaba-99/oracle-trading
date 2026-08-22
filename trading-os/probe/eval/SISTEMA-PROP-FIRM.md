@@ -231,3 +231,79 @@ DIRETTO (personal book):                   Lane B/crypto track (già in roadmap)
 | BL-723 | Spike fattibilità bridge MT5 su Linux (MetaApi vs Wine vs VPS) con costi reali | decision-doc, non codice |
 | BL-724 | Calendario macro (unione con BL-103) | prereq news blackout |
 | BL-725 | Cron monitor regole firm (diff pagine ufficiali) | prereq operatività continuativa |
+
+---
+
+## 10. Decisioni prese (2026-08-22, approvate dall'utente)
+
+> Derivazione: "mettersi nei panni di chi è infinitamente tecnico e con
+> fame di soldi". I due ribaltamenti fondativi:
+>
+> 1. **Le regole della firm sono la specifica di ottimizzazione, non
+>    l'ostacolo.** Consistency rule + equity-based DD + durata minima
+>    premiano una macchina che vince poco ogni giorno ("mietitore", non
+>    "cecchino"). La strategia va ottimizzata per la *forma* del
+>    rendimento (best-day < 35%, profitto distribuito su ≥5 giorni), non
+>    solo per Sharpe.
+> 2. **La challenge fee è il premio di un'opzione** (fail = −$19-100;
+>    pass = conto funded 80-100% split). Convessità positiva, MA solo
+>    con edge: comprare eval senza edge è una macchina per perdere
+>    soldi (base rate 5-10%). Ogni eval si compra solo se la simulazione
+>    canonica (BL-615 + profilo firm come gate) risulta ITM.
+
+### D1 — Canale: futures come testa di ponte, CFD finanziato dai profitti
+Il canale CFD/forex è dove vivono le 5 firm, ma si entra dal lato
+**futures** (infrastruttura già completa in casa) partendo da
+**FundedNext Rapid futures**: unica eval del lotto **senza daily-loss
+limit** (il killer n.1 dei bot non c'è). Il primo conto funded paga
+l'apertura del canale CFD. Non "uno o l'altro": sequenza.
+
+### D2 — Bridge MT5: unico, generico, $0 finché non c'è edge
+Tutte e 5 le firm girano su MT5 → **un solo bridge = attacco a N firm**
+(è il moltiplicatore, il fossato). Ordine di esecuzione:
+1. **Wine + `mt5linux` + conto demo gratuito** di un broker forex
+   qualsiasi (IC Markets/Pepperstone: il "testnet" di MT5, nessun conto
+   prop necessario) — $0;
+2. MetaApi cloud solo se Wine si rompe;
+3. VPS Windows solo con conto funded reale da servire.
+
+### D3 — Alpha Capital: tecnicamente sì (heartbeat), strategicamente ultima
+Se la policy EA è "solo risk-tools + supervisione umana" (contraddizione
+da risolvere, BL-720), si implementa un **dashboard di supervisione con
+heartbeat**: il bot propone, l'umano è un deadman-switch. È supervisione
+legittima. Ma: babysitting non scala su N account → Alpha è ultima in
+coda, non prima.
+
+### D4 — Multi-firm: UNA strategia proprietaria × N firm × conti piccoli
+La regola group-trading vieta EA *commerciali*; la nostra è nostra →
+girarla su più firm contemporaneamente è legittimo. Due obblighi
+tecnici: (a) **jitter** su timing/sizing/order-split per firm (fill non
+identici, nessuna impronta condivisa); (b) **tanti account piccoli**
+(10×$25k > 1×$250k): consistency più facile da rispettare sul piccolo,
+breach non correlati, scaling cap per-account. Il farm è un insieme di
+rubinetti di cassa piccoli e indipendenti, non una balena.
+
+### D5 — Ordine dei portali
+1. **FundedNext futures Rapid** — nessun daily limit in eval, è futures
+   (= casa nostra), split 90% su Rapid Pro;
+2. **The5ers Bootcamp** — $22, la più algo-friendly, VPS supportato,
+   scaling a $4M: laboratorio a basso costo;
+3. **FTMO** — payout più affidabile del settore, ma news-ban funded;
+4. **E8 Markets**;
+5. **Alpha Capital** (vedi D3).
+
+### Sequenza di build approvata
+
+| # | Step | Dipendenza |
+|---|---|---|
+| S1 | Il "mietitore": strategia a distribuzione costante nella factory (vincolo di forma: best-day < 35%, ≥5 giorni profittevoli) | factory BL-700.. |
+| S2 | Simulazione challenge nel runner canonico con profilo firm come gate; eval si compra solo se ITM | BL-615 + BL-720/721 |
+| S3 | Bridge MT5 generico ($0: Wine + demo) | BL-723 spike |
+| S4 | Prima eval reale: FundedNext futures Rapid; poi The5ers Bootcamp | S1-S3 verdi |
+| S5 | Col primo payout: più account, più firm, apertura canale CFD | S4 |
+
+### Kill-switch (non negoziabile)
+Se la factory non produce almeno un segnale che (a) passa l'IC screen e
+(b) sta dentro la consistency rule in simulazione, **il farm non si
+compra**. Finché non c'è edge il lavoro è gratis (costruire), mai a
+pagamento (comprare eval).
