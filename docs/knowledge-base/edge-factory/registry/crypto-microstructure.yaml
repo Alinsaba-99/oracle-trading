@@ -24,7 +24,7 @@ hypotheses:
   - 1h, 4h
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777993+00:00'
+  - data: '2026-08-22T17:24:51.377958+00:00'
     tipo: miner
     testo: fattore triaged MoonDev; claim di rendimento NON verificato
     ref: trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
@@ -50,7 +50,7 @@ hypotheses:
   - 1h event windows
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.778020+00:00'
+  - data: '2026-08-22T17:24:51.377982+00:00'
     tipo: miner
     testo: fattore triaged MoonDev; claim di rendimento NON verificato
     ref: trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
@@ -76,7 +76,7 @@ hypotheses:
   - 1h
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.778353+00:00'
+  - data: '2026-08-22T17:24:51.378334+00:00'
     tipo: miner
     testo: fattore triaged MoonDev; claim di rendimento NON verificato
     ref: trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
@@ -102,7 +102,7 @@ hypotheses:
   - 1h
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.778380+00:00'
+  - data: '2026-08-22T17:24:51.378357+00:00'
     tipo: miner
     testo: fattore triaged MoonDev; claim di rendimento NON verificato
     ref: trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
@@ -128,7 +128,7 @@ hypotheses:
   - 1h
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.778400+00:00'
+  - data: '2026-08-22T17:24:51.378374+00:00'
     tipo: miner
     testo: fattore triaged MoonDev; claim di rendimento NON verificato
     ref: trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
@@ -154,7 +154,7 @@ hypotheses:
   - 1h
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.778417+00:00'
+  - data: '2026-08-22T17:24:51.378390+00:00'
     tipo: miner
     testo: fattore triaged MoonDev; claim di rendimento NON verificato
     ref: trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
@@ -178,7 +178,7 @@ hypotheses:
   - 1h, 1d
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.778435+00:00'
+  - data: '2026-08-22T17:24:51.378406+00:00'
     tipo: miner
     testo: fattore triaged MoonDev; claim di rendimento NON verificato
     ref: trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md

@@ -5,7 +5,7 @@ hypotheses:
   nome: output-gap-equity-risk-premium
   meccanismo: output gap negativo (produzione sotto trend HP-filter) predice excess
     returns futuri di azioni e bond a 1 anno; long risk asset quando gap negativo
-  perche_esiste: la política monetaria accommoda e la confluenza di rendimenti spinge
+  perche_esiste: la politica monetaria accommoda e la confluenza di rendimenti spinge
     premi rischiosi al massimo quando l'economia è deprimuta (Cooper-Priestley 2009)
   origine: kb
   fonti:
@@ -22,7 +22,7 @@ hypotheses:
   - 1M signal, 1Y orizzonte
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777318+00:00'
+  - data: '2026-08-22T17:24:51.377233+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/02-macro/README.md
     ref: docs/knowledge-base/02-macro/README.md
@@ -47,7 +47,7 @@ hypotheses:
   - 1D signal
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777339+00:00'
+  - data: '2026-08-22T17:24:51.377249+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/02-macro/README.md
     ref: docs/knowledge-base/02-macro/README.md
@@ -74,7 +74,7 @@ hypotheses:
   - 1M rebalance
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777356+00:00'
+  - data: '2026-08-22T17:24:51.377266+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/02-macro/README.md
     ref: docs/knowledge-base/02-macro/README.md

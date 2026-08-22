@@ -22,7 +22,7 @@ hypotheses:
   - 1D/1W
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777828+00:00'
+  - data: '2026-08-22T17:24:51.377775+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/11-onchain/README.md
     ref: docs/knowledge-base/11-onchain/README.md
@@ -47,7 +47,7 @@ hypotheses:
   - 1D
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777850+00:00'
+  - data: '2026-08-22T17:24:51.377797+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/11-onchain/README.md
     ref: docs/knowledge-base/11-onchain/README.md
@@ -71,7 +71,7 @@ hypotheses:
   - 1D
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777866+00:00'
+  - data: '2026-08-22T17:24:51.377819+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/11-onchain/README.md
     ref: docs/knowledge-base/11-onchain/README.md

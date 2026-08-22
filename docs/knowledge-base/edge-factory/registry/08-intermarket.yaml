@@ -23,7 +23,7 @@ hypotheses:
   - 1D rolling 60d
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777679+00:00'
+  - data: '2026-08-22T17:24:51.377621+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/08-intermarket/README.md
     ref: docs/knowledge-base/08-intermarket/README.md
@@ -48,7 +48,7 @@ hypotheses:
   - 1M
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777699+00:00'
+  - data: '2026-08-22T17:24:51.377641+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/08-intermarket/README.md
     ref: docs/knowledge-base/08-intermarket/README.md
@@ -74,7 +74,7 @@ hypotheses:
   - 1M
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777716+00:00'
+  - data: '2026-08-22T17:24:51.377659+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/08-intermarket/README.md
     ref: docs/knowledge-base/08-intermarket/README.md

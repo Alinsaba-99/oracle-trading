@@ -12,7 +12,8 @@ hypotheses:
   origine: kb
   fonti:
   - docs/knowledge-base/06-positioning/README.md
-  effect_size_dichiarata: non_quantificata
+  effect_size_dichiarata: +4-6%/yr su commodity (Bhansali 2014, dichiarato dall'autore,
+    pre-decay)
   decay_atteso_pct: 30.0
   dati_richiesti:
   - CFTC COT historical compressed (free, 1986+)
@@ -24,7 +25,7 @@ hypotheses:
   - 1W (COT cadence)
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777568+00:00'
+  - data: '2026-08-22T17:24:51.377463+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/06-positioning/README.md
     ref: docs/knowledge-base/06-positioning/README.md
@@ -49,7 +50,7 @@ hypotheses:
   - 1M
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777584+00:00'
+  - data: '2026-08-22T17:24:51.377480+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/06-positioning/README.md
     ref: docs/knowledge-base/06-positioning/README.md
@@ -74,7 +75,7 @@ hypotheses:
   - 1W
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777600+00:00'
+  - data: '2026-08-22T17:24:51.377540+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/06-positioning/README.md
     ref: docs/knowledge-base/06-positioning/README.md

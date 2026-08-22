@@ -23,7 +23,7 @@ hypotheses:
   - 1M
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777510+00:00'
+  - data: '2026-08-22T17:24:51.377405+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/05-sentiment/README.md
     ref: docs/knowledge-base/05-sentiment/README.md
@@ -48,7 +48,7 @@ hypotheses:
   - 1D signal
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777531+00:00'
+  - data: '2026-08-22T17:24:51.377422+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/05-sentiment/README.md
     ref: docs/knowledge-base/05-sentiment/README.md
@@ -74,7 +74,7 @@ hypotheses:
   - 1M
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777551+00:00'
+  - data: '2026-08-22T17:24:51.377442+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/05-sentiment/README.md
     ref: docs/knowledge-base/05-sentiment/README.md

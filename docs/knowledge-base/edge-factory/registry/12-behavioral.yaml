@@ -22,7 +22,7 @@ hypotheses:
   - 1Y formation → 1-3Y holding
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777882+00:00'
+  - data: '2026-08-22T17:24:51.377844+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/12-behavioral/README.md
     ref: docs/knowledge-base/12-behavioral/README.md
@@ -49,7 +49,7 @@ hypotheses:
   - 1Q
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777898+00:00'
+  - data: '2026-08-22T17:24:51.377864+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/12-behavioral/README.md
     ref: docs/knowledge-base/12-behavioral/README.md
@@ -75,7 +75,7 @@ hypotheses:
   - 1M
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777913+00:00'
+  - data: '2026-08-22T17:24:51.377881+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/01-fundamental/README.md
     ref: docs/knowledge-base/01-fundamental/README.md

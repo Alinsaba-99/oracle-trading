@@ -22,7 +22,7 @@ hypotheses:
   - 1D
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777619+00:00'
+  - data: '2026-08-22T17:24:51.377558+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/07-news/README.md
     ref: docs/knowledge-base/07-news/README.md
@@ -49,7 +49,7 @@ hypotheses:
   - event-driven (filing date)
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777636+00:00'
+  - data: '2026-08-22T17:24:51.377579+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/07-news/README.md
     ref: docs/knowledge-base/07-news/README.md
@@ -75,7 +75,7 @@ hypotheses:
   - 1D
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777655+00:00'
+  - data: '2026-08-22T17:24:51.377600+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/07-news/README.md
     ref: docs/knowledge-base/07-news/README.md

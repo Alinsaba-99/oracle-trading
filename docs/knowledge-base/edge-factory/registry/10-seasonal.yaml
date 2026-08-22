@@ -21,7 +21,7 @@ hypotheses:
   - 1D, regime stagionale
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777766+00:00'
+  - data: '2026-08-22T17:24:51.377716+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/10-seasonal/README.md
     ref: docs/knowledge-base/10-seasonal/README.md
@@ -45,7 +45,7 @@ hypotheses:
   - 1D calendar
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777787+00:00'
+  - data: '2026-08-22T17:24:51.377737+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/10-seasonal/README.md
     ref: docs/knowledge-base/10-seasonal/README.md
@@ -68,7 +68,7 @@ hypotheses:
   - 1D calendar
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777810+00:00'
+  - data: '2026-08-22T17:24:51.377755+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/10-seasonal/README.md
     ref: docs/knowledge-base/10-seasonal/README.md

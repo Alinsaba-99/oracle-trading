@@ -22,7 +22,7 @@ hypotheses:
   - 1d → stima 3y rolling
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777732+00:00'
+  - data: '2026-08-22T17:24:51.377677+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/09-cyclical/README.md
     ref: docs/knowledge-base/09-cyclical/README.md
@@ -46,7 +46,7 @@ hypotheses:
   - 1d
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777748+00:00'
+  - data: '2026-08-22T17:24:51.377698+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/09-cyclical/README.md
     ref: docs/knowledge-base/09-cyclical/README.md

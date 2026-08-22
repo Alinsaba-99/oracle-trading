@@ -22,7 +22,7 @@ hypotheses:
   - per segnale
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777930+00:00'
+  - data: '2026-08-22T17:24:51.377898+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/13-meta-synthesis/README.md
     ref: docs/knowledge-base/13-meta-synthesis/README.md
@@ -47,7 +47,7 @@ hypotheses:
   - 1M rebalance
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777952+00:00'
+  - data: '2026-08-22T17:24:51.377918+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/13-meta-synthesis/README.md
     ref: docs/knowledge-base/13-meta-synthesis/README.md
@@ -74,7 +74,7 @@ hypotheses:
   - 1M
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777971+00:00'
+  - data: '2026-08-22T17:24:51.377939+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/13-meta-synthesis/README.md
     ref: docs/knowledge-base/13-meta-synthesis/README.md

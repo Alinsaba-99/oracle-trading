@@ -3,9 +3,9 @@ domain: 01-fundamental
 hypotheses:
 - id: EF-001
   nome: novy-marx-gross-profitability
-  meccanismo: 'aziende con alto profitto lordo su asset (GPA) sottoperformano le attese:
+  meccanismo: 'aziende con alto profitto lordo su asset (GPA) SOPRAPERFORMANO le attese:
     gross profitability è un fattore di qualità che predice rendimenti cross-sectional
-    mensili oltre value'
+    mensili oltre value (long alto GPA)'
   perche_esiste: costi di ingresso/uscita e vantaggi competitivi persistenti generano
     profitti stabili che il mercato sconta troppo lentamente (friction del capitale
     fisico)
@@ -24,13 +24,13 @@ hypotheses:
   - 1M rebalance
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777056+00:00'
+  - data: '2026-08-22T17:24:51.376972+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/01-fundamental/README.md
     ref: docs/knowledge-base/01-fundamental/README.md
 - id: EF-002
   nome: piotroski-fscore-value-long
-  meccanismo: 'F-Score 9-flagge (ROA, accruals, leverage, margin...) dentro il decile
+  meccanismo: 'F-Score 9 punteggi (ROA, accruals, leverage, margin...) dentro il decile
     value separa i value-trap dai recuperabili: long high-F value stocks, rebalance
     annuale'
   perche_esiste: mercato punisce troppo le azioni svalutate per inattenzione; i segnali
@@ -50,7 +50,7 @@ hypotheses:
   - 1Y rebalance
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777238+00:00'
+  - data: '2026-08-22T17:24:51.377164+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/01-fundamental/README.md
     ref: docs/knowledge-base/01-fundamental/README.md
@@ -75,7 +75,7 @@ hypotheses:
   - 1Q signals, 1M rebalance
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777275+00:00'
+  - data: '2026-08-22T17:24:51.377193+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/01-fundamental/README.md
     ref: docs/knowledge-base/01-fundamental/README.md
@@ -102,7 +102,7 @@ hypotheses:
   - 1M rebalance
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777299+00:00'
+  - data: '2026-08-22T17:24:51.377214+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/AUDIT-2026-08-17.md
     ref: docs/knowledge-base/AUDIT-2026-08-17.md

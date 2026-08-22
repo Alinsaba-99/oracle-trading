@@ -22,7 +22,7 @@ hypotheses:
   - per-candidato
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777394+00:00'
+  - data: '2026-08-22T17:24:51.377286+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/03-quant/README.md
     ref: docs/knowledge-base/03-quant/README.md
@@ -47,15 +47,16 @@ hypotheses:
   - per-fattore
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777411+00:00'
+  - data: '2026-08-22T17:24:51.377303+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/03-quant/README.md
     ref: docs/knowledge-base/03-quant/README.md
 - id: EF-003
   nome: hurst-regime-persistence
-  meccanismo: Hurst exponent > 0.5 (persistent) → strategia trend-following sull'asset;
+  meccanismo: 'Hurst exponent > 0.5 (persistent) → strategia trend-following sull''asset;
     < 0.5 → mean-reversion; stima rolling R/S su finestre 2-4 anni come router di
-    strategia
+    strategia [DUPLICATO di 09-cyclical hurst-rs-regime-router: tenere UNA sola entry
+    in Stage 2 — qui è referenziata come cross-domain]'
   perche_esiste: long memory nei rendimenti è documentata e stabile OOS; il market
     microstructure genera autocorrelazione di segno opposto nei due regimi (Hurst
     1951; KB-09)
@@ -74,7 +75,7 @@ hypotheses:
   - 1h, 1d
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777431+00:00'
+  - data: '2026-08-22T17:24:51.377318+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/03-quant/README.md
     ref: docs/knowledge-base/03-quant/README.md

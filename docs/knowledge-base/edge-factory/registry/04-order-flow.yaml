@@ -25,7 +25,7 @@ hypotheses:
   - 1m → VPIN bucket ~1/50 volume giornaliero
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777451+00:00'
+  - data: '2026-08-22T17:24:51.377348+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/AUDIT-2026-08-17.md
     ref: docs/knowledge-base/AUDIT-2026-08-17.md
@@ -50,7 +50,7 @@ hypotheses:
   - tick/100ms → 1m
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777470+00:00'
+  - data: '2026-08-22T17:24:51.377367+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/04-order-flow/README.md
     ref: docs/knowledge-base/04-order-flow/README.md
@@ -74,7 +74,7 @@ hypotheses:
   - 1h
   stato: da_amplificare
   evidenza:
-  - data: '2026-08-22T17:08:18.777489+00:00'
+  - data: '2026-08-22T17:24:51.377385+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/04-order-flow/README.md
     ref: docs/knowledge-base/04-order-flow/README.md

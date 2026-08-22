@@ -107,7 +107,7 @@ DOMAINS: dict[str, list[Hypothesis]] = {
     "01-fundamental": [
         _kb(
             nome="novy-marx-gross-profitability",
-            meccanismo="aziende con alto profitto lordo su asset (GPA) sottoperformano le attese: gross profitability è un fattore di qualità che predice rendimenti cross-sectional mensili oltre value",
+            meccanismo="aziende con alto profitto lordo su asset (GPA) SOPRAPERFORMANO le attese: gross profitability è un fattore di qualità che predice rendimenti cross-sectional mensili oltre value (long alto GPA)",
             perche="costi di ingresso/uscita e vantaggi competitivi persistenti generano profitti stabili che il mercato sconta troppo lentamente (friction del capitale fisico)",
             fonti=[f"{KB}/01-fundamental/README.md"],
             dati=[
@@ -120,7 +120,7 @@ DOMAINS: dict[str, list[Hypothesis]] = {
         ),
         _kb(
             nome="piotroski-fscore-value-long",
-            meccanismo="F-Score 9-flagge (ROA, accruals, leverage, margin...) dentro il decile value separa i value-trap dai recuperabili: long high-F value stocks, rebalance annuale",
+            meccanismo="F-Score 9 punteggi (ROA, accruals, leverage, margin...) dentro il decile value separa i value-trap dai recuperabili: long high-F value stocks, rebalance annuale",
             perche="mercato punisce troppo le azioni svalutate per inattenzione; i segnali contabili ravvicinano la correzione dell'underpricing",
             fonti=[f"{KB}/01-fundamental/README.md"],
             dati=["SimFin fundamentals", "prezzi EOD"],
@@ -155,7 +155,7 @@ DOMAINS: dict[str, list[Hypothesis]] = {
         _kb(
             nome="output-gap-equity-risk-premium",
             meccanismo="output gap negativo (produzione sotto trend HP-filter) predice excess returns futuri di azioni e bond a 1 anno; long risk asset quando gap negativo",
-            perche="la política monetaria accommoda e la confluenza di rendimenti spinge premi rischiosi al massimo quando l'economia è deprimuta (Cooper-Priestley 2009)",
+            perche="la politica monetaria accommoda e la confluenza di rendimenti spinge premi rischiosi al massimo quando l'economia è deprimuta (Cooper-Priestley 2009)",
             fonti=[f"{KB}/02-macro/README.md"],
             dati=["FRED INDPRO + FEDFUNDS vintage ALFRED (as_of)", "ETF EOD SPY/IEF"],
             assets=["SPY, IEF"],
@@ -202,7 +202,7 @@ DOMAINS: dict[str, list[Hypothesis]] = {
         ),
         _kb(
             nome="hurst-regime-persistence",
-            meccanismo="Hurst exponent > 0.5 (persistent) → strategia trend-following sull'asset; < 0.5 → mean-reversion; stima rolling R/S su finestre 2-4 anni come router di strategia",
+            meccanismo="Hurst exponent > 0.5 (persistent) → strategia trend-following sull'asset; < 0.5 → mean-reversion; stima rolling R/S su finestre 2-4 anni come router di strategia [DUPLICATO di 09-cyclical hurst-rs-regime-router: tenere UNA sola entry in Stage 2 — qui è referenziata come cross-domain]",
             perche="long memory nei rendimenti è documentata e stabile OOS; il market microstructure genera autocorrelazione di segno opposto nei due regimi (Hurst 1951; KB-09)",
             fonti=[f"{KB}/03-quant/README.md", f"{KB}/09-cyclical/README.md"],
             dati=["OHLCV lake (ES 1h, BTCUSDT 1h, FX 1m resample)"],
@@ -222,6 +222,8 @@ DOMAINS: dict[str, list[Hypothesis]] = {
             ],
             assets=["BTCUSDT, ETHUSDT (crypto ora); EURUSD going-forward"],
             timeframe=["1m → VPIN bucket ~1/50 volume giornaliero"],
+            # dati_posseduti false = dati non ANCORA ingesti (aggTrades non scaricati);
+            # ingestibile a $0 — sblocco = adapter Vision aggTrades (BL-705 Stage 3)
             dati_posseduti=False,
         ),
         _kb(
@@ -292,6 +294,7 @@ DOMAINS: dict[str, list[Hypothesis]] = {
             ],
             assets=["ES, GC, CL"],
             timeframe=["1W (COT cadence)"],
+            effect="+4-6%/yr su commodity (Bhansali 2014, dichiarato dall'autore, pre-decay)",
         ),
         _kb(
             nome="cot-hedging-pressure-deroon",
