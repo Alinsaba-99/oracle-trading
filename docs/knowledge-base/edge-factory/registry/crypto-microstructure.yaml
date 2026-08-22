@@ -1,0 +1,184 @@
+schema_version: 1
+domain: crypto-microstructure
+hypotheses:
+- id: EF-001
+  nome: funding-extremum-reversal
+  meccanismo: funding rate 8h estremo (z-score rolling 60d o soglia annualizzata ≤
+    −20% / ≥ +25%) segnala posizioni long/short affollate e costose da tenere → reversal
+    atteso
+  perche_esiste: il costo del carry spinge i marginal trader fuori dalla posizione
+    affollata; il squeeze del funding estremo coincide con l'esaurimento del flusso
+    direzionale (D1)
+  origine: practitioner
+  fonti:
+  - trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 40.0
+  dati_richiesti:
+  - Binance Vision fundingRate zip 2020→ ($0, no key)
+  - OHLCV 1h lake (ffill + shift(1) dal settlement)
+  dati_posseduti: true
+  asset_candidati:
+  - BTCUSDT, ETHUSDT, SOLUSDT
+  timeframe:
+  - 1h, 4h
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.777993+00:00'
+    tipo: miner
+    testo: fattore triaged MoonDev; claim di rendimento NON verificato
+    ref: trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
+- id: EF-002
+  nome: liquidation-cascade-reversal
+  meccanismo: volume liquidato orario > 10× mediana 30d (liq_volume_z estremo) → overshoot
+    da vendite forzate → mean reversion nelle ore successive (event study pre/post)
+  perche_esiste: 'le liquidazioni forzate attraversano il book oltre il fair value
+    (price impact classico); quando la pressione finisce il prezzo torna (D4; letteratura:
+    fat tails BTC EJF 2022)'
+  origine: practitioner
+  fonti:
+  - trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 40.0
+  dati_richiesti:
+  - Binance Vision liquidationSnapshot 2020→ ($0)
+  - OHLCV 1h lake
+  dati_posseduti: true
+  asset_candidati:
+  - BTCUSDT, ETHUSDT
+  timeframe:
+  - 1h event windows
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.778020+00:00'
+    tipo: miner
+    testo: fattore triaged MoonDev; claim di rendimento NON verificato
+    ref: trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
+- id: EF-003
+  nome: bb-squeeze-release
+  meccanismo: 'BB dentro Keltner (squeeze ON) → transizione release + ADX>25 + rottura
+    banda BB = entrata nella direzione della rottura (parametri MoonDev fissati a
+    priori: BB20/2.0, KC20/1.5, ADX14>25)'
+  perche_esiste: 'la compressione di volatilità accumina ordini stop da entrambi i
+    lati; il rilascio libera il movimento direzionale (D2; squeeze = compressione
+    NON direzione: da solo IC≈0 atteso, il valore è nella combinazione)'
+  origine: practitioner
+  fonti:
+  - trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 40.0
+  dati_richiesti:
+  - OHLCV 1h lake (già posseduti, zero dati nuovi)
+  dati_posseduti: true
+  asset_candidati:
+  - BTCUSDT, ETHUSDT, SOLUSDT
+  timeframe:
+  - 1h
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.778353+00:00'
+    tipo: miner
+    testo: fattore triaged MoonDev; claim di rendimento NON verificato
+    ref: trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
+- id: EF-004
+  nome: cvd-divergence
+  meccanismo: prezzo new high/low + CVD (cumulative delta da tick rule su aggTrades)
+    non conferma → esaurimento aggressione → reversal; convergenza conferma il trend
+  perche_esiste: 'movimenti senza aggressione unilaterale sottostante sono short-covering/limit
+    pull: privi di combustibile revertano (D5; proxy da OHLCV hanno correlazione bassa
+    — serve il tick vero)'
+  origine: practitioner
+  fonti:
+  - trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 45.0
+  dati_richiesti:
+  - Binance Vision aggTrades (~1-2.5 GB/anno, $0)
+  - OHLCV 1h lake
+  dati_posseduti: true
+  asset_candidati:
+  - BTCUSDT
+  timeframe:
+  - 1h
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.778380+00:00'
+    tipo: miner
+    testo: fattore triaged MoonDev; claim di rendimento NON verificato
+    ref: trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
+- id: EF-005
+  nome: session-seasonality
+  meccanismo: 'hour-of-day (UTC) + day-of-week come feature condizionanti su BTC 24/7:
+    open US (14:30 UTC) e sovrapposizione EU/US come finestre ad attività/volatilità
+    anormale'
+  perche_esiste: 'la struttura dei partecipanti cambia nell''arco della giornata (EU
+    istituzionale, US retail); effetti orari documentati ma deboli e attenuati post-2018
+    (D6: prior bassa, feature di contesto mai edge standalone)'
+  origine: practitioner
+  fonti:
+  - trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 45.0
+  dati_richiesti:
+  - OHLCV 1h lake (già posseduti)
+  dati_posseduti: true
+  asset_candidati:
+  - BTCUSDT
+  timeframe:
+  - 1h
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.778400+00:00'
+    tipo: miner
+    testo: fattore triaged MoonDev; claim di rendimento NON verificato
+    ref: trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
+- id: EF-006
+  nome: funding-z-ml-feature
+  meccanismo: funding_z = z-score rolling 60d del funding 8h come feature continua
+    scale-free (invece della soglia secca) per modelli ML e per condizioni di entry
+    su altri fattori
+  perche_esiste: lo z-score normalizza il crowding attraverso i regimi di volatilità
+    del funding (D1.4 raccomandazione esplicita)
+  origine: practitioner
+  fonti:
+  - trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 40.0
+  dati_richiesti:
+  - Binance Vision fundingRate
+  - OHLCV 1h lake
+  dati_posseduti: true
+  asset_candidati:
+  - BTCUSDT, ETHUSDT
+  timeframe:
+  - 1h
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.778417+00:00'
+    tipo: miner
+    testo: fattore triaged MoonDev; claim di rendimento NON verificato
+    ref: trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
+- id: EF-007
+  nome: perp-basis-carry
+  meccanismo: 'basis perp-spot estremo (annualizzato) → il costo del carry attira
+    gli arbitraggisti e comprime il basis: fade del basis con hedge spot'
+  perche_esiste: 'il basis riflette domanda leveraged unilaterale; agli estremi è
+    paga-to-trade contro gli over-leveraged (D1.5: secondo fattore, rimandato)'
+  origine: practitioner
+  fonti:
+  - trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
+  effect_size_dichiarata: non_quantificata
+  decay_atteso_pct: 40.0
+  dati_richiesti:
+  - OHLCV perp + spot Binance Vision ($0)
+  dati_posseduti: true
+  asset_candidati:
+  - BTCUSDT, ETHUSDT
+  timeframe:
+  - 1h, 1d
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-08-22T17:08:18.778435+00:00'
+    tipo: miner
+    testo: fattore triaged MoonDev; claim di rendimento NON verificato
+    ref: trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
