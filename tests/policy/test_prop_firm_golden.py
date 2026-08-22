@@ -13,9 +13,21 @@ from __future__ import annotations
 import pytest
 
 from policy.prop_firm import (
+    ALPHA_ONE_6,
+    ALPHA_PRO_8,
     APEX_MANUAL,
+    E8_ONE,
+    FTMO_1_STEP,
+    FTMO_2_STEP_P1,
+    FTMO_2_STEP_P2,
     FUNDEDNEXT_FLEX,
     MFFU_NEWS_RESTRICTED,
+    THE5ERS_BOOTCAMP_FUNDED,
+    THE5ERS_BOOTCAMP_STEP,
+    THE5ERS_HIGH_STAKES_P1,
+    THE5ERS_HIGH_STAKES_P2,
+    THE5ERS_HYPER_GROWTH,
+    THE5ERS_PRO_GROWTH,
     TOPSTEP_TC_50K,
     TOPSTEP_XFA_CONSISTENCY,
     TOPSTEP_XFA_STANDARD,
@@ -23,6 +35,8 @@ from policy.prop_firm import (
     TPT_TEST,
     BreachType,
     ChallengeStatus,
+    DailyLossAction,
+    DrawdownMode,
     FirmProgramProfile,
     PropFirmRiskGovernor,
 )
@@ -315,3 +329,154 @@ class TestFUNDEDNEXT_FLEX:  # noqa: N801
         gov.update(balance=55_000, equity=55_000)
         gov.record_trade(5_000.0)
         assert gov.challenge_outcome() == ChallengeStatus.PASSED
+
+
+# =========================================================================
+# BL-721 — fixtures verified against 2026-08-22 official snapshots
+# (docs/firm_sources/SNAPSHOTS.tsv sha256)
+# =========================================================================
+
+
+class TestFTMO_1_STEP:  # noqa: N801
+    def test_profile_basics(self):
+        assert FTMO_1_STEP.firm == "FTMO"
+        assert FTMO_1_STEP.account_size == 100_000
+        assert FTMO_1_STEP.profit_target_pct == 0.10
+        assert FTMO_1_STEP.max_daily_loss_pct == 0.03
+        assert FTMO_1_STEP.max_overall_loss_pct == 0.10
+        assert FTMO_1_STEP.dd_mode is DrawdownMode.TRAILING_EOD
+        assert FTMO_1_STEP.daily_loss_reset_timezone == "Europe/Prague"
+        assert FTMO_1_STEP.rule_version == "2026-08-22"
+        # default: termina (FTMO non sospende)
+        assert FTMO_1_STEP.daily_loss_action is DailyLossAction.TERMINATE
+
+    def test_daily_breach_at_three_thousand(self):
+        """Daily loss limit 3% = $3,000 su initial balance day 1."""
+        gov = _make_gov(FTMO_1_STEP)
+        gov.update(balance=100_000, equity=97_000.0)
+        breaches = {b.type for b in gov.evaluate()}
+        assert BreachType.DAILY_LOSS in breaches
+
+    def test_pass_on_target(self):
+        gov = _make_gov(FTMO_1_STEP, balance=100_000.0)
+        gov.record_trade(10_100.0)
+        gov.update(balance=110_100.0, equity=110_100.0)
+        assert gov.challenge_outcome() is ChallengeStatus.PASSED
+
+
+class TestFTMO_2_STEP:  # noqa: N801
+    def test_p1_basics(self):
+        assert FTMO_2_STEP_P1.profit_target_pct == 0.10
+        assert FTMO_2_STEP_P1.max_daily_loss_pct == 0.05
+        assert FTMO_2_STEP_P1.dd_mode is DrawdownMode.STATIC
+        assert FTMO_2_STEP_P1.min_trading_days == 4
+
+    def test_p2_basics(self):
+        assert FTMO_2_STEP_P2.stage == "verification"
+        assert FTMO_2_STEP_P2.profit_target_pct == 0.05
+        assert FTMO_2_STEP_P2.max_daily_loss_pct == 0.05
+        assert FTMO_2_STEP_P2.min_trading_days == 4
+
+    def test_p1_daily_breach_at_five_thousand(self):
+        gov = _make_gov(FTMO_2_STEP_P1)
+        gov.update(balance=100_000, equity=95_000.0)
+        breaches = {b.type for b in gov.evaluate()}
+        assert BreachType.DAILY_LOSS in breaches
+
+
+class TestTHE5ERS_BOOTCAMP:  # noqa: N801
+    def test_step_basics(self):
+        assert THE5ERS_BOOTCAMP_STEP.profit_target_pct == 0.06
+        assert THE5ERS_BOOTCAMP_STEP.max_overall_loss_pct == 0.05
+        # nessuna daily rule in evaluation (3% pause è solo funded)
+        assert THE5ERS_BOOTCAMP_STEP.max_daily_loss_pct == 0.0
+
+    def test_funded_basics(self):
+        assert THE5ERS_BOOTCAMP_FUNDED.stage == "funded"
+        assert THE5ERS_BOOTCAMP_FUNDED.max_overall_loss_pct == 0.04
+        assert THE5ERS_BOOTCAMP_FUNDED.max_daily_loss_pct == 0.03
+        assert THE5ERS_BOOTCAMP_FUNDED.daily_loss_action is DailyLossAction.PAUSE
+
+
+class TestTHE5ERS_HIGH_STAKES:  # noqa: N801
+    def test_p1_basics(self):
+        assert THE5ERS_HIGH_STAKES_P1.profit_target_pct == 0.08
+        assert THE5ERS_HIGH_STAKES_P1.max_daily_loss_pct == 0.05
+        assert THE5ERS_HIGH_STAKES_P1.max_overall_loss_pct == 0.10
+        assert THE5ERS_HIGH_STAKES_P1.daily_loss_action is DailyLossAction.TERMINATE
+        assert THE5ERS_HIGH_STAKES_P1.min_profitable_days == 3
+        assert THE5ERS_HIGH_STAKES_P1.news_blackout is not None
+        assert THE5ERS_HIGH_STAKES_P1.news_blackout.before_minutes == 2
+
+    def test_p2_basics(self):
+        assert THE5ERS_HIGH_STAKES_P2.stage == "verification"
+        assert THE5ERS_HIGH_STAKES_P2.profit_target_pct == 0.05
+
+    def test_daily_breach_terminates(self):
+        gov = _make_gov(THE5ERS_HIGH_STAKES_P1)
+        gov.update(balance=100_000, equity=94_999.0)
+        breaches = {b.type for b in gov.evaluate()}
+        assert BreachType.DAILY_LOSS in breaches
+
+
+class TestTHE5ERS_GROWTH_PROGRAMS:  # noqa: N801
+    def test_hyper_growth_pauses(self):
+        assert THE5ERS_HYPER_GROWTH.profit_target_pct == 0.10
+        assert THE5ERS_HYPER_GROWTH.max_overall_loss_pct == 0.06
+        assert THE5ERS_HYPER_GROWTH.max_daily_loss_pct == 0.03
+        assert THE5ERS_HYPER_GROWTH.daily_loss_action is DailyLossAction.PAUSE
+
+    def test_pro_growth_terminates(self):
+        assert THE5ERS_PRO_GROWTH.profit_target_pct == 0.10
+        assert THE5ERS_PRO_GROWTH.max_overall_loss_pct == 0.06
+        assert THE5ERS_PRO_GROWTH.daily_loss_action is DailyLossAction.TERMINATE
+        assert THE5ERS_PRO_GROWTH.min_profitable_days == 3
+
+
+class TestALPHA_CAPITAL:  # noqa: N801
+    def test_pro8_basics(self):
+        assert ALPHA_PRO_8.program == "Alpha Pro 8%"
+        assert ALPHA_PRO_8.profit_target_pct == 0.08
+        assert ALPHA_PRO_8.max_daily_loss_pct == 0.04
+        assert ALPHA_PRO_8.max_overall_loss_pct == 0.08
+        assert ALPHA_PRO_8.dd_mode is DrawdownMode.STATIC
+        assert ALPHA_PRO_8.daily_loss_basis == "balance"
+        assert ALPHA_PRO_8.min_trading_days == 3
+        # anti-HFT: durata media > 2 min (enforcement BL-722)
+        assert ALPHA_PRO_8.min_trade_duration_minutes == 2.0
+
+    def test_news_blackout_five_minutes(self):
+        assert ALPHA_PRO_8.news_blackout is not None
+        assert ALPHA_PRO_8.news_blackout.before_minutes == 5
+        assert ALPHA_PRO_8.news_blackout.after_minutes == 5
+        assert ALPHA_ONE_6.news_blackout is not None
+        assert ALPHA_ONE_6.news_blackout.before_minutes == 5
+
+    def test_one6_basics(self):
+        assert ALPHA_ONE_6.profit_target_pct == 0.06
+        assert ALPHA_ONE_6.max_overall_loss_pct == 0.04
+        assert ALPHA_ONE_6.dd_mode is DrawdownMode.TRAILING_EOD
+        assert ALPHA_ONE_6.max_daily_loss_pct == 0.03
+        assert ALPHA_ONE_6.min_trading_days == 1
+
+
+class TestE8_ONE:  # noqa: N801
+    def test_dynamic_drawdown_mechanics_only(self):
+        """E8 One: TRAILING_CLOSED codificato; numeri default = gap
+        dichiarato (customizzabili al checkout) — 0 finché seconda passata
+        BL-720 non li snapshot-ta."""
+        assert E8_ONE.dd_mode is DrawdownMode.TRAILING_CLOSED
+        assert E8_ONE.profit_target_pct == 0.0
+        assert E8_ONE.max_daily_loss_pct == 0.0
+        assert E8_ONE.max_overall_loss_pct == 0.0
+
+    def test_e8_not_usable_for_simulation_yet(self):
+        """Con target 0 il governor PASSA con qualsiasi profitto positivo:
+        pericolo di falso-verde. Fail-safe qui = il test documentale
+        (target 0) + gate BL-722; il profilo non va usato in simulazione
+        finché i default non entrano (seconda passata BL-720)."""
+        gov = _make_gov(E8_ONE, balance=100_000.0)
+        gov.record_trade(20_000.0)
+        gov.update(balance=120_000.0, equity=120_000.0)
+        assert E8_ONE.profit_target_pct == 0.0  # gap dichiarato, non numero reale
+        assert gov.challenge_outcome() is ChallengeStatus.PASSED  # documenta il pericolo

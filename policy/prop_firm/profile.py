@@ -42,6 +42,14 @@ class DrawdownMode(StrEnum):
     TRAILING_INTRADAY = "trailing_intraday"  # trails peak intraday
     TRAILING_EOD = "trailing_eod"  # trails peak at end of day only
     LOCK = "lock"  # locks at a specific level
+    TRAILING_CLOSED = "trailing_closed"  # floor rises only on CLOSED profits (E8 dynamic DD)
+
+
+class DailyLossAction(StrEnum):
+    """What happens when the daily loss limit is breached."""
+
+    TERMINATE = "terminate"  # account is closed / challenge failed
+    PAUSE = "pause"  # trading suspended for the day, resumes next session
 
 
 class DailyLossBasis(StrEnum):
@@ -239,6 +247,8 @@ class FirmProgramProfile:
         allowed_products: list[str] | None = None,
         risk_per_trade_pct: float = 0.01,
         effective_to: str | None = None,
+        daily_loss_action: DailyLossAction = DailyLossAction.TERMINATE,
+        min_trade_duration_minutes: float = 0.0,
     ) -> None:
         self.firm = firm
         self.program = program
@@ -271,6 +281,10 @@ class FirmProgramProfile:
         self.news_blackout = news_blackout
         self.allowed_products = allowed_products or []
         self.risk_per_trade_pct = risk_per_trade_pct
+        self.daily_loss_action = daily_loss_action
+        # Anti-HFT minimum average trade duration (Alpha Capital: > 2 min).
+        # 0.0 = no rule declared by the firm.  Enforcement is BL-722.
+        self.min_trade_duration_minutes = min_trade_duration_minutes
 
     @property
     def version_key(self) -> str:
@@ -287,7 +301,8 @@ class FirmProgramProfile:
             f"{self.version_key}|{self.effective_from}|{self.profit_target_pct}|"
             f"{self.max_daily_loss_pct}|{self.max_overall_loss_pct}|{self.dd_mode}|"
             f"{self.max_daily_loss_amount}|{self.max_overall_loss_amount}|"
-            f"{self.overall_loss_lock_at_initial}|{self.daily_loss_basis}|{self.support_mode}"
+            f"{self.overall_loss_lock_at_initial}|{self.daily_loss_basis}|{self.support_mode}|"
+            f"{self.daily_loss_action}|{self.min_trade_duration_minutes}"
         )
         return sha256(raw.encode()).hexdigest()[:16]
 
@@ -329,6 +344,8 @@ class FirmProgramProfile:
             "min_profitable_days": self.min_profitable_days,
             "consistency_pct": self.consistency_pct,
             "contract_cap": self.contract_cap.to_dict() if self.contract_cap else None,
+            "daily_loss_action": self.daily_loss_action.value,
+            "min_trade_duration_minutes": self.min_trade_duration_minutes,
             "content_hash": self.content_hash,
         }
 

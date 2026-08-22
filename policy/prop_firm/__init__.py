@@ -8,9 +8,21 @@ Public API::
 """
 
 from policy.prop_firm.fixtures import (
+    ALPHA_ONE_6,
+    ALPHA_PRO_8,
     APEX_MANUAL,
+    E8_ONE,
+    FTMO_1_STEP,
+    FTMO_2_STEP_P1,
+    FTMO_2_STEP_P2,
     FUNDEDNEXT_FLEX,
     MFFU_NEWS_RESTRICTED,
+    THE5ERS_BOOTCAMP_FUNDED,
+    THE5ERS_BOOTCAMP_STEP,
+    THE5ERS_HIGH_STAKES_P1,
+    THE5ERS_HIGH_STAKES_P2,
+    THE5ERS_HYPER_GROWTH,
+    THE5ERS_PRO_GROWTH,
     TOPSTEP_TC_50K,
     TOPSTEP_XFA_CONSISTENCY,
     TOPSTEP_XFA_STANDARD,
@@ -28,6 +40,7 @@ from policy.prop_firm.governor import (
 from policy.prop_firm.order_risk import InstrumentRiskInput, PropFirmOrderRiskAdapter
 from policy.prop_firm.profile import (
     ContractCap,
+    DailyLossAction,
     DrawdownMode,
     FirmProgramProfile,
     FirmProgramRegistry,
@@ -91,11 +104,23 @@ PropFirmProfile = FirmProgramProfile
 PropFirmGovernor = PropFirmRiskGovernor
 
 __all__ = [
+    "ALPHA_ONE_6",
+    "ALPHA_PRO_8",
     "APEX_MANUAL",
+    "E8_ONE",
+    "FTMO_1_STEP",
+    "FTMO_2_STEP_P1",
+    "FTMO_2_STEP_P2",
     "FUNDEDNEXT_FLEX",
     "LUCID",
     "MFFU_NEWS_RESTRICTED",
     "THE5ERS",
+    "THE5ERS_BOOTCAMP_FUNDED",
+    "THE5ERS_BOOTCAMP_STEP",
+    "THE5ERS_HIGH_STAKES_P1",
+    "THE5ERS_HIGH_STAKES_P2",
+    "THE5ERS_HYPER_GROWTH",
+    "THE5ERS_PRO_GROWTH",
     "TOPSTEP_TC_50K",
     "TOPSTEP_XFA_CONSISTENCY",
     "TOPSTEP_XFA_STANDARD",
@@ -106,6 +131,7 @@ __all__ = [
     "BreachType",
     "ChallengeStatus",
     "ContractCap",
+    "DailyLossAction",
     "DrawdownMode",
     "FirmProgramProfile",
     "FirmProgramRegistry",
