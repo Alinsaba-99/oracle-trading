@@ -122,7 +122,7 @@ materiale da installare.
 | 6 | cryptotrader-core | Rust | ❌ | R | |
 | 7 | openlimits | Rust | ❌ | R | |
 | 8 | **Freqtrade** | Py | ✅ | V | già clonato; riferimento API Binance + strategy pattern |
-| 9 | **Hummingbot** | Py/Cython | 🟢 | R | market-making client; live-ready |
+| 9 | Hummingbot | Py/Cython | 🟢 | R | market-making client; live-ready. **PROBE 2026-08-22**: slug catalogo STALE (`CoinAlpha/`, 214★) → progetto vivo è `hummingbot/hummingbot` 19.538★ push 2026-08-22 Apache-2.0 |
 | 10 | Jesse | Py | 🔵 | R | crypto research framework pulito |
 | 11 | OctoBot | Py/Cython | ⚪ | R | TA+arb+social con web UI |
 | 12 | DeepAlpha | Py | 🟠 | R | claim "70.9% walk-forward accuracy" non verificato |
@@ -253,17 +253,19 @@ ndarray, faer, DataFrame C++, Vaex, Modin, Koalas → tutti ⚪/🔴: stack già
 ### 14.1 Metrics (5)
 | Item | Stato | Note |
 |---|---|---|
-| **alphalens** (fork wangzhe3224) | 🟢 | factor analysis IC/quantile/turnover |
+| **alphalens** (fork wangzhe3224) | 🟢 | factor analysis IC/quantile/turnover. **PROBE 2026-08-22**: fork linkato fermo 2023 (4★); mantenuto = `stefan-jansen/alphalens` 631★ push 2025-12 Apache-2.0 |
 | **ffn** | 🟢 | financial functions |
 | **honest-signals** | 🔵 | pattern vs pattern-free baseline + cluster-robust CI: metodo anti-beta |
 | Jacobian | ⚪ | matematica componibile per agenti, MCP |
 | **quantstats** | 🟢 | portfolio analytics tearsheet |
 
 ### 14.2 Indicators (10)
-TA-Lib ✅ (installato, wrapper py) · ta-rust ❌ · finta 🔴 · pandas-ta 🔴 ·
-kand ⚪ · chart-patterns ⚪ · ChartScout 🟠 (SaaS) · Wickra 🟠 (514 indicatori
-streaming, claim O(1) da verificare) · QuantWave 🔵 (Polars-native,
-bit-exact batch/streaming) · Go port ❌.
+TA-Lib ✅ (installato, wrapper py) · ta-rust ❌ · finta 🔴 (archived 2022) ·
+pandas-ta 🔴 **repo originale cancellato da GitHub (404, probe 2026-08-22)** —
+successore comunitario `xgboosted/pandas-ta-classic` 420★ ·
+kand ⚪ · chart-patterns 🟠 **repo sparito (404)** · ChartScout 🟠 (SaaS) ·
+Wickra 🟠 (514 indicatori streaming, claim O(1) da verificare) · QuantWave 🔵
+(Polars-native, bit-exact batch/streaming) · Go port ❌.
 
 ### 14.3 Pricing (4)
 QuantLib/PyQL ⚪ (opzioni future) · QuantLib.jl ❌ · FinancePy ⚪ ·

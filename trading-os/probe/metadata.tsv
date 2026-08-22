@@ -1,0 +1,278 @@
+0b01/tectonicdb	752	2024-01-25T09:15:02Z	NOASSERTION	False	Rust
+AdvancingTitans/stock-analysis	24	2026-07-28T13:51:34Z	MIT	False	Python
+AI4Finance-Foundation/FinGPT	21129	2026-08-02T03:23:48Z	MIT	False	Jupyter Notebook
+AI4Finance-Foundation/FinRL	16064	2026-07-13T23:02:18Z	MIT	False	Jupyter Notebook
+akfamily/akshare	22163	2026-08-21T05:17:37Z	MIT	False	Python
+akfamily/awesome-data	658	2025-03-27T09:02:18Z	MIT	False	?
+al1enjesus/polyclawster	21	2026-03-16T07:12:55Z	NONE	False	JavaScript
+al1enjesus/polymarket-whales	59	2026-03-20T12:00:32Z	MIT	False	Python
+alexanderwanyoike/the0	389	2026-08-13T20:51:56Z	Apache-2.0	False	TypeScript
+alkaline-ml/pmdarima	1733	2025-11-17T16:09:28Z	MIT	False	Python
+alpacahq/marketstore	GONE_404
+alphasmo/alphasmo-tools	2	2026-08-12T15:09:50Z	MIT	False	TypeScript
+alvarobartt/investpy	1851	2026-04-13T18:10:47Z	MIT	False	Python
+apache/kafka	33582	2026-08-21T21:25:35Z	Apache-2.0	False	Java
+apache/spark	43852	2026-08-22T02:42:51Z	Apache-2.0	False	Scala
+arshka/pykalshi	120	2026-07-29T06:07:06Z	MIT	False	Python
+AsyncAlgoTrading/aat	829	2026-07-27T02:34:06Z	Apache-2.0	False	C++
+varrdinc/varrd	24	2026-05-04T16:46:47Z	MIT	False	Python
+shingou-io/shingou-signal-log	0	2026-08-22T06:01:05Z	NONE	False	JavaScript
+axiaoxin-com/investool	2253	2025-06-07T10:41:01Z	Apache-2.0	False	Go
+barter-rs/barter-rs	2237	2026-08-20T20:44:54Z	MIT	False	Rust
+benfred/py-spy	15445	2026-08-14T01:33:58Z	MIT	False	Rust
+timercrack/trader	8418	2026-02-28T05:15:31Z	Apache-2.0	False	C
+bitrinjani/r2	816	2023-04-19T07:14:11Z	MIT	False	TypeScript
+BlackArbsCEO/Adv_Fin_ML_Exercises	1953	2022-12-08T01:39:23Z	MIT	False	Jupyter Notebook
+blankly-finance/blankly	2464	2024-12-30T20:20:29Z	LGPL-3.0	False	Python
+bloomberg/blazingmq	3206	2026-08-21T19:39:14Z	Apache-2.0	False	C++
+bloomberg/memray	15198	2026-08-21T16:30:44Z	Apache-2.0	False	Python
+blue-yonder/tsfresh	9293	2026-07-06T01:28:19Z	MIT	False	Jupyter Notebook
+bmoscon/cryptofeed	2882	2026-08-10T14:35:49Z	NOASSERTION	False	Python
+botcrypto-io/awesome-crypto-trading-bots	2490	2026-08-10T19:54:01Z	CC0-1.0	False	?
+brndnmtthws/thetagang	2709	2026-08-22T02:22:58Z	AGPL-3.0	False	Python
+butor/blackbird	GONE_404
+byrnexu/betterquant	230	2024-06-06T15:34:44Z	NONE	False	C++
+c9s/bbgo	1658	2026-08-21T11:26:01Z	AGPL-3.0	False	Go
+caoruicn/openalpha	GONE_404
+cbailes/awesome-deep-trading	2030	2023-08-08T19:55:49Z	MIT	False	?
+ccxt/ccxt	43691	2026-08-22T05:15:22Z	MIT	False	Python
+chrisconlan/algorithmic-trading-with-python	3441	2021-06-01T12:56:44Z	NOASSERTION	False	Python
+chrism2671/PyTrendFollow	467	2018-04-25T09:12:02Z	MIT	False	Python
+CLevasseur/ta-lib-rust	73	2024-06-18T10:55:51Z	MIT	False	Rust
+coding-kitties/investing-algorithm-framework	1710	2026-08-20T13:48:56Z	Apache-2.0	False	Python
+CoinAlpha/hummingbot	214	2025-05-07T20:09:15Z	Apache-2.0	False	Python
+CompendiumFi/PENDAX-SDK	49	2024-05-09T14:17:45Z	NONE	False	?
+connerlambden/helium-mcp	GONE_404
+crypto-crawler/crypto-crawler-rs	266	2023-03-19T09:36:58Z	Apache-2.0	False	Rust
+cryptomotifs/cipher-starter	3	2026-04-18T11:04:36Z	NONE	False	HTML
+cryptoSUN2049/openFinclaw	GONE_404
+ctubio/Krypto-trading-bot	3707	2024-12-15T15:26:06Z	NOASSERTION	False	C++
+cuemacro/findatapy	2107	2026-07-02T14:29:12Z	Apache-2.0	False	Python
+cuemacro/finmarketpy	3805	2026-04-16T09:29:35Z	Apache-2.0	False	Python
+cupy/cupy	12265	2026-08-20T11:42:55Z	MIT	False	Python
+cvxgrp/cvxportfolio	1249	2026-04-27T14:11:17Z	GPL-3.0	False	Python
+cvxpy/cvxpy	6307	2026-08-22T04:32:37Z	Apache-2.0	False	C++
+cython/cython	10830	2026-08-22T05:08:40Z	Apache-2.0	False	Cython
+apache/hamilton	2574	2026-08-19T04:38:48Z	Apache-2.0	False	Jupyter Notebook
+darkvolg/trendrider-strategy	18	2026-04-21T13:35:13Z	MIT	False	Python
+dask/dask	13894	2026-08-17T14:33:18Z	BSD-3-Clause	False	Python
+databricks/koalas	3371	2024-03-20T15:33:34Z	Apache-2.0	False	Python
+dcajasn/Riskfolio-Lib	4453	2026-08-18T17:08:34Z	BSD-3-Clause	False	C++
+DEAP/deap	6434	2026-04-17T20:59:38Z	LGPL-3.0	False	Python
+DebuggingMax/solana-sdk-tools	GONE_404
+DepthSight-Pro/DepthSight	20	2026-07-20T23:14:57Z	AGPL-3.0	False	Python
+dgunning/edgartools	2600	2026-08-22T02:24:14Z	MIT	False	Python
+diogomatoschaves/MyCryptoBot	141	2026-06-17T13:00:14Z	NONE	False	Python
+domokane/FinancePy	3110	2026-08-21T16:02:27Z	GPL-3.0	False	Jupyter Notebook
+Draichi/T-1000	176	2026-08-19T21:05:22Z	NONE	False	Python
+Drakkar-Software/OctoBot	6448	2026-08-21T12:57:09Z	GPL-3.0	False	Python
+duckdb/duckdb	40523	2026-08-20T18:48:29Z	MIT	False	C++
+DunkinGuys/bullbear	3	2026-05-17T05:09:04Z	MIT	False	TypeScript
+economic-agent/fundingradar	0	2026-08-19T17:18:16Z	NONE	False	Python
+edtechre/pybroker	3511	2026-08-21T21:57:57Z	NOASSERTION	False	Python
+ego-protocol/tbd-vote-cli	1	2026-05-13T13:29:33Z	MIT	False	TypeScript
+emoen/Machine-Learning-for-Asset-Managers	660	2026-02-11T16:36:49Z	Apache-2.0	False	Python
+enthought/pyql	1335	2026-07-17T21:42:26Z	NOASSERTION	False	Cython
+enzoampil/fastquant	1754	2023-09-15T10:23:58Z	MIT	False	Jupyter Notebook
+erdewit/ib_insync	3284	2024-03-14T19:50:06Z	BSD-2-Clause	True	Python
+EternaHybridExchange/eterna-ai	4	2026-05-06T09:56:40Z	MIT	False	TypeScript
+exaloop/codon	16830	2026-08-22T06:04:44Z	Apache-2.0	False	Python
+facebook/prophet	20365	2026-08-15T03:38:56Z	MIT	False	Python
+fasiondog/hikyuu	3458	2026-08-21T05:56:53Z	Apache-2.0	False	C++
+featherenvy/botvana	249	2022-05-12T08:13:44Z	AGPL-3.0	False	Rust
+FinHackCN/finhack	1131	2026-08-19T03:01:18Z	NOASSERTION	False	Python
+perspective-dev/perspective	11127	2026-08-10T15:03:06Z	Apache-2.0	False	Rust
+FlashAlpha-lab/flashalpha-fill-simulator	3	2026-08-20T06:18:52Z	MIT	False	Python
+fmzquant/strategies	5381	2025-04-30T04:08:14Z	NONE	False	?
+focus1691/chart-patterns	GONE_404
+tiagosiebler/orderflow	80	2025-03-31T13:12:52Z	MIT	False	TypeScript
+fremantle-industries/tai	498	2024-12-07T00:58:56Z	MIT	False	Elixir
+freqtrade/freqtrade	53502	2026-08-21T18:08:29Z	GPL-3.0	False	Python
+fxmacrodata/fxmacrodata	9	2026-07-15T00:04:25Z	MIT	False	Python
+gabriel-milan/btrader	332	2021-05-30T18:29:56Z	GPL-3.0	True	Rust
+gbeced/basana	857	2026-08-09T23:02:19Z	NOASSERTION	False	Python
+gobacktest/gobacktest	241	2023-10-11T12:34:18Z	MIT	True	Go
+godzilla-foundation/godzilla-community	371	2026-08-11T13:04:02Z	Apache-2.0	False	C++
+jax-ml/jax	36196	2026-08-22T04:56:47Z	Apache-2.0	False	Python
+google/tf-quant-finance	5475	2026-08-06T22:18:59Z	Apache-2.0	False	Python
+gradio-app/gradio	43401	2026-08-22T00:27:46Z	Apache-2.0	False	Python
+grahammccain/chart-library-mcp	20	2026-06-10T03:00:21Z	MIT	False	Python
+greyblake/ta-rs	873	2024-07-12T15:51:05Z	MIT	False	Rust
+GuntharDeNiro/gunbot-quant	54	2025-08-19T08:43:40Z	MIT	False	JavaScript
+happydasch/btplotting	385	2025-05-04T03:58:24Z	GPL-3.0	False	Python
+hbhqq9/bde-score	3	2026-08-01T03:46:15Z	NOASSERTION	False	Python
+Heerozh/spectre	821	2025-04-15T14:46:22Z	GPL-3.0	False	Python
+HephaestLab/TraderHarness	21	2026-08-21T16:38:55Z	NOASSERTION	False	Python
+HFQR/FlashFunk	142	2025-03-16T03:23:14Z	NONE	False	Rust
+hosseinmoein/DataFrame	2977	2026-08-21T15:48:26Z	BSD-3-Clause	False	C++
+huggingface/	API_ERROR
+hugo2046/GetAstockFactors	98	2021-10-13T12:28:33Z	NONE	False	Python
+hugo2046/QuantsPlaybook	5864	2026-05-08T07:02:40Z	NONE	False	Jupyter Notebook
+hugues31/coinnect	158	2021-11-30T20:49:56Z	MIT	False	Rust
+HydroProtocol/liquidation_bot	40	2023-03-06T22:42:00Z	Apache-2.0	False	Go
+initial-d/ml-quant-trading	77	2026-08-22T02:46:54Z	MIT	False	Python
+jaablon/filingfirehose-python	1	2026-05-10T01:14:37Z	MIT	False	Python
+janestreet/incremental	1497	2026-07-10T16:45:37Z	MIT	False	OCaml
+jankrepl/deepdow	1181	2024-01-24T15:56:49Z	Apache-2.0	False	Python
+SEC-API-io/sec-api-python	315	2026-04-13T10:24:14Z	MIT	False	Python
+janushendersonassetallocation/loman	119	2026-08-18T05:09:55Z	BSD-3-Clause	False	Python
+jarvismaximum-hue/profitplay-starter	7	2026-04-08T14:52:23Z	MIT	False	Python
+jasonstrimpel/volatility-trading	1944	2024-10-21T17:00:05Z	GPL-3.0	False	Python
+JelteF/PyLaTeX	2354	2024-07-25T20:19:05Z	MIT	False	Python
+JerBouma/FinanceDatabase	8369	2026-08-16T12:14:31Z	MIT	False	Python
+JerBouma/FinanceToolkit	5248	2026-08-18T12:47:53Z	MIT	False	Python
+JerBouma/FinanceToolkit	5248	2026-08-18T12:47:53Z	MIT	False	Python
+jesse-ai/jesse	8353	2026-08-19T14:33:36Z	MIT	False	Python
+je-suis-tm/quant-trading	10604	2026-06-20T12:16:37Z	Apache-2.0	False	Python
+jmargieh/tradingview-screener	14	2026-04-02T09:45:11Z	MIT	False	TypeScript
+joblib/joblib	4386	2026-08-19T09:02:07Z	BSD-3-Clause	False	Python
+joerick/pyinstrument	8005	2026-08-04T09:54:01Z	BSD-3-Clause	False	Python
+JustinGuese/python_tradingbot_framework	35	2026-08-18T12:33:37Z	MIT	False	Jupyter Notebook
+kachence/polymm	79	2026-08-16T18:42:11Z	MIT	False	Python
+kentmswood-ui/stockkit	2	2026-05-07T20:42:19Z	MIT	False	?
+keras-team/keras	64245	2026-08-21T23:10:41Z	Apache-2.0	False	Python
+kernc/backtesting.py	8874	2026-08-05T12:39:16Z	AGPL-3.0	False	Python
+lance-format/lance	6961	2026-08-22T00:53:49Z	Apache-2.0	False	Rust
+langchain-ai/langchain	144745	2026-08-22T04:06:49Z	MIT	False	Python
+lavs9/quantwave	12	2026-08-18T19:24:47Z	MIT	False	Rust
+leosmigel/analyzingalpha	525	2023-08-08T20:00:14Z	NONE	False	Python
+letianzj/quanttrader	765	2024-06-20T13:57:28Z	Apache-2.0	False	HTML
+livetennisapi/livetennisapi-mcp	190	2026-08-19T04:47:11Z	MIT	False	TypeScript
+lord/anchors	137	2026-01-26T15:17:05Z	NONE	True	Rust
+Lumiwealth/lumibot	1952	2026-08-21T14:16:12Z	GPL-3.0	False	Python
+man-group/arctic	3085	2024-04-08T16:35:28Z	LGPL-2.1	False	Python
+man-group/ArcticDB	2486	2026-08-21T22:06:28Z	NOASSERTION	False	C++
+man-group/dtale	5215	2026-07-24T05:18:50Z	LGPL-2.1	False	TypeScript
+man-group/mdf	183	2016-12-28T12:43:09Z	MIT	False	Python
+manifoldbt/manifoldbt	28	2026-08-22T03:05:01Z	NOASSERTION	False	Python
+markcheno/go-talib	938	2026-06-17T00:43:02Z	MIT	False	Go
+marketlenstrade/marketlens-python	25	2026-08-18T21:25:29Z	MIT	False	Python
+MarvinRey7879/honest-signals	1	2026-07-18T16:10:44Z	MIT	False	Jupyter Notebook
+matplotlib/matplotlib	23106	2026-08-22T05:27:20Z	NONE	False	Python
+matplotlib/mplfinance	4427	2024-08-08T17:23:11Z	NOASSERTION	False	Python
+maxme/bitcoin-arbitrage	2584	2024-10-20T16:16:12Z	MIT	False	Python
+mcdallas/wallstreet	1689	2024-07-06T01:41:25Z	MIT	False	Python
+Melelery/c-binance-futures-quant	857	2025-04-10T02:25:54Z	NONE	False	Python
+mementum/backtrader	22917	2024-08-19T17:47:36Z	GPL-3.0	False	Python
+microsoft/qlib	47823	2026-07-23T08:15:29Z	MIT	False	Python
+mirror29/inalpha	29	2026-08-21T08:58:19Z	AGPL-3.0	False	Python
+modin-project/modin	10389	2026-02-10T20:52:42Z	Apache-2.0	False	Python
+mokshyaprotocol/signalview	3	2026-08-04T02:26:27Z	Apache-2.0	False	Python
+monomadic/cryptotrader-core	25	2019-06-11T14:29:45Z	NONE	False	Rust
+Morgansy/Genetic-Alpha	76	2020-12-23T07:19:17Z	NONE	False	Python
+morluto/jacobian	55	2026-08-22T06:08:03Z	MIT	False	Python
+moxiespirit/MyClone	GONE_404
+TA-Lib/ta-lib-python	12198	2026-07-29T03:37:05Z	BSD-2-Clause	False	Cython
+mwaskom/seaborn	14007	2026-07-06T02:11:55Z	BSD-3-Clause	False	Python
+nalepae/pandarallel	3800	2024-07-09T18:59:05Z	BSD-3-Clause	False	Python
+nanvel/cipher-bt	19	2025-08-17T13:18:53Z	MIT	False	Python
+nash-io/openlimits	322	2022-07-16T16:22:54Z	BSD-2-Clause	False	Rust
+nautechsystems/nautilus_trader	27149	2026-08-22T05:54:13Z	LGPL-3.0	False	Rust
+networkx/networkx	17210	2026-08-21T21:18:06Z	NOASSERTION	False	Python
+NeuZhou/stratevo	29	2026-04-18T00:35:47Z	NONE	False	?
+nkaz001/hftbacktest	4379	2025-12-23T15:57:58Z	MIT	False	Rust
+Nouzan/exc	43	2024-08-02T06:13:58Z	MIT	False	Rust
+numba/numba	11125	2026-08-21T17:39:56Z	BSD-2-Clause	False	Python
+numpy/numpy	32579	2026-08-21T23:36:37Z	NOASSERTION	False	Python
+nymath/torchqtm	55	2023-07-13T07:00:23Z	MIT	False	Cython
+oluwatimilehin/anchors	23	2022-10-08T14:35:53Z	NONE	False	C++
+OpenBB-finance/OpenBB	72132	2026-07-30T17:33:42Z	NOASSERTION	False	Python
+oraclemangle/polymarket-bot-lab	0	2026-07-29T17:12:28Z	Apache-2.0	False	Python
+Osamwonyi18/hurst-calculator	2	2026-04-15T11:07:31Z	MIT	False	Python
+PacktPublishing/Building-Low-Latency-Applications-with-CPP	700	2026-03-02T14:25:53Z	MIT	False	HTML
+pandas-dev/pandas	49541	2026-08-21T21:31:03Z	BSD-3-Clause	False	Python
+parsecular/parsec-mcp	0	2026-03-13T19:51:24Z	NONE	False	?
+pazzo83/QuantLib.jl	144	2020-02-18T21:13:37Z	NOASSERTION	False	Julia
+peerchemist/finta	2264	2022-07-24T08:40:51Z	LGPL-3.0	True	Python
+pegasusTrader/PandoraTrader	1459	2025-10-18T08:29:29Z	NONE	False	C++
+perpetual-protocol/perp-arbitrageur	GONE_404
+plotly/dash	24379	2026-08-21T19:57:31Z	MIT	False	Python
+pmorissette/bt	2964	2026-08-07T03:38:56Z	MIT	False	Python
+pmorissette/ffn	2634	2026-08-13T14:20:22Z	MIT	False	Python
+pmxt-dev/pmxt	2092	2026-07-18T01:45:53Z	MIT	False	TypeScript
+Point72/csp	432	2026-08-19T21:24:49Z	Apache-2.0	False	Python
+polakowo/vectorbt	8755	2026-08-02T09:14:10Z	NOASSERTION	False	Python
+pola-rs/polars	39436	2026-08-22T05:55:53Z	MIT	False	Rust
+PreReason/mcp	5	2026-08-19T19:26:32Z	MIT	False	JavaScript
+pskrunner14/trading-bot	1174	2023-12-03T13:06:25Z	MIT	False	Jupyter Notebook
+pybind/pybind11	17999	2026-08-19T23:06:00Z	NOASSERTION	False	C++
+pydata/bottleneck	1181	2026-08-09T08:45:26Z	BSD-2-Clause	False	Python
+pydata/numexpr	2534	2026-08-17T20:00:10Z	MIT	False	Python
+pydata/pandas-datareader	3236	2026-07-21T08:28:05Z	NOASSERTION	False	Python
+pymc-devs/pymc	9718	2026-08-17T23:18:21Z	NOASSERTION	False	Python
+PyO3/pyo3	16058	2026-08-21T20:04:57Z	Apache-2.0	False	Rust
+pytorch/pytorch	102530	2026-08-22T05:55:46Z	NOASSERTION	False	Python
+Qiskit/rustworkx	1744	2026-08-17T22:33:24Z	Apache-2.0	False	Rust
+yutiansut/QUANTAXIS	11027	2026-02-28T02:59:12Z	MIT	False	Python
+QuantConnect/Lean	21296	2026-08-21T20:41:12Z	Apache-2.0	False	C#
+QuantFabric/QuantFabric	258	2026-08-07T05:57:59Z	NOASSERTION	False	CMake
+quantopian/pyfolio	6403	2023-12-23T06:14:58Z	Apache-2.0	False	Jupyter Notebook
+quantopian/zipline	20056	2024-02-13T08:02:51Z	Apache-2.0	False	Python
+quarkfin/qf-lib	954	2026-08-05T15:22:55Z	Apache-2.0	False	Python
+ranaroussi/pystore	612	2026-04-28T21:24:52Z	Apache-2.0	False	Python
+ranaroussi/quantstats	7568	2026-07-20T14:12:56Z	Apache-2.0	False	Python
+ranaroussi/yfinance	25045	2026-08-20T11:24:14Z	Apache-2.0	False	Python
+NVIDIA/cudf	9733	2026-08-22T04:36:20Z	Apache-2.0	False	C++
+ray-project/ray	43577	2026-08-22T06:02:12Z	Apache-2.0	False	Python
+rburkholder/trade-frame	674	2026-08-14T03:57:10Z	NOASSERTION	False	C++
+redis/redis	76068	2026-08-20T14:45:16Z	NOASSERTION	False	C
+redpanda-data/redpanda	12466	2026-08-22T00:45:06Z	NONE	False	C++
+ricequant/rqalpha	6710	2026-08-21T06:46:07Z	NOASSERTION	False	Python
+ICT-FinD-Lab/alphagen	1201	2026-06-04T05:54:38Z	NONE	False	Python
+rmbell09-lang/tradesight	166	2026-07-15T00:10:25Z	NONE	False	Python
+pst-group/pysystemtrade	3471	2026-07-18T13:30:24Z	GPL-3.0	False	Python
+PyPortfolio/PyPortfolioOpt	5972	2026-07-07T21:18:14Z	MIT	False	Jupyter Notebook
+rundef/async_rithmic	114	2026-08-21T14:24:33Z	MIT	False	Python
+rust-ndarray/ndarray	4312	2026-07-18T11:53:04Z	Apache-2.0	False	Rust
+kand-ta/kand	551	2026-01-22T03:20:09Z	Apache-2.0	False	Rust
+saniales/golang-crypto-trading-bot	1163	2025-11-20T02:38:26Z	GPL-3.0	False	Go
+sarah-quinones/faer-rs	2564	2026-06-24T20:48:06Z	MIT	False	Rust
+scikit-learn/scikit-learn	67006	2026-08-21T08:56:47Z	BSD-3-Clause	False	Python
+scipy/scipy	14944	2026-08-21T22:40:22Z	BSD-3-Clause	False	Python
+shashankvemuri/Finance	4180	2026-03-26T06:24:50Z	MIT	False	Python
+sher1096/klinepic-agent-api-examples	GONE_404
+sircharli3/fillbench-data	0	2026-08-21T07:09:58Z	NOASSERTION	False	Python
+skfolio/skfolio	2213	2026-08-14T21:22:03Z	BSD-3-Clause	False	Python
+sngyai/Sequoia-X	5422	2026-07-10T23:17:43Z	NONE	False	Python
+squidKid-deluxe/QTradeX-Algo-Trading-SDK	84	2026-07-30T17:43:33Z	NOASSERTION	False	Python
+sreenivasdoosa/sdoosa-algo-trade-python	650	2023-09-19T23:43:45Z	NONE	False	Python
+santoshlite/EigenLedger	1074	2025-09-14T01:21:40Z	Apache-2.0	False	Python
+sstoikov/microprice	473	2021-01-10T11:27:11Z	NONE	False	Jupyter Notebook
+staccDOTsol/FTX_and_four_other_exchange_futures_and_funding_arbitrage_scanner	17	2021-08-17T14:21:19Z	NONE	False	Python
+statsmodels/statsmodels	11583	2026-08-21T20:35:58Z	BSD-3-Clause	False	Python
+stefan-jansen/machine-learning-for-trading	20571	2026-08-22T04:57:51Z	MIT	False	Jupyter Notebook
+stefanoviana/deepalpha	41	2026-05-12T16:21:49Z	MIT	False	Python
+stellar-deprecated/kelp	1127	2023-11-03T05:46:15Z	NOASSERTION	True	Go
+streamlit/streamlit	45583	2026-08-22T04:43:07Z	Apache-2.0	False	Python
+SunshowerC/fund-strategy	935	2023-01-26T23:43:12Z	NONE	False	TypeScript
+tensorflow/tensorflow	197213	2026-08-22T06:11:38Z	Apache-2.0	False	C++
+tesseralytics/python-client	2	2026-07-13T09:35:52Z	GPL-3.0	False	Python
+thebrierfox/the-stall	7	2026-08-16T17:30:54Z	MIT	False	JavaScript
+thrasher-corp/gocryptotrader	3455	2026-08-21T08:00:48Z	MIT	False	Go
+thuquant/awesome-quant	5568	2026-08-10T02:17:17Z	MIT	False	?
+1kbgz/tributary	466	2026-06-23T11:53:24Z	Apache-2.0	False	Python
+tudorelu/tudorials	166	2020-08-04T01:51:20Z	NONE	False	HTML
+twopirllc/pandas-ta	GONE_404
+UFund-Me/Qbot	18373	2026-03-11T12:16:42Z	MIT	False	Jupyter Notebook
+vaexio/vaex	8508	2026-04-01T03:56:14Z	MIT	False	Python
+vbkotecha/agentservices-api	1	2026-08-21T07:43:37Z	Apache-2.0	False	Python
+virattt/ai-hedge-fund	62983	2026-08-07T17:21:58Z	MIT	False	Python
+vnpy/vnpy	44671	2026-08-10T01:07:58Z	MIT	False	Python
+vollib/vollib	1015	2023-06-05T12:27:02Z	MIT	False	Python
+waditu/czsc	5884	2026-08-16T00:45:49Z	NOASSERTION	False	Rust
+waditu/tushare	15357	2024-03-13T14:31:20Z	BSD-3-Clause	False	Python
+wangzhe3224/alphalens	4	2023-04-07T02:31:39Z	Apache-2.0	False	?
+wangzhe3224/systematic-trading-knowledge-collection	56	2023-10-19T19:10:28Z	NONE	False	Python
+wangzhe3224/valueinvest	56	2026-08-20T21:37:20Z	NONE	False	Python
+wardbradt/peregrine	1247	2021-06-28T20:23:52Z	MIT	True	Python
+wickra-lib/wickra	46	2026-08-21T20:57:54Z	Apache-2.0	False	Rust
+wondertrader/wondertrader	6284	2025-09-30T03:53:19Z	MIT	False	C++
+wukan1986/alpha_examples	96	2026-02-05T01:30:29Z	MIT	False	Python
+xcycharles/stock	100	2021-08-04T18:13:11Z	NONE	False	Jupyter Notebook
+yahoo/graphkit	92	2023-03-21T02:49:20Z	Apache-2.0	False	Python
+yhilpisch/py4at	849	2023-10-09T14:53:50Z	NOASSERTION	False	Jupyter Notebook
+YichengYang-Ethan/oracle3	249	2026-05-08T07:48:25Z	Apache-2.0	False	Python
+Yvictor/TradingGym	1910	2024-02-11T11:53:21Z	MIT	False	Python
+zillionare/zillionare	310	2026-04-30T13:42:54Z	NONE	False	Python
+zlq4863947/triangular-arbitrage2	249	2021-10-09T08:28:37Z	NONE	False	TypeScript
+zvtvz/zvt	4281	2026-07-01T09:42:05Z	MIT	False	Python
