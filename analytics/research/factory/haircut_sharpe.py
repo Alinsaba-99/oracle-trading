@@ -15,16 +15,7 @@ import math
 import numpy as np
 from scipy import stats
 
-
-def sharpe_ratio(returns: np.ndarray, periods_per_year: int = 252) -> float:
-    """Annualized Sharpe of a return series (0 risk-free)."""
-    if len(returns) < 2:
-        return float("nan")
-    sd = float(np.std(returns, ddof=1))
-    if sd == 0.0:
-        return 0.0
-    mean = float(np.mean(returns))
-    return mean / sd * math.sqrt(periods_per_year)
+from analytics.metrics.canonical import sharpe_ratio  # ADR-021 canonical
 
 
 def psr_confidence(
