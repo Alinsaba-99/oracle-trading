@@ -520,15 +520,15 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
   (append-only YAML per dominio, campi: meccanismo, origini, decay_atteso,
   dati, stato) + golden test. AC: schema versione 1, test load/append/
   transizioni stato, mypy --strict.
-- [ ] **BL-701** P1 — KB miner: 13 domini (68 file, 112 BL-KB) → registry.
-  Priorità dai gap audit 2026-08-17: BL-KB-102 VPIN, BL-KB-103 V&M
-  Everywhere, BL-KB-105/106 behavioral. AC: ≥1 ipotesi per dominio nel
-  registry, ognuna con meccanismo + dati richiesti.
-- [ ] **BL-702** P1 — MoonDev miner: `trading-os/knowledge/`
+- [x] **BL-701** P1 — KB miner: 13 domini (68 file, 112 BL-KB) → registry.
+  ✅ 2026-08-22 (commits b03d943+f321047): 39 ipotesi KB, 14 YAML in
+  `docs/knowledge-base/edge-factory/registry/`; builder deterministico
+  `scripts/build_edge_factory_registry.py`; 18 test invarianti. Review:
+  segno Novy-Marx corretto, duplicato Hurst annotato.
+- [x] **BL-702** P1 — MoonDev miner: `trading-os/knowledge/`
   (RISPOSTE_D1-D15, NOTES, INDEX) → registry con flag origine=practitioner
-  e haircut conservativo. AC: i 5 fattori già triaged (funding extremum,
-  liq cascade, BB squeeze release, CVD divergence, session seasonality)
-  come entry verificabili.
+  e haircut conservativo. ✅ 2026-08-22 (commit e95cf6c): i 5 fattori
+  triaged + funding-z + perp-basis-carry (7 entry, decay 40-50).
 - [ ] **BL-703** P2 — Transcript miner: 835 transcript in
   `trading-os/video-library/transcripts/` → entry confidence=bassa
   (promosse in Stage 2 solo con riscontro letteratura). AC: ≥20 entry
@@ -542,13 +542,15 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
   FRED/Binance Vision) + riscrittura contesto-specifica + matrice di test
   (fattore × asset × timeframe) prioritizzata. AC: matrice JSON+MD, zero
   ipotesi senza verifica dati.
-- [ ] **BL-706** P1 — IC screen: `analytics/research/factory/ic_screen.py`
+- [x] **BL-706** P1 — IC screen: `analytics/research/factory/ic_screen.py`
   (Spearman IC orizzonti non sovrapposti + block bootstrap); criteri
-  pre-registrati ICIR > 0.05, t-block > 2.5, haircut 30%. AC: golden
-  vector test su serie sintetiche note.
-- [ ] **BL-707** P1 — Haircut Sharpe (BL-KB-99, Bailey-Lopez de Prado
-  2018) come strumento del gauntlet. AC: formula + test, integrato nei
-  report di qualificazione.
+  pre-registrati ICIR > 0.05, t-block > 2.5, haircut 30%. ✅ 2026-08-22
+  (commit 68b5126): 7 test con golden vectors congelati; direzione fissata
+  long-factor (IC negativo = fail, mai sign-flip).
+- [x] **BL-707** P1 — Haircut Sharpe (BL-KB-99, Bailey-Lopez de Prado
+  2018) come strumento del gauntlet. ✅ 2026-08-22 (commits 95c938b+b2b687c):
+  PSR + offset DSR multiple-testing; riusa sharpe_ratio canonico ADR-021;
+  integrazione nei report = BL-708.
 - [ ] **BL-708** P1 — Qualificazione primo lotto + report sprint 1
   (`docs/reports/edge-factory/sprint-1.md`) con go/no-go scritto.
   Kill: < 2 fattori superano IC screen → stop e rivalutazione.
@@ -566,9 +568,10 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
   (IC, quantile return, turnover) come secondo parere in BL-706. AC:
   install verde py3.12, smoke su serie sintetica, nessun conflitto con
   metriche canoniche ADR-021 (alphalens solo diagnostico).
-- [ ] **BL-711** P1 — **quantstats + ffn**: tearsheet nei report factory
-  (`docs/reports/edge-factory/`). AC: render report da equity curve del
-  runner canonico; NON sostituisce `analytics/metrics/canonical.py`.
+- [x] **BL-711** P1 — **quantstats + ffn**: tearsheet nei report factory
+  (`docs/reports/edge-factory/`). ✅ 2026-08-22 (commit 45745e5):
+  `analytics/research/factory/tearsheet.py` diagnostico-only; quantstats
+  0.0.81 (Apache-2.0) + ffn 1.1.5 (MIT); canonical ADR-021 intoccato.
 - [ ] **BL-714** P1 — **edgartools**: SEC EDGAR fundamentals + 13F +
   insider + 8-K free. AC: fetch 13F + Form 4 verificato su ticker noti,
   PIT rispettato (filing date, non period date), note in dominio 01/06 KB.
@@ -614,10 +617,14 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
   E8 One ✅). RESTANO: FTMO news-ban/EA (FAQ JS-rendered), programmi
   FundedNext, help-center E8, The5ers EA/VPS → seconda passata anche
   via browser-automation.
-- [ ] **BL-721** P1 — Fixture dei programmi verificati in
-  `policy/prop_firm/fixtures.py` (FTMO 1/2-Step, FundedNext CFD +
-  futures Rapid/Flex, The5ers Bootcamp/High Stakes/Hyper Growth,
-  Alpha One/Pro, E8 One/Signature/Pro). Dopo BL-720.
+- [~] **BL-721** P1 — Fixture dei programmi verificati in
+  `policy/prop_firm/fixtures.py`. 🟡 PRIMA TRANCHE 2026-08-22 (commit
+  b143d87): FTMO 1/2-Step, The5ers Bootcamp/HighStakes/HyperGrowth/
+  ProGrowth, Alpha Pro8/One6, E8 One (meccanica TRAILING_CLOSED, numeri
+  = gap dichiarato) + DailyLossAction PAUSE/TERMINATE + anti-HFT flag;
+  106 test policy verdi. RESTANO: FundedNext CFD (numeri non negli
+  snapshot), Alpha Pro6/10, E8 Signature/Pro → dopo seconda passata
+  BL-720.
 - [ ] **BL-722** P1 — Governor: consistency rule in tempo reale +
   news blackout + daily pause-vs-terminate + durata minima trade
   (anti-HFT) + buffer payout; test per ogni DrawdownMode/basis.

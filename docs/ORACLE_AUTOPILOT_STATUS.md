@@ -24,7 +24,7 @@
 
 | Comando | Esito |
 |---|---|
-| `pytest tests/` | **✅ 3019 passed**, 7 skipped, 0 failed (run completo 2026-08-21, 6m25s; +14 test BL-615 paper runner) |
+| `pytest tests/` | **✅ 3089 passed**, 7 skipped, 0 failed (run completo 2026-08-22, 6m32s; +54 test sessione 2026-08-22: BL-711 tearsheet 3, BL-701/702 corpus 18, BL-706 IC screen 7, BL-707 haircut 8, BL-721 fixtures 18) |
 | Smoke runner canonico | ✅ `oracle paper run --spec` end-to-end: 3 sessioni edge_v2, manifest con sha256 dati/spec/git-commit (`logs/paper_canonical/bl615-smoke.*`) |
 | Lake coverage (`coverage.json`) | ✅ refresh perpetuo systemd attivo (07:00); IBKR 1m cron ora installato (vedi sotto) |
 | IBKR backfill timer | ✅ installato e enabled 2026-08-21 (`~/.config/systemd/user/oracle-ibkr-backfill.timer`, run 18:00 UTC); futures ES/NQ/GC/CL via CONTFUT + equities, 1 run verificato exit 0 |
@@ -100,6 +100,21 @@ Eseguito: `python scripts/run_g6_wp2_paper_sessions.py --sessions 30 --data data
 - FRED vintage PIT (live-readiness gap #1), pessimistic-fill (gap #3)
 - Knowledge base 13 domini (68 file, 112 BL-KB items) in `docs/knowledge-base/`
 - Dystopian stress, trial ledger + alerts, edge ensemble v2, CTA, value catalog
+
+### 3.4 Edge Research Factory — Stage 1 popolato + strumenti qualifica (2026-08-22)
+
+| Componente | Stato | Evidenza |
+|---|---|---|
+| Registry (BL-700/701/702) | ✅ 46 ipotesi (39 KB + 7 practitioner MoonDev) in 14 YAML `docs/knowledge-base/edge-factory/registry/`; builder deterministico `scripts/build_edge_factory_registry.py` (regen = diff review, vedi nota) | commits b03d943, e95cf6c, f321047 |
+| IC screen (BL-706) | ✅ `analytics/research/factory/ic_screen.py` — Spearman non-overlapping + block bootstrap, ICIR>0.05/t>2.5 pre-registrati, haircut 30%, direzione fissata (no sign-flip) | commit 68b5126 |
+| Haircut Sharpe (BL-707) | ✅ `analytics/research/factory/haircut_sharpe.py` — PSR + offset DSR, riusa canonical ADR-021 | commits 95c938b, b2b687c |
+| Tearsheet (BL-711) | ✅ quantstats 0.0.81 (Apache-2.0) + ffn 1.1.5 (MIT), diagnostico-only | commit 45745e5 |
+| Fixture prop-firm (BL-721) | 🟡 prima tranche: FTMO/The5ers/Alpha/E8 da snapshot sha256 2026-08-22; +DailyLossAction(PAUSE/TERMINATE), TRAILING_CLOSED, anti-HFT flag; enforcement = BL-722 | commit b143d87 |
+
+> Nota regole: le ipotesi 03-quant DSR/HLZ sono GATE (metodo), non alpha —
+> non entrano nell'IC screen come candidati. Gap noti: VPIN/OFI L2 con
+> dati_posseduti=false (aggTrades da ingettare, $0); FundedNext/Alpha-6-10/
+> E8-numeri → seconda passata BL-720.
 
 ## 4. Chiusura S0 (piano production-grade, commit `3bdef58`)
 
