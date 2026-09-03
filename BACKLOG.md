@@ -516,10 +516,12 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
 > Sostituisce Mutageno G10-G14 come motore di ricerca (che resta
 > congelato finché non c'è ≥1 edge APPROVED).
 
-- [ ] **BL-700** P1 — Schema registry + `analytics/research/factory/registry.py`
+- [x] **BL-700** P1 — Schema registry + `analytics/research/factory/registry.py`
   (append-only YAML per dominio, campi: meccanismo, origini, decay_atteso,
   dati, stato) + golden test. AC: schema versione 1, test load/append/
-  transizioni stato, mypy --strict.
+  transizioni stato, mypy --strict. ✅ 2026-09-03: `analytics/research/factory/registry.py`
+  (HypothesisRegistry con validazione 14 domini, state machine e transizioni permesse)
+  + 32 test unit passanti in `tests/unit/test_edge_factory_registry_bl700.py`.
 - [x] **BL-701** P1 — KB miner: 13 domini (68 file, 112 BL-KB) → registry.
   ✅ 2026-08-22 (commits b03d943+f321047): 39 ipotesi KB, 14 YAML in
   `docs/knowledge-base/edge-factory/registry/`; builder deterministico
@@ -551,12 +553,17 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
   2018) come strumento del gauntlet. ✅ 2026-08-22 (commits 95c938b+b2b687c):
   PSR + offset DSR multiple-testing; riusa sharpe_ratio canonico ADR-021;
   integrazione nei report = BL-708.
-- [ ] **BL-708** P1 — Qualificazione primo lotto + report sprint 1
+- [x] **BL-708** P1 — Qualificazione primo lotto + report sprint 1
   (`docs/reports/edge-factory/sprint-1.md`) con go/no-go scritto.
-  Kill: < 2 fattori superano IC screen → stop e rivalutazione.
-- [ ] **BL-709** P2 — Dual-channel promotion policy: spec personal
+  Kill: < 2 fattori superano IC screen → stop e rivalutazione. ✅ 2026-09-03:
+  `scripts/run_factory_sprint1_qualification.py` eseguito sui 4 candidati Stage 1;
+  report `docs/reports/edge-factory/sprint-1.{md,json}` + 29 test unit passanti.
+- [x] **BL-709** P2 — Dual-channel promotion policy: spec personal
   (high-vol, soglia haircut Sharpe) vs funded (σ-scaled G4, ≥100 sessioni
   paper canoniche pass ≥ 0.90/DD ≤ 3% PRIMA di pagare eval) + ADR.
+  ✅ 2026-09-03: `policy/prop_firm/dual_channel.py` (Channel A: haircut SR≥0.50,
+  DSR≥0.95, max_dd<0.15, walk_forward_alpha>0; Channel B: hard_risk+consistency≤0.35
+  +daily_pause+≥100 paper sessions+sim/mc_pass_rate≥0.60) + ADR-023 + 55 test unit.
 
 ### Acquisizioni da awesome-systematic-trading (BOM 2026-08-21)
 

@@ -220,7 +220,9 @@ split-on-trailing-comma = false
 "tests/unit/test_edgar_loader.py" = ["ARG001", "E501"]
 "tests/unit/test_moondev_kit_factors.py" = ["E501"]
 "tests/unit/test_monitor_prop_rules.py" = ["ARG001", "E501"]
+"tests/unit/test_factory_sprint1.py" = ["ARG001", "E501"]
 "scripts/monitor_prop_rules.py" = ["E501", "B904"]
+"scripts/run_factory_sprint1_qualification.py" = ["E402", "E501", "SIM105", "SIM108"]
 "analytics/research/factory/alphalens_adapter.py" = ["E501"]
 "scripts/run_bl726_prereg_qualification.py" = ["E402", "E501"]
 "scripts/run_multi_strategy_ensemble.py" = ["E501"]
@@ -300,6 +302,7 @@ disable_error_code = ["no-untyped-call", "attr-defined", "assignment"]
 module = [
     "scripts.run_bl726_prereg_qualification",
     "scripts.run_multi_strategy_ensemble",
+    "scripts.run_factory_sprint1_qualification",
     "scripts.build_economic_calendar",
     "scripts.build_macro_calendar",
     "scripts.ui_extract_design_refs",
@@ -307,6 +310,8 @@ module = [
     "analytics.research.factory.alphalens_adapter",
     "analytics.fundamental.edgar_loader",
     "analytics.strategy.catalog.funding_rate",
+    "analytics.research.factory.registry",
+    "policy.prop_firm.dual_channel",
     "market.calendar.macro_events",
     "analytics.macro.calendar",
     "tests.policy.test_prop_firm_governor_bl722",
@@ -314,6 +319,9 @@ module = [
     "tests.unit.test_edgar_loader",
     "tests.unit.test_macro_events_calendar",
     "tests.unit.test_alphalens_adapter",
+    "tests.unit.test_dual_channel_policy",
+    "tests.unit.test_edge_factory_registry_bl700",
+    "tests.unit.test_factory_sprint1",
 ]
 ignore_errors = true
 

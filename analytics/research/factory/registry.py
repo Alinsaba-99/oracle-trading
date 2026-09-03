@@ -8,6 +8,7 @@ observation lands in the append-only ``evidenza`` list.  See
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
@@ -150,12 +151,227 @@ def save_registry(path: str | Path, registry: DomainRegistry) -> Path:
     return p
 
 
+# ---------------------------------------------------------------------------
+# Cross-domain unified registry (BL-700)
+# ---------------------------------------------------------------------------
+
+
+_DEFAULT_REGISTRY_ROOT = Path("docs/knowledge-base/edge-factory/registry")
+
+
+class HypothesisNotFoundError(RegistryError):
+    """Lookup of an hypothesis id failed across all loaded domains."""
+
+
+class HypothesisRegistry:
+    """Unified, read-write view over the per-domain YAML registry.
+
+    Scans a directory of ``<domain>.yaml`` files (one ``DomainRegistry`` each)
+    and exposes cross-domain queries plus append-only state transitions.  All
+    mutations are routed through :meth:`Hypothesis.transition` so the controlled
+    state machine stays the single authority.  Save back is explicit via
+    :meth:`save_all` (or per-domain via :meth:`save_domain`) — the registry
+    never writes to disk as a side effect of a state change.
+    """
+
+    def __init__(self, root: str | Path | None = None) -> None:
+        self._root = Path(root) if root is not None else _DEFAULT_REGISTRY_ROOT
+        self._domains: dict[str, DomainRegistry] = {}
+        self._paths: dict[str, Path] = {}
+        self._dirty: set[str] = set()
+
+    # -- discovery ---------------------------------------------------------
+
+    @property
+    def root(self) -> Path:
+        return self._root
+
+    @property
+    def domains(self) -> list[str]:
+        return sorted(self._domains)
+
+    def scan(self, root: str | Path | None = None) -> HypothesisRegistry:
+        """Load every ``*.yaml`` file under *root* (defaults to ``self._root``).
+
+        Already-loaded domains are replaced — call this to re-read from disk
+        after external edits.  Returns self so it composes naturally:
+        ``HypothesisRegistry().scan()``.
+        """
+        target = Path(root) if root is not None else self._root
+        if not target.exists():
+            raise RegistryError(f"registry root does not exist: {target}")
+
+        self._domains = {}
+        self._paths = {}
+        self._dirty = set()
+
+        for path in sorted(target.glob("*.yaml")):
+            domain = load_registry(path)
+            self._domains[domain.domain] = domain
+            self._paths[domain.domain] = path
+        return self
+
+    # -- queries -----------------------------------------------------------
+
+    def get_hypothesis(self, hid: str) -> Hypothesis:
+        for domain in self._domains.values():
+            try:
+                return domain.get(hid)
+            except RegistryError:
+                continue
+        raise HypothesisNotFoundError(f"hypothesis {hid} not found in any domain")
+
+    def get_domain(self, domain: str) -> DomainRegistry:
+        if domain not in self._domains:
+            raise RegistryError(f"domain {domain!r} not loaded (have: {self.domains})")
+        return self._domains[domain]
+
+    def list_hypotheses(
+        self, domain: str | None = None, stato: str | None = None
+    ) -> list[Hypothesis]:
+        """Cross-domain filter.  Both filters are AND-combined; ``None`` = no filter."""
+        results: list[Hypothesis] = []
+        for d_name, d_reg in self._domains.items():
+            if domain is not None and d_name != domain:
+                continue
+            for h in d_reg.hypotheses:
+                if stato is not None and h.stato != stato:
+                    continue
+                results.append(h)
+        return results
+
+    def count_by_status(self) -> dict[str, int]:
+        """Status histogram across the whole registry."""
+        counts: dict[str, int] = {}
+        for h in self.list_hypotheses():
+            counts[h.stato] = counts.get(h.stato, 0) + 1
+        return counts
+
+    def count_by_domain(self) -> dict[str, int]:
+        return {d: len(r.hypotheses) for d, r in sorted(self._domains.items())}
+
+    # -- mutations ---------------------------------------------------------
+
+    def update_status(
+        self,
+        hid: str,
+        nuovo_stato: str,
+        motivo: str,
+        ref: str | None = None,
+        *,
+        persist: bool = False,
+    ) -> Hypothesis:
+        """Transition *hid* → *nuovo_stato* recording evidence.
+
+        The transition is validated by :meth:`Hypothesis.transition` (which
+        raises :class:`RegistryError` on illegal moves).  By default the
+        registry only marks the owning domain as dirty; pass ``persist=True``
+        to also write the YAML back to disk.
+        """
+        h = self.get_hypothesis(hid)
+        domain = self._domain_of(hid)
+        h.transition(nuovo_stato, motivo, ref)
+        self._dirty.add(domain)
+        if persist:
+            self.save_domain(domain)
+        return h
+
+    def save_domain(self, domain: str) -> Path:
+        if domain not in self._paths:
+            raise RegistryError(f"domain {domain!r} not loaded")
+        save_registry(self._paths[domain], self._domains[domain])
+        self._dirty.discard(domain)
+        return self._paths[domain]
+
+    def save_all(self) -> list[Path]:
+        """Persist every dirty domain; returns the list of written paths."""
+        written: list[Path] = []
+        for domain in sorted(self._dirty):
+            written.append(self.save_domain(domain))
+        return written
+
+    @property
+    def dirty_domains(self) -> list[str]:
+        return sorted(self._dirty)
+
+    # -- invariants --------------------------------------------------------
+
+    def validate_all(self) -> list[str]:
+        """Cross-domain structural invariants.
+
+        Returns a list of human-readable issue strings; empty list = OK.
+        Cheap enough to run on every CI commit.  Local invariants
+        (Pydantic constraints) are already enforced at load time, so this
+        focuses on cross-domain and content invariants that need global view.
+        """
+        issues: list[str] = []
+
+        # 1. id uniqueness across the whole registry (the on-disk schema
+        #    enforces uniqueness *within* a domain; cross-domain collisions
+        #    would still pass per-domain validation).
+        seen: dict[str, str] = {}
+        for d_name, d_reg in self._domains.items():
+            for h in d_reg.hypotheses:
+                if h.id in seen:
+                    issues.append(f"duplicate id {h.id}: domains {seen[h.id]!r} and {d_name!r}")
+                else:
+                    seen[h.id] = d_name
+
+        # 2. per-hypothesis invariants the schema does not enforce
+        #    (deeper business rules on top of pydantic constraints).
+        for d_name, d_reg in self._domains.items():
+            if d_reg.schema_version != _REGISTRY_SCHEMA_VERSION:
+                issues.append(
+                    f"domain {d_name}: schema_version {d_reg.schema_version} "
+                    f"!= expected {_REGISTRY_SCHEMA_VERSION}"
+                )
+            for h in d_reg.hypotheses:
+                if not h.fonti:
+                    issues.append(f"{h.id}: no sources in fonti")
+                for s in h.dati_richiesti:
+                    if not s.strip():
+                        issues.append(f"{h.id}: empty entry in dati_richiesti")
+                for ev in h.evidenza:
+                    try:
+                        datetime.fromisoformat(ev.data)
+                    except ValueError:
+                        issues.append(f"{h.id}: evidence data not ISO-8601: {ev.data!r}")
+                    if not ev.testo.strip():
+                        issues.append(f"{h.id}: evidence with empty testo")
+
+        # 3. every stato value present in the data must be a known status.
+        known_states = set(Stato.__args__)  # type: ignore[attr-defined]
+        for h in self.list_hypotheses():
+            if h.stato not in known_states:
+                issues.append(f"{h.id}: unknown stato {h.stato!r}")
+
+        return issues
+
+    # -- internals ---------------------------------------------------------
+
+    def _domain_of(self, hid: str) -> str:
+        for d_name, d_reg in self._domains.items():
+            if any(h.id == hid for h in d_reg.hypotheses):
+                return d_name
+        raise HypothesisNotFoundError(hid)
+
+    # -- dunders -----------------------------------------------------------
+
+    def __len__(self) -> int:
+        return sum(len(r.hypotheses) for r in self._domains.values())
+
+    def __iter__(self) -> Iterable[Hypothesis]:  # type: ignore[override]
+        return iter(self.list_hypotheses())
+
+
 __all__ = [
     "ALLOWED_TRANSITIONS",
     "TERMINAL_STATES",
     "DomainRegistry",
     "Evidence",
     "Hypothesis",
+    "HypothesisNotFoundError",
+    "HypothesisRegistry",
     "RegistryError",
     "load_registry",
     "save_registry",
