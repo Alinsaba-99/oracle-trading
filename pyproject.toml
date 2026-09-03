@@ -219,6 +219,8 @@ split-on-trailing-comma = false
 "tests/unit/test_alphalens_adapter.py" = ["E501"]
 "tests/unit/test_edgar_loader.py" = ["ARG001", "E501"]
 "tests/unit/test_moondev_kit_factors.py" = ["E501"]
+"tests/unit/test_monitor_prop_rules.py" = ["ARG001", "E501"]
+"scripts/monitor_prop_rules.py" = ["E501", "B904"]
 "analytics/research/factory/alphalens_adapter.py" = ["E501"]
 "scripts/run_bl726_prereg_qualification.py" = ["E402", "E501"]
 "scripts/run_multi_strategy_ensemble.py" = ["E501"]
@@ -301,6 +303,7 @@ module = [
     "scripts.build_economic_calendar",
     "scripts.build_macro_calendar",
     "scripts.ui_extract_design_refs",
+    "scripts.monitor_prop_rules",
     "analytics.research.factory.alphalens_adapter",
     "analytics.fundamental.edgar_loader",
     "analytics.strategy.catalog.funding_rate",
