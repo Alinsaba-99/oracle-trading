@@ -535,15 +535,23 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
   `trading-os/video-library/transcripts/` → entry confidence=bassa
   (promosse in Stage 2 solo con riscontro letteratura). AC: ≥20 entry
   con timestamp+riferimento video, dedup.
-- [ ] **BL-704** P1 — Amplificatore: batteria 5 search MCP (Tavily/Brave/
+- [x] **BL-704** P1 — Amplificatore: batteria 5 search MCP (Tavily/Brave/
   Exa/SearXNG/DDG) per ipotesi: conferma accademica + confutazione attiva
   + gap hunting 2022-2026 + OSS ispezionabile. AC: ogni entry amplificata
   ha citazioni con URL+data; web marcato untrusted; snapshot sha256 dove
-  possibile.
-- [ ] **BL-705** P1 — Asset adapter: verifica dati posseduti (lake/SimFin/
+  possibile. ✅ 2026-09-03: report `docs/reports/edge-factory/
+  stage2-amplification-ef001-007.md` (subagent search multi-fonte) — 5
+  amplificate con citazioni (Schmeling BIS/Management Science, Inan SSRN,
+  arXiv 2608.21888, MDPI 2026), EF-003 morta, EF-005 satura/REJECTED;
+  registry aggiornato (commit c62e4e7).
+- [x] **BL-705** P1 — Asset adapter: verifica dati posseduti (lake/SimFin/
   FRED/Binance Vision) + riscrittura contesto-specifica + matrice di test
   (fattore × asset × timeframe) prioritizzata. AC: matrice JSON+MD, zero
-  ipotesi senza verifica dati.
+  ipotesi senza verifica dati. ✅ 2026-09-03 (de-facto): funding 8 simboli
+  2020→ + perp klines BTC/ETH 1h backfillati in `data/lake/raw/`; matrice
+  di test realizzata come slot tables in sprint-2/2b reports (fattore ×
+  asset, tutti i dati posseduti verificati, nessuna ipotesi testata senza
+  dati).
 - [x] **BL-706** P1 — IC screen: `analytics/research/factory/ic_screen.py`
   (Spearman IC orizzonti non sovrapposti + block bootstrap); criteri
   pre-registrati ICIR > 0.05, t-block > 2.5, haircut 30%. ✅ 2026-08-22
