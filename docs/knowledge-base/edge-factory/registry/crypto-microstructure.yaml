@@ -3,12 +3,10 @@ domain: crypto-microstructure
 hypotheses:
 - id: EF-001
   nome: funding-extremum-reversal
-  meccanismo: funding rate 8h estremo (z-score rolling 60d o soglia annualizzata ≤
-    −20% / ≥ +25%) segnala posizioni long/short affollate e costose da tenere → reversal
-    atteso
-  perche_esiste: il costo del carry spinge i marginal trader fuori dalla posizione
-    affollata; il squeeze del funding estremo coincide con l'esaurimento del flusso
-    direzionale (D1)
+  meccanismo: funding rate 8h estremo (z-score rolling 60d o soglia annualizzata ≤ −20% / ≥ +25%) segnala
+    posizioni long/short affollate e costose da tenere → reversal atteso
+  perche_esiste: il costo del carry spinge i marginal trader fuori dalla posizione affollata; il squeeze
+    del funding estremo coincide con l'esaurimento del flusso direzionale (D1)
   origine: practitioner
   fonti:
   - trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
@@ -24,24 +22,22 @@ hypotheses:
   - 1h, 4h
   stato: amplificata
   evidenza:
-  - data: '2026-09-03'
-    tipo: qualifica_sprint2
-    testo: 'EF-001 gauntlet Sprint 2: IC screen PASS su ETH/SOL/XRP/BNB/DOGE/ADA/LINK
-      (ICIRh 0.12-0.23) ma haircut Sharpe/DSR NEGATIVI sulla strategia sign-based →
-      segnale informativo, monetizzazione non dimostrata. NO_GO su strategia; feature
-      promossa come condizionante.'
-    ref: docs/reports/edge-factory/sprint-2.md, docs/reports/edge-factory/sprint-2b.md
   - data: '2026-08-22T17:24:51.377958+00:00'
     tipo: miner
     testo: fattore triaged MoonDev; claim di rendimento NON verificato
     ref: trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
+  - data: '2026-09-03'
+    tipo: test
+    testo: 'EF-001 gauntlet Sprint 2: IC screen PASS su ETH/SOL/XRP/BNB/DOGE/ADA/LINK (ICIRh 0.12-0.23)
+      ma haircut Sharpe/DSR NEGATIVI sulla strategia sign-based → segnale informativo, monetizzazione
+      non dimostrata. NO_GO su strategia; feature promossa come condizionante.'
+    ref: docs/reports/edge-factory/sprint-2.md, docs/reports/edge-factory/sprint-2b.md
 - id: EF-002
   nome: liquidation-cascade-reversal
-  meccanismo: volume liquidato orario > 10× mediana 30d (liq_volume_z estremo) → overshoot
-    da vendite forzate → mean reversion nelle ore successive (event study pre/post)
-  perche_esiste: 'le liquidazioni forzate attraversano il book oltre il fair value
-    (price impact classico); quando la pressione finisce il prezzo torna (D4; letteratura:
-    fat tails BTC EJF 2022)'
+  meccanismo: volume liquidato orario > 10× mediana 30d (liq_volume_z estremo) → overshoot da vendite
+    forzate → mean reversion nelle ore successive (event study pre/post)
+  perche_esiste: 'le liquidazioni forzate attraversano il book oltre il fair value (price impact classico);
+    quando la pressione finisce il prezzo torna (D4; letteratura: fat tails BTC EJF 2022)'
   origine: practitioner
   fonti:
   - trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
@@ -63,12 +59,11 @@ hypotheses:
     ref: trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
 - id: EF-003
   nome: bb-squeeze-release
-  meccanismo: 'BB dentro Keltner (squeeze ON) → transizione release + ADX>25 + rottura
-    banda BB = entrata nella direzione della rottura (parametri MoonDev fissati a
-    priori: BB20/2.0, KC20/1.5, ADX14>25)'
-  perche_esiste: 'la compressione di volatilità accumina ordini stop da entrambi i
-    lati; il rilascio libera il movimento direzionale (D2; squeeze = compressione
-    NON direzione: da solo IC≈0 atteso, il valore è nella combinazione)'
+  meccanismo: 'BB dentro Keltner (squeeze ON) → transizione release + ADX>25 + rottura banda BB = entrata
+    nella direzione della rottura (parametri MoonDev fissati a priori: BB20/2.0, KC20/1.5, ADX14>25)'
+  perche_esiste: 'la compressione di volatilità accumina ordini stop da entrambi i lati; il rilascio libera
+    il movimento direzionale (D2; squeeze = compressione NON direzione: da solo IC≈0 atteso, il valore
+    è nella combinazione)'
   origine: practitioner
   fonti:
   - trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
@@ -89,11 +84,10 @@ hypotheses:
     ref: trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
 - id: EF-004
   nome: cvd-divergence
-  meccanismo: prezzo new high/low + CVD (cumulative delta da tick rule su aggTrades)
-    non conferma → esaurimento aggressione → reversal; convergenza conferma il trend
-  perche_esiste: 'movimenti senza aggressione unilaterale sottostante sono short-covering/limit
-    pull: privi di combustibile revertano (D5; proxy da OHLCV hanno correlazione bassa
-    — serve il tick vero)'
+  meccanismo: prezzo new high/low + CVD (cumulative delta da tick rule su aggTrades) non conferma → esaurimento
+    aggressione → reversal; convergenza conferma il trend
+  perche_esiste: 'movimenti senza aggressione unilaterale sottostante sono short-covering/limit pull:
+    privi di combustibile revertano (D5; proxy da OHLCV hanno correlazione bassa — serve il tick vero)'
   origine: practitioner
   fonti:
   - trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
@@ -115,12 +109,11 @@ hypotheses:
     ref: trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
 - id: EF-005
   nome: session-seasonality
-  meccanismo: 'hour-of-day (UTC) + day-of-week come feature condizionanti su BTC 24/7:
-    open US (14:30 UTC) e sovrapposizione EU/US come finestre ad attività/volatilità
-    anormale'
-  perche_esiste: 'la struttura dei partecipanti cambia nell''arco della giornata (EU
-    istituzionale, US retail); effetti orari documentati ma deboli e attenuati post-2018
-    (D6: prior bassa, feature di contesto mai edge standalone)'
+  meccanismo: 'hour-of-day (UTC) + day-of-week come feature condizionanti su BTC 24/7: open US (14:30
+    UTC) e sovrapposizione EU/US come finestre ad attività/volatilità anormale'
+  perche_esiste: 'la struttura dei partecipanti cambia nell''arco della giornata (EU istituzionale, US
+    retail); effetti orari documentati ma deboli e attenuati post-2018 (D6: prior bassa, feature di contesto
+    mai edge standalone)'
   origine: practitioner
   fonti:
   - trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
@@ -133,7 +126,7 @@ hypotheses:
   - BTCUSDT
   timeframe:
   - 1h
-  stato: gia_nota_saturo
+  stato: REJECTED
   evidenza:
   - data: '2026-08-22T17:24:51.378374+00:00'
     tipo: miner
@@ -141,11 +134,10 @@ hypotheses:
     ref: trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
 - id: EF-006
   nome: funding-z-ml-feature
-  meccanismo: funding_z = z-score rolling 60d del funding 8h come feature continua
-    scale-free (invece della soglia secca) per modelli ML e per condizioni di entry
-    su altri fattori
-  perche_esiste: lo z-score normalizza il crowding attraverso i regimi di volatilità
-    del funding (D1.4 raccomandazione esplicita)
+  meccanismo: funding_z = z-score rolling 60d del funding 8h come feature continua scale-free (invece
+    della soglia secca) per modelli ML e per condizioni di entry su altri fattori
+  perche_esiste: lo z-score normalizza il crowding attraverso i regimi di volatilità del funding (D1.4
+    raccomandazione esplicita)
   origine: practitioner
   fonti:
   - trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
@@ -159,25 +151,24 @@ hypotheses:
   - BTCUSDT, ETHUSDT
   timeframe:
   - 1h
-  stato: APPROVED  # Sprint 2 GO su famiglia (ETH full-pass); cross-section IC pass 5/5, monetizzazione parziale
+  stato: APPROVED
   evidenza:
-  - data: '2026-09-03'
-    tipo: qualifica_sprint2
-    testo: 'EF-006 gauntlet Sprint 2: GO famiglia (2/3 IC pass). ETHUSDT full-pass:
-      IC +0.099, ICIRh 0.175, t=6.94, haircut Sharpe +4.04, DSR 1.0. Sprint 2b:
-      IC pass 5/5 cross-section ma hSR mediano negativo → edge direzionale solido,
-      payoff sign-based debole: promuovere a sizing/conditioning feature.'
-    ref: docs/reports/edge-factory/sprint-2.md, docs/reports/edge-factory/sprint-2b.md
   - data: '2026-08-22T17:24:51.378390+00:00'
     tipo: miner
     testo: fattore triaged MoonDev; claim di rendimento NON verificato
     ref: trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
+  - data: '2026-09-03'
+    tipo: test
+    testo: 'EF-006 gauntlet Sprint 2: GO famiglia (2/3 IC pass). ETHUSDT full-pass: IC +0.099, ICIRh 0.175,
+      t=6.94, haircut Sharpe +4.04, DSR 1.0. Sprint 2b: IC pass 5/5 cross-section ma hSR mediano negativo
+      → edge direzionale solido, payoff sign-based debole: promuovere a sizing/conditioning feature.'
+    ref: docs/reports/edge-factory/sprint-2.md, docs/reports/edge-factory/sprint-2b.md
 - id: EF-007
   nome: perp-basis-carry
-  meccanismo: 'basis perp-spot estremo (annualizzato) → il costo del carry attira
-    gli arbitraggisti e comprime il basis: fade del basis con hedge spot'
-  perche_esiste: 'il basis riflette domanda leveraged unilaterale; agli estremi è
-    paga-to-trade contro gli over-leveraged (D1.5: secondo fattore, rimandato)'
+  meccanismo: 'basis perp-spot estremo (annualizzato) → il costo del carry attira gli arbitraggisti e
+    comprime il basis: fade del basis con hedge spot'
+  perche_esiste: 'il basis riflette domanda leveraged unilaterale; agli estremi è paga-to-trade contro
+    gli over-leveraged (D1.5: secondo fattore, rimandato)'
   origine: practitioner
   fonti:
   - trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
@@ -190,16 +181,15 @@ hypotheses:
   - BTCUSDT, ETHUSDT
   timeframe:
   - 1h, 1d
-  stato: in_qualifica  # Sprint 2b: GO full-sample; post-2024-03 ETH IC pass / BTC fail (decay ETF documentato)
+  stato: in_qualifica
   evidenza:
-  - data: '2026-09-03'
-    tipo: qualifica_sprint2b
-    testo: 'EF-007 gauntlet Sprint 2b: GO full-sample (IC pass BTC+ETH, median hSR +1.69,
-      DSR 1.0). Split ETF 2024-03: pre-split pass netto; post-split ETH IC pass
-      (ICIRh 0.275) ma hSR -1.15, BTC IC fail (t=0.43) → edge in decadimento
-      post-ETF, coerente con Schmeling et al. 2025.'
-    ref: docs/reports/edge-factory/sprint-2b.md
   - data: '2026-08-22T17:24:51.378406+00:00'
     tipo: miner
     testo: fattore triaged MoonDev; claim di rendimento NON verificato
     ref: trading-os/knowledge/moondev-repos/RISPOSTE_D1-D15.md
+  - data: '2026-09-03'
+    tipo: test
+    testo: 'EF-007 gauntlet Sprint 2b: GO full-sample (IC pass BTC+ETH, median hSR +1.69, DSR 1.0). Split
+      ETF 2024-03: pre-split pass netto; post-split ETH IC pass (ICIRh 0.275) ma hSR -1.15, BTC IC fail
+      (t=0.43) → edge in decadimento post-ETF, coerente con Schmeling et al. 2025.'
+    ref: docs/reports/edge-factory/sprint-2b.md

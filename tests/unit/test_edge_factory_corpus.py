@@ -33,6 +33,17 @@ def test_registry_files_match_expected_domains() -> None:
     assert found == sorted(ALL_DOMAINS)
 
 
+VALID_STATES = {
+    "da_amplificare",
+    "amplificata",
+    "in_qualifica",
+    "APPROVED",
+    "REJECTED",
+    "morta",
+    "morta_per_dati",
+}
+
+
 @pytest.mark.parametrize("domain", ALL_DOMAINS)
 def test_min_one_hypothesis_per_domain(domain: str) -> None:
     reg = load_registry(REGISTRY_DIR / f"{domain}.yaml")
@@ -40,7 +51,9 @@ def test_min_one_hypothesis_per_domain(domain: str) -> None:
     for h in reg.hypotheses:
         assert len(h.meccanismo) >= 10
         assert h.dati_richiesti, f"{h.id}: dati_richiesti vuoto"
-        assert h.stato == "da_amplificare"
+        # Stage-1 mined state; hypotheses may advance via the state
+        # machine (amplification/qualification) — only validity is enforced.
+        assert h.stato in VALID_STATES
         assert h.evidenza and h.evidenza[0].tipo == "miner"
 
 
