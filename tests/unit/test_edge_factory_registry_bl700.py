@@ -400,10 +400,16 @@ def test_shipped_registry_status_histogram_is_mostly_amplification_stage() -> No
         pytest.skip("shipped registry not in cwd")
     r = HypothesisRegistry().scan()
     counts = r.count_by_status()
-    # All 46 hypotheses are still pre-amplification: the corpus was
-    # just mined (BL-701/702), amplification is BL-704.
-    assert counts.get("da_amplificare", 0) == 46
+    # 46 hypotheses total.  The corpus was mined at Stage 1 (BL-701/702);
+    # since Sprint 2 (BL-704/BL-718, 2026-09-03) the 7 crypto-microstructure
+    # entries have advanced through the state machine (amplificata /
+    # APPROVED / REJECTED / morta), so the pre-amplification count is
+    # 46 minus the advanced ones — everything else must still be
+    # da_amplificare and the total must stay 46 (no lost hypotheses).
+    advanced = sum(v for k, v in counts.items() if k != "da_amplificare")
+    assert counts.get("da_amplificare", 0) + advanced == 46
     assert sum(counts.values()) == 46
+    assert advanced <= 7  # only the crypto domain has been through sprints
 
 
 def test_shipped_registry_validate_all_flags_known_data_bug() -> None:
