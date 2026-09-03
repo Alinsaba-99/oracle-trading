@@ -648,8 +648,10 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
   per il news blackout di BL-722. ✅ 2026-09-03: `market/calendar/macro_events.py` +
   `analytics/macro/calendar.py` con 504 eventi storici ad alto impatto (FOMC, NFP, CPI,
   GDP, Jackson Hole) in `data/macro/economic_calendar.json` + 43 test unit passanti.
-- [ ] **BL-725** P2 — Cron monitor regole firm: diff periodico delle
-  pagine ufficiali snapshot in BL-720 + alert su cambiamento.
+- [x] **BL-725** P2 — Cron monitor regole firm: diff periodico delle
+  pagine ufficiali snapshot in BL-720 + alert su cambiamento. ✅ 2026-09-03:
+  `scripts/monitor_prop_rules.py` (PropRuleMonitor con sha256 check, untracked
+  detection, fixture cross-referencing e report JSON) + 15 test unit passanti.
 
 ### Paper trading end-to-end + G5 re-qualifica (BL-726..737, sessione 2026-09-02)
 
