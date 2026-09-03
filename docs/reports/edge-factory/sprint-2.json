@@ -1,0 +1,170 @@
+{
+  "generated": "2026-09-03T21:03:10.308407+00:00",
+  "framework": "Edge Research Factory Sprint 2 \u2014 real funding factors (BL-718)",
+  "data": {
+    "funding_dir": "data/lake/raw/funding",
+    "coverage": {
+      "BTCUSDT": {
+        "settlements": 2922
+      },
+      "ETHUSDT": {
+        "settlements": 6849
+      },
+      "SOLUSDT": {
+        "settlements": 6610
+      }
+    }
+  },
+  "thresholds": {
+    "icir_threshold": 0.05,
+    "ic_block_t_threshold": 2.5,
+    "haircut_pct": 30.0,
+    "haircut_sharpe_min": 0.0,
+    "dsr_min": 0.5,
+    "psr_min": 0.5,
+    "kill_min_passing_slots": 2
+  },
+  "slots": [
+    {
+      "family": "funding_extremum_reversal",
+      "label": "Funding Extremum Reversal",
+      "asset": "BTCUSDT",
+      "timeframe": "1h",
+      "n_bars": 23433,
+      "n_pairs": 23409,
+      "ic_passed": false,
+      "ic_mean": 0.006647359377529603,
+      "ic_std": 0.31337615562948895,
+      "icir_raw": 0.021212077747832583,
+      "icir_haircut": 0.014848454423482807,
+      "ic_t_block": 0.23937570567648953,
+      "observed_sharpe": -2.077146728562238,
+      "haircut_sharpe": -3.052950268565918,
+      "psr": 0.0002314073858476457,
+      "dsr": 0.0002263355976612374,
+      "status": "OK"
+    },
+    {
+      "family": "funding_extremum_reversal",
+      "label": "Funding Extremum Reversal",
+      "asset": "ETHUSDT",
+      "timeframe": "1h",
+      "n_bars": 54825,
+      "n_pairs": 54801,
+      "ic_passed": true,
+      "ic_mean": 0.07541284611817431,
+      "ic_std": 0.33235199025174883,
+      "icir_raw": 0.22690655789679745,
+      "icir_haircut": 0.1588345905277582,
+      "ic_t_block": 4.392681961780357,
+      "observed_sharpe": -0.4999806982463699,
+      "haircut_sharpe": -1.1564469414252219,
+      "psr": 0.10514432728049183,
+      "dsr": 0.10218671398578388,
+      "status": "OK"
+    },
+    {
+      "family": "funding_extremum_reversal",
+      "label": "Funding Extremum Reversal",
+      "asset": "SOLUSDT",
+      "timeframe": "1h",
+      "n_bars": 52316,
+      "n_pairs": 52292,
+      "ic_passed": true,
+      "ic_mean": 0.05381399217012318,
+      "ic_std": 0.3182891156720386,
+      "icir_raw": 0.1690726748745392,
+      "icir_haircut": 0.11835087241217743,
+      "ic_t_block": 3.1432246514815025,
+      "observed_sharpe": -1.9283530661717005,
+      "haircut_sharpe": -2.5883835785049563,
+      "psr": 7.711637370873432e-07,
+      "dsr": 6.736636883658359e-07,
+      "status": "OK"
+    },
+    {
+      "family": "funding_z_feature",
+      "label": "Funding Z (continuous)",
+      "asset": "BTCUSDT",
+      "timeframe": "1h",
+      "n_bars": 23433,
+      "n_pairs": 23320,
+      "ic_passed": false,
+      "ic_mean": 0.015127875217174626,
+      "ic_std": 0.37420143626541363,
+      "icir_raw": 0.040427090200810256,
+      "icir_haircut": 0.028298963140567176,
+      "ic_t_block": 0.8539203792793904,
+      "observed_sharpe": 1.6535124506106573,
+      "haircut_sharpe": 0.6448207660367938,
+      "psr": 0.9964954094993639,
+      "dsr": 0.9962783089223289,
+      "status": "OK"
+    },
+    {
+      "family": "funding_z_feature",
+      "label": "Funding Z (continuous)",
+      "asset": "ETHUSDT",
+      "timeframe": "1h",
+      "n_bars": 54825,
+      "n_pairs": 54193,
+      "ic_passed": true,
+      "ic_mean": 0.09870174757183448,
+      "ic_std": 0.394329646885444,
+      "icir_raw": 0.25030262966889766,
+      "icir_haircut": 0.17521184076822835,
+      "ic_t_block": 6.936192008084105,
+      "observed_sharpe": 4.702957466564377,
+      "haircut_sharpe": 4.036999139360324,
+      "psr": 1.0,
+      "dsr": 1.0,
+      "status": "OK"
+    },
+    {
+      "family": "funding_z_feature",
+      "label": "Funding Z (continuous)",
+      "asset": "SOLUSDT",
+      "timeframe": "1h",
+      "n_bars": 52316,
+      "n_pairs": 52008,
+      "ic_passed": true,
+      "ic_mean": 0.04068579960100778,
+      "ic_std": 0.3862467565769179,
+      "icir_raw": 0.1053362880288822,
+      "icir_haircut": 0.07373540162021754,
+      "ic_t_block": 2.7485039035052052,
+      "observed_sharpe": -0.5409338371114881,
+      "haircut_sharpe": -1.215431623820917,
+      "psr": 0.09355903681791894,
+      "dsr": 0.08188111386044566,
+      "status": "OK"
+    }
+  ],
+  "verdicts": {
+    "funding_extremum_reversal": {
+      "label": "Funding Extremum Reversal",
+      "registry_id": "crypto-microstructure/EF-001",
+      "verdict": "NO_GO",
+      "reasons": [
+        "median haircut Sharpe -2.5884 not > 0.0",
+        "median DSR 0.0002 < 0.5 after deflated-SR penalty"
+      ],
+      "passing_ic_slots": 2,
+      "n_ok": 3,
+      "n_total": 3,
+      "median_haircut_sharpe": -2.5883835785049563,
+      "median_dsr": 0.0002263355976612374
+    },
+    "funding_z_feature": {
+      "label": "Funding Z (continuous)",
+      "registry_id": "crypto-microstructure/EF-006",
+      "verdict": "GO",
+      "reasons": [],
+      "passing_ic_slots": 2,
+      "n_ok": 3,
+      "n_total": 3,
+      "median_haircut_sharpe": 0.6448207660367938,
+      "median_dsr": 0.9962783089223289
+    }
+  }
+}

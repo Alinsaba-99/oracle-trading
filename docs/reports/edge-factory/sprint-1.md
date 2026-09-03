@@ -1,6 +1,6 @@
 # BL-708 — Edge Factory Sprint 1 Qualification Report
 
-**Generated**: 2026-09-03T14:15:08.037358+00:00
+**Generated**: 2026-09-03T14:24:35.594835+00:00
 **Framework**: Edge Research Factory · ADR-017 (DSR/PSR) · BL-706 (IC screen) · BL-707 (Haircut Sharpe).
 **Reference**: `docs/plans/2026-08-21-edge-research-factory-design.md` §3 (Stage 1 corpus mining), §6 (qualification gauntlet), §8 (kill criteria).
 
