@@ -3,7 +3,7 @@
   "bl_id": "BL-726",
   "pre_registered_at": "2026-09-02",
   "variant_name": "lane_b_composite_aggressive",
-  "code_commit": "6e3f8a0456d0ce38cd6a881a36976f62fd8bd97f",
+  "code_commit": "7f4058a44e63a4c0740d1c6d0006224f503cc332",
   "code_repository": "https://github.com/<owner>/oracle-trading",
   "lane": "B",
   "scope": "personal portfolio (portafoglio personale operatore, ADR-019)",

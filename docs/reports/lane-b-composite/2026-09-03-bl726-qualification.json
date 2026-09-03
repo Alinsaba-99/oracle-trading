@@ -1,0 +1,173 @@
+{
+  "metadata": {
+    "task": "BL-726 \u2014 Lane B composite pre-registered qualification",
+    "generated": "2026-09-03T11:23:13.590709+00:00",
+    "manifest": "docs/research/prereg/BL-726.manifest.json",
+    "pinned_commit": "7f4058a44e63a4c0740d1c6d0006224f503cc332",
+    "actual_head": "7f4058a44e63a4c0740d1c6d0006224f503cc332",
+    "tree_integrity_ok": false,
+    "n_trials_used_for_dsr": 1,
+    "config": {
+      "initial_capital": 100000.0,
+      "rebalance_months": 3,
+      "top_n_holdings": 15,
+      "min_f_score": 8,
+      "magic_rank_max": 50,
+      "return_12m_min": -0.1,
+      "return_12m_max": 0.5,
+      "benchmark_simfin_id": 1072401,
+      "target_annual_vol": 0.4,
+      "sector_blacklist": [],
+      "per_idea_stop_loss_pct": 0.05,
+      "use_composite": true,
+      "composite_weights": [
+        0.4,
+        0.4,
+        0.2
+      ],
+      "composite_threshold": 0.65,
+      "composite_return_band": [
+        -0.2,
+        0.5
+      ]
+    }
+  },
+  "backtest_summary": {
+    "n_rebalances": 23,
+    "n_holdings_per_rebalance": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      15,
+      15,
+      15,
+      15,
+      15,
+      15,
+      15,
+      15,
+      15,
+      15,
+      15,
+      15,
+      15,
+      15,
+      15,
+      15,
+      15,
+      15
+    ],
+    "n_unique_tickers": 120,
+    "hit_rate": 0.6956521739130435,
+    "total_return": 1.1778276356187836,
+    "annual_return": 0.19934809182557744,
+    "sharpe_backtester": 1.4420750661973358,
+    "max_drawdown": 0.1173372459193692,
+    "benchmark_return": 0.5334125175236359,
+    "alpha_vs_benchmark": 0.6444151180951476,
+    "n_bars": 1078
+  },
+  "qualification_window": {
+    "start": "2020-01-01",
+    "end": "2025-08-14",
+    "n_bars": 1078,
+    "observed_sharpe": 1.4294286003703234,
+    "max_drawdown": 0.11733724591928209,
+    "total_return": 1.1564752367268762,
+    "annual_return": 0.19679065406756946,
+    "psr": 0.9990598098446674,
+    "dsr": 0.9990598098446674,
+    "cpcv_oos_median": 1.4596994164174306,
+    "haircut_sharpe": 0.6726652743245211
+  },
+  "bear_2022_window": {
+    "start": "2022-01-01",
+    "end": "2022-12-31",
+    "n_bars": 251,
+    "observed_sharpe": 1.2069827425299124,
+    "max_drawdown": 0.11733724591925704,
+    "total_return": 0.20044234596889154,
+    "annual_return": 0.2013164048378826,
+    "psr": 0.9001604511258247,
+    "dsr": 0.9001604511258247,
+    "cpcv_oos_median": 1.3375841821383834,
+    "haircut_sharpe": -0.34469925558270126
+  },
+  "ic_screen": {
+    "n_windows": 17,
+    "ic_mean": -0.032249063166546355,
+    "ic_std": 0.1462770373408614,
+    "icir": -0.22046565717213784,
+    "t_block": -1.7093906756543862,
+    "icir_haircut": -0.15432596002049648,
+    "passes": false,
+    "haircut_pct": 30.0,
+    "icir_threshold": 0.05,
+    "t_threshold": 2.5
+  },
+  "gates": [
+    {
+      "name": "DSR",
+      "passed": true,
+      "observed": 0.9990598098446674,
+      "threshold": 0.95,
+      "direction": "ge",
+      "note": ""
+    },
+    {
+      "name": "PSR",
+      "passed": true,
+      "observed": 0.9990598098446674,
+      "threshold": 0.95,
+      "direction": "ge",
+      "note": ""
+    },
+    {
+      "name": "PBO",
+      "passed": true,
+      "observed": null,
+      "threshold": 0.2,
+      "direction": "le",
+      "note": "n/a \u2014 single-row returns matrix, PBO undefined (per BL-726 \u00a74 note)"
+    },
+    {
+      "name": "CPCV OOS Sharpe median",
+      "passed": true,
+      "observed": 1.4596994164174306,
+      "threshold": 0.5,
+      "direction": "ge",
+      "note": ""
+    },
+    {
+      "name": "Haircut Sharpe",
+      "passed": true,
+      "observed": 0.6726652743245211,
+      "threshold": 0.5,
+      "direction": "ge",
+      "note": ""
+    },
+    {
+      "name": "Bear 2022 Sharpe",
+      "passed": true,
+      "observed": 1.2069827425299124,
+      "threshold": 0.0,
+      "direction": "ge",
+      "note": ""
+    },
+    {
+      "name": "IC screen (pre-registered)",
+      "passed": false,
+      "observed": 0.0,
+      "threshold": 1.0,
+      "direction": "eq",
+      "note": "ICIR haircut=-0.1543, t=-1.7094"
+    }
+  ],
+  "verdict": "REJECTED_TREE_INTEGRITY",
+  "reasons": [
+    "Tree-integrity gate failed: HEAD 7f4058a44e63a4c0740d1c6d0006224f503cc332 != pinned 7f4058a44e63a4c0740d1c6d0006224f503cc332",
+    "IC screen (pre-registered) 0.0000 failed (ICIR haircut=-0.1543, t=-1.7094)"
+  ]
+}
