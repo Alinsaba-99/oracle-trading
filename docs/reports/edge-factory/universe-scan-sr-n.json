@@ -1,0 +1,106 @@
+{
+  "generated": "2026-09-03T22:17:52.590344+00:00",
+  "framework": "BL-737 universe scan \u2014 SR(N) equal-weight curve, frozen families",
+  "n_legs_total": 377,
+  "sr_n_curve": [
+    {
+      "n_legs": 5,
+      "sharpe": 1.5087157316379967,
+      "annual_return": 0.07959864785746351,
+      "vol": 0.05165526919644043,
+      "max_drawdown": 0.053334466180488316,
+      "monthly_mean": 0.00955057265966944,
+      "p_monthly_geq_5pct": 0.08333333333333333,
+      "lev30_monthly_mean": 0.05546717387155291,
+      "lev30_p_monthly_geq_5pct": 0.3333333333333333
+    },
+    {
+      "n_legs": 10,
+      "sharpe": 1.3812884086440311,
+      "annual_return": 0.05604410356817313,
+      "vol": 0.04006243676579001,
+      "max_drawdown": 0.04580974923994563,
+      "monthly_mean": 0.006752690629067976,
+      "p_monthly_geq_5pct": 0.0,
+      "lev30_monthly_mean": 0.05056624989047756,
+      "lev30_p_monthly_geq_5pct": 0.5
+    },
+    {
+      "n_legs": 20,
+      "sharpe": 1.4478563149419204,
+      "annual_return": 0.045341266791290025,
+      "vol": 0.03096058981877692,
+      "max_drawdown": 0.029743630062976423,
+      "monthly_mean": 0.005446533663996787,
+      "p_monthly_geq_5pct": 0.0,
+      "lev30_monthly_mean": 0.05277548356679157,
+      "lev30_p_monthly_geq_5pct": 0.5555555555555556
+    },
+    {
+      "n_legs": 40,
+      "sharpe": 1.3097906660285559,
+      "annual_return": 0.029917811976528208,
+      "vol": 0.02270459940721358,
+      "max_drawdown": 0.02285250161301766,
+      "monthly_mean": 0.003601714903705197,
+      "p_monthly_geq_5pct": 0.0,
+      "lev30_monthly_mean": 0.047590113867777104,
+      "lev30_p_monthly_geq_5pct": 0.5555555555555556
+    },
+    {
+      "n_legs": 80,
+      "sharpe": 1.3271346564505035,
+      "annual_return": 0.031406244903831704,
+      "vol": 0.023510244328418018,
+      "max_drawdown": 0.02199326309714955,
+      "monthly_mean": 0.0037774772569633625,
+      "p_monthly_geq_5pct": 0.0,
+      "lev30_monthly_mean": 0.04820210123121523,
+      "lev30_p_monthly_geq_5pct": 0.5277777777777778
+    },
+    {
+      "n_legs": 120,
+      "sharpe": 1.201862005148091,
+      "annual_return": 0.026804822146407892,
+      "vol": 0.022215427515234008,
+      "max_drawdown": 0.021973333196737443,
+      "monthly_mean": 0.0032330906727301312,
+      "p_monthly_geq_5pct": 0.0,
+      "lev30_monthly_mean": 0.04366007366520053,
+      "lev30_p_monthly_geq_5pct": 0.5
+    },
+    {
+      "n_legs": 160,
+      "sharpe": 1.1904686110379072,
+      "annual_return": 0.027212801783004892,
+      "vol": 0.022772286264451477,
+      "max_drawdown": 0.023189507726709024,
+      "monthly_mean": 0.0032804863134928202,
+      "p_monthly_geq_5pct": 0.0,
+      "lev30_monthly_mean": 0.04321682428453133,
+      "lev30_p_monthly_geq_5pct": 0.5
+    },
+    {
+      "n_legs": 200,
+      "sharpe": 1.1448671625836437,
+      "annual_return": 0.02446247545066993,
+      "vol": 0.0213091304479795,
+      "max_drawdown": 0.022080583941948895,
+      "monthly_mean": 0.0029517669317935414,
+      "p_monthly_geq_5pct": 0.0,
+      "lev30_monthly_mean": 0.041556368604521214,
+      "lev30_p_monthly_geq_5pct": 0.5
+    },
+    {
+      "n_legs": 377,
+      "sharpe": 1.1563289462046178,
+      "annual_return": 0.02358643882943312,
+      "vol": 0.020340577976531847,
+      "max_drawdown": 0.02183551226380065,
+      "monthly_mean": 0.0028462934777812093,
+      "p_monthly_geq_5pct": 0.0,
+      "lev30_monthly_mean": 0.041979536880394686,
+      "lev30_p_monthly_geq_5pct": 0.5
+    }
+  ]
+}

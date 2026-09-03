@@ -1,0 +1,185 @@
+{
+  "generated": "2026-09-03T22:17:00.765198+00:00",
+  "framework": "BL-736 portfolio SR-max \u2014 combined multi-family portfolio",
+  "legs": [
+    "BTCUSDT_rsi_14",
+    "BTCUSDT_trend_filt_20_200",
+    "ES_alpha_003",
+    "ES_bband_20_2",
+    "ES_donchian_20",
+    "ES_ema_20_50",
+    "ETHUSDT_ema_20_50",
+    "EURUSD_alpha_050",
+    "EURUSD_bband_30_2.5",
+    "SPY_alpha_001",
+    "SPY_donchian_50",
+    "basis_BTCUSDT",
+    "basis_ETHUSDT",
+    "funding_z_ADAUSDT",
+    "funding_z_ETHUSDT",
+    "funding_z_XRPUSDT"
+  ],
+  "per_leg": [
+    {
+      "name": "BTCUSDT_rsi_14",
+      "sharpe": 0.5476578834965131,
+      "annual_return": 0.02909482553334608,
+      "vol": 0.055128614483544294
+    },
+    {
+      "name": "BTCUSDT_trend_filt_20_200",
+      "sharpe": 0.7234397246684886,
+      "annual_return": 0.06316316902614783,
+      "vol": 0.09028080229331341
+    },
+    {
+      "name": "ES_alpha_003",
+      "sharpe": 3.366616200956947,
+      "annual_return": 0.30460962977318085,
+      "vol": 0.07996789158336855
+    },
+    {
+      "name": "ES_bband_20_2",
+      "sharpe": 0.5447857689266837,
+      "annual_return": 0.036318258427256334,
+      "vol": 0.06996314302201112
+    },
+    {
+      "name": "ES_donchian_20",
+      "sharpe": 1.0790951594014733,
+      "annual_return": 0.10572204321460288,
+      "vol": 0.09756851062858145
+    },
+    {
+      "name": "ES_ema_20_50",
+      "sharpe": 1.1277730153879233,
+      "annual_return": 0.12943009104358305,
+      "vol": 0.11368285104460368
+    },
+    {
+      "name": "ETHUSDT_ema_20_50",
+      "sharpe": 0.8692854527849869,
+      "annual_return": 0.08197347171431568,
+      "vol": 0.09591102065705222
+    },
+    {
+      "name": "EURUSD_alpha_050",
+      "sharpe": 3.522561022893281,
+      "annual_return": 0.20802901555347697,
+      "vol": 0.054081321493863015
+    },
+    {
+      "name": "EURUSD_bband_30_2.5",
+      "sharpe": 0.5976848441901277,
+      "annual_return": 0.02725872065616719,
+      "vol": 0.04682678599724767
+    },
+    {
+      "name": "SPY_alpha_001",
+      "sharpe": 1.1846649710885266,
+      "annual_return": 0.08053934591064493,
+      "vol": 0.06730613372244316
+    },
+    {
+      "name": "SPY_donchian_50",
+      "sharpe": 1.0916153282838352,
+      "annual_return": 0.12274462765879823,
+      "vol": 0.11182250987695756
+    },
+    {
+      "name": "basis_BTCUSDT",
+      "sharpe": 0.1550756735306381,
+      "annual_return": 0.008953258025945265,
+      "vol": 0.07614086932543991
+    },
+    {
+      "name": "basis_ETHUSDT",
+      "sharpe": -0.1540860545554014,
+      "annual_return": -0.01576059210671954,
+      "vol": 0.0815080253965278
+    },
+    {
+      "name": "funding_z_ADAUSDT",
+      "sharpe": -0.7893826560125122,
+      "annual_return": -0.06412901011106686,
+      "vol": 0.07989284847209883
+    },
+    {
+      "name": "funding_z_ETHUSDT",
+      "sharpe": 0.4154441157628839,
+      "annual_return": 0.028200529616166925,
+      "vol": 0.07341464441161662
+    },
+    {
+      "name": "funding_z_XRPUSDT",
+      "sharpe": -0.6307779181442899,
+      "annual_return": -0.04201467395758984,
+      "vol": 0.06470706598305287
+    }
+  ],
+  "leverage_grid": [
+    1.0,
+    1.5,
+    2.0,
+    3.0,
+    4.0
+  ],
+  "leverage_points": [
+    {
+      "leverage": 1.0,
+      "annual_return": 0.040521716820065556,
+      "annual_vol": 0.02866424613485352,
+      "sharpe": 1.4002268813148662,
+      "max_drawdown": 0.026028065208388074,
+      "monthly_mean": 0.004738855766497182,
+      "p_monthly_geq_5pct": 0.0,
+      "months_positive": 33,
+      "months_total": 45
+    },
+    {
+      "leverage": 1.5,
+      "annual_return": 0.06106392610121314,
+      "annual_vol": 0.04299636920228028,
+      "sharpe": 1.4002268813148662,
+      "max_drawdown": 0.038989426182827525,
+      "monthly_mean": 0.0070999656991138265,
+      "p_monthly_geq_5pct": 0.0,
+      "months_positive": 33,
+      "months_total": 45
+    },
+    {
+      "leverage": 2.0,
+      "annual_return": 0.08178658493196278,
+      "annual_vol": 0.05732849226970704,
+      "sharpe": 1.4002268813148662,
+      "max_drawdown": 0.05191506088275333,
+      "monthly_mean": 0.009455455272109827,
+      "p_monthly_geq_5pct": 0.0,
+      "months_positive": 33,
+      "months_total": 45
+    },
+    {
+      "leverage": 3.0,
+      "annual_return": 0.12375023976619204,
+      "annual_vol": 0.08599273840456056,
+      "sharpe": 1.4002268813148662,
+      "max_drawdown": 0.07765732865683606,
+      "monthly_mean": 0.01414934867549346,
+      "p_monthly_geq_5pct": 0.08888888888888889,
+      "months_positive": 33,
+      "months_total": 45
+    },
+    {
+      "leverage": 4.0,
+      "annual_return": 0.16636382441488595,
+      "annual_vol": 0.11465698453941409,
+      "sharpe": 1.4002268813148662,
+      "max_drawdown": 0.1032512444753122,
+      "monthly_mean": 0.018820087547598584,
+      "p_monthly_geq_5pct": 0.13333333333333333,
+      "months_positive": 33,
+      "months_total": 45
+    }
+  ],
+  "honest_note": "5%/month net requires SR ~4 at 20% vol; leverage scales return AND drawdown \u2014 this report measures the true gap without inflation."
+}
