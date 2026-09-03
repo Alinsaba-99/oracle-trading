@@ -415,23 +415,31 @@ def equal_weight_blend(leg_returns: list[np.ndarray]) -> np.ndarray:
     """Equal-weight average across legs; legs must share the same time index."""
     if not leg_returns:
         return np.asarray([], dtype=np.float64)
-    arr = np.vstack(leg_returns)
+    arr = np.vstack(leg_returns).astype(np.float64)
     nan_mask = ~np.isfinite(arr)
     arr[nan_mask] = 0.0
     return arr.mean(axis=0)
 
 
 def inverse_vol_blend(leg_returns: list[np.ndarray], eps: float = 1e-4) -> np.ndarray:
-    """Weight each leg by 1/annualised vol (sigma-floor to keep robustness)."""
+    """Weight each leg by 1/annualised vol (sigma-floor to keep robustness).
+
+    NaN-safe: std is computed with NaN-replaced-by-zero (the NaN bars are
+    already accounted for in the per-leg weights because the std is taken on
+    the original series, but a single NaN can blow the std up to NaN, so we
+    fall back to the eps floor in that case).
+    """
     if not leg_returns:
         return np.asarray([], dtype=np.float64)
     vols = []
     for r in leg_returns:
-        s = float(np.std(r, ddof=1)) if r.size > 1 else 0.0
+        clean = r[np.isfinite(r)]
+        s = float(np.std(clean, ddof=1)) if clean.size > 1 else 0.0
+        s = s if np.isfinite(s) else 0.0
         vols.append(max(s, eps))
     weights = np.asarray([1.0 / v for v in vols], dtype=np.float64)
     weights /= weights.sum()
-    arr = np.vstack(leg_returns)
+    arr = np.vstack(leg_returns).astype(np.float64)
     nan_mask = ~np.isfinite(arr)
     arr[nan_mask] = 0.0
     return (weights[:, None] * arr).sum(axis=0)
@@ -453,7 +461,9 @@ def shrinkage_blend(
         return np.asarray([], dtype=np.float64)
     vols = []
     for r in leg_returns:
-        s = float(np.std(r, ddof=1)) if r.size > 1 else 0.0
+        clean = r[np.isfinite(r)]
+        s = float(np.std(clean, ddof=1)) if clean.size > 1 else 0.0
+        s = s if np.isfinite(s) else 0.0
         vols.append(max(s, eps))
     iv = np.asarray([1.0 / v for v in vols], dtype=np.float64)
     iv /= iv.sum()
@@ -464,7 +474,7 @@ def shrinkage_blend(
     else:
         raise ValueError(f"unknown shrinkage target {shrinkage_to}")
     weights /= weights.sum()
-    arr = np.vstack(leg_returns)
+    arr = np.vstack(leg_returns).astype(np.float64)
     nan_mask = ~np.isfinite(arr)
     arr[nan_mask] = 0.0
     return (weights[:, None] * arr).sum(axis=0)
@@ -921,30 +931,31 @@ def render_markdown(out: dict[str, Any], args: argparse.Namespace) -> str:
     def _fmt_pct(x: float) -> str:
         return f"{x:+.2%}"
 
-    def _fmt_pct_or_int(x: float, key: str) -> str:
-        if key in {"n_months", "max_consecutive_target_hits", "max_consecutive_losses"}:
-            return f"{int(x)}"
-        return _fmt_pct(x)
+    def _fmt_ratio(x: float) -> str:
+        return f"{x:+.2f}"
+
+    def _fmt_int(x: float) -> str:
+        return f"{int(x)}"
 
     diag_keys = [
-        ("n_months", "Months observed"),
-        ("mean_monthly", "Mean month"),
-        ("std_monthly", "Std month"),
-        ("median_monthly", "Median month"),
-        ("p_geq_target", "P(month ≥ 5%)"),
-        ("p_loss_month", "P(loss month)"),
-        ("annualised", "Annualised from mean"),
-        ("yearly_compound", "Yearly compound"),
-        ("monthly_sharpe", "Monthly Sharpe (ann.)"),
-        ("required_monthly_sharpe_for_50pct", "Required monthly Sharpe for ≥50% hit"),
-        ("max_consecutive_target_hits", "Max consec. m ≥ 5%"),
-        ("max_consecutive_losses", "Max consec. loss months"),
-        ("best_month", "Best month"),
-        ("worst_month", "Worst month"),
+        ("n_months", "Months observed", _fmt_int),
+        ("mean_monthly", "Mean month", _fmt_pct),
+        ("std_monthly", "Std month", _fmt_pct),
+        ("median_monthly", "Median month", _fmt_pct),
+        ("p_geq_target", "P(month ≥ 5%)", _fmt_pct),
+        ("p_loss_month", "P(loss month)", _fmt_pct),
+        ("annualised", "Annualised from mean", _fmt_pct),
+        ("yearly_compound", "Yearly compound", _fmt_pct),
+        ("monthly_sharpe", "Monthly Sharpe (ann.)", _fmt_ratio),
+        ("required_monthly_sharpe_for_50pct", "Required monthly Sharpe for ≥50% hit", _fmt_ratio),
+        ("max_consecutive_target_hits", "Max consec. m ≥ 5%", _fmt_int),
+        ("max_consecutive_losses", "Max consec. loss months", _fmt_int),
+        ("best_month", "Best month", _fmt_pct),
+        ("worst_month", "Worst month", _fmt_pct),
     ]
-    for key, label in diag_keys:
+    for key, label, fmt in diag_keys:
         cells = [
-            _fmt_pct_or_int(out["blender"][k]["monthly"][key], key)
+            fmt(out["blender"][k]["monthly"][key])
             for k in ("equal_weight", "inverse_vol", "shrinkage_50")
         ]
         a(f"| {label} | " + " | ".join(cells) + " |")

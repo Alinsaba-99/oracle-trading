@@ -215,6 +215,7 @@ split-on-trailing-comma = false
 # to ruff but are required by the test contract).
 "tests/unit/test_alerting_channels.py" = ["ARG001", "ARG002"]
 "tests/unit/test_alerting_events.py" = ["ARG001", "ARG002"]
+"tests/unit/test_multi_strategy_ensemble.py" = ["E402", "E501", "E741"]
 "scripts/run_bl726_prereg_qualification.py" = ["E402", "E501"]
 "scripts/run_multi_strategy_ensemble.py" = ["E501"]
 "showcase.py" = ["E402", "E501"]

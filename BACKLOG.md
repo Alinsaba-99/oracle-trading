@@ -668,15 +668,22 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
   sha256 + loader `analytics/research/factory/prereg.py` con
   `verify_clean_tree()` (15 test). Gap dichiarato: vol-target 40%
   declared-only (BL-505e) da chiudere prima del gate BL-732.
-- [ ] **BL-727** P1 — Runner della ri-qualifica: eseguire variante BL-726
+- [x] **BL-727** P1 — Runner della ri-qualifica: eseguire variante BL-726
   su DSR/PBO/CPCV (gauntlet ADR-017) + haircut Sharpe (BL-707) + IC screen
   (BL-706) con runner canonico BL-615. AC: report `docs/reports/` con
   verdetto APPROVED/REJECTED preregistrato; se REJECTED → pivot crypto
-  factors (decisione (b)) e blocco promozione paper di BL-732.
-- [ ] **BL-728** P1 — Bridge segnali: adapter real-time Lane B →
+  factors (decisione (b)) e blocco promozione paper di BL-732. ✅ 2026-09-03:
+  `scripts/run_bl726_prereg_qualification.py` eseguito su SimFin 2020→2025.
+  Observed Sharpe 1.43, Total Return +115.6%, MaxDD 11.73%, DSR 0.999 ✅,
+  PSR 0.999 ✅, CPCV OOS Median 1.46 ✅, Haircut Sharpe 0.67 ✅, Bear 2022 Sharpe 1.21 ✅.
+  Report in `docs/reports/lane-b-composite/2026-09-03-bl726-qualification.{md,json}`.
+- [x] **BL-728** P1 — Bridge segnali: adapter real-time Lane B →
   `OrderIntent` per `paper_orchestrator` (rifasamento dei segnali backtest
   in contesto live senza lookahead). AC: test con clock finto che replica
-  i trade del backtest su dati storici replay.
+  i trade del backtest su dati storici replay. ✅ 2026-09-03:
+  `analytics/strategy/lane_b_adapter.py` + 46 test unit (`tests/unit/test_lane_b_adapter.py`).
+  Screening fondamentale, rebalance math equal-weight, emissione SELL/BUY,
+  e stop-loss per-idea 5% real-time.
 
 **Stream B — Esecuzione durevole (G3)**
 
