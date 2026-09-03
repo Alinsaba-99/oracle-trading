@@ -242,10 +242,10 @@ class MacroCalendar:
                 raise ValueError(msg) from exc
         cal = cls(events)
         logger.info(
-            "macro_calendar.loaded",
-            path=str(p),
-            events=len(events),
-            schema=raw.get("schema_version", "unknown"),
+            "macro_calendar.loaded path=%s events=%d schema=%s",
+            str(p),
+            len(events),
+            raw.get("schema_version", "unknown"),
         )
         return cal
 
