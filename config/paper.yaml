@@ -1,0 +1,52 @@
+# BL-730 — Paper runner default config.
+#
+# Loadable with: `PaperRunnerConfig.from_yaml("config/paper.yaml")`
+# CLI:           `python scripts/run_paper.py --config config/paper.yaml`
+#
+# Mirrors the default field values of `execution.runner.PaperRunnerConfig`.
+# Comments explain each section; unknown keys are ignored on load so
+# later BLs can append fields without breaking older configs.
+#
+# Schema version is informal (forward compat only).
+
+# ---- Storage --------------------------------------------------------------
+# SQLite path for the durable execution store (BL-729). Directory is
+# created automatically.
+db_path: data/paper/paper.db
+
+# Optional path to an existing SlippageLedger JSONL — the runner will
+# import its rows into the fills table on startup (idempotent).
+# Set to null to skip migration.
+store_legacy_ledger_path: null  # e.g. data/lake/paper_ledger/today.jsonl
+
+# ---- Loop -----------------------------------------------------------------
+# Bar-close aligned tick interval (seconds). 60s = 1m bars; 900 = 15m.
+tick_interval_s: 60.0
+
+# Symbols to track — default mirrors the IBKR 1m backfill cron.
+symbols:
+  - SPY
+  - QQQ
+  - AAPL
+  - MSFT
+
+# Bar timeframe for the LakePriceProvider (lake partition key).
+timeframe: 1m
+
+# ---- Risk / sizing --------------------------------------------------------
+# Starting paper cash — equity curve is built against this baseline.
+starting_cash: 100000
+
+# Heartbeat every N cycles (audit_log kind='heartbeat'). A 60s tick with
+# heartbeat_cycle_s=10 emits ~6 heartbeats per hour.
+heartbeat_cycle_s: 10
+
+# Alert if the last persisted heartbeat is older than this many seconds
+# of wall-clock time (BL-734). 900s = 15 minutes ≈ 15 skipped ticks.
+heartbeat_timeout_s: 900
+
+# ---- Data -----------------------------------------------------------------
+# Lake layout (default: data/lake/normalized/symbol=SPY/tf=1m/...).
+lake_root: data/lake/normalized
+# Legacy flat layout (data/ohlcv/SPY_1m.parquet).
+legacy_root: data/ohlcv

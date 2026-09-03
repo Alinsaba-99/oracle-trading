@@ -855,9 +855,9 @@ per l'inventario fonti verificate.
 | 1 | AI swarm storico 50 ticker (as-of 2020-01-01, 12mo fwd) | ✅ DONE 2026-08-17 | REDUCE_SIZE 66.7% beat SPY (edge real, Haiku synthesis ~30% vuote) — `docs/reports/ai-swarm/historical-2020-01-01-50tickers.md` |
 | 2 | VRP BS backtest su SPY+VIX 2010-2025 reale | ✅ DONE 2026-08-17 | Sharpe -0.08 (vs 7.36 deep-research claim = 95× inflated, stesso bug R5 BL-503). 69/798 tail events = 8.6% abbattono premium. NON tradabile senza regime filter + tail cap. `docs/reports/lane-d-vrp/2026-08-17-spy-vix-2010-2025.md` |
 | 3 | Composite Lane B vs Legacy AND su SimFin real 185 tickers | ✅ DONE 2026-08-17 | Sharpe 0.93 vs 0.25, alpha +59% vs -32%. Composite adottato come default `use_composite=True`. `docs/reports/lane-b-composite/2026-08-17-compare.md` |
-| 4 | Paper trading orchestrator (signal→order→fill, slippage ledger) | ✅ MVP DONE 2026-08-17 | `execution/paper_orchestrator.py` + 14 test. Real-time loop + Lane B/D signal adapters deferred |
+| 4 | Paper trading orchestrator (signal→order→fill, slippage ledger) | ✅ MVP DONE 2026-08-17 → 🟢 runner always-on BL-730 (2026-09-02) | `execution/paper_orchestrator.py` + 14 test; loop completo `execution/runner.py` + store durevole BL-729 + alerting BL-733/734 + unit systemd BL-731 (`ops/systemd/`) + runbook `docs/runbooks/paper-trading.md` |
 | 5 | Docs update (ADR-020 + ROADMAP Opzione C + BACKLOG items) | ✅ DONE 2026-08-17 | questo ADR-020 + sezione ROADMAP §13 + BACKLOG BL-OPC-1..5 |
-| 6 | Backfill IBKR paper 1m cron (ES/NQ/GC/CL going forward) | 🟡 MVP DONE, timer NON installato | `scripts/backfill_1m_ibkr_paper.py` validato 2026-08-17 (equities 1m); timer systemd non ancora in `~/.config/systemd/user/`; futures = expiry resolution TODO (BL-OPC-6) |
+| 6 | Backfill IBKR paper 1m cron (ES/NQ/GC/CL going forward) | 🟡 MVP DONE 2026-08-17 → 🟢 unit+timer pronte BL-731 (2026-09-02) | `scripts/backfill_1m_ibkr_paper.py` validato; unit systemd `ops/systemd/oracle-backfill.{service,timer}` (installazione: vedi runbook); futures = expiry resolution TODO (BL-OPC-6) |
 
 **Verdetto intermedio Opzione C (aggiornato 2026-08-18):**
 - Lane B composite **edge reale confermato** (Sharpe 0.93, alpha +59%) —

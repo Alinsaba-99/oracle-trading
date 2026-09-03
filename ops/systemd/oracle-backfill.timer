@@ -1,0 +1,12 @@
+# BL-731 — timer for oracle-backfill.service (IBKR 1m backfill).
+# Every hour; Persistent=true catches up missed runs while the machine
+# was off (the script's 7-day window logic makes re-runs idempotent).
+[Unit]
+Description=Run Oracle IBKR backfill hourly
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+
+[Install]
+WantedBy=timers.target

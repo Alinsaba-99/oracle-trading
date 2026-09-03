@@ -1,0 +1,18 @@
+# BL-731 — oneshot service + timer for the IBKR 1m backfill
+# (ROADMAP §13 step 6 — timer was previously NOT installed).
+#
+# Install:
+#   cp ops/systemd/oracle-backfill.service ops/systemd/oracle-backfill.timer ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now oracle-backfill.timer
+#
+# Check: systemctl --user list-timers oracle-backfill.timer
+[Unit]
+Description=Oracle — IBKR paper 1m backfill (going forward)
+Documentation=file://%h/_repos/oracle-trading/docs/runbooks/paper-trading.md
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/_repos/oracle-trading
+ExecStart=/usr/bin/env python -u scripts/backfill_1m_ibkr_paper.py

@@ -29,6 +29,8 @@ Usage:
 from __future__ import annotations
 
 import json
+import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -37,6 +39,17 @@ from typing import Any
 
 from execution.brokers.paper import PaperBroker
 from execution.brokers.types import BrokerFill, BrokerOrder
+
+#: Signature of the optional ``run_once`` callback. Receives the
+#: originating intent, the broker fill, and the computed slippage in
+#: bps. Used by the BL-730 runner to record fills into the durable
+#: :class:`~execution.store.ExecutionStore` keyed by intent.
+FillCallback = Callable[["OrderIntent", BrokerFill, int], None]
+
+
+def _get_logger() -> logging.Logger:
+    """Module-level logger; lazy import keeps stdlib only at module load."""
+    return logging.getLogger("oracle.execution.paper_orchestrator")
 
 
 @dataclass(frozen=True)
@@ -136,7 +149,11 @@ class PaperOrchestrator:
         self.ledger = ledger
 
     async def run_once(
-        self, intents: list[OrderIntent], market_prices: dict[str, Decimal]
+        self,
+        intents: list[OrderIntent],
+        market_prices: dict[str, Decimal],
+        *,
+        on_fill: FillCallback | None = None,
     ) -> list[BrokerFill]:
         """Submit each intent as a market order at the current price.
 
@@ -145,6 +162,11 @@ class PaperOrchestrator:
         2. Submit a market order.
         3. Capture fills.
         4. Compute slippage vs ``backtest_price`` and persist to ledger.
+
+        When ``on_fill`` is provided (BL-730 wiring), it is invoked once
+        per fill with ``(intent, fill, slippage_bps)``. The default is
+        ``None`` to preserve the pre-BL-730 contract (test suite still
+        expects ``list[BrokerFill]``).
 
         Returns the list of fills produced.
         """
@@ -172,6 +194,12 @@ class PaperOrchestrator:
                     slippage_bps = self._slippage_bps(
                         intent.backtest_price, fill.price, intent.side
                     )
+                    if on_fill is not None:
+                        try:
+                            on_fill(intent, fill, slippage_bps)
+                        except Exception:
+                            logger = _get_logger()
+                            logger.exception("on_fill_callback_failed fill_id=%s", fill.fill_id)
                     record = SlippageRecord(
                         timestamp=datetime.now(UTC).isoformat(),
                         strategy=intent.strategy,

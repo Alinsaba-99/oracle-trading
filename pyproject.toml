@@ -210,6 +210,11 @@ split-on-trailing-comma = false
 "tests/genetics/test_fitness.py" = ["ARG002"]
 "tests/genetics/test_islands.py" = ["ARG002"]
 "tests/genetics/test_serialize.py" = ["ARG002"]
+# BL-733/734: alerting tests follow pytest's fixture lifecycle
+# (fixtures used purely for setup/teardown side-effects look unused
+# to ruff but are required by the test contract).
+"tests/unit/test_alerting_channels.py" = ["ARG001", "ARG002"]
+"tests/unit/test_alerting_events.py" = ["ARG001", "ARG002"]
 "showcase.py" = ["E402", "E501"]
 # Audit-remediation-beta: these tests use many unused arguments on
 # helpers and fixture methods that follow pytest's contract.
@@ -320,7 +325,7 @@ exclude_also = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["application*", "core*", "market*", "analytics*", "execution*", "genetics*", "research*", "agents*", "audit*", "policy*", "orchestration*", "apps*"]
+include = ["application*", "core*", "market*", "analytics*", "execution*", "genetics*", "research*", "agents*", "audit*", "policy*", "orchestration*", "alerting*", "apps*"]
 exclude = ["tests*"]
 
 [tool.uv.sources]

@@ -1,0 +1,26 @@
+# BL-731 — systemd user service for the always-on paper runner (BL-730).
+#
+# Install:
+#   mkdir -p ~/.config/systemd/user
+#   cp ops/systemd/oracle-paper.service ops/systemd/oracle-paper.timer ~/.config/systemd/user/  # timers not used here
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now oracle-paper.service
+#
+# Logs: journalctl --user -u oracle-paper -f
+[Unit]
+Description=Oracle — always-on paper trading runner (BL-730)
+Documentation=file://%h/_repos/oracle-trading/docs/runbooks/paper-trading.md
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/_repos/oracle-trading
+ExecStart=/usr/bin/env python -u scripts/run_paper.py --config config/paper.yaml
+Restart=on-failure
+RestartSec=10
+# Exit code 2 = 3 consecutive cycle failures: restart with backoff.
+# The durable store (BL-729) makes restarts safe (idempotent fills).
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target

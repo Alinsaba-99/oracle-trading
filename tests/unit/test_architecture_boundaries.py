@@ -41,6 +41,7 @@ FIRST_PARTY = {
     "application",
     "apps",
     "audit",
+    "alerting",  # BL-733/734: alerting/ has no first-party deps today; tracked.
     "core",
     "execution",
     "genetics",
@@ -57,6 +58,7 @@ ALLOWED: dict[str, set[str]] = {
     "audit": set(),
     "research": set(),
     "orchestration": set(),
+    "alerting": {"core"},  # Lazy-imports core.logging for the structlog bridge.
     "market": {"core"},
     "execution": {"core", "application"},
     "policy": {"execution"},  # TODO(P2): OrderRequest port in application/contracts

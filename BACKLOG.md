@@ -637,6 +637,107 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
 - [ ] **BL-725** P2 — Cron monitor regole firm: diff periodico delle
   pagine ufficiali snapshot in BL-720 + alert su cambiamento.
 
+### Paper trading end-to-end + G5 re-qualifica (BL-726..737, sessione 2026-09-02)
+
+> 🟢 **ESEGUITO 2026-09-02** (working tree, commit unico pendente):
+> BL-726 ✅ (prereg + manifest sha256 + loader), BL-727 ⬜ (da eseguire
+> su tree pulito dopo il commit), BL-728 ⬜, BL-729 ✅ (store SQLite WAL
+> idempotente), BL-730 ✅ (runner always-on + CLI + config), BL-731 ✅
+> (unit systemd + timer in `ops/systemd/`, installazione via runbook),
+> BL-732 ⬜ (bloccata da BL-727 APPROVED + gap vol-target BL-505e),
+> BL-733 ✅ (canali Telegram/email fail-open $0), BL-734 ✅ (cablata nel
+> runner: fill/error/kill-switch/heartbeat), BL-735 ✅
+> (`scripts/paper_report.py` tearsheet live), BL-736 ⬜, BL-737 ✅
+> (runbook `docs/runbooks/paper-trading.md` + ROADMAP §13 aggiornato).
+
+> Obiettivo: primo paper trading reale always-on + state durevole (G3) +
+> alerting + ri-qualifica G5 della Lane B (BL-OPC-12 REJECTED → decisione
+> preregistrata (a) variante unica pre-registrata). Fonte: analisi
+> comparativa vs freqtrade 2026-09-02 (runner/execution framing).
+> Pattern architetturali di riferimento: freqtrade dry-run loop,
+> persistence, FreqUI (ispirazione, non dipendenza — crypto-only).
+
+**Stream A — Qualifica G5 (blocca la promozione paper)**
+
+- [x] **BL-726** P1 — Decisione pre-registrata (a): definire la variante
+  unica Lane B composite (parametri congelati, nessuna selezione post-hoc)
+  e pre-registrarla in `docs/research/prereg/` (hash commit + parametri +
+  isee dati + finestra di test). AC: doc prereg firmato con sha256;
+  nessun parametro scelto dopo aver visto i risultati. ✅ 2026-09-02:
+  `docs/research/prereg/BL-726-lane-b-composite-variant.md` + manifest
+  sha256 + loader `analytics/research/factory/prereg.py` con
+  `verify_clean_tree()` (15 test). Gap dichiarato: vol-target 40%
+  declared-only (BL-505e) da chiudere prima del gate BL-732.
+- [ ] **BL-727** P1 — Runner della ri-qualifica: eseguire variante BL-726
+  su DSR/PBO/CPCV (gauntlet ADR-017) + haircut Sharpe (BL-707) + IC screen
+  (BL-706) con runner canonico BL-615. AC: report `docs/reports/` con
+  verdetto APPROVED/REJECTED preregistrato; se REJECTED → pivot crypto
+  factors (decisione (b)) e blocco promozione paper di BL-732.
+- [ ] **BL-728** P1 — Bridge segnali: adapter real-time Lane B →
+  `OrderIntent` per `paper_orchestrator` (rifasamento dei segnali backtest
+  in contesto live senza lookahead). AC: test con clock finto che replica
+  i trade del backtest su dati storici replay.
+
+**Stream B — Esecuzione durevole (G3)**
+
+- [x] **BL-729** P1 — DB esecuzione: schema posizioni/ordini/fill/equity
+  (SQLite o DuckDB) con migrazione dallo slippage ledger JSON esistente;
+  write-ahead e idempotenza fill. AC: restart del processo non perde né
+  duplica fill (test crash-recovery).
+- [x] **BL-730** P1 — Runner always-on: loop signal → order_manager →
+  broker → fill → DB con scheduling (bar-close o polling), graceful
+  shutdown, stato visibile. Cabla i componenti esistenti in
+  `execution/`. AC: smoke di 24h simulato (clock accelerato) senza leak
+  né drift di stato; unit test sul loop. ✅ 2026-09-02:
+  `execution/runner.py` (clock/signal/broker iniettabili, SIGTERM
+  graceful, kill dopo 3 failure consecutive) + CLI
+  `scripts/run_paper.py` + `config/paper.yaml`; test 1440 cicli
+  simulati senza drift.
+- [x] **BL-731** P1 — Servizio systemd user (o container) per il runner
+  BL-730 + timer per `scripts/backfill_1m_ibkr_paper.py` (ROADMAP §13
+  step 6: timer NON installato). AC: `systemctl --user status` verde,
+  journal persistente, timer firing verificato, enable su boot. ✅
+  2026-09-02: `ops/systemd/oracle-paper.service` +
+  `oracle-backfill.{service,timer}` (hourly, Persistent); installazione
+  via runbook. Installazione effettiva su macchina = step manuale.
+- [ ] **BL-732** P1 — Promozione paper della lane qualificata (dipende da
+  BL-727 APPROVED): lancio del runner BL-730 sulla lane APPROVED in
+  paper, con kill-switch manuale già cablato. AC: paper trading attivo
+  24/7, equity curve visibile dal DB BL-729.
+
+**Stream C — Alerting**
+
+- [x] **BL-733** P2 — Canale notifiche: Telegram bot (o fallback e-mail
+  SMTP) $0/mo con handler plug-in (fill, errori runner, kill-switch,
+  breach risk). AC: messaggio di test end-to-end; nessun segreto nel
+  repo (env/secret manager). ✅ 2026-09-02: package `alerting/` (60
+  test): canali Telegram/Email stdlib-only, credenziali da env,
+  auto-disable con warning, router severità quiet/standard/loud.
+- [x] **BL-734** P2 — Eventi di alerting cablati nel runner BL-730: fill
+  eseguiti, eccezioni/fatali, kill-switch attivato, violazioni
+  daily-loss/consistency (aggancio a BL-722 quando disponibile), heartbeat
+  assente > N minuti. AC: ogni evento ha test unit; alert ricevuti in
+  smoke. ✅ 2026-09-02: protocollo `AlertSink` iniettato nel runner
+  (execution resta core/contracts-only per importlinter); fill/error/
+  kill-switch/heartbeat-missed cablati + `heartbeat_timeout_s` in config.
+
+**Trasversale**
+
+- [x] **BL-735** P2 — Tearsheet live dal DB BL-729 (riuso BL-711
+  quantstats): report paper generato su command, equity/drawdown/turnover
+  dal vivo. AC: comando `make paper-report` (o script) produce
+  `docs/reports/paper/` aggiornato. ✅ 2026-09-02:
+  `scripts/paper_report.py --db ... --out docs/reports/paper` verificato
+  end-to-end (runner → store → HTML quantstats).
+- [ ] **BL-736** P3 — Reconciliation IBKR: confronto posizioni/fill paper
+  vs dati gateway IBKR (porta 4002) per misurare drift slippage reale
+  vs modello. AC: report drift settimanale automatizzato.
+- [x] **BL-737** P3 — Docs: aggiornare ROADMAP (§13 step 4/6 status),
+  PROJECT.md e runbook operatore (come si avvia/ferma/monitora il
+  runner, dove vivono i log). AC: un nuovo operatore riesce a far
+  girare il paper stack leggendo solo il runbook. ✅ 2026-09-02:
+  `docs/runbooks/paper-trading.md` + ROADMAP §13 step 4/6 aggiornati.
+
 ## Knowledge Base — 13 domini (BL-KB-01..115, 2026-08-17)
 
 > 68 file in `docs/knowledge-base/` + audit critico. 98 items originali

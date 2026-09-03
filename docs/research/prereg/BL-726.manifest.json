@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "bl_id": "BL-726",
+  "pre_registered_at": "2026-09-02",
+  "variant_name": "lane_b_composite_aggressive",
+  "code_commit": "6e3f8a0456d0ce38cd6a881a36976f62fd8bd97f",
+  "code_repository": "https://github.com/<owner>/oracle-trading",
+  "lane": "B",
+  "scope": "personal portfolio (portafoglio personale operatore, ADR-019)",
+  "factor_families": ["Piotroski_F_Score", "Greenblatt_Magic_Formula", "Lakonishok_Value_Momentum"],
+  "parameters": {
+    "initial_capital": 100000.0,
+    "rebalance_months": 3,
+    "top_n_holdings": 15,
+    "min_f_score": 8,
+    "magic_rank_max": 50,
+    "return_12m_min": -0.10,
+    "return_12m_max": 0.50,
+    "benchmark_simfin_id": 1072401,
+    "benchmark_label": "SPY ETF",
+    "target_annual_vol": 0.40,
+    "target_annual_vol_applied": false,
+    "sector_blacklist": [],
+    "per_idea_stop_loss_pct": 0.05,
+    "use_composite": true,
+    "composite_weights": [0.40, 0.40, 0.20],
+    "composite_threshold": 0.65,
+    "composite_return_band": [-0.20, 0.50]
+  },
+  "parameter_locations": {
+    "LaneBBacktestConfig": "analytics/strategy/lane_b_backtester.py:39-89",
+    "CompositeLaneBScore": "analytics/strategy/catalog/value.py:425-529",
+    "stop_loss_application": "analytics/strategy/lane_b_backtester.py:567-639 (per-idea cumulative drawdown, configured via per_idea_stop_loss_pct)",
+    "target_annual_vol_usage": "analytics/strategy/lane_b_backtester.py:63 (declared); NOT applied to position sizing in current backtester logic — declared-only gap (BL-505e)"
+  },
+  "data_sources": {
+    "primary": "SimFin bulk (analytics/fundamental/simfin_loader.py)",
+    "universe_market": "US",
+    "simfin_income_variants": ["quarterly"],
+    "price_field": "daily shareprices (Close, Adj. Close, Volume)",
+    "point_in_time_marker": "Publish Date column (simfin bulk v1 PIT convention; restatements ignored — see lane_b_backtester.py:23-24)",
+    "data_dir_default": "data/simfin",
+    "env_required": ["SIMFIN_API_KEY"]
+  },
+  "sample_window": {
+    "qualification_start": "2020-01-01",
+    "qualification_end": "2025-08-14",
+    "train_subwindow": "2020-01-01 -> 2023-12-31",
+    "validation_subwindow": "2024-01-01 -> 2025-08-14",
+    "rationale": "CPCV (n_groups=6, n_test_groups=2) per ADR-017 honours chronological order via purgedcv CombinatorialPurgedCV; the explicit train/validation split pins the OOS reporting region (validation 2024+) so future re-runs cannot shift the window silently.",
+    "bear_market_subwindow": "2022-01-01 -> 2022-12-31"
+  },
+  "qualification_protocol": {
+    "framework": "ADR-017 overfitting gauntlet",
+    "runner_canonical": "BL-615 (apps/cli/paper_commands.py::run_paper_spec)",
+    "metrics_canonical": "ADR-021 (analytics/metrics/canonical.py)",
+    "dsr_psr_pbo_cpcv_module": "analytics/qualification/dsr.py + analytics/qualification/lane_b.py",
+    "haircut_sharpe_module": "analytics/research/factory/haircut_sharpe.py (BL-707, BL-KB-99)",
+    "ic_screen_module": "analytics/research/factory/ic_screen.py (BL-706)",
+    "n_trials_for_dsr": 1,
+    "n_trials_rationale": "No parameter search is run for this variant; n_trials=1 (the canonical, conservative case where the DSR degenerates to the PSR). Discovery sweep counts belong to OTHER variants (BL-OPC-12 reported 8 trials across the config family; that family is NOT the variant under pre-registration here).",
+    "cpcv_n_groups": 6,
+    "cpcv_n_test_groups": 2,
+    "pbo_n_splits": 16,
+    "returns_matrix_for_pbo": "single-row variant returns matrix shape (1, n_periods) — PBO is undefined for a single variant and is reported as None; the variant's robustness is judged by CPCV OOS median + DSR + haircut SR alone."
+  },
+  "pre_registered_thresholds": {
+    "dsr_min": 0.95,
+    "psr_min": 0.95,
+    "pbo_max": 0.20,
+    "cpcv_oos_sharpe_median_min": 0.50,
+    "haircut_sharpe_min": 0.50,
+    "icir_threshold": 0.05,
+    "icir_haircut_pct": 30.0,
+    "ic_block_t_threshold": 2.5,
+    "bear_2022_sharpe_min": 0.0,
+    "bear_2022_rationale": "The bear 2022 subwindow is a SECONDARY gate: the variant must not lose money in a real bear regime (Sharpe > 0 is the minimum, justified by the BL-OPC-12 finding of 0.05 Sharpe on the composite default — anything <= 0 means the variant is worse than doing nothing). Full DSR/PBO thresholds are NOT applied to the bear slice because of its small sample (252 trading days is borderline for the statistical machinery)."
+  },
+  "pre_registered_thresholds_rationale": "DSR/PSR/PBO from ADR-017 (DSR >= 0.95, PSR >= 0.95, PBO < 0.5 frozen there) — this pre-registration tightens PBO to < 0.20 because BL-OPC-12 found 0.635 on the full family (not the variant), and a stricter bar is needed to actually close the overfitting hole. Haircut SR > 0.50 mirrors ADR-019 'Lane B Sharpe target >= 0.5' after the multiple-testing + non-normality penalty (BL-707 / BL-KB-99). CPCV OOS Sharpe median > 0.50 is the honest out-of-sample equivalent. IC screen thresholds (ICIR > 0.05, block-bootstrap t > 2.5, 30% haircut) are pinned by the Edge Research Factory design spec (docs/plans/2026-08-21-edge-research-factory-design.md §6, BL-706). Bear 2022 Sharpe > 0 is the absolute floor — anything <= 0 means the variant would have been net-destructive in a real bear market and is not promotable to paper.",
+  "anti_harking_clause": "All thresholds in this manifest were fixed BEFORE observing the qualification run's results. Any modification of thresholds after seeing results is FORBIDDEN; the only acceptable post-result action is to declare the variant REJECTED and re-open BL-726 with a new manifest version (schema_version bump).",
+  "clean_tree_clause": "The working tree MUST be clean at qualification time (no uncommitted modifications in any path that affects the qualification: analytics/strategy/, analytics/research/, analytics/qualification/, analytics/metrics/, analytics/fundamental/simfin_loader.py). The HEAD commit hash recorded above MUST equal `git rev-parse HEAD` immediately before the qualification run. Any drift invalidates the manifest and the run is rejected.",
+  "open_gaps": [
+    "target_annual_vol=0.40 is declared in LaneBBacktestConfig but the backtester does not currently apply volatility-target sizing (declared-only). The pre-registration is honest about this: the variant uses the composite screen with per-idea stop-loss; position sizing is equal-weight, not vol-targeted. This is BL-505e work that must complete before the live paper-promotion gate (BL-732). The qualification (BL-727) runs on the current code, not on the vol-target implementation.",
+    "SimFin Publish Date is used as the PIT marker; restated statements are NOT handled (lane_b_backtester.py:23-24). This is a known PIT gap documented at BL-619 scope."
+  ]
+}
