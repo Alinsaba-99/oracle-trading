@@ -1,0 +1,84 @@
+{
+  "metadata": {
+    "task": "BL-OPC-12 \u2014 Lane B composite ADR-017 qualification",
+    "generated": "2026-09-03T09:55:13.655306+00:00",
+    "window": "2020-01-01 \u2192 2025-08-14",
+    "bear_window": "2022-01-01 \u2192 2022-12-31",
+    "n_trials": 8,
+    "gates": {
+      "dsr_min": 0.95,
+      "psr_min": 0.95,
+      "pbo_max": 0.5
+    },
+    "family": [
+      "composite_default",
+      "composite_threshold_055",
+      "composite_threshold_070",
+      "composite_weights_50_30_20",
+      "legacy_and"
+    ]
+  },
+  "family_summary": {
+    "composite_default": {
+      "n_rebalances": 23,
+      "total_return": 0.8910856919115049,
+      "annual_return": 0.16044827529254024,
+      "sharpe": 0.8018472233137239,
+      "max_drawdown": 0.23679821558178907,
+      "n_bars": 1079
+    },
+    "legacy_and": {
+      "n_rebalances": 23,
+      "total_return": 0.12262214577108921,
+      "annual_return": 0.031025138047259704,
+      "sharpe": 0.25180486629025156,
+      "max_drawdown": 0.3245081025242428,
+      "n_bars": 954
+    },
+    "composite_threshold_055": {
+      "n_rebalances": 23,
+      "total_return": 1.5636524263378826,
+      "annual_return": 0.2315689741273863,
+      "sharpe": 1.0988777533623073,
+      "max_drawdown": 0.21671445694250213,
+      "n_bars": 1139
+    },
+    "composite_threshold_070": {
+      "n_rebalances": 23,
+      "total_return": 1.1483261754523526,
+      "annual_return": 0.19553382455510482,
+      "sharpe": 0.9268896071525375,
+      "max_drawdown": 0.25888423004808203,
+      "n_bars": 1079
+    },
+    "composite_weights_50_30_20": {
+      "n_rebalances": 23,
+      "total_return": 0.965127582282705,
+      "annual_return": 0.1709039946191533,
+      "sharpe": 0.8355906981451802,
+      "max_drawdown": 0.2500208098403436,
+      "n_bars": 1079
+    }
+  },
+  "qualification": {
+    "verdict": "REJECTED",
+    "observed_sharpe": 0.7938142973130674,
+    "deflated_sharpe_ratio": 0.9462102364804621,
+    "probabilistic_sharpe_ratio": 0.9505358282632556,
+    "pbo": 0.5013986013986014,
+    "cpcv_oos_sharpe_median": 0.8141622306399715,
+    "reasons": [
+      "DSR 0.9462 < 0.95 after correcting for 8 discovery trials",
+      "PBO 0.5014 >= 0.5 (in-sample optimum likely OOS-mediocre)"
+    ]
+  },
+  "bear_2022": {
+    "n_bars": 247,
+    "sharpe": 0.006937874007311494,
+    "max_drawdown": 0.16331613876391962,
+    "dsr": 0.48702959260607587,
+    "psr": 0.49628916914034416,
+    "cpcv_oos_median": 0.029719426851111876,
+    "verdict": "REJECTED"
+  }
+}

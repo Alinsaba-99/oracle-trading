@@ -1,6 +1,6 @@
 # Multi-Strategy 5%/Month Ensemble Discovery
 
-_Generated: 2026-09-03T11:31:18.782746Z — Task #4 of Edge Factory Stage 1._
+_Generated: 2026-09-03T11:41:40.975771Z — Task #4 of Edge Factory Stage 1._
 
 ## TL;DR — Honest answer
 
@@ -52,13 +52,31 @@ Mean off-diagonal correlation = **+0.08** (< 0.30 = good diversification; 0.30-0
 
 ## 4. Blender variants
 
-Three weight schemes, all scale-free (no leverage beyond the per-leg cap):
+Three weight schemes, all scale-free (no leverage beyond the per-leg cap).
 
-| Scheme | Ann. Return | Sharpe | Max DD | Calmar | Hit | Mean m | σ_m | P(m ≥ 5%) | Worst m |
-|--------|------------:|-------:|-------:|-------:|----:|-------:|----:|----------:|--------:|
-| Equal-weight (EW) | +10.37% | +2.88 | 2.36% | +4.39 | 57.6% | +0.83% | 0.98% | 0.0% | -0.94% |
-| Inverse-vol (IV) | +9.94% | +3.20 | 1.73% | +5.76 | 56.6% | +0.79% | 0.79% | 0.0% | -0.57% |
-| Shrinkage-50 (SH-50) | +10.16% | +3.05 | 2.04% | +4.97 | 57.2% | +0.81% | 0.88% | 0.0% | -0.75% |
+DSR computed with n_trials = 33 (N_legs × N_blender_variants); gate threshold 0.95 per ADR-017.
+
+| Scheme | Ann. Return | Sharpe | DSR | Max DD | Calmar | Hit | Mean m | σ_m | P(m ≥ 5%) | Worst m |
+|--------|------------:|-------:|----:|-------:|-------:|----:|-------:|----:|----------:|--------:|
+| Equal-weight (EW) | +10.37% | +2.88 | 1.00 | 2.36% | +4.39 | 57.6% | +0.83% | 0.98% | 0.0% | -0.94% |
+| Inverse-vol (IV) | +9.94% | +3.20 | 1.00 | 1.73% | +5.76 | 56.6% | +0.79% | 0.79% | 0.0% | -0.57% |
+| Shrinkage-50 (SH-50) | +10.16% | +3.05 | 1.00 | 2.04% | +4.97 | 57.2% | +0.81% | 0.88% | 0.0% | -0.75% |
+
+### 4a. Monthly returns distribution (Equal-weight)
+
+Histogram of the 36 walk-forward test months, bucketed into prop-firm-relevant bins:
+
+| Bin | Months | Fraction |
+|-----|-------:|---------:|
+| [-10%, -5%) | 0 | 0.0% |
+| [-5%, -2%) | 0 | 0.0% |
+| [-2%, +0%) | 7 | 19.4% |
+| [+0%, +2%) | 24 | 66.7% |
+| [+2%, +5%) | 5 | 13.9% |
+| [+5%, +10%) | 0 | 0.0% |
+| [+10%, +20%] | 0 | 0.0% |
+
+Note: no month in any blender reaches the `[+5%, +10%)` or `[+10%, +20%]` bins — the realised distribution sits in the `[-5%, +5%)` range, with the median at +0.7%/+0.8% (EW/IV/SH-50).
 
 ## 5. Honest 5%/month assessment
 
@@ -72,8 +90,8 @@ Three weight schemes, all scale-free (no leverage beyond the per-leg cap):
 | P(loss month) | +19.44% | +16.67% | +19.44% |
 | Annualised from mean | +10.38% | +9.92% | +10.15% |
 | Yearly compound | +10.31% | +9.88% | +10.10% |
-| Monthly Sharpe (ann.) | +292.50% | +348.38% | +318.88% |
-| Required monthly Sharpe for ≥50% hit | +1770.47% | +2200.49% | +1971.27% |
+| Monthly Sharpe (ann.) | +2.92 | +3.48 | +3.19 |
+| Required monthly Sharpe for ≥50% hit | +17.70 | +22.00 | +19.71 |
 | Max consec. m ≥ 5% | 0 | 0 | 0 |
 | Max consec. loss months | 2 | 2 | 2 |
 | Best month | +2.72% | +2.27% | +2.50% |

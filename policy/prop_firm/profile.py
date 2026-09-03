@@ -212,6 +212,16 @@ class FirmProgramProfile:
         List of product symbols allowed for trading.
     risk_per_trade_pct :
         Default per-trade risk as a fraction of balance.
+    daily_loss_action :
+        TERMINATE (default) fails the challenge on a daily loss breach;
+        PAUSE suspends trading for the day but lets the challenge resume
+        on the next rollover.
+    min_trade_duration_minutes :
+        Anti-HFT floor for trade duration (e.g. Alpha Capital 2 min).
+        0.0 = no rule declared.
+    payout_buffer_pct :
+        Fraction of remaining balance that must stay locked before a
+        payout is unlocked (BL-722). 0.0 = no buffer.
     """
 
     def __init__(
@@ -249,6 +259,11 @@ class FirmProgramProfile:
         effective_to: str | None = None,
         daily_loss_action: DailyLossAction = DailyLossAction.TERMINATE,
         min_trade_duration_minutes: float = 0.0,
+        # BL-722: payout buffer — fraction of remaining balance that must be
+        # preserved when computing payout readiness (firm-specific payout
+        # rules often require profits to "stick" before a payout unlocks;
+        # e.g. E8 dynamic DD locks at "what you keep"). 0.0 = no buffer.
+        payout_buffer_pct: float = 0.0,
     ) -> None:
         self.firm = firm
         self.program = program
@@ -285,6 +300,9 @@ class FirmProgramProfile:
         # Anti-HFT minimum average trade duration (Alpha Capital: > 2 min).
         # 0.0 = no rule declared by the firm.  Enforcement is BL-722.
         self.min_trade_duration_minutes = min_trade_duration_minutes
+        # BL-722: payout buffer (firm-specific profit lock required for
+        # payout release).  0.0 = no buffer.
+        self.payout_buffer_pct = payout_buffer_pct
 
     @property
     def version_key(self) -> str:
@@ -302,7 +320,7 @@ class FirmProgramProfile:
             f"{self.max_daily_loss_pct}|{self.max_overall_loss_pct}|{self.dd_mode}|"
             f"{self.max_daily_loss_amount}|{self.max_overall_loss_amount}|"
             f"{self.overall_loss_lock_at_initial}|{self.daily_loss_basis}|{self.support_mode}|"
-            f"{self.daily_loss_action}|{self.min_trade_duration_minutes}"
+            f"{self.daily_loss_action}|{self.min_trade_duration_minutes}|{self.payout_buffer_pct}"
         )
         return sha256(raw.encode()).hexdigest()[:16]
 
@@ -346,6 +364,7 @@ class FirmProgramProfile:
             "contract_cap": self.contract_cap.to_dict() if self.contract_cap else None,
             "daily_loss_action": self.daily_loss_action.value,
             "min_trade_duration_minutes": self.min_trade_duration_minutes,
+            "payout_buffer_pct": self.payout_buffer_pct,
             "content_hash": self.content_hash,
         }
 

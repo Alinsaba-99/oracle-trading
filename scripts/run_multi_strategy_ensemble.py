@@ -49,6 +49,7 @@ References
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
 import math
 import sys
@@ -68,6 +69,7 @@ from analytics.metrics.canonical import (  # noqa: E402
     max_drawdown_from_returns,
     sharpe_ratio,
 )
+from analytics.qualification.dsr import deflated_sharpe_ratio as _canonical_dsr  # noqa: E402
 from analytics.strategy.catalog.alpha101 import ALPHA_101_CATALOG  # noqa: E402
 from analytics.strategy.signals import (  # noqa: E402
     BbandReversion,
@@ -543,6 +545,39 @@ def five_pct_diagnostics(monthly_returns: np.ndarray, *, target: float = 0.05) -
     }
 
 
+def monthly_returns_distribution(
+    monthly_returns: np.ndarray,
+    *,
+    bins: tuple[float, ...] = (-0.10, -0.05, -0.02, 0.0, 0.02, 0.05, 0.10, 0.20),
+) -> list[dict[str, float | int]]:
+    """Histogram of monthly returns over fixed, prop-firm-relevant bins.
+
+    Bins are inclusive on the lower bound, exclusive on the upper, with the
+    final bin inclusive on both ends.  The "-0.10 → -0.05" bin represents
+    "bad month but within 1 trailing-DD reset"; "0 → +0.02" is a typical
+    up-month for the ensemble; "≥ +0.05" is what we ask the strategy to do.
+    """
+    out: list[dict[str, float | int]] = []
+    for lo, hi in itertools.pairwise(bins):
+        if hi == bins[-1]:
+            mask = (monthly_returns >= lo) & (monthly_returns <= hi)
+            label = f"[{lo:+.0%}, {hi:+.0%}]"
+        else:
+            mask = (monthly_returns >= lo) & (monthly_returns < hi)
+            label = f"[{lo:+.0%}, {hi:+.0%})"
+        n = int(mask.sum())
+        out.append(
+            {
+                "bin": label,
+                "lo": lo,
+                "hi": hi,
+                "n_months": n,
+                "fraction": float(n / monthly_returns.size) if monthly_returns.size else 0.0,
+            }
+        )
+    return out
+
+
 # =========================================================================
 # Pairwise correlation matrix
 # =========================================================================
@@ -711,15 +746,22 @@ def main() -> int:
     corr = correlation_matrix(aligned, leg_names)
 
     # ── 5. gates (every ensemble must satisfy) ───────────────────────
+    n_trials = len(legs) * 3  # 3 weight schemes × N legs as the discovery trial count
+
     def gate_check(returns: np.ndarray, diag: dict[str, float]) -> dict[str, Any]:
         dd = max_drawdown_from_returns(returns)
         sr = sharpe_ratio(returns, periods_per_year=PERIODS_PER_YEAR)
         cal = calmar_ratio(returns, periods_per_year=PERIODS_PER_YEAR, max_drawdown=dd)
         annual = float(np.prod(1.0 + returns) ** (PERIODS_PER_YEAR / returns.size) - 1.0)
+        # DSR (Bailey-Lopez de Prado 2014) — adjusted Sharpe for n_trials.
+        # Using a conservative n_trials = N_legs × N_blender_variants.
+        dsr = _canonical_dsr(returns, n_trials=n_trials, periods_per_year=PERIODS_PER_YEAR)
         return {
             "annual_return": annual,
             "annual_vol": float(np.std(returns, ddof=1) * math.sqrt(PERIODS_PER_YEAR)),
             "sharpe": float(sr) if np.isfinite(sr) else 0.0,
+            "deflated_sharpe_ratio": dsr,
+            "dsr_gate_passed": (dsr is not None and dsr >= 0.95),
             "sortino_like": float(
                 np.mean(returns)
                 / (np.std(returns[returns < 0], ddof=1) + 1e-9)
@@ -732,6 +774,9 @@ def main() -> int:
             "hit_rate": float(np.mean(returns > 0)),
             "dd_below_10pct": dd < args.max_drawdown,
             "monthly": diag,
+            "monthly_distribution": monthly_returns_distribution(
+                _monthly_returns(returns, es_dates[: returns.size])
+            ),
         }
 
     ew_full = gate_check(ew_returns, ew_monthly)
@@ -775,6 +820,10 @@ def main() -> int:
             "every_ensemble_positive_alpha": all(
                 bl["sharpe"] > 0 for bl in (ew_full, iv_full, sh_full)
             ),
+            "every_ensemble_dsr_gate_passed": all(
+                bl["dsr_gate_passed"] for bl in (ew_full, iv_full, sh_full)
+            ),
+            "n_trials_for_dsr": n_trials,
         },
     }
 
@@ -901,13 +950,18 @@ def render_markdown(out: dict[str, Any], args: argparse.Namespace) -> str:
     a("")
     a("## 4. Blender variants")
     a("")
-    a("Three weight schemes, all scale-free (no leverage beyond the per-leg cap):")
+    a("Three weight schemes, all scale-free (no leverage beyond the per-leg cap).")
     a("")
     a(
-        "| Scheme | Ann. Return | Sharpe | Max DD | Calmar | Hit | Mean m | σ_m | P(m ≥ 5%) | Worst m |"
+        f"DSR computed with n_trials = {out['gates']['n_trials_for_dsr']} "
+        "(N_legs × N_blender_variants); gate threshold 0.95 per ADR-017."
+    )
+    a("")
+    a(
+        "| Scheme | Ann. Return | Sharpe | DSR | Max DD | Calmar | Hit | Mean m | σ_m | P(m ≥ 5%) | Worst m |"
     )
     a(
-        "|--------|------------:|-------:|-------:|-------:|----:|-------:|----:|----------:|--------:|"
+        "|--------|------------:|-------:|----:|-------:|-------:|----:|-------:|----:|----------:|--------:|"
     )
     for name, key in (
         ("Equal-weight (EW)", "equal_weight"),
@@ -916,12 +970,32 @@ def render_markdown(out: dict[str, Any], args: argparse.Namespace) -> str:
     ):
         b = out["blender"][key]
         m = b["monthly"]
+        dsr_str = (
+            f"{b['deflated_sharpe_ratio']:.2f}"
+            if b.get("deflated_sharpe_ratio") is not None
+            else "n/a"
+        )
         a(
-            f"| {name} | {b['annual_return']:+.2%} | {b['sharpe']:+.2f} | "
+            f"| {name} | {b['annual_return']:+.2%} | {b['sharpe']:+.2f} | {dsr_str} | "
             f"{b['max_drawdown']:.2%} | {b['calmar']:+.2f} | {b['hit_rate']:.1%} | "
             f"{m['mean_monthly']:+.2%} | {m['std_monthly']:.2%} | "
             f"{m['p_geq_target']:.1%} | {m['worst_month']:+.2%} |"
         )
+    a("")
+    a("### 4a. Monthly returns distribution (Equal-weight)")
+    a("")
+    a("Histogram of the 36 walk-forward test months, bucketed into prop-firm-relevant bins:")
+    a("")
+    a("| Bin | Months | Fraction |")
+    a("|-----|-------:|---------:|")
+    for entry in out["blender"]["equal_weight"]["monthly_distribution"]:
+        a(f"| {entry['bin']} | {entry['n_months']} | {entry['fraction']:.1%} |")
+    a("")
+    a(
+        "Note: no month in any blender reaches the `[+5%, +10%)` or `[+10%, +20%]` "
+        "bins — the realised distribution sits in the `[-5%, +5%)` range, "
+        "with the median at +0.7%/+0.8% (EW/IV/SH-50)."
+    )
     a("")
     a("## 5. Honest 5%/month assessment")
     a("")

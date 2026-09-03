@@ -288,6 +288,8 @@
       "annual_return": 0.10372590308664309,
       "annual_vol": 0.0344690604468422,
       "sharpe": 2.8809690572418094,
+      "deflated_sharpe_ratio": 0.9999987553457622,
+      "dsr_gate_passed": true,
       "sortino_like": 4.1319303511916585,
       "max_drawdown": 0.023619503125179908,
       "calmar": 4.391536203658095,
@@ -308,12 +310,65 @@
         "max_consecutive_losses": 2,
         "best_month": 0.027240022350833115,
         "worst_month": -0.009425475465793531
-      }
+      },
+      "monthly_distribution": [
+        {
+          "bin": "[-10%, -5%)",
+          "lo": -0.1,
+          "hi": -0.05,
+          "n_months": 0,
+          "fraction": 0.0
+        },
+        {
+          "bin": "[-5%, -2%)",
+          "lo": -0.05,
+          "hi": -0.02,
+          "n_months": 0,
+          "fraction": 0.0
+        },
+        {
+          "bin": "[-2%, +0%)",
+          "lo": -0.02,
+          "hi": 0.0,
+          "n_months": 7,
+          "fraction": 0.19444444444444445
+        },
+        {
+          "bin": "[+0%, +2%)",
+          "lo": 0.0,
+          "hi": 0.02,
+          "n_months": 24,
+          "fraction": 0.6666666666666666
+        },
+        {
+          "bin": "[+2%, +5%)",
+          "lo": 0.02,
+          "hi": 0.05,
+          "n_months": 5,
+          "fraction": 0.1388888888888889
+        },
+        {
+          "bin": "[+5%, +10%)",
+          "lo": 0.05,
+          "hi": 0.1,
+          "n_months": 0,
+          "fraction": 0.0
+        },
+        {
+          "bin": "[+10%, +20%]",
+          "lo": 0.1,
+          "hi": 0.2,
+          "n_months": 0,
+          "fraction": 0.0
+        }
+      ]
     },
     "inverse_vol": {
       "annual_return": 0.09939899898272175,
       "annual_vol": 0.029723643315973058,
       "sharpe": 3.203594624726925,
+      "deflated_sharpe_ratio": 0.9999999545852407,
+      "dsr_gate_passed": true,
       "sortino_like": 4.8331951413591385,
       "max_drawdown": 0.017264047842480923,
       "calmar": 5.757572030015741,
@@ -334,12 +389,65 @@
         "max_consecutive_losses": 2,
         "best_month": 0.022664202461661898,
         "worst_month": -0.0056680011142277165
-      }
+      },
+      "monthly_distribution": [
+        {
+          "bin": "[-10%, -5%)",
+          "lo": -0.1,
+          "hi": -0.05,
+          "n_months": 0,
+          "fraction": 0.0
+        },
+        {
+          "bin": "[-5%, -2%)",
+          "lo": -0.05,
+          "hi": -0.02,
+          "n_months": 0,
+          "fraction": 0.0
+        },
+        {
+          "bin": "[-2%, +0%)",
+          "lo": -0.02,
+          "hi": 0.0,
+          "n_months": 6,
+          "fraction": 0.16666666666666666
+        },
+        {
+          "bin": "[+0%, +2%)",
+          "lo": 0.0,
+          "hi": 0.02,
+          "n_months": 27,
+          "fraction": 0.75
+        },
+        {
+          "bin": "[+2%, +5%)",
+          "lo": 0.02,
+          "hi": 0.05,
+          "n_months": 3,
+          "fraction": 0.08333333333333333
+        },
+        {
+          "bin": "[+5%, +10%)",
+          "lo": 0.05,
+          "hi": 0.1,
+          "n_months": 0,
+          "fraction": 0.0
+        },
+        {
+          "bin": "[+10%, +20%]",
+          "lo": 0.1,
+          "hi": 0.2,
+          "n_months": 0,
+          "fraction": 0.0
+        }
+      ]
     },
     "shrinkage_50": {
       "annual_return": 0.10156912148618558,
       "annual_vol": 0.0319347801355298,
       "sharpe": 3.0456887398056054,
+      "deflated_sharpe_ratio": 0.9999997306397631,
+      "dsr_gate_passed": true,
       "sortino_like": 4.468526199503189,
       "max_drawdown": 0.02044617243048208,
       "calmar": 4.967634985546817,
@@ -360,7 +468,58 @@
         "max_consecutive_losses": 2,
         "best_month": 0.02495023172816535,
         "worst_month": -0.007548004335287795
-      }
+      },
+      "monthly_distribution": [
+        {
+          "bin": "[-10%, -5%)",
+          "lo": -0.1,
+          "hi": -0.05,
+          "n_months": 0,
+          "fraction": 0.0
+        },
+        {
+          "bin": "[-5%, -2%)",
+          "lo": -0.05,
+          "hi": -0.02,
+          "n_months": 0,
+          "fraction": 0.0
+        },
+        {
+          "bin": "[-2%, +0%)",
+          "lo": -0.02,
+          "hi": 0.0,
+          "n_months": 7,
+          "fraction": 0.19444444444444445
+        },
+        {
+          "bin": "[+0%, +2%)",
+          "lo": 0.0,
+          "hi": 0.02,
+          "n_months": 25,
+          "fraction": 0.6944444444444444
+        },
+        {
+          "bin": "[+2%, +5%)",
+          "lo": 0.02,
+          "hi": 0.05,
+          "n_months": 4,
+          "fraction": 0.1111111111111111
+        },
+        {
+          "bin": "[+5%, +10%)",
+          "lo": 0.05,
+          "hi": 0.1,
+          "n_months": 0,
+          "fraction": 0.0
+        },
+        {
+          "bin": "[+10%, +20%]",
+          "lo": 0.1,
+          "hi": 0.2,
+          "n_months": 0,
+          "fraction": 0.0
+        }
+      ]
     }
   },
   "correlation": {
@@ -526,6 +685,8 @@
   "gates": {
     "max_drawdown_threshold": 0.1,
     "every_ensemble_dd_below_threshold": true,
-    "every_ensemble_positive_alpha": true
+    "every_ensemble_positive_alpha": true,
+    "every_ensemble_dsr_gate_passed": true,
+    "n_trials_for_dsr": 33
   }
 }

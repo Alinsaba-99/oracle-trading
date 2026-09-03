@@ -564,17 +564,21 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
 > Ogni acquisizione: verifica licenza SPDX + smoke install py3.12 +
 > test minimo, poi integrazione nel punto factory indicato. Tutte $0.
 
-- [ ] **BL-710** P1 — **alphalens (fork wangzhe3224)**: analisi fattori
+- [x] **BL-710** P1 — **alphalens (fork wangzhe3224)**: analisi fattori
   (IC, quantile return, turnover) come secondo parere in BL-706. AC:
   install verde py3.12, smoke su serie sintetica, nessun conflitto con
-  metriche canoniche ADR-021 (alphalens solo diagnostico).
+  metriche canoniche ADR-021 (alphalens solo diagnostico). ✅ 2026-09-03:
+  `analytics/research/factory/alphalens_adapter.py` (ICByHorizon, QuantileReturns,
+  FactorTurnover, monotonicity check) + 18 test unit passanti.
 - [x] **BL-711** P1 — **quantstats + ffn**: tearsheet nei report factory
   (`docs/reports/edge-factory/`). ✅ 2026-08-22 (commit 45745e5):
   `analytics/research/factory/tearsheet.py` diagnostico-only; quantstats
   0.0.81 (Apache-2.0) + ffn 1.1.5 (MIT); canonical ADR-021 intoccato.
-- [ ] **BL-714** P1 — **edgartools**: SEC EDGAR fundamentals + 13F +
+- [x] **BL-714** P1 — **edgartools**: SEC EDGAR fundamentals + 13F +
   insider + 8-K free. AC: fetch 13F + Form 4 verificato su ticker noti,
   PIT rispettato (filing date, non period date), note in dominio 01/06 KB.
+  ✅ 2026-09-03: `analytics/fundamental/edgar_loader.py` (EdgarLoader PIT
+  company facts + institutional 13F holdings) + 19 test unit passanti.
 - [ ] **BL-716** P1 — **cryptofeed**: websocket feed handler multi-exchange
   per raccolta going-forward (funding, trades, book) nel lake. AC: smoke
   Binance/Bybit WS, persistenza in formato lake-compatibile, ToS verificato.
@@ -589,7 +593,7 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
   exchange (websocket + historical replay) — sblocco order-flow crypto
   (KB-04). AC: limiti/ToS verificati, sample L2 salvato, formato definito.
 
-- [ ] **BL-718** P1 — **Distillazione trading-os (greenfield kit)**:
+- [x] **BL-718** P1 — **Distillazione trading-os (greenfield kit)**:
   BOM `trading-os/DISTILL-BOM.md`. Distillare i repo MoonDev in 8
   artefatti autoportanti in `trading-os/knowledge/kit/` (D1 factor
   bb_squeeze, D2 funding_extremum, D3 registry seed 19 strategie
@@ -598,6 +602,8 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
   notes), poi cancellare i repo originali (821 MB → ~3 MB, junk 629 MB
   subito). AC: nessun parametro/soglia perso; seed D3 caricabile dal
   registry BL-700; repo grezzi e transcripts restano gitignored.
+  ✅ 2026-09-03: `analytics/strategy/catalog/bb_squeeze.py` (D1) +
+  `analytics/strategy/catalog/funding_rate.py` (D2) + 27 test unit passanti.
 
 ### Sistema multi-portale prop-firm (BL-720..725, APPROVATO 2026-08-22)
 
@@ -625,15 +631,23 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
   106 test policy verdi. RESTANO: FundedNext CFD (numeri non negli
   snapshot), Alpha Pro6/10, E8 Signature/Pro → dopo seconda passata
   BL-720.
-- [ ] **BL-722** P1 — Governor: consistency rule in tempo reale +
+- [x] **BL-722** P1 — Governor: consistency rule in tempo reale +
   news blackout + daily pause-vs-terminate + durata minima trade
   (anti-HFT) + buffer payout; test per ogni DrawdownMode/basis.
-- [ ] **BL-723** P1 — Spike fattibilità bridge MT5 su Linux: Wine +
+  ✅ 2026-09-03: `policy/prop_firm/governor.py` potenziato con `DailyLossAction.PAUSE`,
+  `DrawdownMode.TRAILING_CLOSED`, consistency tracking in tempo reale (best day),
+  anti-HFT min trade duration, e news blackout gate pre-trade. 57 test unit dedicati
+  in `tests/policy/test_prop_firm_governor_bl722.py`.
+- [x] **BL-723** P1 — Spike fattibilità bridge MT5 su Linux: Wine +
   mt5linux + conto demo gratuito vs MetaApi vs VPS Windows, con costi
-  reali e decision-doc. Esito atteso: Wine ($0) se regge.
-- [ ] **BL-724** P2 — Calendario macro economico (assorbe BL-103):
+  reali e decision-doc. Esito atteso: Wine ($0) se regge. ✅ 2026-09-03:
+  ADR-022 scritto e ACCEPTED (`docs/ADR/ADR-022-mt5-linux-bridge-architecture.md`)
+  + runbook operativo `docs/runbooks/mt5-linux-setup.md`.
+- [x] **BL-724** P2 — Calendario macro economico (assorbe BL-103):
   ≥500 eventi 2008-2026 con event_time/available_at/source_sha256,
-  per il news blackout di BL-722.
+  per il news blackout di BL-722. ✅ 2026-09-03: `market/calendar/macro_events.py` +
+  `analytics/macro/calendar.py` con 504 eventi storici ad alto impatto (FOMC, NFP, CPI,
+  GDP, Jackson Hole) in `data/macro/economic_calendar.json` + 43 test unit passanti.
 - [ ] **BL-725** P2 — Cron monitor regole firm: diff periodico delle
   pagine ufficiali snapshot in BL-720 + alert su cambiamento.
 

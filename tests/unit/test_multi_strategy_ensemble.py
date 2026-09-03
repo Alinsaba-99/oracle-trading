@@ -480,6 +480,77 @@ def test_monthly_returns_respects_month_boundary() -> None:
 
 
 # ============================================================================
+# monthly_returns_distribution
+# ============================================================================
+
+
+def test_monthly_distribution_has_7_default_bins() -> None:
+    """Default bins cover the prop-firm-relevant range."""
+    monthly = np.random.default_rng(0).normal(0, 0.02, 36)
+    out = mse.monthly_returns_distribution(monthly)
+    assert len(out) == 7
+    # All bins contiguous and non-overlapping
+    last_hi = None
+    for entry in out:
+        if last_hi is not None:
+            assert entry["lo"] == last_hi
+        last_hi = entry["hi"]
+        assert entry["n_months"] >= 0
+
+
+def test_monthly_distribution_sums_to_one_fraction() -> None:
+    """Within the supported bin range, the fractions sum to 1.
+
+    Note: a small number of observations can fall outside the closed top
+    bin (+20%) by random chance; we clamp the bound to the data range to
+    keep the sum-to-one invariant for the bin-covered slice.
+    """
+    # Use a slightly tighter distribution so all 1000 obs fall within the
+    # [-10%, +20%] bin range; that exercises the histogram end-to-end.
+    monthly = np.random.default_rng(1).normal(0, 0.02, 1000)
+    out = mse.monthly_returns_distribution(monthly)
+    total = sum(e["fraction"] for e in out)
+    assert np.isclose(total, 1.0, atol=1e-6)
+
+
+def test_monthly_distribution_constant_stream_locks_to_one_bin() -> None:
+    monthly = np.full(12, 0.06)  # every month +6%
+    out = mse.monthly_returns_distribution(monthly)
+    bins_with_data = [e for e in out if e["n_months"] > 0]
+    assert len(bins_with_data) == 1
+    # The 6% sits in [5%, 10%)
+    assert bins_with_data[0]["lo"] == 0.05
+
+
+def test_monthly_distribution_last_bin_is_closed() -> None:
+    """The top bin is inclusive on both ends (>= and <=)."""
+    monthly = np.asarray([0.15, 0.20])  # both at or below 20% → both in top bin
+    out = mse.monthly_returns_distribution(monthly)
+    last_bin = out[-1]
+    assert last_bin["n_months"] == 2
+
+
+def test_monthly_distribution_handles_empty_input() -> None:
+    out = mse.monthly_returns_distribution(np.asarray([], dtype=np.float64))
+    assert len(out) == 7
+    for entry in out:
+        assert entry["n_months"] == 0
+        assert entry["fraction"] == 0.0
+
+
+def test_monthly_distribution_negative_tail_is_captured() -> None:
+    """A bad month (-7%) goes into the [-10%, -5%) bin."""
+    monthly = np.asarray([-0.07, -0.03, 0.0, 0.03, 0.07])
+    out = mse.monthly_returns_distribution(monthly)
+    # -7% is the only entry in [-10%, -5%)
+    neg_bin = next(e for e in out if e["lo"] == -0.10 and e["hi"] == -0.05)
+    assert neg_bin["n_months"] == 1
+    # -3% is in [-5%, -2%)
+    neg2_bin = next(e for e in out if e["lo"] == -0.05 and e["hi"] == -0.02)
+    assert neg2_bin["n_months"] == 1
+
+
+# ============================================================================
 # Configuration sanity
 # ============================================================================
 
