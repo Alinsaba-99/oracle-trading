@@ -1,0 +1,64 @@
+{
+  "generated": "2026-09-03T22:24:57.553063+00:00",
+  "framework": "BL-738 FX orthogonal legs \u2014 TSMOM + XSMOM on Dukascopy spot 1h",
+  "n_pairs": 19,
+  "n_legs": 58,
+  "parameters": {
+    "test_split": "2022-12-31 00:00:00+00:00",
+    "tsmom_windows_days": [
+      30,
+      90,
+      180
+    ],
+    "xs_lookback_days": 30,
+    "cost_bps_per_turnover": 1.5,
+    "target_vol": 0.1
+  },
+  "results": [
+    {
+      "name": "xsmom_fx_30d",
+      "sharpe": -0.42012051646994136,
+      "annual_return": -0.015032741604882216,
+      "vol": 0.03462643098539631,
+      "max_drawdown": 0.05893699530255769,
+      "monthly_mean": -0.000873800862644479,
+      "p_monthly_geq_5pct": 0.0
+    },
+    {
+      "name": "tsmom30",
+      "sharpe": -2.3257109567602385,
+      "annual_return": -0.0948538447486007,
+      "vol": 0.042462944887356954,
+      "max_drawdown": 0.23348069930819126,
+      "monthly_mean": -0.005844323805808932,
+      "p_monthly_geq_5pct": 0.0
+    },
+    {
+      "name": "tsmom90",
+      "sharpe": -1.893404236863186,
+      "annual_return": -0.07663098299063664,
+      "vol": 0.04164900277653475,
+      "max_drawdown": 0.19040951612167112,
+      "monthly_mean": -0.00465965974266006,
+      "p_monthly_geq_5pct": 0.0
+    },
+    {
+      "name": "tsmom180",
+      "sharpe": -0.9260686068012688,
+      "annual_return": -0.03744222563588284,
+      "vol": 0.04032913522936004,
+      "max_drawdown": 0.12576465348187849,
+      "monthly_mean": -0.0022142591823013924,
+      "p_monthly_geq_5pct": 0.0
+    },
+    {
+      "name": "portfolio_fx_ew",
+      "sharpe": -2.0544204739913443,
+      "annual_return": -0.0687116313788737,
+      "vol": 0.034362670397690635,
+      "max_drawdown": 0.1711349087941183,
+      "monthly_mean": -0.004181144141042473,
+      "p_monthly_geq_5pct": 0.0
+    }
+  ]
+}

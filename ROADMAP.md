@@ -897,3 +897,32 @@ dallo studio integrato 2026-08-19 §5.
 **Kill criteria** (anti-autoinganno, dettagli nella spec §8): sprint di
 4 settimane con go/no-go scritto; < 2 fattori oltre l'IC screen dopo il
 primo sprint → stop e rivalutazione onesta del canale.
+
+## 15. Direttive Renaissance-parity (2026-09-04)
+
+Fonte: ricerca a fonti primarie in
+`docs/reports/renaissance-parity-2026-09-04/` (dossier A/B/C + SYNTHESIS).
+Sprint operativo: BL-739..743, piano
+`docs/plans/2026-09-04-renaissance-parity-sprint.md`.
+
+1. **Benchmark di parità onesto**: RenTec Medallion documentato (Cornell 2020)
+   è Sharpe ≈ 2.0 lordo, beta ≈ −1 — non lo "Sharpe 7.5" leggendario.
+   Il target di parità del canale personal è **Sharpe 1.8-2.2 a DD dichiarato**;
+   il canale funded resta 0.5-1.5%/mese envelope (dossier C). Nessun
+   obiettivo di rendimento assoluto nuovo: 5%/mese vale SOLO come mediana
+   a vol 30% con MaxDD ~30% nel canale personale (BL-737), mai come promessa.
+2. **Famiglie non-tecniche prioritarie**: ogni unità di ricerca della factory
+   privilegia famiglie con meccanismo NON price-based (overnight/microstruttura,
+   carry/basis, cross-pillar conditioning, positioning, sentiment) — è l'unica
+   direzione che alza SR(N) sopra la saturazione 1.2-1.5 misurata (BL-737).
+3. **Regola del pilastro**: ogni nuova ipotesi/gamba nel registry dichiara il
+   pilastro KB (01-13) del suo meccanismo e il decay atteso; le combinazioni
+   fra pilastri (conditioning) sono first-class, non accessori. In questo
+   sprint NESSUN carry su oro/commodities (curve futures non possedute —
+   follow-up sbloccato da dati).
+4. **Anti-drift finanziario**: nessuna eval si paga senza sim canonica ITM
+   (ADR-018/023); tier funded primario MFFU Pro/Rapid + Topstep Standard +
+   FTMO (dossier C §consigli). Il cap leva 4× della BL-742 è scelta locale
+   conservativa dello sprint (sotto DLL 5% / trailing 4%), NON soglia ADR.
+5. **Prereg invariato**: parametri frozen dalla letteratura PRIMA del run;
+   soglie gauntlet identiche a Sprint 1/2; risultati negativi committati.

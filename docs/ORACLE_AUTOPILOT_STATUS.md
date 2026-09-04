@@ -1,8 +1,11 @@
 # Oracle Autopilot — Execution Status
 
-> Checkpoint operativo. Aggiornato: 2026-08-21 (working tree committato;
-> BL-OPC-11/12/6, BL-040, BL-095, BL-060, BL-616, BL-024/BL-201 eseguiti
-> con verdetto REJECTED; BL-615 in corso; baseline test fresca).
+> Checkpoint operativo. Aggiornato: 2026-09-04 (research Renaissance-parity
+> committata in docs/reports/renaissance-parity-2026-09-04/ + ROADMAP §15 +
+> sprint BL-739..743 pianificato; matrice gate invariata). Precedente
+> aggiornamento 2026-08-21 (BL-OPC-11/12/6, BL-040, BL-095, BL-060, BL-616,
+> BL-024/BL-201 eseguiti con verdetto REJECTED; BL-615 in corso; baseline
+> test fresca).
 > La gerarchia documentale è: ROADMAP (perché) → STATUS (cosa) → BACKLOG
 > (come) → ADR (decisioni) → report (evidenza). Solo STATUS riporta la
 > matrice gate/stato.
@@ -188,6 +191,13 @@ Vedi `BACKLOG.md` per le task atomiche. Ordine proposto (allineato 2026-08-21):
 7. **P2**: BL-052 — intraday futures dataset (requisito canali 5-30m)
 8. **P3**: BL-OPC-8/9/10 — validazioni AI swarm bear, VRP regime filter,
    Lane B aggressiva combinata; G7 readiness dopo G5 e G6 verdi
+9. **P1 (2026-09-04)**: **Sprint Renaissance-parity BL-739..743** —
+   qualificazione 3 famiglie ortogonali non-tecniche (overnight drift,
+   FX carry policy-rate, cross-pillar conditioning) sotto gauntlet
+   identico Sprint 1/2; integrazione portafoglio condizionata a GO
+   (BL-742); direttive ROADMAP §15. G5 resta REJECTED finché le nuove
+   gambe non passano e il portfolio v2 non viene ri-qualificato. Piano:
+   `docs/plans/2026-09-04-renaissance-parity-sprint.md`.
 
 ## 9. Decisioni chiave recenti (link agli ADR)
 

@@ -776,6 +776,60 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
   girare il paper stack leggendo solo il runbook. ✅ 2026-09-02:
   `docs/runbooks/paper-trading.md` + ROADMAP §13 step 4/6 aggiornati.
 
+## Sprint Renaissance-parity — BL-739..743 (2026-09-04)
+
+> Fonte: ricerca fonti primarie `docs/reports/renaissance-parity-2026-09-04/`
+> (dossier A Medallion ground-truth, B famiglie replicabili, C envelope
+> prop-firm + SYNTHESIS). Piano esecutivo task-by-task, TDD, validato da
+> review architetto+critico:
+> `docs/plans/2026-09-04-renaissance-parity-sprint.md`.
+> Direttive: ROADMAP §15. Registrazione task MCP: TASK-017..021.
+
+- [ ] **BL-739** P1 — Overnight drift sprint (EF-004@10-seasonal): 2 gambe
+  frozen (hold 20:00→13:30 UTC + window 07:00-08:00 UTC, LPS 2019 / BLW
+  2023) su XAUUSD/XAGUSD/FX majors 1h lake (ES 1h escluso: 14k barre <
+  min_bars), vol-scaled, costi 1.5 bps/turnover, walk-forward > 2022-12-31,
+  gates identici Sprint 1/2 (haircut Sharpe > 0, DSR > 0.5, ≥2 slot passanti
+  → GO). Include registrazione ipotesi nel registry (builder deterministico)
+  e transizione APPROVED/REJECTED con persist. Runner:
+  `scripts/run_overnight_drift_sprint.py` + test unit. Output:
+  `docs/reports/edge-factory/overnight-drift-sprint.{md,json}` (con event
+  study orario + limitazioni oneste: DST, swap/roll CFD non modellato).
+- [ ] **BL-740** P1 — FX carry policy-rate basket (EF-004@02-macro): 7 coppie
+  G10, segnale mensile ±1 = segno(tasso_A − tasso_B), tassi FRED PIT con
+  `CARRY_LAG_MONTHS=2` anti-lookahead, dollar-neutral vol-target 10%, costi
+  1.5 bps, walk-forward > 2022-12-31, tail-check 2020-03 e 2022-USD-rally
+  SEMPRE riportati. Gates identici. Runner:
+  `scripts/run_fx_carry_policy_rate.py` + test unit. Output:
+  `docs/reports/edge-factory/fx-carry-policy-rate.{md,json}` (con stima
+  informativa costo swap/roll CFD 0.5-2%/yr dichiarata).
+- [ ] **BL-741** P1 — Cross-pillar conditioning (EF-004@13-meta-synthesis):
+  veto non-direzionale su 3 gambe qualificate BL-736 (ES_1d ema 20/50, ES_1d
+  donchian 20, ETHUSDT_1h ema 20/50) con VIX-z (05-sentiment) e funding-z
+  (11-onchain), forma Sprint 2d `1 − clip(|z|,0,2)/2`, full_z=2 frozen,
+  NESSUNA grid search. Dichiara il precedente NEGATIVO Sprint 2d (funding-z):
+  se anche VIX-z è NEGATIVO la pista conditioning-lite si chiude. CPCV
+  (purgedcv) su baseline vs conditioned: HELPFUL richiede ΔSR ≥ +0.10,
+  turnover ≤ 2× baseline, sopravvivenza CPCV di entrambi, PBO riportato.
+  Runner: `scripts/run_pillar_conditioning_sprint.py` + test unit. Output:
+  `docs/reports/edge-factory/pillar-conditioning-sprint.{md,json}`.
+- [ ] **BL-742** P2 — Portfolio SR-max v2 (condizionato a GO): estende
+  `scripts/run_portfolio_sr_max.py` SOLO con famiglie GO di BL-739/740/741
+  (import, no copy-paste). Report v2 con ladder leva 1-4×, P(m≥5%),
+  correlazione media pre/post, riga "SR(N) post-integrazione vs 1.40
+  baseline". Cap leva 4× = scelta locale conservativa (NON ADR-023); nota
+  Channel B: promozione funded passa da `check_dual_channel` (100+ sessioni
+  paper, pass ≥0.60, consistency ≤0.35).
+- [ ] **BL-743** P2 — Docs canoniche: `scripts/set_registry_state.py` (CLI
+  generica `--hid --stato --motivo --ref` con persist, +3 test); ROADMAP §15
+  direttive Renaissance-parity (fatto in questa sessione); BACKLOG BL-739..743
+  (questa sezione); nota STATUS sprint senza cambio gate. Zero drift
+  finanziario/architetturale.
+
+**Kill criteria (pre-registrati)**: se NESSUNA famiglia passa → report onesto
+`sprint-3.md` NO-GO complessivo, famiglie REJECTED nel registry; non si
+costruisce nulla attorno a zero edge. Le finestre tail sono riportate SEMPRE.
+
 ## Knowledge Base — 13 domini (BL-KB-01..115, 2026-08-17)
 
 > 68 file in `docs/knowledge-base/` + audit critico. 98 items originali
