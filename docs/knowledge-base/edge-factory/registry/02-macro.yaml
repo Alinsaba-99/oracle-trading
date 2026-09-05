@@ -106,9 +106,23 @@ hypotheses:
   - NZDUSD
   timeframe:
   - 1M rebalance su griglia 1h
-  stato: da_amplificare
+  stato: REJECTED
   evidenza:
   - data: '2026-09-05T10:15:49.909955+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/02-macro/README.md
     ref: docs/knowledge-base/02-macro/README.md
+  - data: '2026-09-05T11:10:01.745589+00:00'
+    tipo: report
+    testo: 'da_amplificare → amplificata: BL-740: gambe policy-rate carry costruite
+      e documentate'
+    ref: docs/reports/edge-factory/fx-carry-policy-rate.md
+  - data: '2026-09-05T11:10:01.749438+00:00'
+    tipo: report
+    testo: 'amplificata → in_qualifica: BL-740: walk-forward qualification in corso'
+    ref: docs/reports/edge-factory/fx-carry-policy-rate.md
+  - data: '2026-09-05T11:10:01.753071+00:00'
+    tipo: report
+    testo: 'in_qualifica → REJECTED: BL-740 walk-forward > 2022-12-31: 0/7 coppie
+      passanti'
+    ref: docs/reports/edge-factory/fx-carry-policy-rate.md

@@ -1,0 +1,218 @@
+{
+  "generated": "2026-09-05T11:13:06.367922+00:00",
+  "framework": "BL-740 FX carry policy-rate basket \u2014 EF-004@02-macro (Lustig-Roussanov-Verdelhan 2011; Menkhoff et al 2012; PIT FRED with CARRY_LAG_MONTHS=2)",
+  "parameters": {
+    "rate_series": {
+      "USD": "FEDFUNDS",
+      "EUR": "ECBDFR",
+      "JPY": "IRSTCI01JPM156N",
+      "GBP": "IRSTCI01GBM156N",
+      "CHF": "IRSTCI01CHM156N",
+      "CAD": "IRSTCI01CAM156N",
+      "AUD": "IRSTCI01AUM156N",
+      "NZD": "IRSTCI01NZM156N"
+    },
+    "pairs": [
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCHF",
+      "USDCAD",
+      "AUDUSD",
+      "NZDUSD"
+    ],
+    "carry_lag_months": 2,
+    "test_split": "2022-12-31 00:00:00+00:00",
+    "cost_bps": 1.5,
+    "target_vol": 0.1,
+    "vol_window_hours": 720,
+    "min_bars": 50000,
+    "n_trials": 8,
+    "gates": {
+      "haircut_sharpe_min": 0.0,
+      "dsr_min": 0.5,
+      "min_passing_slots": 2
+    }
+  },
+  "data": {
+    "fred_unavailable": [
+      {
+        "currency": "USD",
+        "series_id": "FEDFUNDS"
+      },
+      {
+        "currency": "EUR",
+        "series_id": "ECBDFR"
+      },
+      {
+        "currency": "JPY",
+        "series_id": "IRSTCI01JPM156N"
+      },
+      {
+        "currency": "GBP",
+        "series_id": "IRSTCI01GBM156N"
+      },
+      {
+        "currency": "CHF",
+        "series_id": "IRSTCI01CHM156N"
+      },
+      {
+        "currency": "CAD",
+        "series_id": "IRSTCI01CAM156N"
+      },
+      {
+        "currency": "AUD",
+        "series_id": "IRSTCI01AUM156N"
+      },
+      {
+        "currency": "NZD",
+        "series_id": "IRSTCI01NZM156N"
+      }
+    ],
+    "missing_currencies": [
+      "AUD",
+      "CAD",
+      "CHF",
+      "EUR",
+      "GBP",
+      "JPY",
+      "NZD",
+      "USD"
+    ],
+    "excluded_pairs": [
+      "EURUSD",
+      "GBPUSD",
+      "USDJPY",
+      "USDCHF",
+      "USDCAD",
+      "AUDUSD",
+      "NZDUSD"
+    ],
+    "rates_shape": [
+      0,
+      0
+    ],
+    "lagged_shape": [
+      0,
+      0
+    ]
+  },
+  "results": [
+    {
+      "pair": "EURUSD",
+      "n_bars_total": 0,
+      "n_test_bars": 0,
+      "trades": 0,
+      "cost_drag": 0.0,
+      "sharpe": 0.0,
+      "haircut_sharpe": NaN,
+      "dsr": null,
+      "max_drawdown": 0.0,
+      "annual_return": 0.0,
+      "status": "EXCLUDED_NO_RATES"
+    },
+    {
+      "pair": "GBPUSD",
+      "n_bars_total": 0,
+      "n_test_bars": 0,
+      "trades": 0,
+      "cost_drag": 0.0,
+      "sharpe": 0.0,
+      "haircut_sharpe": NaN,
+      "dsr": null,
+      "max_drawdown": 0.0,
+      "annual_return": 0.0,
+      "status": "EXCLUDED_NO_RATES"
+    },
+    {
+      "pair": "USDJPY",
+      "n_bars_total": 0,
+      "n_test_bars": 0,
+      "trades": 0,
+      "cost_drag": 0.0,
+      "sharpe": 0.0,
+      "haircut_sharpe": NaN,
+      "dsr": null,
+      "max_drawdown": 0.0,
+      "annual_return": 0.0,
+      "status": "EXCLUDED_NO_RATES"
+    },
+    {
+      "pair": "USDCHF",
+      "n_bars_total": 0,
+      "n_test_bars": 0,
+      "trades": 0,
+      "cost_drag": 0.0,
+      "sharpe": 0.0,
+      "haircut_sharpe": NaN,
+      "dsr": null,
+      "max_drawdown": 0.0,
+      "annual_return": 0.0,
+      "status": "EXCLUDED_NO_RATES"
+    },
+    {
+      "pair": "USDCAD",
+      "n_bars_total": 0,
+      "n_test_bars": 0,
+      "trades": 0,
+      "cost_drag": 0.0,
+      "sharpe": 0.0,
+      "haircut_sharpe": NaN,
+      "dsr": null,
+      "max_drawdown": 0.0,
+      "annual_return": 0.0,
+      "status": "EXCLUDED_NO_RATES"
+    },
+    {
+      "pair": "AUDUSD",
+      "n_bars_total": 0,
+      "n_test_bars": 0,
+      "trades": 0,
+      "cost_drag": 0.0,
+      "sharpe": 0.0,
+      "haircut_sharpe": NaN,
+      "dsr": null,
+      "max_drawdown": 0.0,
+      "annual_return": 0.0,
+      "status": "EXCLUDED_NO_RATES"
+    },
+    {
+      "pair": "NZDUSD",
+      "n_bars_total": 0,
+      "n_test_bars": 0,
+      "trades": 0,
+      "cost_drag": 0.0,
+      "sharpe": 0.0,
+      "haircut_sharpe": NaN,
+      "dsr": null,
+      "max_drawdown": 0.0,
+      "annual_return": 0.0,
+      "status": "EXCLUDED_NO_RATES"
+    }
+  ],
+  "tail_checks": [
+    {
+      "window": "2020-03 COVID FX dislocation",
+      "start": "2020-03",
+      "end": "2020-04",
+      "basket_log_return": 0.0,
+      "n_pairs_in_basket": 0,
+      "per_pair_log_return": {}
+    },
+    {
+      "window": "2022 USD rally (Fed hikes + risk-off)",
+      "start": "2022-04",
+      "end": "2022-10",
+      "basket_log_return": 0.0,
+      "n_pairs_in_basket": 0,
+      "per_pair_log_return": {}
+    }
+  ],
+  "verdict": "NO_GO",
+  "passing_pairs": [],
+  "n_passing_pairs": 0,
+  "swap_roll_disclosure_pct_yr": [
+    0.5,
+    2.0
+  ]
+}

@@ -224,6 +224,7 @@ split-on-trailing-comma = false
 "scripts/monitor_prop_rules.py" = ["E501", "B904"]
 "scripts/run_factory_sprint1_qualification.py" = ["E402", "E501", "SIM105", "SIM108"]
 "scripts/run_overnight_drift_sprint.py" = ["E402", "E501", "SIM108"]
+"scripts/run_fx_carry_policy_rate.py" = ["E402", "E501"]
 "analytics/research/factory/alphalens_adapter.py" = ["E501"]
 "scripts/run_bl726_prereg_qualification.py" = ["E402", "E501"]
 "scripts/run_multi_strategy_ensemble.py" = ["E501"]
