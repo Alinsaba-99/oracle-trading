@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-05T16:08:42.785771+00:00",
+  "generated": "2026-09-05T16:42:18.444303+00:00",
   "framework": "BL-741 cross-pillar conditioning (EF-004@13-meta-synthesis)",
   "parameters": {
     "test_split": "2022-12-31 00:00:00+00:00",
@@ -52,38 +52,6 @@
       "survived_cpcv": true
     },
     {
-      "leg": "ES_1d_ema2050",
-      "pillar": "vix_z+funding_z",
-      "pillar_description": "VIX-z AND funding-z (combined, min scale)",
-      "variant": "baseline",
-      "sharpe": 0.5995360843690936,
-      "annual_return": 0.058238014875600985,
-      "max_drawdown": 0.11623490839979367,
-      "trades": 179,
-      "turnover": 162.36077200113223,
-      "cost_drag": 0.16236077200113225,
-      "n_test_bars": 925,
-      "cpcv_oos_median": 0.546778138781084,
-      "cpcv_oos_n_paths": 15,
-      "survived_cpcv": true
-    },
-    {
-      "leg": "ES_1d_ema2050",
-      "pillar": "vix_z+funding_z",
-      "pillar_description": "VIX-z AND funding-z (combined, min scale)",
-      "variant": "conditioned",
-      "sharpe": 0.5443578647991375,
-      "annual_return": 0.045532289597934206,
-      "max_drawdown": 0.11165171005899821,
-      "trades": 383,
-      "turnover": 221.8330345688127,
-      "cost_drag": 0.2218330345688127,
-      "n_test_bars": 925,
-      "cpcv_oos_median": 0.7338157112318227,
-      "cpcv_oos_n_paths": 15,
-      "survived_cpcv": true
-    },
-    {
       "leg": "ES_1d_donchian20",
       "pillar": "vix_z",
       "pillar_description": "VIX z-score (rolling 252d)",
@@ -103,38 +71,6 @@
       "leg": "ES_1d_donchian20",
       "pillar": "vix_z",
       "pillar_description": "VIX z-score (rolling 252d)",
-      "variant": "conditioned",
-      "sharpe": -0.17465048535662303,
-      "annual_return": -0.00611734104510242,
-      "max_drawdown": 0.0680738555639736,
-      "trades": 1175,
-      "turnover": 940.9700676498047,
-      "cost_drag": 0.9409700676498047,
-      "n_test_bars": 925,
-      "cpcv_oos_median": 0.025274850378607234,
-      "cpcv_oos_n_paths": 15,
-      "survived_cpcv": true
-    },
-    {
-      "leg": "ES_1d_donchian20",
-      "pillar": "vix_z+funding_z",
-      "pillar_description": "VIX-z AND funding-z (combined, min scale)",
-      "variant": "baseline",
-      "sharpe": -0.25178948032768245,
-      "annual_return": -0.008726979053077732,
-      "max_drawdown": 0.07773830291932038,
-      "trades": 1216,
-      "turnover": 967.4928177154181,
-      "cost_drag": 0.9674928177154181,
-      "n_test_bars": 925,
-      "cpcv_oos_median": -0.02735668311824829,
-      "cpcv_oos_n_paths": 15,
-      "survived_cpcv": false
-    },
-    {
-      "leg": "ES_1d_donchian20",
-      "pillar": "vix_z+funding_z",
-      "pillar_description": "VIX-z AND funding-z (combined, min scale)",
       "variant": "conditioned",
       "sharpe": -0.17465048535662303,
       "annual_return": -0.00611734104510242,
@@ -214,7 +150,7 @@
     {
       "leg": "ETHUSDT_1h_ema2050",
       "pillar": "vix_z+funding_z",
-      "pillar_description": "VIX-z AND funding-z (combined, min scale)",
+      "pillar_description": "VIX-z AND funding-z (combined, min scale) \u2014 ETH-only",
       "variant": "baseline",
       "sharpe": 0.4674063103836212,
       "annual_return": 0.08347740230001444,
@@ -230,7 +166,7 @@
     {
       "leg": "ETHUSDT_1h_ema2050",
       "pillar": "vix_z+funding_z",
-      "pillar_description": "VIX-z AND funding-z (combined, min scale)",
+      "pillar_description": "VIX-z AND funding-z (combined, min scale) \u2014 ETH-only",
       "variant": "conditioned",
       "sharpe": 0.6329849520907287,
       "annual_return": 0.0871687988491634,
@@ -246,11 +182,11 @@
   ],
   "verdicts": {
     "vix_z": "NEUTRAL",
-    "vix_z+funding_z": "NEUTRAL",
-    "funding_z": "NEUTRAL"
+    "funding_z": "NEUTRAL",
+    "vix_z+funding_z": "HELPFUL"
   },
   "overall": "REJECTED",
-  "n_pillars_negative": 3,
+  "n_pillars_negative": 2,
   "n_pillars_total": 3,
   "precedent_sprint_2d": "funding-z NEGATIVO (ETHUSDT SR +0.51\u2192+0.46; BTCUSDT -0.02\u2192-0.52)"
 }

@@ -2,8 +2,13 @@
 """BL-741 — Cross-pillar conditioning (EF-004@13-meta-synthesis).
 
 Prereg: ipotesi EF-004 nel registry 13-meta-synthesis. Gambe baseline FROZEN
-dai report BL-736 (ES_1d ema(20/50) vol-target 10%, ES_1d donchian(20),
-ETHUSDT_1h ema(20/50) vol-target 20%). Pilastri di condizionamento: VIX
+nel CONCETTO da BL-736 (ES_1d ema(20/50) vol-target 10%, ES_1d donchian(20),
+ETHUSDT_1h ema(20/50) vol-target 20%) — l'implementazione signal segue però
+lo stile Sprint 2d (long/short per ema crossover, donchian breakout long-only
+sulle ES daily), NON letteralmente identica a BL-736 EmaTrend/DonchianBreakout
+long-only. ΔSR resta un confronto valido perché baseline e conditioned usano
+lo stesso signal; il delta riflette l'effetto del conditioning, non la divergenza
+di implementazione. Pilastri di condizionamento: VIX z-score (rolling 252d,
 z-score (rolling 252d, sorgente lane_d_vrp_backtest) e funding-z (BL-718).
 Forma: pos *= 1 - clip(|z|,0,2)/2 quando il pilastro è CONTRO la posizione
 (identica a Sprint 2d, full_z=2 frozen; NESSUNA ricerca di soglia).
@@ -208,7 +213,7 @@ def load_es_1d_close(es_path: Path) -> pd.Series:
     """
     df = pd.read_parquet(es_path)
     cols = {c.lower(): c for c in df.columns}
-    close_col = cols.get("close") or cols.get("close")
+    close_col = cols.get("close")
     if close_col is None:
         raise KeyError(f"no close column in {es_path.name}: {df.columns.tolist()}")
     ts_col = cols.get("timestamp") or cols.get("date")
@@ -664,7 +669,7 @@ def _run_all(
         ),
         (
             "vix_z+funding_z",
-            "VIX-z AND funding-z (combined, min scale)",
+            "VIX-z AND funding-z (combined, min scale) — ETH-only",
             {"ES_1d_ema2050": None, "ES_1d_donchian20": None, "ETHUSDT_1h_ema2050": vix_z_eth},
         ),
     ]
@@ -678,10 +683,14 @@ def _run_all(
             if z is None and pillar_key != "vix_z+funding_z":
                 continue  # skip funding-z on ES legs
             if pillar_key == "vix_z+funding_z":
+                # combined: solo ETHUSDT (leg_to_z['ES_*']=None).  Skip ES legs —
+                # la pillastro combined richiede funding-z, inapplicabile su ES
+                # futures; produrre righe con solo VIX-z sarebbe ridondante del
+                # branch VIX-z puro.
+                if leg_name != "ETHUSDT_1h_ema2050":
+                    continue
                 # combined: pass BOTH pillars via combine_scales (handled inline)
-                z_for_leg = (
-                    [vix_z_eth, eth_funding_z] if leg_name == "ETHUSDT_1h_ema2050" else [vix_z_es]
-                )
+                z_for_leg = [vix_z_eth, eth_funding_z]
                 base, cond = _run_combined(
                     leg_name=leg_name, close=close, sig=sig, z_list=z_for_leg, **params
                 )
@@ -818,13 +827,17 @@ def _render_markdown(
         "",
         f"**Generated**: {datetime.now(UTC).isoformat()}",
         "",
-        "Prereg: ipotesi EF-004 nel registry 13-meta-synthesis.  Gambe baseline FROZEN da "
-        "BL-736 (ES_1d ema(20/50), ES_1d donchian(20), ETHUSDT_1h ema(20/50)).  Pilastri: "
+        "Prereg: ipotesi EF-004 nel registry 13-meta-synthesis.  Gambe baseline FROZEN nel "
+        "CONCETTO da BL-736 (ES_1d ema(20/50) vol-target 10%, ES_1d donchian(20), ETHUSDT_1h "
+        "ema(20/50) vol-target 20%) — implementazione signal segue stile Sprint 2d "
+        "(long/short su ema crossover, donchian breakout long-only sulle ES daily), NON "
+        "letteralmente identica a BL-736 EmaTrend/DonchianBreakout long-only.  Pilastri: "
         "VIX z-score (rolling 252d, sorgente `analytics/strategy/lane_d_vrp_backtest.py:210` "
         "via curated `^VIX_1d.parquet`) + funding-z (BL-718).  Forma: "
         "`pos *= 1 - clip(|z|, 0, 2)/2` SOLO quando `sign(z) == sign(pos)` "
         "(crowding against, identica Sprint 2d).  `full_z = 2` FROZEN — nessuna ricerca "
-        "di soglia.",
+        "di soglia.  Baseline ES qui +0.60/−0.25 vs BL-736 +1.13/+1.08: il ΔSR resta "
+        "valido (confronto baseline-vs-conditioned stesso signal).",
         "",
         "**PRECEDENTE NEGATIVO (Sprint 2d, 2026-09-03)**: stesso meccanismo di veto con "
         "funding-z su ETH/BTC 1h trend legs è risultato NEGATIVO (ETHUSDT SR +0.51→+0.46, "
@@ -878,11 +891,21 @@ def _render_markdown(
         "vix_z": "ΔSR ≥ +0.10 senza turnover > 2× baseline E entrambi sopravvivono CPCV → HELPFUL; "
         "se tutti ΔSR < -0.10 → HARMFUL; altrimenti NEUTRAL.",
         "funding_z": "ETH-only (no funding su futures ES).  Stessa regola di VIX-z.",
-        "vix_z+funding_z": "Combinato su ETHUSDT (min delle scale).  Regola identica.",
+        "vix_z+funding_z": "Combinato ETHUSDT-only (min delle scale); ES skip per design.  "
+        "Regola identica.",
     }
     for pillar_key, verdict in sorted(verdicts.items()):
         rationale = pillar_rationale.get(pillar_key, "—")
         lines.append(f"| {pillar_key} | **{verdict}** | {rationale} |")
+    lines.append("")
+    lines.append(
+        "**Interpretazione di NEGATIVO**: qui usato come 'non HELPFUL' (NEUTRAL ∪ HARMFUL); "
+        "NEUTRAL significa nessun valore di conditioning — la pista è chiusa sotto questa "
+        "interpretazione.  Nota: ETHUSDT_1h vix-z ΔSR +0.14 resta positivo ma minoritario "
+        "(1/3 gambe HELPFUL, non maggioranza stretta); la pista è chiusa non perché la gamba "
+        "ETH non mostri segnale, ma perché il verdetto richiede maggioranza su TUTTE le gambe "
+        "BL-736 (ES + ETH)."
+    )
 
     # Per-pillar sprint-2d precedent
     lines += [
@@ -945,11 +968,18 @@ def _render_markdown(
         "- **VIX-z è una serie daily ffill-ata su barre 1h ETHUSDT**: stesso valore per tutte "
         "le 24 barre dello stesso giorno; il conditioning è effettivamente daily-frequency "
         "anche su leg 1h (accettabile: VIX è un segnale macro-regime, non intraday).",
+        "- **Signal ES divergenti da BL-736 letterale**: ema crossover implementato long/short "
+        "in stile Sprint 2d (non long-only come BL-736 EmaTrend); donchian breakout long-only "
+        "sulle ES daily.  Baseline numeriche ES qui +0.60/−0.25 vs BL-736 +1.13/+1.08 (delta "
+        "di implementazione signal, non di conditioning).  ΔSR resta un confronto valido "
+        "perché baseline e conditioned usano lo stesso signal — il delta riflette l'effetto "
+        "del conditioning, non la divergenza di implementazione.",
         "- **Funding-z solo su ETHUSDT 1h**: futures ES non hanno perpetual funding; per "
         "gli ES legs la pista funding-z è `INSUFFICIENT_DATA` per design.",
-        "- **Combined pillar (VIX-z × funding-z)**: prende min(scale_vix, scale_funding) "
-        "— entrambi i pilastri devono acconsentire; questa è l'unica scelta concettualmente "
-        "coerente con la regola 'crowding against' indipendente per pilastro.",
+        "- **Combined pillar (VIX-z × funding-z) — ETHUSDT-only**: prende min(scale_vix, "
+        "scale_funding) — entrambi i pilastri devono acconsentire.  Le gambe ES sono "
+        "skippate per design (funding-z non applicabile a futures ES); produrre righe "
+        "combined su ES con solo VIX-z sarebbe ridondante del branch VIX-z puro.",
         "- **CPCV libreria `purgedcv`** (già installata): usata via "
         "`analytics.qualification.dsr.combinatorial_purged_cv` e "
         "`analytics.qualification.lane_b.cpcv_oos_sharpes`.  OOS median richiede ≥24 bars "

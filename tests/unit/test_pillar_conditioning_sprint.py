@@ -156,19 +156,65 @@ def test_fuse_vix_z_onto_grid_applies_pit_shift() -> None:
 
     This is the function-level guard against the lookahead bug the Task 3
     review caught.
+
+    Setup: 10-day series with non-zero baseline variance so the rolling z
+    is well-defined everywhere; a +40 spike on day 5 is the trigger.
+    window=3, min_periods=3.
+
+    Critical invariant: AFTER shift(1), bar T must see z[T-1] (the z
+    computed over the rolling window ENDING at T-1).  The spike at day 5
+    is therefore reflected in z[5] (computed over bars [3,4,5]) and reaches
+    the consumer at z_pit[6].
+
+    Strict assertions: no `pd.isna` escape hatches — the test must prove
+    the PIT semantic by checking numerical values, not by hiding behind NaN.
     """
-    idx = _daily_index(5)
-    vix = pd.Series([10.0, 50.0, 10.0, 10.0, 10.0], index=_daily_index(5), name="vix_close")
-    # Use a tiny window so the z computation only depends on the values we set.
+    idx = _daily_index(10)
+    # Baseline with natural variance so the rolling std > 0 everywhere.
+    vix = pd.Series(
+        [10.0, 12.0, 11.0, 13.0, 10.0, 50.0, 11.0, 12.0, 10.0, 13.0],
+        index=_daily_index(10),
+        name="vix_close",
+    )
     z = fuse_vix_z_onto_grid(vix, idx, window=3, min_periods=3, pit_shift=1)
-    # At bar T we see the z computed from vix[..T-1].  Crucially, the
-    # spike on day 1 (vix[1]=50) must NOT appear on bar 1 — it should
-    # first influence bar 2.
-    assert z.iloc[0] != z.iloc[1] or pd.isna(z.iloc[1])  # bar 0/1 are the first two of window
-    # The spike day-1 z must be exposed at bar 2 (shift(1)).
-    # bar 2's z reflects vix[..1], which has the spike — so |z[2]| should
-    # be substantially larger than |z[3]|.
-    assert abs(z.iloc[2]) > abs(z.iloc[3]) or pd.isna(z.iloc[2])
+    # Bar 0..2: NaN (rolling min_periods=3 means z[0..1]=NaN; after shift(1)
+    # z_pit[2]=NaN too).
+    for i in range(0, 3):
+        assert pd.isna(z.iloc[i]), f"bar {i} should be NaN pre-warm-up, got {z.iloc[i]}"
+    # Bar 3..4: rolling window filled, pre-spike baseline variance.
+    # |z_pit[i]| is bounded by the baseline variability (std ≈ 1).
+    for i in range(3, 5):
+        assert abs(float(z.iloc[i])) < 2.0, (
+            f"bar {i} |z| should be small pre-spike, got {z.iloc[i]}"
+        )
+    # Bar 5: z_pit[5] = z[4]; rolling [2,3,4] = 11,13,10 — pre-spike window.
+    # |z_pit[5]| must still be small (the spike at day 5 has NOT yet leaked
+    # into this bar's view via shift).  This is the key PIT assertion:
+    # a spike at time T is NEVER visible at bar T, only at bar T+1.
+    bar5 = float(z.iloc[5])
+    assert abs(bar5) < 2.0, f"bar 5 must NOT yet reflect the spike at day 5 (got {bar5})"
+    # Bar 6: z_pit[6] = z[5]; rolling [3,4,5] = 13,10,50 — the spike is now
+    # inside the window.  z[5] is large and positive (vix[5]=50 dominates).
+    bar6 = float(z.iloc[6])
+    assert bar6 > 1.0, f"bar 6 should reflect the spike positively (got {bar6})"
+    # The spike must be STRONGER at bar 6 than at bar 5 (where the spike
+    # is NOT yet visible).
+    assert bar6 > bar5
+    # Bar 7: z_pit[7] = z[6]; rolling [4,5,6] = 10,50,11 — spike still in
+    # window but vix[5]=50 sits at the centre; |z| still large.
+    bar7 = float(z.iloc[7])
+    assert abs(bar7) > 0.5
+    # Bar 8: z_pit[8] = z[7]; rolling [5,6,7] = 50,11,12 — spike at left
+    # edge; vix[5]=50 dominates the mean (24.33) so vix[7]=12 sits BELOW
+    # the mean and z is large negative.  The spike's "presence" in the
+    # window is what matters: |z_pit[8]| must remain elevated vs the
+    # baseline-noise bars (3, 4).
+    bar8 = float(z.iloc[8])
+    assert abs(bar8) > abs(float(z.iloc[3]))
+    # Bar 9: z_pit[9] = z[8]; rolling [6,7,8] = 11,12,10 — spike has
+    # fallen out of the window; |z| back near baseline (small).
+    bar9 = float(z.iloc[9])
+    assert abs(bar9) < 2.0
 
 
 def test_fuse_vix_z_onto_grid_handles_hourly_target() -> None:
