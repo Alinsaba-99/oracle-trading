@@ -1,6 +1,6 @@
 # BL-740 — FX carry policy-rate basket (EF-004@02-macro)
 
-**Generated**: 2026-09-05T11:13:06.367922+00:00
+**Generated**: 2026-09-05T11:23:21.725674+00:00
 
 **Prereg**: basket G10 FROZEN dalla letteratura (LRV 2011 RFS, Menkhoff 2012 JF).
 Mapping 7 pairs × 8 currencies; CARRY_LAG_MONTHS=2.
@@ -10,7 +10,7 @@ Walk-forward test > 2022-12-31. Costs 1.5 bps/turnover, vol-target 10%, min bars
 
 ## Dati
 
-**FRED non disponibile** (FRED_API_KEY assente o network offline): le seguenti coppie sono ESCLUSE e LISTATE qui — nessun silent skip:
+**FRED non disponibile** (FRED_API_KEY / ORACLE_DATA_FRED_KEY assenti): le seguenti coppie sono ESCLUSE e LISTATE qui — nessun silent skip:
 
 | currency | series_id |
 |---|---|
@@ -65,6 +65,7 @@ Il backtest usa spot 1h (no swap). Su broker CFD/OTC il carry overnight per XAU/
 - **Dollar-neutrality by construction**: ogni coppia ha USD su un lato ma i segni sono indipendenti → l'esposizione USD netta può essere +1 o -1 in qualsiasi mese (3 long-USD, 4 short-USD); il basket non è USD-cash-neutral in senso stretto — è *pairwise neutral* contro USD. Questa è la convenzione LRV/Menkhoff e va riportata onestamente.
 - **N_trials=8** = 7 pairs + 1 cash-window sensitivity (frozen, prereg).
 - **Tail 2020-03 / 2022** sono finestre pre-registrate; se la basket le attraversa senza distruzione, è un punto positivo; se le distrugge, è il failure mode noto della letteratura (Menkhoff compensation).
+- **Env requirement**: il runner richiede una chiave FRED valida (32 char alfanumerica) in ``FRED_API_KEY`` (canonical, priorità alta) o ``ORACLE_DATA_FRED_KEY`` (nome del file .env del progetto, fallback). Per ottenere una chiave gratuita: https://fred.stlouisfed.org/docs/api/api_key.html . Senza chiave il runner degrada onestamente a verdict NO_GO con tutte le coppie ESCLUSE_NO_RATES (no crash, no silent skip).
 
 ## Verdetto
 

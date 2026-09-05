@@ -191,14 +191,32 @@ def carry_signal(rates: pd.DataFrame) -> pd.Series:
 # ---------------------------------------------------------------------------
 
 
+def _fred_key_present() -> bool:
+    """True if either FRED_API_KEY (canonical) or ORACLE_DATA_FRED_KEY
+    (.env name) is set to a non-empty value.  FRED_API_KEY wins so an
+    operator can override the .env file from the shell.
+    """
+    return bool(
+        os.environ.get("FRED_API_KEY") or os.environ.get("ORACLE_DATA_FRED_KEY", "")
+    )
+
+
 def _try_fetch_one_series(series_id: str, start: str, end: str) -> pd.DataFrame | None:
     """Synchronous wrapper around FREDClient.fetch_series.
 
     Returns a pandas DataFrame indexed by period start with a single
     ``value`` column.  Returns ``None`` on any failure (no key, network
     error, series missing) — the caller lists the series in the report.
+
+    The runner accepts either ``FRED_API_KEY`` (canonical, what
+    ``analytics.macro.fred.FREDClient`` reads) or ``ORACLE_DATA_FRED_KEY``
+    (the project-specific name in the shipped ``.env``).  ``FRED_API_KEY``
+    wins when both are set so an operator can override the env file from
+    the shell.
     """
-    api_key = os.environ.get("FRED_API_KEY", "")
+    api_key = os.environ.get("FRED_API_KEY") or os.environ.get(
+        "ORACLE_DATA_FRED_KEY", ""
+    )
     if not api_key:
         return None
     try:
@@ -239,8 +257,9 @@ def fetch_rates_table(
     ``(currency, series_id)`` tuples that could not be fetched.
 
     No silent skip: every missing series is in the returned list and
-    surfaces in the report.  If FRED_API_KEY is unset or the network is
-    down, every currency is reported as unavailable.
+    surfaces in the report.  If neither ``FRED_API_KEY`` nor
+    ``ORACLE_DATA_FRED_KEY`` is set (or the network is down), every
+    currency is reported as unavailable.
     """
     end_eff = end or datetime.now(UTC).strftime("%Y-%m-%d")
     rates: dict[str, pd.Series] = {}
@@ -477,7 +496,7 @@ def main() -> int:
         idx = pd.PeriodIndex(blob["index"], freq="M")
         raw = pd.DataFrame({k: pd.Series(v, index=idx) for k, v in blob["rates"].items()})
         unavailable: list[tuple[str, str]] = []
-    elif args.offline or not os.environ.get("FRED_API_KEY"):
+    elif args.offline or not _fred_key_present():
         # Honest about no FRED access: list every currency as unavailable.
         unavailable = list(RATE_SERIES.items())
         raw = pd.DataFrame()
@@ -649,8 +668,13 @@ def main() -> int:
         "",
     ]
     if unavailable:
+        key_status = (
+            "FRED_API_KEY / ORACLE_DATA_FRED_KEY assenti"
+            if not _fred_key_present()
+            else "FRED_API_KEY / ORACLE_DATA_FRED_KEY non valide o network offline"
+        )
         lines += [
-            "**FRED non disponibile** (FRED_API_KEY assente o network offline): "
+            f"**FRED non disponibile** ({key_status}): "
             "le seguenti coppie sono ESCLUSE e LISTATE qui — nessun silent skip:",
             "",
             "| currency | series_id |",
@@ -739,6 +763,7 @@ def main() -> int:
         "- **Dollar-neutrality by construction**: ogni coppia ha USD su un lato ma i segni sono indipendenti → l'esposizione USD netta può essere +1 o -1 in qualsiasi mese (3 long-USD, 4 short-USD); il basket non è USD-cash-neutral in senso stretto — è *pairwise neutral* contro USD. Questa è la convenzione LRV/Menkhoff e va riportata onestamente.",
         "- **N_trials=8** = 7 pairs + 1 cash-window sensitivity (frozen, prereg).",
         "- **Tail 2020-03 / 2022** sono finestre pre-registrate; se la basket le attraversa senza distruzione, è un punto positivo; se le distrugge, è il failure mode noto della letteratura (Menkhoff compensation).",
+        "- **Env requirement**: il runner richiede una chiave FRED valida (32 char alfanumerica) in ``FRED_API_KEY`` (canonical, priorità alta) o ``ORACLE_DATA_FRED_KEY`` (nome del file .env del progetto, fallback). Per ottenere una chiave gratuita: https://fred.stlouisfed.org/docs/api/api_key.html . Senza chiave il runner degrada onestamente a verdict NO_GO con tutte le coppie ESCLUSE_NO_RATES (no crash, no silent skip).",
         "",
         "## Verdetto",
         "",
