@@ -105,9 +105,23 @@ hypotheses:
   timeframe:
   - 1d (ES)
   - 1h (crypto)
-  stato: da_amplificare
+  stato: REJECTED
   evidenza:
   - data: '2026-09-05T10:15:49.910302+00:00'
     tipo: miner
     testo: estratta da docs/knowledge-base/13-meta-synthesis/README.md
     ref: docs/knowledge-base/13-meta-synthesis/README.md
+  - data: '2026-09-05T16:08:42.958451+00:00'
+    tipo: report
+    testo: 'da_amplificare → amplificata: BL-741: pilastri VIX-z + funding-z costruiti
+      e documentati'
+    ref: docs/reports/edge-factory/pillar-conditioning-sprint.md
+  - data: '2026-09-05T16:08:42.969028+00:00'
+    tipo: report
+    testo: 'amplificata → in_qualifica: BL-741: walk-forward qualification in corso'
+    ref: docs/reports/edge-factory/pillar-conditioning-sprint.md
+  - data: '2026-09-05T16:08:42.978122+00:00'
+    tipo: report
+    testo: 'in_qualifica → REJECTED: BL-741 walk-forward > 2022-12-31: 3/3 pilastri
+      NEGATIVI → pista conditioning-lite CHUSA (morta_per_evidenza)'
+    ref: docs/reports/edge-factory/pillar-conditioning-sprint.md
