@@ -1,6 +1,6 @@
 # BL-739 — Overnight drift sprint (EF-004@10-seasonal)
 
-**Generated**: 2026-09-05T10:41:56.200667+00:00
+**Generated**: 2026-09-05T10:52:51.908057+00:00
 
 Legs (frozen, prereg):
 1. `overnight_hold_close_to_open` — long 20:00→13:00 UTC ogni giorno, flat 13:00-20:00 (analogo close→open LPS 2019)
@@ -15,16 +15,16 @@ ES_1h escluso dalle gambe (14244 barre nel lake, sotto MIN_BARS); event study or
 
 | leg | asset | SR | haircut SR | DSR | MaxDD | ann ret | trades | cost drag | bars (tot / test) | status |
 |---|---|---|---|---|---|---|---|---|---|---|
-| overnight_hold_close_to_open | XAUUSD | +1.02 | -0.94 | +0.94 | 8.9% | +9.0% | 104233 | 1.0209 | 140374 / 21662 | OK |
-| window_0203_hold | XAUUSD | -2.95 | -4.90 | +0.00 | 11.8% | -4.8% | 12034 | 1.0128 | 140374 / 21662 | OK |
-| overnight_hold_close_to_open | XAGUSD | +0.23 | -1.76 | +0.64 | 8.3% | +1.7% | 102054 | 0.4775 | 138491 / 21087 | OK |
-| window_0203_hold | XAGUSD | -1.46 | -3.43 | +0.01 | 6.3% | -2.4% | 11994 | 0.4748 | 138491 / 21087 | OK |
-| overnight_hold_close_to_open | EURUSD | -1.88 | -3.79 | +0.00 | 36.3% | -15.4% | 107590 | 1.9869 | 145500 / 22714 | OK |
-| window_0203_hold | EURUSD | -6.88 | -8.74 | +0.00 | 31.9% | -13.7% | 12124 | 1.9770 | 145500 / 22714 | OK |
-| overnight_hold_close_to_open | GBPUSD | -2.44 | -4.35 | +0.00 | 43.4% | -19.3% | 108225 | 1.9071 | 145613 / 22830 | OK |
-| window_0203_hold | GBPUSD | -4.96 | -6.86 | +0.00 | 25.5% | -10.6% | 12132 | 1.8957 | 145613 / 22830 | OK |
-| overnight_hold_close_to_open | USDJPY | -1.56 | -3.43 | +0.00 | 34.1% | -13.9% | 107996 | 1.8583 | 145614 / 22832 | OK |
-| window_0203_hold | USDJPY | -4.98 | -6.91 | +0.00 | 22.1% | -9.1% | 12134 | 1.8467 | 145614 / 22832 | OK |
+| overnight_hold_close_to_open | XAUUSD | +1.41 | -0.55 | +0.99 | 7.5% | +12.0% | 104234 | 0.1540 | 140374 / 21662 | OK |
+| window_0203_hold | XAUUSD | -3.00 | -4.89 | +0.00 | 13.4% | -5.7% | 12034 | 0.1532 | 140374 / 21662 | OK |
+| overnight_hold_close_to_open | XAGUSD | +0.11 | -1.88 | +0.56 | 9.9% | +0.5% | 102055 | 0.0761 | 138491 / 21087 | OK |
+| window_0203_hold | XAGUSD | -0.96 | -2.93 | +0.06 | 5.9% | -1.8% | 11994 | 0.0757 | 138491 / 21087 | OK |
+| overnight_hold_close_to_open | EURUSD | -1.86 | -3.77 | +0.00 | 34.7% | -14.4% | 107591 | 0.3629 | 145500 / 22714 | OK |
+| window_0203_hold | EURUSD | -5.36 | -7.24 | +0.00 | 27.4% | -11.6% | 12124 | 0.3612 | 145500 / 22714 | OK |
+| overnight_hold_close_to_open | GBPUSD | -2.25 | -4.16 | +0.00 | 39.6% | -17.0% | 108226 | 0.3383 | 145613 / 22830 | OK |
+| window_0203_hold | GBPUSD | -5.16 | -7.03 | +0.00 | 27.3% | -11.5% | 12132 | 0.3368 | 145613 / 22830 | OK |
+| overnight_hold_close_to_open | USDJPY | -1.70 | -3.57 | +0.00 | 34.5% | -14.6% | 107997 | 0.2801 | 145614 / 22832 | OK |
+| window_0203_hold | USDJPY | -4.82 | -6.61 | +0.00 | 24.7% | -10.1% | 12134 | 0.2786 | 145614 / 22832 | OK |
 
 ## Event study orario (rendimento medio per ora UTC)
 

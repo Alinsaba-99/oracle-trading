@@ -3,8 +3,9 @@
 
 Prereg: ipotesi EF-004 nel registry 10-seasonal; gambe FROZEN dalla
 letteratura (Lou-Polk-Skouras 2019; Boyarchenko-Larsen-Whelan 2023):
-1. overnight_hold_close_to_open — long 20:00->13:30 UTC ogni giorno,
-   flat nel cash session (analogo close->open LPS).
+1. overnight_hold_close_to_open — long 20:00->13:00 UTC ogni giorno
+   (escluso 13:00), flat nel cash session 13:00-20:00 (analogo
+   close->open LPS).
 2. window_0203_hold — long solo 07:00-08:00 UTC (02:00-03:00 ET, BLW).
 Più event study: rendimento medio per ora UTC (evidenza, non traded).
 Limitazione dichiarata: finestre UTC fisse, drift DST +-1h.
@@ -82,9 +83,10 @@ def overnight_leg(close: pd.Series, hour_lo: int = 20, hour_hi: int = 13) -> pd.
 
     Returns a bar-aligned position series (not strategy returns).  Position
     = +1 inside the overnight session [hour_lo, hour_hi) wrapping midnight,
-    0 in the cash session.  Causal (shifted 1 bar) so the close at the
-    decision bar is not used to predict its own return — same convention
-    as BL-738 :func:`tsmom_leg`.
+    0 in the cash session.  For default args (20, 13) this means long
+    20:00->13:00 UTC every day (13:00 excluded, cash session is
+    13:00-20:00 UTC).  No causal shift here — the single bar shift
+    lives in :func:`_strategy_returns` (BL-738 convention).
     """
     pos = pd.Series(0.0, index=close.index)
     pos[_session_mask(close.index, hour_lo, hour_hi)] = 1.0
@@ -118,13 +120,15 @@ def _apply_costs(rets: pd.Series, cost_bps: float) -> float:
 
 def _strategy_returns(
     pos: pd.Series, close: pd.Series, cost_bps: float
-) -> tuple[pd.Series, float, int]:
+) -> tuple[pd.Series, pd.Series, int]:
     """Build net strategy returns with per-bar turnover costs.
 
-    Returns (strat, total_cost, n_trades).  Position is shifted 1 bar
-    (causal: today's signal drives tomorrow's return).  Costs are charged
-    on |Δpos| × cost_bps/10000 each bar — i.e. *every* bar of position
-    change incurs the spread; per-bar holding is free (FX convention).
+    Returns (strat, cost_rate, n_trades_full).  Position is shifted 1 bar
+    (causal: today's signal drives tomorrow's return — BL-738 convention).
+    Costs are charged on |Δpos| × cost_bps/10000 each bar — i.e. *every*
+    bar of position change incurs the spread; per-bar holding is free
+    (FX convention).  The caller slices ``cost_rate`` to the test window
+    before summing to compute cost_drag on the *evaluated* period only.
     """
     log_ret = np.log(close).diff()
     strat = pos.shift(1) * log_ret
@@ -132,7 +136,7 @@ def _strategy_returns(
     cost_rate = turnover * (cost_bps / 10_000.0)
     strat_net = (strat.fillna(0.0) - cost_rate).fillna(0.0)
     n_trades = int((turnover > 0).sum())
-    return strat_net, float(cost_rate.sum()), n_trades
+    return strat_net, cost_rate, n_trades
 
 
 def load_1h(lake_root: Path, symbol: str, min_bars: int = MIN_BARS) -> pd.Series | None:
@@ -176,8 +180,12 @@ class LegResult:
 def _evaluate_leg(
     leg_name: str, asset: str, close: pd.Series, pos: pd.Series, cost_bps: float, n_trials: int
 ) -> LegResult:
-    strat, cost_total, trades = _strategy_returns(pos, close, cost_bps)
+    strat, cost_rate, trades = _strategy_returns(pos, close, cost_bps)
     test = strat[strat.index > TEST_SPLIT].dropna()
+    # Slice costs to the test window — the report table is for the walk-
+    # forward test split, not the full warm-up + test history.
+    cost_rate_test = cost_rate[cost_rate.index > TEST_SPLIT]
+    cost_total_test = float(cost_rate_test.sum())
     arr = test.to_numpy()
     if arr.size < 8:
         return LegResult(
@@ -186,7 +194,7 @@ def _evaluate_leg(
             n_bars_total=len(close),
             n_test_bars=len(test),
             trades=trades,
-            cost_drag=cost_total,
+            cost_drag=cost_total_test,
             sharpe=0.0,
             haircut_sharpe=float("nan"),
             dsr=None,
@@ -205,7 +213,7 @@ def _evaluate_leg(
         n_bars_total=len(close),
         n_test_bars=len(test),
         trades=trades,
-        cost_drag=cost_total,
+        cost_drag=cost_total_test,
         sharpe=float(sr) if np.isfinite(sr) else 0.0,
         haircut_sharpe=float(hs) if np.isfinite(hs) else float("nan"),
         dsr=float(dsr) if dsr is not None and np.isfinite(dsr) else None,
@@ -281,7 +289,9 @@ def main() -> int:
         asset_passes = False
         for leg_name, leg_fn in legs_to_run:
             pos_raw = leg_fn(close)
-            pos = (pos_raw * _vol_scalar(close)).shift(1).fillna(0.0)
+            # Single causal shift lives inside _strategy_returns (BL-738
+            # convention: today's signal drives tomorrow's return).
+            pos = (pos_raw * _vol_scalar(close)).fillna(0.0)
             res = _evaluate_leg(leg_name, asset, close, pos, cost_bps, n_trials=n_trials)
             results.append(res)
             if res.status == "OK":
