@@ -195,8 +195,18 @@ Vedi `BACKLOG.md` per le task atomiche. Ordine proposto (allineato 2026-08-21):
    qualificazione 3 famiglie ortogonali non-tecniche (overnight drift,
    FX carry policy-rate, cross-pillar conditioning) sotto gauntlet
    identico Sprint 1/2; integrazione portafoglio condizionata a GO
-   (BL-742); direttive ROADMAP §15. G5 resta REJECTED finché le nuove
-   gambe non passano e il portfolio v2 non viene ri-qualificato. Piano:
+   (BL-742); direttive ROADMAP §15. **Verdetti sprint (2026-09-04)**:
+   BL-739 NO_GO 0/5 asset (fa93a9e + 253df73, EF-004@10-seasonal
+   REJECTED); BL-740 NO_GO per mancanza chiave FRED
+   `ORACLE_DATA_FRED_KEY` — edge NON squalificato, fork EF-005 quando
+   arriva la chiave (54a9649 + abb7cd6 + a1b2a44, EF-004@02-macro
+   REJECTED); BL-741 VIX-z NEUTRAL → pista conditioning-lite CHIUSA
+   (4f0658e + f7a2a20, EF-004@13-meta-synthesis REJECTED); BL-742
+   NO-GO complessivo (602d2f9) — 0 famiglie qualificate, nessuna
+   estensione del portfolio. Nessun cambio gate: G5 resta REJECTED
+   finché portfolio v2 non passa (anche BL-OPC-12 resta REJECTED).
+   BL-743 chiuso 2026-09-05: CLI `scripts/set_registry_state.py` +
+   26 test unit + verifica ROADMAP §15 + backlog BL-744/745. Piano:
    `docs/plans/2026-09-04-renaissance-parity-sprint.md`.
 
 ## 9. Decisioni chiave recenti (link agli ADR)

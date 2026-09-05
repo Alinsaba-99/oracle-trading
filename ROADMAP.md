@@ -902,8 +902,6 @@ primo sprint → stop e rivalutazione onesta del canale.
 
 Fonte: ricerca a fonti primarie in
 `docs/reports/renaissance-parity-2026-09-04/` (dossier A/B/C + SYNTHESIS).
-Sprint operativo: BL-739..743, piano
-`docs/plans/2026-09-04-renaissance-parity-sprint.md`.
 
 1. **Benchmark di parità onesto**: RenTec Medallion documentato (Cornell 2020)
    è Sharpe ≈ 2.0 lordo, beta ≈ −1 — non lo "Sharpe 7.5" leggendario.
@@ -918,8 +916,8 @@ Sprint operativo: BL-739..743, piano
 3. **Regola del pilastro**: ogni nuova ipotesi/gamba nel registry dichiara il
    pilastro KB (01-13) del suo meccanismo e il decay atteso; le combinazioni
    fra pilastri (conditioning) sono first-class, non accessori. In questo
-   sprint NESSUN carry su oro/commodities (curve futures non possedute —
-   follow-up sbloccato da dati).
+   sprint NESSUN carry su oro/commodities (Fase 2 dossier B non pianificata:
+   curve futures non possedute — follow-up sbloccato da dati, vedi BL-743).
 4. **Anti-drift finanziario**: nessuna eval si paga senza sim canonica ITM
    (ADR-018/023); tier funded primario MFFU Pro/Rapid + Topstep Standard +
    FTMO (dossier C §consigli). Il cap leva 4× della BL-742 è scelta locale

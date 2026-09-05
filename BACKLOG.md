@@ -785,7 +785,7 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
 > `docs/plans/2026-09-04-renaissance-parity-sprint.md`.
 > Direttive: ROADMAP §15. Registrazione task MCP: TASK-017..021.
 
-- [ ] **BL-739** P1 — Overnight drift sprint (EF-004@10-seasonal): 2 gambe
+- [x] **BL-739** P1 — Overnight drift sprint (EF-004@10-seasonal): 2 gambe
   frozen (hold 20:00→13:30 UTC + window 07:00-08:00 UTC, LPS 2019 / BLW
   2023) su XAUUSD/XAGUSD/FX majors 1h lake (ES 1h escluso: 14k barre <
   min_bars), vol-scaled, costi 1.5 bps/turnover, walk-forward > 2022-12-31,
@@ -795,7 +795,10 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
   `scripts/run_overnight_drift_sprint.py` + test unit. Output:
   `docs/reports/edge-factory/overnight-drift-sprint.{md,json}` (con event
   study orario + limitazioni oneste: DST, swap/roll CFD non modellato).
-- [ ] **BL-740** P1 — FX carry policy-rate basket (EF-004@02-macro): 7 coppie
+  ✅ 2026-09-04 NO_GO 0/5 asset (fa93a9e + 253df73): nessuna slot passa
+  walk-forward con costi inclusi. EF-004@10-seasonal REJECTED (commit
+  `253df73`). Fix: single shift causale, cost_drag su test window.
+- [x] **BL-740** P1 — FX carry policy-rate basket (EF-004@02-macro): 7 coppie
   G10, segnale mensile ±1 = segno(tasso_A − tasso_B), tassi FRED PIT con
   `CARRY_LAG_MONTHS=2` anti-lookahead, dollar-neutral vol-target 10%, costi
   1.5 bps, walk-forward > 2022-12-31, tail-check 2020-03 e 2022-USD-rally
@@ -803,7 +806,13 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
   `scripts/run_fx_carry_policy_rate.py` + test unit. Output:
   `docs/reports/edge-factory/fx-carry-policy-rate.{md,json}` (con stima
   informativa costo swap/roll CFD 0.5-2%/yr dichiarata).
-- [ ] **BL-741** P1 — Cross-pillar conditioning (EF-004@13-meta-synthesis):
+  ✅ 2026-09-04 NO_GO per mancanza dati (54a9649 + abb7cd6 + a1b2a44):
+  la chiave FRED `ORACLE_DATA_FRED_KEY` non è caricata in questo
+  ambiente → nessun fetch PIT possibile. EF-004@02-macro REJECTED ma NON
+  squalifica l'edge (follow-up fork EF-005 quando arriva la chiave).
+  Fix: env key mismatch FRED_API_KEY vs ORACLE_DATA_FRED_KEY + PIT lag
+  direction backward (raw[t-2] a month t).
+- [x] **BL-741** P1 — Cross-pillar conditioning (EF-004@13-meta-synthesis):
   veto non-direzionale su 3 gambe qualificate BL-736 (ES_1d ema 20/50, ES_1d
   donchian 20, ETHUSDT_1h ema 20/50) con VIX-z (05-sentiment) e funding-z
   (11-onchain), forma Sprint 2d `1 − clip(|z|,0,2)/2`, full_z=2 frozen,
@@ -813,18 +822,50 @@ Obiettivo: validare 3 lane su dati free prima di spendere budget per architettur
   turnover ≤ 2× baseline, sopravvivenza CPCV di entrambi, PBO riportato.
   Runner: `scripts/run_pillar_conditioning_sprint.py` + test unit. Output:
   `docs/reports/edge-factory/pillar-conditioning-sprint.{md,json}`.
-- [ ] **BL-742** P2 — Portfolio SR-max v2 (condizionato a GO): estende
+  ✅ 2026-09-04 VIX-z NEUTRAL (4f0658e + f7a2a20): ΔSR non HELPFUL
+  (sotto soglia +0.10) sulle 3 gambe BL-736. EF-004@13-meta-synthesis
+  REJECTED, pista conditioning-lite CHIUSA. Fix: doc onesta del signal
+  Sprint 2d, skip ES combined, typo+test allineati.
+- [x] **BL-742** P2 — Portfolio SR-max v2 (condizionato a GO): estende
   `scripts/run_portfolio_sr_max.py` SOLO con famiglie GO di BL-739/740/741
   (import, no copy-paste). Report v2 con ladder leva 1-4×, P(m≥5%),
   correlazione media pre/post, riga "SR(N) post-integrazione vs 1.40
   baseline". Cap leva 4× = scelta locale conservativa (NON ADR-023); nota
   Channel B: promozione funded passa da `check_dual_channel` (100+ sessioni
   paper, pass ≥0.60, consistency ≤0.35).
-- [ ] **BL-743** P2 — Docs canoniche: `scripts/set_registry_state.py` (CLI
+  ✅ 2026-09-04 NO-GO complessivo (602d2f9): 0 famiglie qualificate
+  dai BL-739/740/741 → nessuna estensione. Report `sprint-3.md`
+  onesto. Fix extra: histogram test assertion aggiornata (advanced ≤10)
+  in `tests/unit/test_edge_factory_registry_bl700.py` — riflette i 7
+  crypto Sprint 2 + 3 EF-004 Renaissance-parity totalizzati REJECTED.
+- [x] **BL-743** P2 — Docs canoniche: `scripts/set_registry_state.py` (CLI
   generica `--hid --stato --motivo --ref` con persist, +3 test); ROADMAP §15
   direttive Renaissance-parity (fatto in questa sessione); BACKLOG BL-739..743
   (questa sezione); nota STATUS sprint senza cambio gate. Zero drift
   finanziario/architetturale.
+  ✅ 2026-09-05 commit corrente: CLI supporta sintassi `EF-NNN@domain`,
+  rifiuta id ambigui cross-domain (exit ≠ 0, lista candidati), persiste
+  SOLO il dominio target (no `save_all`). 26 test unit verdi (subset
+  della suite pytest/ruff/mypy strict).
+- [ ] **BL-744** P2 — Builder registry load-merge determinismo: il builder
+  (`scripts/build_edge_factory_registry.py`) è deterministico ma ogni
+  `Evidence.now()` (timestamp UTC ISO-8601) forza una riscrittura di
+  tutti i YAML ad ogni regen, anche quando il contenuto logico è
+  invariato. Outcome atteso: load-merge selettivo che preserva le
+  evidenze esistenti e tocca solo le entry nuove o modificate, oppure
+  un campo `evidence_data` costante (commit-time/git hash) invece di
+  wall-clock. Collegato a BL-745 (la CLI non deve MAI chiamare
+  `save_all` per questo motivo). Follow-up dal Task 1.
+- [ ] **BL-745** P2 — Fix `HypothesisRegistry.update_status` cross-domain:
+  il metodo risolve l'id al PRIMO match (`get_hypothesis` scansiona
+  `self._domains.values()` in ordine e ritorna la prima occorrenza);
+  questo è il bug che la CLI di BL-743 ha aggirato via
+  `_transition_in_domain` (resolve esplicito del dominio). Outcome
+  atteso: aggiungere un parametro `domain: str | None = None` a
+  `update_status` che, se passato, salta la scansione e usa direttamente
+  `reg.get_domain(domain).get(hid)`. Aggiungere test `update_status_with_domain`
+  in `test_edge_factory_registry_bl700.py`. Workaround attuale: la CLI
+  di BL-743 usa `_transition_in_domain` invece di `update_status`.
 
 **Kill criteria (pre-registrati)**: se NESSUNA famiglia passa → report onesto
 `sprint-3.md` NO-GO complessivo, famiglie REJECTED nel registry; non si
