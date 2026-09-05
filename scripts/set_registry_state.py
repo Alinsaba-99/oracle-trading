@@ -20,7 +20,7 @@ Senza ``@<domain>`` la CLI cerca l'unico dominio che contiene l'hid; se
 Exit code:
     0  transizione OK
     1  ipotesi non trovata (HypothesisNotFoundError)
-    2  ipotesi ambigua cross-domain (lista domini)
+    2  ipotesi ambigua cross-domain o dominio esplicito sconosciuto
     3  transizione illegale (state machine)
     4  errore I/O / registry root mancante / --hid malformato
 """
