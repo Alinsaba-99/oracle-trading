@@ -101,22 +101,48 @@ def test_pair_order_matches_brief() -> None:
 
 
 def test_build_rates_table_returns_dataframe_with_lagged_rates() -> None:
-    """``build_rates_table`` applies CARRY_LAG_MONTHS=2 so the month-t
-    column reflects the value known with certainty at month-t+2.
+    """``build_rates_table`` applies CARRY_LAG_MONTHS=2 with **backward
+    PIT** semantics (anti-lookahead).
 
-    With CARRY_LAG_MONTHS=2 the month-t value should equal the value
-    that was published at month (t-2); the next observation in the
-    source frame.
+    With CARRY_LAG_MONTHS=2 the lagged row at index label M_i must equal
+    the source value originally labelled ``src[M_(i - 2)]``.  This is the
+    correct as-of convention: at decision month t the signal uses the
+    rate known with certainty at month t (= the rate published at month
+    t - 2, given the OECD IRSTCI01xx 2-month publication lag).
+
+    The first ``CARRY_LAG_MONTHS`` rows of the lagged frame are
+    undefined (no past data to look up), so the assertion is guarded by
+    ``i >= CARRY_LAG_MONTHS``.
     """
     src = _synthetic_rates()
     lagged, missing = build_rates_table(src)
     assert missing == []  # all 8 series present
-    # The lagged frame must drop the first CARRY_LAG_MONTHS rows so that
-    # ``lagged.iloc[i] == src.iloc[i + CARRY_LAG_MONTHS]`` for any row i.
-    for i in range(len(lagged)):
-        ref = src.iloc[i + CARRY_LAG_MONTHS]
+    # Backward lag invariant: lagged.iloc[i] == src.iloc[i - lag_months].
+    for i in range(CARRY_LAG_MONTHS, len(lagged)):
+        ref = src.iloc[i - CARRY_LAG_MONTHS]
         assert lagged.iloc[i]["EUR"] == pytest.approx(ref["EUR"])
         assert lagged.iloc[i]["USD"] == pytest.approx(ref["USD"])
+    # Length check: lagged loses the last ``lag_months`` rows (we can't
+    # look forward; anti-lookahead mandates no future values).
+    assert len(lagged) == len(src) - CARRY_LAG_MONTHS
+    # Index invariant: the new labels are the source labels shifted by
+    # ``lag_months`` — at new label M_i the value is the source value
+    # originally at M_(i - lag_months).
+    assert lagged.index[0] == src.index[CARRY_LAG_MONTHS]
+    assert lagged.index[-1] == src.index[-1]
+
+
+def test_build_rates_table_first_rows_undefined() -> None:
+    """The lagged frame starts at src.index[CARRY_LAG_MONTHS]: the first
+    ``lag_months`` source periods have no legitimate PIT value (we
+    cannot invent past data), so the runner drops them.
+    """
+    src = _synthetic_rates()
+    lagged, _ = build_rates_table(src)
+    assert lagged.index[0] > src.index[0]
+    # And the last ``lag_months`` source values are dropped (no future
+    # values can be looked up).
+    assert lagged.index[-1] == src.index[-1]
 
 
 def test_build_rates_table_lists_missing_currencies() -> None:

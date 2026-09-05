@@ -1,6 +1,6 @@
 # BL-740 — FX carry policy-rate basket (EF-004@02-macro)
 
-**Generated**: 2026-09-05T11:23:21.725674+00:00
+**Generated**: 2026-09-05T11:33:59.202633+00:00
 
 **Prereg**: basket G10 FROZEN dalla letteratura (LRV 2011 RFS, Menkhoff 2012 JF).
 Mapping 7 pairs × 8 currencies; CARRY_LAG_MONTHS=2.

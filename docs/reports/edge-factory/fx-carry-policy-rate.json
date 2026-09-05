@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-05T11:23:21.725674+00:00",
+  "generated": "2026-09-05T11:33:59.202633+00:00",
   "framework": "BL-740 FX carry policy-rate basket \u2014 EF-004@02-macro (Lustig-Roussanov-Verdelhan 2011; Menkhoff et al 2012; PIT FRED with CARRY_LAG_MONTHS=2)",
   "parameters": {
     "rate_series": {

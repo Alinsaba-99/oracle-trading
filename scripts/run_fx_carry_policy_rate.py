@@ -121,12 +121,19 @@ def build_rates_table(
     currencies are returned in a list so the runner can list them in the
     report instead of silently skipping the affected pairs.
 
-    The lag is implemented as ``drop the first ``lag_months`` rows`` so
-    that ``lagged.iloc[i] == raw.iloc[i + lag_months]``.  This is the
-    standard "as-of" convention: the value at month-t is known with
-    certainty only by month (t + lag_months); by dropping the first
-    ``lag_months`` rows we ensure every value in ``lagged`` was already
-    public by the date of its index label.
+    The lag implements **backward PIT semantics**: at decision month
+    ``t`` the signal uses the rate **published at/before** ``t``.
+    Because the OECD IRSTCI01xx series carry a 2-month publication lag
+    (the value "for month m" is published at month m + 2), at month t
+    the latest KNOWN rate is the one published at t - 2, which is the
+    value originally labelled ``raw[t - 2]``.
+
+    Implementation: ``lagged = df.iloc[: n - lag_months]`` reindexed to
+    ``df.index[lag_months:]``.  Concretely ``lagged.iloc[i] ==
+    raw.iloc[i - lag_months]``: row 0 (carrying the new index label
+    M_lag_months) holds the rate originally at index label
+    M_0 (= M_lag_months - lag_months).  Every lagged value is, by
+    construction, at least ``lag_months`` older than its new label.
 
     Args:
         raw: monthly policy-rate frame, columns = 3-letter ccy codes.
@@ -150,10 +157,12 @@ def build_rates_table(
         # unknown.  Return an empty frame and surface every currency as
         # missing so the runner reports the data gap honestly.
         return df.iloc[0:0].copy(), sorted(expected)
-    lagged = df.iloc[lag_months:].reset_index(drop=True)
-    # Preserve the same period index semantics if input was PeriodIndex.
-    idx = df.index[lag_months:]
-    lagged.index = idx
+    # Backward PIT lag: keep the first (n - lag_months) values and
+    # re-label them with the original index advanced by lag_months, so
+    # at new label M_(lag_months + i) we report the value of M_i.
+    cut = len(df) - lag_months
+    lagged = df.iloc[:cut].copy()
+    lagged.index = df.index[lag_months:]
     return lagged, missing
 
 
