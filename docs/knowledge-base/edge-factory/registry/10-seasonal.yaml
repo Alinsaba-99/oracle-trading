@@ -72,3 +72,37 @@ hypotheses:
     tipo: miner
     testo: estratta da docs/knowledge-base/10-seasonal/README.md
     ref: docs/knowledge-base/10-seasonal/README.md
+- id: EF-004
+  nome: overnight-drift-dealer-inventory
+  meccanismo: 'decomposizione overnight/intraday: il premium azionario USA si realizza
+    quasi interamente nella sessione overnight (close→open); su strumenti 24h l''analogo
+    è hold 20:00→13:30 UTC + finestra concentrata 07:00-08:00 UTC (02:00-03:00 ET)'
+  perche_esiste: i dealer scaricano l'inventario accumulato nel cash session quando
+    la liquidità e' minima (Grossman-Miller; Boyarchenko-Larsen-Whelan 2023); i retail
+    pagano sistematicamente l'open (Berkman et al 2012)
+  origine: kb
+  fonti:
+  - docs/knowledge-base/10-seasonal/README.md
+  - docs/reports/renaissance-parity-2026-09-04/B-replicable-families.md#4-overnight-vs-intraday-decomposition
+  effect_size_dichiarata: '100% US equity premium overnight (Lou-Polk-Skouras 2019
+    JFE); 02:00-03:00 ET concentra il rendimento ES (BLW 2023). NON ancora replicato
+    su oro/FX: open question dossier B n.7'
+  decay_atteso_pct: 20.0
+  dati_richiesti:
+  - 1h OHLCV XAUUSD/XAGUSD/FX majors/ES (lake curated, 2003->)
+  dati_posseduti: true
+  asset_candidati:
+  - XAUUSD
+  - XAGUSD
+  - EURUSD
+  - GBPUSD
+  - USDJPY
+  - ES
+  timeframe:
+  - 1h
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-09-05T10:15:49.910118+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/10-seasonal/README.md
+    ref: docs/knowledge-base/10-seasonal/README.md

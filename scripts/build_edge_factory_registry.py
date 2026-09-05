@@ -179,6 +179,32 @@ DOMAINS: dict[str, list[Hypothesis]] = {
             assets=["SPY, IEF, DBC, UUP"],
             timeframe=["1M rebalance"],
         ),
+        _kb(
+            nome="fx-carry-policy-rate-differential",
+            meccanismo=(
+                "carry G10 basket: segno(dir(policy_A) - dir(policy_USD)) per coppia, "
+                "posizione vol-scaled, ribilanciamento mensile, dollar-neutral "
+                "(policy rates da FRED PIT con lag 2 mesi anti-lookahead)"
+            ),
+            perche=(
+                "HML FX carry Sharpe ~0.5 (Lustig-Roussanov-Verdelhan 2011 RFS); "
+                "compensazione per crash risk (Menkhoff et al 2012 JF) -> "
+                "tail-aware reporting obbligatorio (SNB 2015, COVID 2020-03)"
+            ),
+            fonti=[
+                f"{KB}/02-macro/README.md",
+                "docs/reports/renaissance-parity-2026-09-04/B-replicable-families.md#7-carry-families-fx-commodity-basis-crypto-funding",
+            ],
+            dati=[
+                "FRED policy rates PIT (FEDFUNDS, ECBDFR, IRSTCI01xx)",
+                "1h FX spot lake curated",
+            ],
+            assets=["EURUSD", "GBPUSD", "USDJPY", "USDCHF", "USDCAD", "AUDUSD", "NZDUSD"],
+            timeframe=["1M rebalance su griglia 1h"],
+            decay=30.0,
+            effect="HML carry Sharpe ~0.5 in-sample RFS; crisi drawdown documentati",
+            dati_posseduti=True,
+        ),
     ],
     # ---------------------------------------------------------------- 03
     "03-quant": [
@@ -433,6 +459,34 @@ DOMAINS: dict[str, list[Hypothesis]] = {
             decay=45.0,
             effect="+1.3% medio sul periodo, 76% positivo (dal 1950)",
         ),
+        _kb(
+            nome="overnight-drift-dealer-inventory",
+            meccanismo=(
+                "decomposizione overnight/intraday: il premium azionario USA si realizza "
+                "quasi interamente nella sessione overnight (close→open); su strumenti 24h "
+                "l'analogo è hold 20:00→13:30 UTC + finestra concentrata 07:00-08:00 UTC "
+                "(02:00-03:00 ET)"
+            ),
+            perche=(
+                "i dealer scaricano l'inventario accumulato nel cash session quando la "
+                "liquidità e' minima (Grossman-Miller; Boyarchenko-Larsen-Whelan 2023); "
+                "i retail pagano sistematicamente l'open (Berkman et al 2012)"
+            ),
+            fonti=[
+                f"{KB}/10-seasonal/README.md",
+                "docs/reports/renaissance-parity-2026-09-04/B-replicable-families.md#4-overnight-vs-intraday-decomposition",
+            ],
+            dati=["1h OHLCV XAUUSD/XAGUSD/FX majors/ES (lake curated, 2003->)"],
+            assets=["XAUUSD", "XAGUSD", "EURUSD", "GBPUSD", "USDJPY", "ES"],
+            timeframe=["1h"],
+            decay=20.0,
+            effect=(
+                "100% US equity premium overnight (Lou-Polk-Skouras 2019 JFE); "
+                "02:00-03:00 ET concentra il rendimento ES (BLW 2023). NON ancora "
+                "replicato su oro/FX: open question dossier B n.7"
+            ),
+            dati_posseduti=True,
+        ),
     ],
     # ---------------------------------------------------------------- 11
     "11-onchain": [
@@ -522,6 +576,30 @@ DOMAINS: dict[str, list[Hypothesis]] = {
             dati=["equity curve candidati", "rolling IC (modulo I-E esistente)"],
             assets=["ensemble factory"],
             timeframe=["1M"],
+        ),
+        _kb(
+            nome="cross-pillar-conditioning-overlay",
+            meccanismo=(
+                "condizionamento NON direzionale delle gambe qualificate con segnali di "
+                "altri pilastri KB: VIX z-score (05-sentiment) e funding-z (11-onchain) "
+                "veto/scalano le posizioni trend quando il pilastro segnala rischio "
+                "(stessa forma di Sprint 2d: pos *= 1 - clip(|z|,0,2)/2)"
+            ),
+            perche=(
+                "meta-labeling/conditioning separa side da size (Lopez de Prado 2018 "
+                "ch.3); l'edge vive nelle interazioni fra pilastri, non nei numeri "
+                "singoli (direttiva Renaissance-parity 2026-09-04)"
+            ),
+            fonti=[f"{KB}/13-meta-synthesis/README.md", "docs/reports/edge-factory/sprint-2d.md"],
+            dati=[
+                "VIX daily (sorgente gia' usata da lane_d_vrp)",
+                "funding 1h Binance Vision (backfilled BL-718)",
+            ],
+            assets=["ES", "BTCUSDT", "ETHUSDT"],
+            timeframe=["1d (ES)", "1h (crypto)"],
+            decay=30.0,
+            effect="+1-2%/yr Sharpe improvement da meta-labeling (LdP 2018, PBO risk >50% senza CPCV)",
+            dati_posseduti=True,
         ),
     ],
     # ---------------------------------------------------------------- crypto (MoonDev)

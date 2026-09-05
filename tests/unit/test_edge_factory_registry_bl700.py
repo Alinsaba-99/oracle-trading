@@ -4,8 +4,9 @@ These tests exercise the cross-domain :class:`HypothesisRegistry` over a
 synthetic fixture directory so they don't depend on the current state of
 ``docs/knowledge-base/edge-factory/registry/`` (which is the data
 under test, not the test fixture).  A few tests deliberately point at
-the shipped registry to assert the live shape (46 hypotheses across 14
-domains).
+the shipped registry to assert the live shape (49 hypotheses across 14
+domains; +3 from BL-739a Renaissance-parity sprint: overnight drift,
+fx carry, cross-pillar conditioning).
 """
 
 from __future__ import annotations
@@ -392,7 +393,7 @@ def test_shipped_registry_has_14_domains_and_46_hypotheses() -> None:
         pytest.skip("shipped registry not in cwd")
     r = HypothesisRegistry().scan()
     assert len(r.domains) == 14
-    assert len(r) == 46
+    assert len(r) == 49
 
 
 def test_shipped_registry_status_histogram_is_mostly_amplification_stage() -> None:
@@ -400,15 +401,15 @@ def test_shipped_registry_status_histogram_is_mostly_amplification_stage() -> No
         pytest.skip("shipped registry not in cwd")
     r = HypothesisRegistry().scan()
     counts = r.count_by_status()
-    # 46 hypotheses total.  The corpus was mined at Stage 1 (BL-701/702);
+    # 49 hypotheses total.  The corpus was mined at Stage 1 (BL-701/702);
     # since Sprint 2 (BL-704/BL-718, 2026-09-03) the 7 crypto-microstructure
     # entries have advanced through the state machine (amplificata /
     # APPROVED / REJECTED / morta), so the pre-amplification count is
-    # 46 minus the advanced ones — everything else must still be
-    # da_amplificare and the total must stay 46 (no lost hypotheses).
+    # 49 minus the advanced ones — everything else must still be
+    # da_amplificare and the total must stay 49 (no lost hypotheses).
     advanced = sum(v for k, v in counts.items() if k != "da_amplificare")
-    assert counts.get("da_amplificare", 0) + advanced == 46
-    assert sum(counts.values()) == 46
+    assert counts.get("da_amplificare", 0) + advanced == 49
+    assert sum(counts.values()) == 49
     assert advanced <= 7  # only the crypto domain has been through sprints
 
 

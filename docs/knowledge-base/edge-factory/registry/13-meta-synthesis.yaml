@@ -78,3 +78,36 @@ hypotheses:
     tipo: miner
     testo: estratta da docs/knowledge-base/13-meta-synthesis/README.md
     ref: docs/knowledge-base/13-meta-synthesis/README.md
+- id: EF-004
+  nome: cross-pillar-conditioning-overlay
+  meccanismo: 'condizionamento NON direzionale delle gambe qualificate con segnali
+    di altri pilastri KB: VIX z-score (05-sentiment) e funding-z (11-onchain) veto/scalano
+    le posizioni trend quando il pilastro segnala rischio (stessa forma di Sprint
+    2d: pos *= 1 - clip(|z|,0,2)/2)'
+  perche_esiste: meta-labeling/conditioning separa side da size (Lopez de Prado 2018
+    ch.3); l'edge vive nelle interazioni fra pilastri, non nei numeri singoli (direttiva
+    Renaissance-parity 2026-09-04)
+  origine: kb
+  fonti:
+  - docs/knowledge-base/13-meta-synthesis/README.md
+  - docs/reports/edge-factory/sprint-2d.md
+  effect_size_dichiarata: +1-2%/yr Sharpe improvement da meta-labeling (LdP 2018,
+    PBO risk >50% senza CPCV)
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - VIX daily (sorgente gia' usata da lane_d_vrp)
+  - funding 1h Binance Vision (backfilled BL-718)
+  dati_posseduti: true
+  asset_candidati:
+  - ES
+  - BTCUSDT
+  - ETHUSDT
+  timeframe:
+  - 1d (ES)
+  - 1h (crypto)
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-09-05T10:15:49.910302+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/13-meta-synthesis/README.md
+    ref: docs/knowledge-base/13-meta-synthesis/README.md

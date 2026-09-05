@@ -78,3 +78,37 @@ hypotheses:
     tipo: miner
     testo: estratta da docs/knowledge-base/02-macro/README.md
     ref: docs/knowledge-base/02-macro/README.md
+- id: EF-004
+  nome: fx-carry-policy-rate-differential
+  meccanismo: 'carry G10 basket: segno(dir(policy_A) - dir(policy_USD)) per coppia,
+    posizione vol-scaled, ribilanciamento mensile, dollar-neutral (policy rates da
+    FRED PIT con lag 2 mesi anti-lookahead)'
+  perche_esiste: HML FX carry Sharpe ~0.5 (Lustig-Roussanov-Verdelhan 2011 RFS); compensazione
+    per crash risk (Menkhoff et al 2012 JF) -> tail-aware reporting obbligatorio (SNB
+    2015, COVID 2020-03)
+  origine: kb
+  fonti:
+  - docs/knowledge-base/02-macro/README.md
+  - docs/reports/renaissance-parity-2026-09-04/B-replicable-families.md#7-carry-families-fx-commodity-basis-crypto-funding
+  effect_size_dichiarata: HML carry Sharpe ~0.5 in-sample RFS; crisi drawdown documentati
+  decay_atteso_pct: 30.0
+  dati_richiesti:
+  - FRED policy rates PIT (FEDFUNDS, ECBDFR, IRSTCI01xx)
+  - 1h FX spot lake curated
+  dati_posseduti: true
+  asset_candidati:
+  - EURUSD
+  - GBPUSD
+  - USDJPY
+  - USDCHF
+  - USDCAD
+  - AUDUSD
+  - NZDUSD
+  timeframe:
+  - 1M rebalance su griglia 1h
+  stato: da_amplificare
+  evidenza:
+  - data: '2026-09-05T10:15:49.909955+00:00'
+    tipo: miner
+    testo: estratta da docs/knowledge-base/02-macro/README.md
+    ref: docs/knowledge-base/02-macro/README.md
