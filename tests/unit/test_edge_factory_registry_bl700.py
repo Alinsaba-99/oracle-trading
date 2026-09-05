@@ -410,7 +410,10 @@ def test_shipped_registry_status_histogram_is_mostly_amplification_stage() -> No
     advanced = sum(v for k, v in counts.items() if k != "da_amplificare")
     assert counts.get("da_amplificare", 0) + advanced == 49
     assert sum(counts.values()) == 49
-    assert advanced <= 7  # only the crypto domain has been through sprints
+    # 7 crypto from Sprint 2 + 3 EF-004 Renaissance-parity (BL-739/740/741
+    # transitioned to REJECTED). Updated by BL-742 — bound by the actual
+    # state of the shipped registry, not by sprint count.
+    assert advanced <= 10
 
 
 def test_shipped_registry_validate_all_flags_known_data_bug() -> None:
